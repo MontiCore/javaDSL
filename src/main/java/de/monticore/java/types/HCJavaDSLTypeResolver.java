@@ -29,6 +29,7 @@ import de.monticore.java.javadsl._ast.ASTArrayDimensionByInitializer;
 import de.monticore.java.javadsl._ast.ASTCatchType;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTConstantExpressionSwitchLabel;
+import de.monticore.java.javadsl._ast.ASTConstantsJavaDSL;
 import de.monticore.java.javadsl._ast.ASTCreatedName;
 import de.monticore.java.javadsl._ast.ASTDeclaratorId;
 import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
@@ -1137,38 +1138,38 @@ public class HCJavaDSLTypeResolver extends JavaDSLTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTPrimitiveModifier node) {
-    if (node.getModifier() == 1) {
+    if (node.getModifier() == ASTConstantsJavaDSL.PRIVATE) {
       this.setResult(new JavaTypeSymbolReference("private", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 2) {
+    if (node.getModifier() == ASTConstantsJavaDSL.PUBLIC) {
       this.setResult(new JavaTypeSymbolReference("public", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 3) {
+    if (node.getModifier() == ASTConstantsJavaDSL.PROTECTED) {
       this.setResult(new JavaTypeSymbolReference("protected", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 4) {
+    if (node.getModifier() == ASTConstantsJavaDSL.STATIC) {
       this.setResult(new JavaTypeSymbolReference("static", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 5) {
+    if (node.getModifier() == ASTConstantsJavaDSL.TRANSIENT) {
       this.setResult(new JavaTypeSymbolReference("transient", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 6) {
+    if (node.getModifier() == ASTConstantsJavaDSL.FINAL) {
       this.setResult(new JavaTypeSymbolReference("final", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 7) {
+    if (node.getModifier() == ASTConstantsJavaDSL.ABSTRACT) {
       this.setResult(new JavaTypeSymbolReference("abstract", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 8) {
+    if (node.getModifier() == ASTConstantsJavaDSL.NATIVE) {
       this.setResult(new JavaTypeSymbolReference("native", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 10) {
+    if (node.getModifier() == ASTConstantsJavaDSL.SYNCHRONIZED) {
       this.setResult(
           new JavaTypeSymbolReference("synchronized", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 12) {
+    if (node.getModifier() == ASTConstantsJavaDSL.VOLATILE) {
       this.setResult(new JavaTypeSymbolReference("volatile", node.getEnclosingScope().get(), 0));
     }
-    if (node.getModifier() == 13) {
+    if (node.getModifier() == ASTConstantsJavaDSL.STRICTFP) {
       this.setResult(new JavaTypeSymbolReference("strictfp", node.getEnclosingScope().get(), 0));
     }
   }
