@@ -24,7 +24,7 @@ import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.literals.literals._ast.ASTLiteral;
-import de.monticore.literals.literals._ast.ASTSignedIntLiteral;
+import de.monticore.literals.literals._ast.ASTIntLiteral;
 import de.se_rwth.commons.logging.Log;
 
 /**
@@ -62,7 +62,7 @@ public class AssignmentCompatible implements JavaDSLASTExpressionCoCo {
             if (node.getRightExpression().get().getPrimaryExpression().get().literalIsPresent()) {
               ASTLiteral literal = node.getRightExpression().get().getPrimaryExpression().get()
                   .getLiteral().get();
-              if (literal instanceof ASTSignedIntLiteral) {
+              if (literal instanceof ASTIntLiteral) {
                 return;
               }
             }
@@ -74,7 +74,7 @@ public class AssignmentCompatible implements JavaDSLASTExpressionCoCo {
                   .literalIsPresent()) {
                 ASTLiteral literal = node.getRightExpression().get().getExpression().get()
                     .getPrimaryExpression().get().getLiteral().get();
-                if (literal instanceof ASTSignedIntLiteral) {
+                if (literal instanceof ASTIntLiteral) {
                   return;
                 }
               }

@@ -25,7 +25,7 @@ import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.literals.literals._ast.ASTLiteral;
-import de.monticore.literals.literals._ast.ASTSignedIntLiteral;
+import de.monticore.literals.literals._ast.ASTIntLiteral;
 import de.se_rwth.commons.logging.Log;
 
 import java.util.List;
@@ -68,7 +68,7 @@ public class LocalVariableInitializerAssignmentCompatible implements
                   if (astExpression.getPrimaryExpression().get().literalIsPresent()) {
                     ASTLiteral literal = astExpression.getPrimaryExpression().get().getLiteral()
                         .get();
-                    if (literal instanceof ASTSignedIntLiteral) {
+                    if (literal instanceof ASTIntLiteral) {
                       return;
                     }
                   }
@@ -79,7 +79,7 @@ public class LocalVariableInitializerAssignmentCompatible implements
                         .literalIsPresent()) {
                       ASTLiteral literal = astExpression.getExpression().get()
                           .getPrimaryExpression().get().getLiteral().get();
-                      if (literal instanceof ASTSignedIntLiteral) {
+                      if (literal instanceof ASTIntLiteral) {
                         return;
                       }
                     }
