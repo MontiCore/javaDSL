@@ -958,6 +958,11 @@ public class JavaDSLHelper {
     List<ActualTypeArgument> args = new ArrayList<>();
     if (substituted != null && substituted.containsKey(type.getName())) {
       type = substituted.get(type.getName());
+      Optional<JavaTypeSymbol> newSubType = type.getEnclosingScope()
+              .resolve(type.getName(), JavaTypeSymbol.KIND);
+      if(newSubType.isPresent()) {
+        substituted = getSubstitutedTypes(newSubType.get(), type);
+      }
     }
     for (ActualTypeArgument actualTypeArgument : type.getActualTypeArguments()) {
       JavaTypeSymbolReference newSub = applyTypeSubstitution(substituted,
