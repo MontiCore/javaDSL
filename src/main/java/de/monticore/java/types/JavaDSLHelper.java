@@ -2495,7 +2495,7 @@ public class JavaDSLHelper {
   public  static boolean narrowingReferenceConversionAvailable(JavaTypeSymbolReference from,
       JavaTypeSymbolReference to) {
     //From any reference type S to any reference type T, provided that S is  proper supertype (§4.10) of T. (An important special case is that there is a narrowing conversion from the class type Object to any other reference type.)
-    if (isProperSuperType(from, to)) {
+    if (isProperSuperType(from, to) || isObjectType(to)) {
       return true;
     }
     if (from.getEnclosingScope().resolve(from.getName(), JavaTypeSymbol.KIND).isPresent()
