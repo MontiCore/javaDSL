@@ -18,14 +18,7 @@
  */
 package de.monticore.java.types;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTExpression;
@@ -964,11 +957,26 @@ public class JavaDSLHelper {
         substituted = getSubstitutedTypes(newSubType.get(), type);
       }
     }
-    for (ActualTypeArgument actualTypeArgument : type.getActualTypeArguments()) {
+    else if(substituted != null) {
+      //  if type is already substituted, and it contains other types to be substituted
+      for(Map.Entry entry : substituted.entrySet()) {
+        if(areEqual((JavaTypeSymbolReference) entry.getValue(), type)) {
+          Optional<JavaTypeSymbol> newSubType = type.getEnclosingScope()
+                  .resolve(type.getName(), JavaTypeSymbol.KIND);
+          if(newSubType.isPresent()) {
+            substituted = getSubstitutedTypes(newSubType.get(), type);
+          }
+        }
+      }
+    }
+    if(isWildCardType(type)) {
+      return type;
+    }
+    for(ActualTypeArgument actualTypeArgument : type.getActualTypeArguments()) {
       JavaTypeSymbolReference newSub = applyTypeSubstitution(substituted,
-          (JavaTypeSymbolReference) actualTypeArgument.getType());
+              (JavaTypeSymbolReference) actualTypeArgument.getType());
       ActualTypeArgument newArg = new ActualTypeArgument(actualTypeArgument.isLowerBound(),
-          actualTypeArgument.isUpperBound(), newSub);
+              actualTypeArgument.isUpperBound(), newSub);
       args.add(newArg);
     }
     type.setActualTypeArguments(args);
@@ -1532,7 +1540,7 @@ public class JavaDSLHelper {
         Collection<JavaMethodSymbol> methods = superSymbol.getSpannedScope()
             .resolveMany(methodName, JavaMethodSymbol.KIND);
         for (JavaMethodSymbol method : methods) {
-          if (superSymbol.getPackageName().equals(currentSymbol.getPackageName())) {
+          if (isRootPackageSame(superSymbol.getPackageName(), currentSymbol.getPackageName())) {
             if (isDefaultMethod(method) || method.isPublic() || method.isProtected()) {
               pMethods.add(method);
             }
@@ -1555,6 +1563,18 @@ public class JavaDSLHelper {
       return staticMethods;
     }
     return pMethods;
+  }
+
+  /**
+   *
+   * @param packageName1 full package name of the first symbol.
+   * @param packageName2 full package name of the second symbol.
+   * @return true, if the root package of both symbols are the same.
+   */
+  public static boolean isRootPackageSame(String packageName1, String packageName2) {
+    packageName1 = packageName1.substring(0, packageName1.indexOf('.'));
+    packageName2 = packageName2.substring(0, packageName2.indexOf('.'));
+    return packageName1.equals(packageName2);
   }
 
   /**
@@ -1614,20 +1634,20 @@ public class JavaDSLHelper {
         if(!currentSymbol.getFormalTypeParameters().isEmpty() && currentType.getActualTypeArguments().isEmpty()) {
           //then method is invoked through raw type
           HashMap<String, JavaTypeSymbolReference> inferredFormalTypes = inferFormalParameterTypes(methodSymbol.isEllipsisParameterMethod(), currentSymbol.getFormalTypeParameters(), formalParameters, actualParameters);
-          List<JavaTypeSymbolReference> subsititutedParameters = new ArrayList<>();
+          List<JavaTypeSymbolReference> substitutedParameters = new ArrayList<>();
           for(JavaTypeSymbolReference paramType : formalParameters) {
-            subsititutedParameters.add(applyTypeSubstitution(inferredFormalTypes, paramType));
+            substitutedParameters.add(applyTypeSubstitution(inferredFormalTypes, paramType));
           }
-          formalParameters = new ArrayList<>(subsititutedParameters);
+          formalParameters = new ArrayList<>(substitutedParameters);
           returnType = applyTypeSubstitution(inferredFormalTypes, returnType);
         }
         else {
           HashMap<String, JavaTypeSymbolReference> substituted = getSubstitutedTypes(currentSymbol, currentType);
-          List<JavaTypeSymbolReference> subsititutedParameters = new ArrayList<>();
+          List<JavaTypeSymbolReference> substitutedParameters = new ArrayList<>();
           for(JavaTypeSymbolReference paramType : formalParameters) {
-            subsititutedParameters.add(applyTypeSubstitution(substituted, paramType));
+            substitutedParameters.add(applyTypeSubstitution(substituted, paramType));
           }
-          formalParameters = new ArrayList<>(subsititutedParameters);
+          formalParameters = new ArrayList<>(substitutedParameters);
           returnType = applyTypeSubstitution(substituted, returnType);
         }
       }
