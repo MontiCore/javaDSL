@@ -22,11 +22,19 @@ import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
 import de.monticore.java.symboltable.JavaFieldSymbol;
+import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.java.types.JavaDSLPredicate;
+import de.monticore.symboltable.Symbol;
+import de.monticore.symboltable.SymbolKind;
+import de.monticore.symboltable.modifiers.AccessModifier;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * TODO
@@ -135,12 +143,17 @@ public class FieldAccessValid implements JavaDSLASTExpressionCoCo {
                 }
               }
               else if (typeSymbol.isEnum()) {
-                if (typeSymbol.getSpannedScope()
-                    .resolveMany(node.getName().get(), JavaTypeSymbol.KIND)
-                    .size() == 0) {
-                  Log.error(
-                      "0xA0544 constant '" + node.getName().get() + "' is not member of enum '"
-                          + typeSymbol.getName() + "'.", node.get_SourcePositionStart());
+                String name = node.getName().get();
+                Collection<JavaMethodSymbol> methods = typeSymbol.getSpannedScope().resolveMany(name, JavaMethodSymbol.KIND);
+                Collection<JavaTypeSymbol> constant = typeSymbol.getSpannedScope().resolveMany(name, JavaTypeSymbol.KIND);
+                if(methods.size() == 0) {
+                  if(constant.size() == 0) {
+                    Log.error(
+                            "0xA0544 constant '" + name + "' is not member of enum '"
+                                    + typeSymbol.getName() + "'.", node.get_SourcePositionStart());
+                  } else if(constant.size() > 1) {
+                    Log.error("access to constant '" + name + "' is ambiguous.", node.get_SourcePositionStart());
+                  }
                 }
               }
 //              else if (
@@ -168,7 +181,10 @@ public class FieldAccessValid implements JavaDSLASTExpressionCoCo {
     if (node.getPrimaryExpression().isPresent()) {
       if (node.getPrimaryExpression().get().getName().isPresent()) {
         String name = node.getPrimaryExpression().get().getName().get();
-        if (node.getEnclosingScope().get().resolveMany(name, JavaFieldSymbol.KIND).size() > 1) {
+        JavaDSLPredicate predicate = new JavaDSLPredicate(node);
+        Collection<JavaFieldSymbol> localSymbols = node.getEnclosingScope().get().
+                resolveMany(name, JavaFieldSymbol.KIND, predicate);
+        if (localSymbols.size() > 1) {
           Log.error("0xA0548 field access to '" + name + "' is ambiguous.",
               node.get_SourcePositionStart());
         }

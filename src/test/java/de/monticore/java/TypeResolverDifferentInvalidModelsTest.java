@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.monticore.java.types.JavaDSLTypeChecker;
@@ -108,8 +109,8 @@ public class TypeResolverDifferentInvalidModelsTest extends AbstractCoCoTestClas
   public void testAmbiguityException(){
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0509 type 'java.lang.String' cannot be converted to type 'java.lang.String'."));
-    testModelForErrors("src/test/resources",
-        "typeSystemTestModels/monticore/invalid/AmbiguityException", typeChecker.getAllTypeChecker(), expectedErrors);
+    testModelNoErrors("src/test/resources",
+        "typeSystemTestModels/monticore/invalid/AmbiguityException");
   }
 
   @Test

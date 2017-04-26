@@ -532,6 +532,25 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       addToScopeAndLinkWithNode(javaFieldSymbol, astLocalVariableDeclaration);
     }
   }
+
+  @Override
+  public void visit(final ASTEnhancedForControl astEnhancedForControl) {
+    ASTFormalParameter astFormalParameter = astEnhancedForControl.getFormalParameter();
+    JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
+            astFormalParameter.getDeclaratorId().getName(), null);
+
+    // FormalParameter = PrimitiveModifier* ...
+    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifiers());
+
+    // ... Type ...
+    initializeJavaAttributeSymbol(javaFieldSymbol, astFormalParameter.getType(),
+            astFormalParameter.getDeclaratorId().getDim().size());
+
+    //no more nonterminals to process from here
+    addToScopeAndLinkWithNode(javaFieldSymbol, astFormalParameter);
+  }
+
+
   
   @Override
   public void visit(final ASTTryStatement astTryClause) {
@@ -903,15 +922,16 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         ASTType type = astLastFormalParameter.getType();
         if (type instanceof ASTPrimitiveType) {
           arrayType = ASTPrimitiveArrayType.getBuilder()
-              .componentType(type).build();
+              .componentType(type).dimensions(1).build();
         }
         else if ((type instanceof ASTComplexReferenceType)
             || (type instanceof ASTSimpleReferenceType)) {
           arrayType = ASTComplexArrayType.getBuilder()
-              .componentType(type).build();
+              .componentType(type).dimensions(1).build();
         }
         else if (type instanceof ASTArrayType) {
           arrayType = (ASTArrayType) type;
+          arrayType.setDimensions(arrayType.getDimensions() + 1);
         }
         else {
           // In this case check the implementation of ASTType

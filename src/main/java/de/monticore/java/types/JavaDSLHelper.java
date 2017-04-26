@@ -2277,6 +2277,7 @@ public class JavaDSLHelper {
         if (classAST.getSuperClass().isPresent()) {
           classAST.getSuperClass().get().accept(typeResolver);
           result.add(typeResolver.getResult().get());
+          result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));
         }
         else {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
@@ -2953,6 +2954,9 @@ public class JavaDSLHelper {
     if (from.getName().equals("int") && (to.getName().equals("Integer")|| to.getName().equals("java.lang.Integer"))) {
       return true;
     }
+    if (from.getName().equals("long") && (to.getName().equals("Long")|| to.getName().equals("java.lang.Long"))) {
+      return true;
+    }
     if (from.getName().equals("float") && (to.getName().equals("Float")|| to.getName().equals("java.lang.Float"))) {
       return true;
     }
@@ -2988,6 +2992,9 @@ public class JavaDSLHelper {
     if ((from.getName().equals("Integer")|| from.getName().equals("java.lang.Integer"))  && to.getName().equals("int")) {
       return true;
     }
+    if ((from.getName().equals("Long")|| from.getName().equals("java.lang.Long")) && to.getName().equals("long")) {
+      return true;
+    }
     if ((from.getName().equals("Float")|| from.getName().equals("java.lang.Float")) && to.getName().equals("float")) {
       return true;
     }
@@ -3020,6 +3027,9 @@ public class JavaDSLHelper {
       }
       if (type.getName().equals("Integer") || type.getName().equals("java.lang.Integer")) {
         return new JavaTypeSymbolReference("int", type.getEnclosingScope(), type.getDimension());
+      }
+      if (type.getName().equals("Long") || type.getName().equals("java.lang.Long")) {
+        return new JavaTypeSymbolReference("long", type.getEnclosingScope(), type.getDimension());
       }
       if (type.getName().equals("Float") || type.getName().equals("java.lang.Float")) {
         return new JavaTypeSymbolReference("float", type.getEnclosingScope(), type.getDimension());
@@ -3056,6 +3066,9 @@ public class JavaDSLHelper {
       }
       if (type.getName().equals("int")) {
         return new JavaTypeSymbolReference("java.lang.Integer", type.getEnclosingScope(), type.getDimension());
+      }
+      if (type.getName().equals("long")) {
+        return new JavaTypeSymbolReference("java.lang.Long", type.getEnclosingScope(), type.getDimension());
       }
       if (type.getName().equals("float")) {
         return new JavaTypeSymbolReference("java.lang.Float", type.getEnclosingScope(), type.getDimension());

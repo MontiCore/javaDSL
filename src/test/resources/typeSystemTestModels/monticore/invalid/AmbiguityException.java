@@ -1,4 +1,4 @@
-package typeSystemTestModels.monticore.valid;
+package typeSystemTestModels.monticore.invalid;
 
 import java.lang.RuntimeException;
 import java.lang.String;

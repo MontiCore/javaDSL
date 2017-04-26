@@ -1352,6 +1352,12 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0820 the return type is not compatible with 'Methods.getList'."),
         Finding.error("0xA0820 the return type is not compatible with 'ArrayList.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'ArrayList.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'AbstractCollection.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'AbstractCollection.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'Collection.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'Collection.size'."),
+        Finding.error("0xA0820 the return type is not compatible with 'Collection.size'."),
         Finding.error("0xA0822 the visibility (public) of inherited method 'setName' is reduced."),
         Finding
             .error("0xA0823 the visibility (protected) of inherited method 'setName1' is reduced."),

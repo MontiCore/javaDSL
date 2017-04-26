@@ -65,7 +65,7 @@ public class JavaSourceTest {
 
   @Test
   public void testAllJavaSourceFiles() {
-    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources");
+    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources", "java", "lang", "invoke", "FromGeneric.java");
     
     try {
       Files.walkFileTree(path, visitor);
