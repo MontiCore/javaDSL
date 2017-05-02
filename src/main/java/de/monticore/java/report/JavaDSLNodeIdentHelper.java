@@ -71,7 +71,7 @@ public class JavaDSLNodeIdentHelper extends TypesNodeIdentHelper {
   public String getIdent(ASTFieldDeclaration a) {
     String type = Layouter.nodeName(a);
     List<ASTVariableDeclarator> l = a.getVariableDeclarators();
-    String n = "-";
+    String n = "";
     if (l.isEmpty()) {
       n += "-";
     }
