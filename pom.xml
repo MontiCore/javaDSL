@@ -27,7 +27,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>4.5.2</mc4.maven.version>
+    <mc4.maven.version>4.5.3-SNAPSHOT</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 

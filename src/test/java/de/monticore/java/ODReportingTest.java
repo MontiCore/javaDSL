@@ -67,4 +67,9 @@ public class ODReportingTest extends AbstractTestClass {
         "HelloWorld");
   }
   
+  @Test
+  public void checkGenericClass() throws IOException {
+    createAstAndST("src/test/resources/parsableAndCompilableModels/simpleTestClasses",
+        "GenericClass");
+  }
 }
