@@ -30,6 +30,7 @@ public class JavaDSLPredicate implements Predicate<Symbol> {
     if(scopeSpanningSymbol.isPresent()) {
       if(scopeSpanningSymbol.get().isKindOf(JavaTypeSymbol.KIND)) {
         return true;
+        
       }
     }
     int nodeLine = node.get_SourcePositionStart().getLine();
