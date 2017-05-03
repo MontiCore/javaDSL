@@ -49,6 +49,10 @@ class ParseJavaFileVisitor implements FileVisitor<Path> {
   
   private int numberOfTests = 0;
   
+  private int failingCocos = 0;
+  
+  private int failingClasses = 0;
+
   private int successCount = 0;
   
   private int failCount = 0;
@@ -83,6 +87,14 @@ class ParseJavaFileVisitor implements FileVisitor<Path> {
   
   public int getFailCount() {
     return this.failCount;
+  }
+  
+  public int getFailCocosCount() {
+    return this.failingCocos;
+  }
+  
+  public int getFailClassesCount() {
+    return this.failingClasses;
   }
   
   public double getSuccessRate() {
@@ -137,8 +149,13 @@ class ParseJavaFileVisitor implements FileVisitor<Path> {
       numberOfTests++;
       if(optModel != null) {
         try {
+          Log.getFindings().clear();
           JavaDSLCoCoChecker checker = new JavaDSLTypeChecker().getAllTypeChecker();
           checker.checkAll(optModel);
+          if (Log.getFindings().size()>0) {
+            failingClasses++;
+            failingCocos = failingCocos + Log.getFindings().size();
+          }
         } catch(Exception e) {
           
         }

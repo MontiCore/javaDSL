@@ -27,7 +27,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>4.5.2</mc4.maven.version>
+    <mc4.maven.version>4.5.3-SNAPSHOT</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 
@@ -74,7 +74,7 @@
         <version>${mc4.maven.version}</version>
         <configuration>
           <skip>false</skip>
-<!--           <script>de/monticore/monticore_noemf.groovy</script> -->
+          <!-- <script>de/monticore/monticore_noemf.groovy</script> -->
         </configuration>
         <executions>
           <execution>
@@ -117,17 +117,6 @@
           </execution>
         </executions>
       </plugin>
-      
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire.plugin}</version>
-        <configuration>
-          <excludes>
-            <exclude>**/JavaSourceTest.java</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
 
       <!-- Create grammars jar -->
       <plugin>
@@ -160,7 +149,7 @@
           </execution>
         </executions>
       </plugin>
- 
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -289,6 +278,47 @@
     </dependency>
 
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>testJavaSource</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire.plugin}</version>
+            <configuration>
+              <includes>
+                <include>**/JavaSourceTest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
+    <profile>
+      <id>testAll</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire.plugin}</version>
+            <configuration>
+              <excludes>
+                <exclude>**/JavaSourceTest.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <!-- == DISTRIBUTION ==================================================== -->
 

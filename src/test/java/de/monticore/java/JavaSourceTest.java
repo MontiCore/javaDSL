@@ -65,7 +65,7 @@ public class JavaSourceTest {
 
   @Test
   public void testAllJavaSourceFiles() {
-    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources", "java", "lang");
+    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources");
     
     try {
       Files.walkFileTree(path, visitor);
@@ -96,6 +96,8 @@ public class JavaSourceTest {
     Log.info("Success rate: " + visitor.getSuccessRate(), JavaSourceTest.class.getName());
     Log.info("Fail rate: " + visitorFilesFailed.getFailRate(), JavaSourceTest.class.getName());
     Log.info("Number of Tests: " + visitor.getNumberOfTests(), JavaSourceTest.class.getName());
+    Log.info("Number of Tests with failing cocos: " + visitor.getFailClassesCount(), JavaSourceTest.class.getName());
+    Log.info("Number of failing cocos: " + visitor.getFailCocosCount(), JavaSourceTest.class.getName());
     for (Path fileParsedWithErrors : visitorFilesFailed.fails) {
       Log.info(fileParsedWithErrors.toString(), JavaSourceTest.class.getName());
     }
