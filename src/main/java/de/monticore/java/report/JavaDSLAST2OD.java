@@ -21,7 +21,6 @@ package de.monticore.java.report;
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
 import de.monticore.java.javadsl._visitor.CommonJavaDSLDelegatorVisitor;
-import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.literals.literals._od.Literals2OD;
 import de.monticore.prettyprint.IndentPrinter;
@@ -31,8 +30,8 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
   
   private JavaDSLVisitor realThis = this;
   
-  private final JavaDSLDelegatorVisitor visitor;
-  
+  protected CommonJavaDSLDelegatorVisitor visitor;
+      
   public JavaDSLAST2OD(IndentPrinter printer, ReportingRepository reporting) {
     super(printer, reporting);
     visitor = new CommonJavaDSLDelegatorVisitor();
@@ -40,12 +39,12 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
         new Literals2OD(printer, reporting));
     visitor.set_de_monticore_types_types__visitor_TypesVisitor(new Types2OD(printer, reporting));
     visitor.set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(this);
-    // setPrintEmptyList(true);
-    // setPrintEmptyOptional(true);
+    setPrintEmptyList(true);
+    setPrintEmptyOptional(true);
   }
-  
+    
   /**
-   * @see de.monticore.java.javadsl._od.JavaDSL2OD#setRealThis(de.monticore.java.javadsl._visitor.JavaDSLVisitor)
+   * @see de.monticore.java.javadsl._od.JavaDSL2OD#getRealThis()
    */
   @Override
   public void setRealThis(JavaDSLVisitor realThis) {
@@ -55,12 +54,8 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
     }
   }
   
-  /**
-   * @see de.monticore.java.javadsl._od.JavaDSL2OD#getRealThis()
-   */
   @Override
   public JavaDSLVisitor getRealThis() {
     return realThis;
   }
-  
 }
