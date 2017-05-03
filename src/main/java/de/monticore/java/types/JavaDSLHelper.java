@@ -3248,6 +3248,9 @@ public class JavaDSLHelper {
         if (isSuperType((JavaTypeSymbolReference) a, getLowerBound(b))) {
           return true;
         }
+        else {
+          return false;
+        }
       }
       List<JavaTypeSymbolReference> bounds = getUpperBounds(b);
       for (int i = 0; i < bounds.size(); i++) {

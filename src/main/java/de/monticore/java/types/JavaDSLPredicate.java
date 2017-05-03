@@ -6,8 +6,11 @@
 package de.monticore.java.types;
 
 import de.monticore.ast.ASTNode;
+import de.monticore.java.symboltable.JavaTypeSymbol;
+import de.monticore.symboltable.ScopeSpanningSymbol;
 import de.monticore.symboltable.Symbol;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -23,6 +26,12 @@ public class JavaDSLPredicate implements Predicate<Symbol> {
 
   @Override
   public boolean test(Symbol symbol) {
+    Optional<? extends ScopeSpanningSymbol> scopeSpanningSymbol = symbol.getEnclosingScope().getSpanningSymbol();
+    if(scopeSpanningSymbol.isPresent()) {
+      if(scopeSpanningSymbol.get().isKindOf(JavaTypeSymbol.KIND)) {
+        return true;
+      }
+    }
     int nodeLine = node.get_SourcePositionStart().getLine();
     int symbolLine = symbol.getAstNode().get().get_SourcePositionStart().getLine();
     int result = (nodeLine - symbolLine);
