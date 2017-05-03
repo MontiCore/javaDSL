@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.se_rwth.commons.logging.Log;
@@ -65,7 +66,7 @@ public class JavaSourceTest {
 
   @Test
   public void testAllJavaSourceFiles() {
-    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources");
+    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources", "java", "lang");
     
     try {
       Files.walkFileTree(path, visitor);

@@ -1791,7 +1791,7 @@ public class JavaDSLHelper {
     }
     return Optional.empty();
   }
-  
+
   /**
    *
    * @param isEllipsis indicates if the method is variable arity method
@@ -2676,10 +2676,10 @@ public class JavaDSLHelper {
    */
   public  static boolean safeCastTypeConversionAvailable(JavaTypeSymbolReference from,
       JavaTypeSymbolReference to) {
-    if(!isPrimitiveType(from) && !isPrimitiveType(to)) {
+    if(!isPrimitiveType(from)) {
       if ((from.getActualTypeArguments().isEmpty() && to.getActualTypeArguments().isEmpty())
           || (!from.getActualTypeArguments().isEmpty()) && to.getActualTypeArguments().isEmpty()) {
-        if (narrowingReferenceConversionAvailable(box(from), to)) {
+        if (narrowingReferenceConversionAvailable(box(from), box(to))) {
           return true;
         }
       }
