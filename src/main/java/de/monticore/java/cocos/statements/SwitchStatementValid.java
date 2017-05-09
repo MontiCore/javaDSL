@@ -18,6 +18,7 @@
  */
 package de.monticore.java.cocos.statements;
 
+import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._cocos.JavaDSLASTSwitchStatementCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
@@ -41,8 +42,8 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
   }
 
   @Override public void check(ASTSwitchStatement node) {
-    if (node.getExpression().getPrimaryExpression().isPresent()) {
-      typeResolver.handle(node.getExpression().getPrimaryExpression().get());
+    if (node.getExpression() instanceof ASTPrimaryExpression) {
+      typeResolver.handle(node.getExpression());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference typeSwitch = typeResolver.getResult()
             .get();
@@ -75,7 +76,8 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
             else {
               ASTConstantExpressionSwitchLabel constant = (ASTConstantExpressionSwitchLabel) switchLabel;
               if (JavaDSLHelper.isEnum(typeSwitch)) {
-                String enumMember = constant.getConstantExpression().getPrimaryExpression().get()
+                // TODO MB 
+                String enumMember = ((ASTPrimaryExpression)constant.getConstantExpression())
                     .getName().get();
                 JavaTypeSymbolReference memberType = new JavaTypeSymbolReference(enumMember,
                     typeSwitch.getEnclosingScope(), 0);

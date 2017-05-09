@@ -18,34 +18,31 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.java.expressions._ast.ASTShiftExpression;
+import de.monticore.java.expressions._cocos.ExpressionsASTShiftExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class ShiftOpValid implements JavaDSLASTExpressionCoCo {
+public class ShiftOpValid implements ExpressionsASTShiftExpressionCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
-
+  
   public ShiftOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-
-  //JLS3 15.19-1
+  
+  // JLS3 15.19-1
   @Override
-  public void check(ASTExpression node) {
-    if (node.leftExpressionIsPresent() && node.rightExpressionIsPresent() && node
-        .shiftOpIsPresent()) {
-      if(JavaDSLHelper.rightAndLeftExpressionsValid(node)) {
-        typeResolver.handle(node);
-        if (!typeResolver.getResult().isPresent()) {
-          Log.error("0xA0578 operands of shift operator must have Integral type.",
-              node.get_SourcePositionStart());
-        }
-      }
+  public void check(ASTShiftExpression node) {
+    
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0578 operands of shift operator must have Integral type.",
+          node.get_SourcePositionStart());
     }
   }
+  
 }

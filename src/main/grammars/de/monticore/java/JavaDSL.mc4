@@ -1,6 +1,6 @@
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.types.Types {
+grammar JavaDSL extends de.monticore.java.Expressions {
 
 // starting point for parsing a java file
 CompilationUnit
@@ -131,7 +131,7 @@ DeclaratorId
     =   Name (dim:"[" "]")*
     ;
 
-interface VariableInitializer ;
+interface VariableInitializer extends Expression;
 
 ArrayInitializer implements VariableInitializer
     =   "{" (VariableInitializer || ",")* (",")? "}"
@@ -171,7 +171,7 @@ ElementValuePair
     =   Name "=" ElementValue
     ;
 
-interface ElementValue extends AnnotationArguments;
+interface ElementValue extends AnnotationArguments, Expression;
 
 ElementValueArrayInitializer implements ElementValue
     =   "{" (ElementValue || ",")* (",")? "}"
@@ -346,101 +346,11 @@ DefaultSwitchLabel implements SwitchLabel
     =   "default" ":"
     ;
 
-Expression implements ElementValue, VariableInitializer
-    =   PrimaryExpression
-    |   Expression "." Name&
-    |   Expression "." ["this"]
-    |   Expression "." InnerCreator
-    |   Expression "." "super" SuperSuffix
-    |   Expression "." ExplicitGenericInvocation
-    |   arrayExpression:Expression "[" indexExpression:Expression "]"
-    |   callExpression:Expression "(" parameterExpression:(Expression || ",")* ")"
-    |   Creator
-    |   "(" typeCastType:Type ")" Expression
-    |   Expression
-        (   suffixOp:"++"
-        |   suffixOp:"--"
-        )
-    |   (   prefixOp:"+"
-        |   prefixOp:"-"
-        |   prefixOp:"++"
-        |   prefixOp:"--"
-        )
-        Expression
-    |   (booleanNot:"~"|booleanNot:"!") Expression
-    |   leftExpression:Expression
-        (   multiplicativeOp:"*"
-        |   multiplicativeOp:"/"
-        |   multiplicativeOp:"%"
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression
-        (   additiveOp:"+"
-        |   additiveOp:"-"
-        )
-		rightExpression:Expression
-    |   leftExpression:Expression
-	    // It is not possible to define "<<", ">>" or ">>>".
-        // Parsing generic typs like "List<List<String>>" leads to problems.
-        (   shiftOp:"<" "<"
-          {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        |   shiftOp:">" ">" ">"
-          {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-            (_input.LT(-3).getLine()==_input.LT(-2).getLine()) &&
-            (_input.LT(-2).getCharPositionInLine()==_input.LT(-3).getCharPositionInLine()+1) &&
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        |   shiftOp:">" ">"
-         {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression
-        (   comparison:"<="
-        |   comparison:">=" 
-        |   comparison:">" 
-        |   comparison:"<"
-        )
-        rightExpression:Expression
-    |   Expression "instanceof" instanceofType:Type
-    |   leftExpression:Expression
-        (   identityTest:"=="
-        |   identityTest:"!="
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression binaryAndOp :"&"  rightExpression:Expression
-    |   leftExpression:Expression binaryXorOp :"^"  rightExpression:Expression
-    |   leftExpression:Expression binaryOrOp  :"|"  rightExpression:Expression
-    |   leftExpression:Expression booleanAndOp:"&&" rightExpression:Expression
-    |   leftExpression:Expression booleanOrOp :"||" rightExpression:Expression
-    |   condition:Expression "?" trueExpression:Expression ":" falseExpression:Expression
-    |   leftExpression:Expression
-        (   assignment:"="
-        |   assignment:"+="
-        |   assignment:"-="
-        |   assignment:"*="
-        |   assignment:"/="
-        |   assignment:"&="
-        |   assignment:"|="
-        |   assignment:"^="
-        |   assignment:">>="
-        |   assignment:">>>="
-        |   assignment:"<<="
-        |   assignment:"%="
-        )
-        rightExpression:Expression
-    ;
-
-PrimaryExpression
-    =   "(" Expression ")"
-    |   ["this"]
-    |   ["super"]
-    |   Literal
-    |   Name&
-    |   ReturnType "." "class"
-    |   ExplicitGenericInvocation
-    |   TypeArguments "this" Arguments
-    ;
+InnerCreatorExpression implements Expression = <90>
+	Expression "." InnerCreator;
+ 
+CreatorExpression implements Expression = <65>
+	Creator;
 
 interface Creator ;
 
@@ -475,21 +385,6 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-ExplicitGenericInvocation
-    =   TypeArguments ExplicitGenericInvocationSuffix
-    ;
-    
-ExplicitGenericInvocationSuffix
-    =   "super" SuperSuffix
-    |   Name Arguments
-    ;
-    
-SuperSuffix
-    =   Arguments
-    |   "." Name Arguments?
-    ;
 
-Arguments
-    =   "(" (Expression || ",")* ")"
-    ;
+
 }

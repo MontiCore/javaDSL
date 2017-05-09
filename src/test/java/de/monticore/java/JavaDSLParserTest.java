@@ -93,4 +93,16 @@ public class JavaDSLParserTest {
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
   }
+  
+  @Test
+  public void test5() throws RecognitionException, IOException {
+    Path model = Paths
+        .get("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
+    JavaDSLParser parser = new JavaDSLParser();
+    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
+    assertFalse(parser.hasErrors());
+    assertTrue(ast.isPresent());
+//    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
+  }
+
 }

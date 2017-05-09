@@ -18,42 +18,34 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
-import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.java.expressions._ast.ASTSuffixExpression;
+import de.monticore.java.expressions._cocos.ExpressionsASTSuffixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
-public class SuffixOpValid implements JavaDSLASTExpressionCoCo {
-
+public class SuffixOpValid implements ExpressionsASTSuffixExpressionCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
-
+  
   public SuffixOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-
-  //JLS3 15.14.2-1, JLS3 15.14.2-2
+  
+  // JLS3 15.14.2-1, JLS3 15.14.2-2
   @Override
-  public void check(ASTExpression node) {
-    if (node.expressionIsPresent() && node.suffixOpIsPresent()) {
-      typeResolver.handle(node);
-      if (!typeResolver.getResult().isPresent()) {
-        Log.error(
-            "0xA0579 the operand expression of suffix operator must have type convertible to numeric type.",
-            node.get_SourcePositionStart());
-      }
-      if (!JavaDSLHelper.isVariable(node.getExpression().get())) {
-        Log.error("0xA0580 the operand expression of suffix must be a variable.",
-            node.get_SourcePositionStart());
-        return;
-      }
+  public void check(ASTSuffixExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0579 the operand expression of suffix operator must have type convertible to numeric type.",
+          node.get_SourcePositionStart());
+    }
+    if (!JavaDSLHelper.isVariable(node.getExpression())) {
+      Log.error("0xA0580 the operand expression of suffix must be a variable.",
+          node.get_SourcePositionStart());
+      return;
     }
   }
+  
 }

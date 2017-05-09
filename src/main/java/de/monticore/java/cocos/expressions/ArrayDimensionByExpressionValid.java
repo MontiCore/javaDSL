@@ -18,21 +18,14 @@
  */
 package de.monticore.java.cocos.expressions;
 
+import de.monticore.java.expressions._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTArrayDimensionByExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
 public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimensionByExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;

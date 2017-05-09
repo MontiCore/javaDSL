@@ -18,17 +18,22 @@
  */
 package de.monticore.java.cocos.fieldandlocalvars;
 
-import de.monticore.java.javadsl._ast.*;
+import java.util.List;
+
+import de.monticore.java.expressions._ast.ASTExpression;
+import de.monticore.java.expressions._ast.ASTPrimaryExpression;
+import de.monticore.java.javadsl._ast.ASTArrayInitializer;
+import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
+import de.monticore.java.javadsl._ast.ASTVariableInitializer;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
+import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.literals.literals._ast.ASTLiteral;
 import de.monticore.literals.literals._ast.ASTIntLiteral;
+import de.monticore.literals.literals._ast.ASTLiteral;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.List;
 
 /**
  * TODO
@@ -62,24 +67,13 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
             && variableDeclarator.getVariableInitializer().get() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
               .getVariableInitializer().get();
-          if (astExpression.primaryExpressionIsPresent()) {
-            if (astExpression.getPrimaryExpression().get().literalIsPresent()) {
-              ASTLiteral literal = astExpression.getPrimaryExpression().get().getLiteral()
+          if (astExpression instanceof ASTPrimaryExpression) {
+            ASTPrimaryExpression primaryExpression =(ASTPrimaryExpression) astExpression;
+            if (primaryExpression.literalIsPresent()) {
+              ASTLiteral literal = primaryExpression.getLiteral()
                   .get();
               if (literal instanceof ASTIntLiteral) {
                 return;
-              }
-            }
-          }
-          else if (astExpression.expressionIsPresent()) {
-            if (astExpression.getExpression().get().primaryExpressionIsPresent()) {
-              if (astExpression.getExpression().get().getPrimaryExpression().get()
-                  .literalIsPresent()) {
-                ASTLiteral literal = astExpression.getExpression().get()
-                    .getPrimaryExpression().get().getLiteral().get();
-                if (literal instanceof ASTIntLiteral) {
-                  return;
-                }
               }
             }
           }

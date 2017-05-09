@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.java.expressions._ast.ASTBooleanNotExpression;
+import de.monticore.java.expressions._cocos.ExpressionsASTBooleanNotExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BooleanNotValid implements JavaDSLASTExpressionCoCo {
+public class BooleanNotValid implements ExpressionsASTBooleanNotExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -36,18 +36,17 @@ public class BooleanNotValid implements JavaDSLASTExpressionCoCo {
   
   // JLS3 15.15.5-1, JLS3 15.15.6-1
   @Override
-  public void check(ASTExpression node) {
-    if (node.expressionIsPresent() && node.booleanNotIsPresent()) {
-      typeResolver.handle(node);
-      if ("!".equals(node.getBooleanNot().get()) && !typeResolver.getResult().isPresent()) {
-        Log.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean.",
-            node.get_SourcePositionStart());
-      }
-      if ("~".equals(node.getBooleanNot().get()) && !typeResolver.getResult().isPresent()) {
-        Log.error(
-            "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.",
-            node.get_SourcePositionStart());
-      }
+  public void check(ASTBooleanNotExpression node) {   
+    typeResolver.handle(node);
+    if ("!".equals(node.getBooleanNot()) && !typeResolver.getResult().isPresent()) {
+      Log.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean.",
+          node.get_SourcePositionStart());
+    }
+    if ("~".equals(node.getBooleanNot()) && !typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.",
+          node.get_SourcePositionStart());
     }
   }
+  
 }

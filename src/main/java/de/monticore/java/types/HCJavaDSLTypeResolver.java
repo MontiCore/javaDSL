@@ -22,6 +22,30 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import de.monticore.java.expressions._ast.ASTAddExpression;
+import de.monticore.java.expressions._ast.ASTArrayExpression;
+import de.monticore.java.expressions._ast.ASTAssignmentExpression;
+import de.monticore.java.expressions._ast.ASTBinaryAndOpExpression;
+import de.monticore.java.expressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.java.expressions._ast.ASTBinaryXorOpExpression;
+import de.monticore.java.expressions._ast.ASTBooleanAndOpExpression;
+import de.monticore.java.expressions._ast.ASTBooleanNotExpression;
+import de.monticore.java.expressions._ast.ASTBooleanOrOpExpression;
+import de.monticore.java.expressions._ast.ASTCallExpression;
+import de.monticore.java.expressions._ast.ASTComparisonExpression;
+import de.monticore.java.expressions._ast.ASTConditionalExpression;
+import de.monticore.java.expressions._ast.ASTExplicitGenericInvocation;
+import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationSuffix;
+import de.monticore.java.expressions._ast.ASTExpression;
+import de.monticore.java.expressions._ast.ASTIdentityExpression;
+import de.monticore.java.expressions._ast.ASTInstanceofExpression;
+import de.monticore.java.expressions._ast.ASTMultExpression;
+import de.monticore.java.expressions._ast.ASTPrefixExpression;
+import de.monticore.java.expressions._ast.ASTPrimaryExpression;
+import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
+import de.monticore.java.expressions._ast.ASTShiftExpression;
+import de.monticore.java.expressions._ast.ASTTypeCastExpression;
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
 import de.monticore.java.javadsl._ast.ASTArrayCreator;
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
@@ -34,15 +58,13 @@ import de.monticore.java.javadsl._ast.ASTCreatedName;
 import de.monticore.java.javadsl._ast.ASTDeclaratorId;
 import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
 import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTExplicitGenericInvocation;
-import de.monticore.java.javadsl._ast.ASTExplicitGenericInvocationSuffix;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTExpressionStatement;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._ast.ASTIdentifierAndTypeArgument;
 import de.monticore.java.javadsl._ast.ASTIfStatement;
 import de.monticore.java.javadsl._ast.ASTInnerCreator;
+import de.monticore.java.javadsl._ast.ASTInnerCreatorExpression;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
@@ -53,7 +75,6 @@ import de.monticore.java.javadsl._ast.ASTMethodBody;
 import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
 import de.monticore.java.javadsl._ast.ASTMethodSignature;
 import de.monticore.java.javadsl._ast.ASTModifier;
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
 import de.monticore.java.javadsl._ast.ASTReturnStatement;
 import de.monticore.java.javadsl._ast.ASTSwitchStatement;
@@ -96,7 +117,7 @@ import de.monticore.types.types._ast.ASTWildcardType;
  * @since TODO
  */
 
-public class HCJavaDSLTypeResolver extends JavaDSLTypeResolver<JavaTypeSymbolReference> {
+public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolReference> implements JavaDSLVisitor {
   
   public JavaDSLVisitor getRealThis() {
     return this;
@@ -209,291 +230,248 @@ public class HCJavaDSLTypeResolver extends JavaDSLTypeResolver<JavaTypeSymbolRef
     node.accept(this);
   }
   
-  public void handle(ASTExpression node) {
-    if (node.expressionIsPresent() && (node.prefixOpIsPresent() || node.suffixOpIsPresent())) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference type = this.getResult().get();
-        if (!JavaDSLHelper.isNumericType(type)) {
-          this.setResult(null);
-        }
+  public void handle(ASTPrefixExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference type = this.getResult().get();
+      if (!JavaDSLHelper.isNumericType(type)) {
+        this.setResult(null);
       }
     }
-    else if (node.arrayExpressionIsPresent() && node.indexExpressionIsPresent()) {
-      handle(node.getArrayExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference arrayType = this.getResult().get();
-        if (arrayType.getDimension() > 0) {
-          if (JavaDSLHelper.isReifiableType(arrayType)) {
-            handle(node.getIndexExpression().get());
-            if (this.getResult().isPresent()) {
-              if (JavaDSLHelper
-                  .isIntegralType(
-                      JavaDSLHelper.getUnaryNumericPromotionType(this.getResult().get()))) {
-                arrayType.setDimension(arrayType.getDimension() - 1);
-                this.setResult(arrayType);
-              }
-              else {
-                this.setResult(null);
-              }
-            }
-          }
-          else {
-            this.setResult(null);
-          }
-        }
-      }
-    }
-    else if (node.leftExpressionIsPresent() && node.rightExpressionIsPresent()) {
-      JavaTypeSymbolReference leftType;
-      JavaTypeSymbolReference rightType;
-      if (node.additiveOpIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
+  }
+  
+  public void handle(ASTArrayExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference arrayType = this.getResult().get();
+      if (arrayType.getDimension() > 0) {
+        if (JavaDSLHelper.isReifiableType(arrayType)) {
+          handle(node.getIndexExpression());
           if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper
-                    .resolveTypeForExpressions(leftType, rightType, node.getAdditiveOp().get())
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.multiplicativeOpIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "multiplicativeOp")
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.shiftOpIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper
-                    .resolveTypeForExpressions(leftType, rightType, node.getShiftOp().get())
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.comparisonIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "comparison")
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.identityTestIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "identityTest")
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.binaryAndOpIsPresent() || node.binaryOrOpIsPresent() || node
-          .binaryXorOpIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "bitwiseOp")
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.booleanAndOpIsPresent() || node.booleanOrOpIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            this.setResult(
-                JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "booleanOp")
-                    .orElse(null));
-          }
-        }
-      }
-      else if (node.assignmentIsPresent()) {
-        handle(node.getLeftExpression().get());
-        if (this.getResult().isPresent()) {
-          leftType = this.getResult().get();
-          handle(node.getRightExpression().get());
-          if (this.getResult().isPresent()) {
-            rightType = this.getResult().get();
-            if (JavaDSLHelper.assignmentConversionAvailable(rightType, leftType)) {
-              this.setResult(leftType);
+            if (JavaDSLHelper
+                .isIntegralType(
+                    JavaDSLHelper.getUnaryNumericPromotionType(this.getResult().get()))) {
+              arrayType.setDimension(arrayType.getDimension() - 1);
+              this.setResult(arrayType);
             }
             else {
               this.setResult(null);
             }
           }
         }
+        else {
+          this.setResult(null);
+        }
       }
     }
-    else if (node.explicitGenericInvocationIsPresent() && node.expressionIsPresent()) {
-      List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
-      List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
-      String methodName = "";
-      ASTExplicitGenericInvocation genericInvocation = node.getExplicitGenericInvocation().get();
-      for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
-          .getTypeArguments()) {
-        typeArgument.accept(this);
-        if (this.getResult().isPresent()) {
-          typeArguments.add(this.getResult().get());
+  }
+    
+  public void handle(ASTAddExpression node) {    
+    JavaTypeSymbolReference leftType;
+    JavaTypeSymbolReference rightType;
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper
+            .resolveTypeForExpressions(leftType, rightType, node.getAdditiveOp().get())
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTMultExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "multiplicativeOp")
+            .orElse(null));
+      }
+    }
+  }
+  
+
+  public void handle(ASTShiftExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper
+            .resolveTypeForExpressions(leftType, rightType, node.getShiftOp().get())
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTComparisonExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "comparison")
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTIdentityExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "identityTest")
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTBinaryAndOpExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "bitwiseOp")
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTBinaryOrOpExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "bitwiseOp")
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTBinaryXorOpExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "bitwiseOp")
+            .orElse(null));
+      }
+    }
+  }
+
+
+  public void handle(ASTBooleanAndOpExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "booleanOp")
+            .orElse(null));
+      }
+    }
+  }
+
+  public void handle(ASTBooleanOrOpExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "booleanOp")
+            .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTAssignmentExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        if (JavaDSLHelper.assignmentConversionAvailable(rightType, leftType)) {
+          this.setResult(leftType);
         }
         else {
           this.setResult(null);
         }
       }
-      if (genericInvocation.getTypeArguments().getTypeArguments().size() == typeArguments.size()) {
-        for (ASTExpression expression : genericInvocation.getExplicitGenericInvocationSuffix()
-            .getArguments().get().getExpressions()) {
-          expression.accept(this);
-          if (this.getResult().isPresent()) {
-            actualArguments.add(this.getResult().get());
-          }
-          else {
-            this.setResult(null);
-          }
-        }
-        if (genericInvocation.getExplicitGenericInvocationSuffix().getArguments().get()
-            .getExpressions().size() == actualArguments.size()) {
-          if (genericInvocation.getExplicitGenericInvocationSuffix().getName().isPresent()) {
-            methodName = genericInvocation.getExplicitGenericInvocationSuffix().getName().get();
-          }
-          if (node.getExpression().get().primaryExpressionIsPresent()) {
-            if (node.getExpression().get().getPrimaryExpression().get().nameIsPresent()) {
-              String symbolName = node.getExpression().get().getPrimaryExpression().get().getName()
-                  .get();
-              this.handle(node.getExpression().get().getPrimaryExpression().get());
-              JavaTypeSymbolReference type = this.getResult().get();
-              if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
-                  .isPresent()) {
-                JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                    .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-                if (type.getName().equals(symbolName) || type.getName().endsWith(symbolName)) {
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(methodName, true, null, expSymbol,
-                          typeArguments, actualArguments);
-                  if (methodSymbols.size() == 1) {
-                    this.setResult(methodSymbols.values().iterator().next());
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-                else {
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(methodName, false, type, expSymbol,
-                          typeArguments, actualArguments);
-                  if (methodSymbols.size() == 1) {
-                    this.setResult(methodSymbols.values().iterator().next());
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-              }
-            }
-            else {
-              this.handle(node.getExpression().get().getPrimaryExpression().get());
-              if (this.getResult().isPresent()) {
-                JavaTypeSymbolReference type = this.getResult().get();
-                if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
-                    .isPresent()) {
-                  JavaTypeSymbol exSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                      .resolve(type.getName(),
-                          JavaTypeSymbol.KIND)
-                      .get();
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(methodName, false, type, exSymbol,
-                          typeArguments, actualArguments);
-                  if (methodSymbols.size() == 1) {
-                    this.setResult(methodSymbols.values().iterator().next());
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-              }
-            }
-          }
-          else {
-            this.handle(node.getExpression().get());
-            if (this.getResult().isPresent()) {
-              JavaTypeSymbolReference expType = this.getResult().get();
-              // String completeName = JavaDSLHelper.getCompleteName(expType);
-              if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
-                  .isPresent()) {
-                JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                    .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-                HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                    .resolveManyInSuperType(methodName, false, expType, expSymbol,
-                        typeArguments, actualArguments);
-                if (methodSymbols.size() == 1) {
-                  this.setResult(methodSymbols.values().iterator().next());
-                }
-                else {
-                  this.setResult(null);
-                }
-              }
-              else {
-                this.setResult(null);
-              }
-            }
-          }
-        }
+    }
+  }
+
+  public void handle(ASTExplicitGenericInvocationExpression node) {
+    List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
+    List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
+    String methodName = "";
+    ASTExplicitGenericInvocation genericInvocation = node.getExplicitGenericInvocation();
+    for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
+        .getTypeArguments()) {
+      typeArgument.accept(this);
+      if (this.getResult().isPresent()) {
+        typeArguments.add(this.getResult().get());
+      }
+      else {
+        this.setResult(null);
       }
     }
-    if (node.callExpressionIsPresent()) {
-      List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
-      for (ASTExpression astExpression : node.getParameterExpression()) {
-        this.handle(astExpression);
+    if (genericInvocation.getTypeArguments().getTypeArguments().size() == typeArguments.size()) {
+      for (ASTExpression expression : genericInvocation.getExplicitGenericInvocationSuffix()
+          .getArguments().get().getExpressions()) {
+        expression.accept(this);
         if (this.getResult().isPresent()) {
-          paramTypes.add(this.getResult().get());
+          actualArguments.add(this.getResult().get());
+        }
+        else {
+          this.setResult(null);
         }
       }
-      if (paramTypes.size() == node.getParameterExpression().size()) {
-        ASTExpression callExpression = node.getCallExpression().get();
-        if (callExpression.primaryExpressionIsPresent()) {
-          // b(...);
-          if (callExpression.getPrimaryExpression().get().nameIsPresent()) {
-            String methodName = callExpression.getPrimaryExpression().get().getName().get();
-            String enclosingTypeName = JavaDSLHelper
-                .getEnclosingTypeSymbolName(callExpression.getPrimaryExpression().get());
-            JavaTypeSymbol enclosingType = (JavaTypeSymbol) node.getEnclosingScope().get()
-                .resolve(enclosingTypeName, JavaTypeSymbol.KIND).get();
+      if (genericInvocation.getExplicitGenericInvocationSuffix().getArguments().get()
+          .getExpressions().size() == actualArguments.size()) {
+        if (genericInvocation.getExplicitGenericInvocationSuffix().getName().isPresent()) {
+          methodName = genericInvocation.getExplicitGenericInvocationSuffix().getName().get();
+        }
+        
+        this.handle(node.getExpression());
+        if (this.getResult().isPresent()) {
+          JavaTypeSymbolReference expType = this.getResult().get();
+          // String completeName = JavaDSLHelper.getCompleteName(expType);
+          if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
+              .isPresent()) {
+            JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+                .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
             HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                .resolveManyInSuperType(methodName, false, null, enclosingType, null,
-                    paramTypes);
+                .resolveManyInSuperType(methodName, false, expType, expSymbol,
+                    typeArguments, actualArguments);
             if (methodSymbols.size() == 1) {
               this.setResult(methodSymbols.values().iterator().next());
             }
@@ -501,274 +479,219 @@ public class HCJavaDSLTypeResolver extends JavaDSLTypeResolver<JavaTypeSymbolRef
               this.setResult(null);
             }
           }
+          else {
+            this.setResult(null);
+          }
         }
-        else if (callExpression.expressionIsPresent() && callExpression.nameIsPresent()) {
-          String name = callExpression.getName().get();
-          if (callExpression.getExpression().get().primaryExpressionIsPresent()) {
-            if (callExpression.getExpression().get().getPrimaryExpression().get().nameIsPresent()) {
-              String symbolName = callExpression.getExpression().get().getPrimaryExpression().get()
-                  .getName().get();
-              this.handle(callExpression.getExpression().get());
-              JavaTypeSymbolReference type = this.getResult().get();
-              if (node.getEnclosingScope().get().resolve(type.getName(),
-                  JavaTypeSymbol.KIND).isPresent()) {
-                JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                    .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-                if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(name, true, null, typeSymbol, null,
-                          paramTypes);
-                  if (methodSymbols.size() == 1) {
-                    this.setResult(methodSymbols.values().iterator().next());
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-                else {
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(name, false, type, typeSymbol, null,
-                          paramTypes);
-                  if (methodSymbols.size() == 1) {
-                    HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
-                        .getSubstitutedTypes(typeSymbol, type);
-                    JavaTypeSymbolReference fReturn = JavaDSLHelper
-                        .applyTypeSubstitution(substituted,
-                            methodSymbols.values().iterator().next());
-                    this.setResult(fReturn);
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-              }
-              else {
-                this.setResult(null);
-              }
-            }
-            else {
-              this.handle(callExpression.getExpression().get());
-              if (this.getResult().isPresent()) {
-                JavaTypeSymbolReference type = this.getResult().get();
-                // String completeName = JavaDSLHelper.getCompleteName(type);
-                if (node.getEnclosingScope().get().resolveMany(type.getName(), JavaTypeSymbol.KIND)
-                    .size() == 1) {
-                  JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                      .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-                  HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                      .resolveManyInSuperType(name, false, null, typeSymbol, null,
-                          paramTypes);
-                  if (methodSymbols.size() == 1) {
-                    HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
-                        .getSubstitutedTypes(typeSymbol, type);
-                    JavaTypeSymbolReference fReturn = JavaDSLHelper
-                        .applyTypeSubstitution(substituted,
-                            methodSymbols.values().iterator().next());
-                    this.setResult(fReturn);
-                  }
-                  else {
-                    this.setResult(null);
-                  }
-                }
-              }
-            }
+      }
+    }
+  }
+   
+  public void handle(ASTCallExpression node) {
+    List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
+    for (ASTExpression astExpression : node.getParameterExpression()) {
+      this.handle(astExpression);
+      if (this.getResult().isPresent()) {
+        paramTypes.add(this.getResult().get());
+      }
+    }
+    if (paramTypes.size() == node.getParameterExpression().size()) {
+      ASTExpression callExpression = node.getExpression();
+      this.handle(callExpression);
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference type = this.getResult().get();
+        // String completeName = JavaDSLHelper.getCompleteName(type);
+        if (node.getEnclosingScope().get().resolveMany(type.getName(), JavaTypeSymbol.KIND)
+            .size() == 1) {
+          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+              .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+          // TODO MB Check Parameter type.getName??
+          HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
+              .resolveManyInSuperType(type.getName(), false, null, typeSymbol, null,
+                  paramTypes);
+          if (methodSymbols.size() == 1) {
+            HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
+                .getSubstitutedTypes(typeSymbol, type);
+            JavaTypeSymbolReference fReturn = JavaDSLHelper
+                .applyTypeSubstitution(substituted,
+                    methodSymbols.values().iterator().next());
+            this.setResult(fReturn);
           }
           else {
-            this.handle(callExpression.getExpression().get());
-            if (this.getResult().isPresent()) {
-              JavaTypeSymbolReference expType = this.getResult().get();
-              // String completeName = JavaDSLHelper.getCompleteName(expType);
-              if (node.getEnclosingScope().get().resolveMany(expType.getName(), JavaTypeSymbol.KIND)
-                  .size() == 1) {
-                JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                    .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-                HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                    .resolveManyInSuperType(name, false, null, expSymbol, null, paramTypes);
-                if (methodSymbols.size() == 1) {
-                  this.setResult(methodSymbols.values().iterator().next());
-                }
-                else {
-                  this.setResult(null);
-                }
-              }
-            }
+            this.setResult(null);
           }
+        }
+      }
+    }
+  }
+    
+  public void handle(ASTQualifiedNameExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expType = this.getResult().get();
+      if ("class".equals(node.getName())) {
+        JavaTypeSymbolReference classType = new JavaTypeSymbolReference("java.lang.Class",
+            node.getEnclosingScope().get(), 0);
+        List<ActualTypeArgument> arg = new ArrayList<>();
+        ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false, expType);
+        arg.add(actualTypeArgument);
+        classType.setActualTypeArguments(arg);
+        this.setResult(classType);
+      }
+      else if (this.getResult().get().getDimension() > 0
+          && "length".equals(node.getName())) {
+        this.setResult(new JavaTypeSymbolReference("int", expType.getEnclosingScope(), 0));
+      }
+      else if (JavaDSLHelper
+          .visibleTypeSymbolFound(node.getEnclosingScope().get(),
+              this.getResult().get().getName())
+          .isPresent()) {
+        JavaTypeSymbolReference type = JavaDSLHelper
+            .visibleTypeSymbolFound(node.getEnclosingScope().get(),
+                this.getResult().get().getName())
+            .get();
+        String completeName = JavaDSLHelper.getCompleteName(type);
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+            .resolve(completeName, JavaTypeSymbol.KIND).get();
+        if ("super".equals(node.getName())) {
+          if (typeSymbol.getSuperClass().isPresent()) {
+            JavaTypeSymbolReference classType = typeSymbol.getSuperClass().get();
+            JavaTypeSymbolReference superType = new JavaTypeSymbolReference(classType.getName(),
+                node.getEnclosingScope().get(), classType.getDimension());
+            superType.setActualTypeArguments(classType.getActualTypeArguments());
+            this.setResult(superType);
+          }
+          else {
+            this.setResult(null);
+          }
+        }
+        else if (typeSymbol.isEnum()) {
+          if (typeSymbol.getSpannedScope()
+              .resolveMany(node.getName(), JavaTypeSymbol.KIND)
+              .size() == 1) {
+            this.setResult(
+                new JavaTypeSymbolReference(typeSymbol.getName(),
+                    typeSymbol.getEnclosingScope(),
+                    0));
+          }
+          else {
+            this.setResult(null);
+          }
+        }
+        else if (typeSymbol.getSpannedScope()
+            .resolveMany(node.getName(), JavaFieldSymbol.KIND)
+            .size() == 1) {
+          JavaTypeSymbolReference fieldType = typeSymbol.getField(node.getName()).get()
+              .getType();
+          String completeTypeName = JavaDSLHelper.getCompleteName(fieldType);
+          JavaTypeSymbolReference newType = new JavaTypeSymbolReference(completeTypeName,
+              fieldType.getEnclosingScope(), fieldType.getDimension());
+          newType.setActualTypeArguments(fieldType.getActualTypeArguments());
+          this.setResult(newType);
+        }
+        else if (typeSymbol.getSpannedScope()
+            .resolveMany(node.getName(), JavaMethodSymbol.KIND)
+            .size() == 1) {
+          HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
+              .getSubstitutedTypes(typeSymbol, expType);
+          JavaTypeSymbolReference sReturnType = JavaDSLHelper.applyTypeSubstitution(substituted,
+              typeSymbol.getMethod(node.getName()).get().getReturnType());
+          //// TODO: 01.11.2016 complete name?
+          this.setResult(sReturnType);
+        }
+        else {
+          this.setResult(null);
         }
       }
       else {
+        String name = expType.getName() + "." + node.getName();
+        JavaTypeSymbolReference pName = new JavaTypeSymbolReference(name,
+            node.getEnclosingScope().get(), 0);
+        pName = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(pName),
+            pName.getEnclosingScope(), pName.getDimension());
+        this.setResult(pName);
+      }
+    }
+  }
+  
+  public void handle(ASTInnerCreatorExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expType = this.getResult().get();
+      String completeName = JavaDSLHelper.getCompleteName(expType);
+      handle(node.getInnerCreator());
+      JavaTypeSymbolReference innerType = this.getResult().get();
+      JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+          completeName + "." + innerType.getName(), innerType.getEnclosingScope(), 0);
+      this.setResult(finalType);
+    }
+  }
+    
+  public void handle(ASTInstanceofExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expType = this.getResult().get();
+      handle(node.getInstanceofType());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference instanceType = this.getResult()
+            .get();
+        JavaDSLHelper
+        .resolveTypeForExpressions(expType, instanceType, "instanceOf").<Runnable> map(
+            javaTypeSymbolReference -> () -> this.setResult(javaTypeSymbolReference))
+        .orElse(() -> this.setResult(null)).run();
+      }
+    }
+  }
+    
+  public void handle(ASTTypeCastExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expressionType = new JavaTypeSymbolReference(
+          JavaDSLHelper.getCompleteName(this.getResult().get()),
+          this.getResult().get().getEnclosingScope(), this.getResult().get().getDimension());
+      node.getTypeCastType().accept(this);
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference castType = this.getResult().get();
+        if (!JavaDSLHelper.castTypeConversionAvailable(expressionType, castType)) {
+          this.setResult(null);
+        }
+      }
+    }
+  }
+    
+  public void handle(ASTBooleanNotExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expressionType = this.getResult()
+          .get();
+      if ("!".equals(node.getBooleanNot().get())
+          && !JavaDSLHelper.isBooleanType(expressionType)) {
+        this.setResult(null);
+      }
+      if ("~".equals(node.getBooleanNot().get())
+          && !JavaDSLHelper.isIntegralType(expressionType)) {
         this.setResult(null);
       }
     }
-    else if (node.nameIsPresent() && node.expressionIsPresent()) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference expType = this.getResult().get();
-        if ("class".equals(node.getName().get())) {
-          JavaTypeSymbolReference classType = new JavaTypeSymbolReference("java.lang.Class",
-              node.getEnclosingScope().get(), 0);
-          List<ActualTypeArgument> arg = new ArrayList<>();
-          ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false, expType);
-          arg.add(actualTypeArgument);
-          classType.setActualTypeArguments(arg);
-          this.setResult(classType);
-        }
-        else if (this.getResult().get().getDimension() > 0
-            && "length".equals(node.getName().get())) {
-          this.setResult(new JavaTypeSymbolReference("int", expType.getEnclosingScope(), 0));
-        }
-        else if (JavaDSLHelper
-            .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-                this.getResult().get().getName())
-            .isPresent()) {
-          JavaTypeSymbolReference type = JavaDSLHelper
-              .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-                  this.getResult().get().getName())
-              .get();
-          String completeName = JavaDSLHelper.getCompleteName(type);
-          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-              .resolve(completeName, JavaTypeSymbol.KIND).get();
-          if ("super".equals(node.getName().get())) {
-            if (typeSymbol.getSuperClass().isPresent()) {
-              JavaTypeSymbolReference classType = typeSymbol.getSuperClass().get();
-              JavaTypeSymbolReference superType = new JavaTypeSymbolReference(classType.getName(),
-                  node.getEnclosingScope().get(), classType.getDimension());
-              superType.setActualTypeArguments(classType.getActualTypeArguments());
-              this.setResult(superType);
-            }
-            else {
-              this.setResult(null);
-            }
-          }
-          else if (typeSymbol.isEnum()) {
-            if (typeSymbol.getSpannedScope()
-                .resolveMany(node.getName().get(), JavaTypeSymbol.KIND)
-                .size() == 1) {
-              this.setResult(
-                  new JavaTypeSymbolReference(typeSymbol.getName(),
-                      typeSymbol.getEnclosingScope(),
-                      0));
-            }
-            else {
-              this.setResult(null);
-            }
-          }
-          else if (typeSymbol.getSpannedScope()
-              .resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-              .size() == 1) {
-            JavaTypeSymbolReference fieldType = typeSymbol.getField(node.getName().get()).get()
-                .getType();
-            String completeTypeName = JavaDSLHelper.getCompleteName(fieldType);
-            JavaTypeSymbolReference newType = new JavaTypeSymbolReference(completeTypeName,
-                fieldType.getEnclosingScope(), fieldType.getDimension());
-            newType.setActualTypeArguments(fieldType.getActualTypeArguments());
-            this.setResult(newType);
-          }
-          else if (typeSymbol.getSpannedScope()
-              .resolveMany(node.getName().get(), JavaMethodSymbol.KIND)
-              .size() == 1) {
-            HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
-                .getSubstitutedTypes(typeSymbol, expType);
-            JavaTypeSymbolReference sReturnType = JavaDSLHelper.applyTypeSubstitution(substituted,
-                typeSymbol.getMethod(node.getName().get()).get().getReturnType());
-            //// TODO: 01.11.2016 complete name?
-            this.setResult(sReturnType);
-          }
-          else {
-            this.setResult(null);
-          }
-        }
-        else {
-          String name = expType.getName() + "." + node.getName().get();
-          JavaTypeSymbolReference pName = new JavaTypeSymbolReference(name,
-              node.getEnclosingScope().get(), 0);
-          pName = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(pName),
-              pName.getEnclosingScope(), pName.getDimension());
-          this.setResult(pName);
-        }
+  }
+    
+  public void handle(ASTConditionalExpression node) {
+    handle(node.getCondition());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference conditionType = this.getResult().get();
+      if (!JavaDSLHelper.isBooleanType(conditionType)) {
+        this.setResult(null);
       }
-    }
-    else if (node.innerCreatorIsPresent() && node.expressionIsPresent()) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference expType = this.getResult().get();
-        String completeName = JavaDSLHelper.getCompleteName(expType);
-        handle(node.getInnerCreator().get());
-        JavaTypeSymbolReference innerType = this.getResult().get();
-        JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
-            completeName + "." + innerType.getName(), innerType.getEnclosingScope(), 0);
-        this.setResult(finalType);
-      }
-    }
-    else if (node.getCreator().isPresent()) {
-      node.getCreator().get().accept(this);
-    }
-    else if (node.getPrimaryExpression().isPresent()) {
-      handle(node.getPrimaryExpression().get());
-    }
-    else if (node.instanceofTypeIsPresent() && node.expressionIsPresent()) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference expType = this.getResult().get();
-        handle(node.getInstanceofType().get());
+      else {
+        handle(node.getTrueExpression());
         if (this.getResult().isPresent()) {
-          JavaTypeSymbolReference instanceType = this.getResult()
-              .get();
-          JavaDSLHelper
-              .resolveTypeForExpressions(expType, instanceType, "instanceOf").<Runnable> map(
-                  javaTypeSymbolReference -> () -> this.setResult(javaTypeSymbolReference))
-              .orElse(() -> this.setResult(null)).run();
-        }
-      }
-    }
-    else if (node.typeCastTypeIsPresent() && node.expressionIsPresent()) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference expressionType = new JavaTypeSymbolReference(
-            JavaDSLHelper.getCompleteName(this.getResult().get()),
-            this.getResult().get().getEnclosingScope(), this.getResult().get().getDimension());
-        node.getTypeCastType().get().accept(this);
-        if (this.getResult().isPresent()) {
-          JavaTypeSymbolReference castType = this.getResult().get();
-          if (!JavaDSLHelper.castTypeConversionAvailable(expressionType, castType)) {
-            this.setResult(null);
-          }
-        }
-      }
-    }
-    else if (node.expressionIsPresent() && node.booleanNotIsPresent()) {
-      handle(node.getExpression().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference expressionType = this.getResult()
-            .get();
-        if ("!".equals(node.getBooleanNot().get())
-            && !JavaDSLHelper.isBooleanType(expressionType)) {
-          this.setResult(null);
-        }
-        if ("~".equals(node.getBooleanNot().get())
-            && !JavaDSLHelper.isIntegralType(expressionType)) {
-          this.setResult(null);
-        }
-      }
-    }
-    else if (node.conditionIsPresent() && node.trueExpressionIsPresent() && node
-        .falseExpressionIsPresent()) {
-      handle(node.getCondition().get());
-      if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference conditionType = this.getResult().get();
-        if (!JavaDSLHelper.isBooleanType(conditionType)) {
-          this.setResult(null);
-        }
-        else {
-          handle(node.getTrueExpression().get());
+          JavaTypeSymbolReference trueType = this.getResult().get();
+          handle(node.getFalseExpression());
           if (this.getResult().isPresent()) {
-            JavaTypeSymbolReference trueType = this.getResult().get();
-            handle(node.getFalseExpression().get());
-            if (this.getResult().isPresent()) {
-              JavaTypeSymbolReference falseType = this.getResult().get();
-              this.setResult(
-                  JavaDSLHelper.resolveTypeForExpressions(trueType, falseType, "condition")
-                      .orElse(null));
-            }
+            JavaTypeSymbolReference falseType = this.getResult().get();
+            this.setResult(
+                JavaDSLHelper.resolveTypeForExpressions(trueType, falseType, "condition")
+                .orElse(null));
           }
         }
       }

@@ -117,8 +117,8 @@ public class JavaDSLTypeChecker {
 //    expressionChecker.addCoCo(new ArrayDimensionByInitializerValid(typeResolver));  // CoCo nicht fertig
     expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
-    expressionChecker.addCoCo(new BitwiseOpsValid(typeResolver));
-    expressionChecker.addCoCo(new BooleanAndOrValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
+    expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
     expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));

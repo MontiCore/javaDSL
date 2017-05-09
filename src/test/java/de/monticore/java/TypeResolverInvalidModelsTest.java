@@ -60,8 +60,8 @@ import de.monticore.java.cocos.expressions.ArrayCreatorValid;
 import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
 import de.monticore.java.cocos.expressions.ArrayInitializerValid;
 import de.monticore.java.cocos.expressions.AssignmentCompatible;
-import de.monticore.java.cocos.expressions.BitwiseOpsValid;
-import de.monticore.java.cocos.expressions.BooleanAndOrValid;
+import de.monticore.java.cocos.expressions.BinaryOrOpValid;
+import de.monticore.java.cocos.expressions.BooleanAndValid;
 import de.monticore.java.cocos.expressions.BooleanNotValid;
 import de.monticore.java.cocos.expressions.CastConversionValid;
 import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
@@ -693,7 +693,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestBitwiseOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new BitwiseOpsValid(typeResolver));
+    checker.addCoCo(new BinaryOrOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0511 operands of the bitwise/logical exclusive AND operator must both be of either an integral type or the type boolean."),
@@ -709,7 +709,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestBooleanAndOrValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new BooleanAndOrValid(typeResolver));
+    checker.addCoCo(new BooleanAndValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0514 operands of the conditional AND operator must both be of type boolean."),

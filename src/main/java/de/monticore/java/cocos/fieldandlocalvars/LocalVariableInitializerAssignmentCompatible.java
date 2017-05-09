@@ -18,6 +18,8 @@
  */
 package de.monticore.java.cocos.fieldandlocalvars;
 
+import de.monticore.java.expressions._ast.ASTExpression;
+import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
@@ -64,24 +66,13 @@ public class LocalVariableInitializerAssignmentCompatible implements
               if (variableDeclarator.getVariableInitializer().get() instanceof ASTExpression) {
                 ASTExpression astExpression = (ASTExpression) variableDeclarator
                     .getVariableInitializer().get();
-                if (astExpression.primaryExpressionIsPresent()) {
-                  if (astExpression.getPrimaryExpression().get().literalIsPresent()) {
-                    ASTLiteral literal = astExpression.getPrimaryExpression().get().getLiteral()
+                if (astExpression instanceof ASTPrimaryExpression) {
+                  ASTPrimaryExpression primaryExpression = (ASTPrimaryExpression) astExpression;
+                  if (primaryExpression.literalIsPresent()) {
+                    ASTLiteral literal = primaryExpression.getLiteral()
                         .get();
                     if (literal instanceof ASTIntLiteral) {
                       return;
-                    }
-                  }
-                }
-                else if (astExpression.expressionIsPresent()) {
-                  if (astExpression.getExpression().get().primaryExpressionIsPresent()) {
-                    if (astExpression.getExpression().get().getPrimaryExpression().get()
-                        .literalIsPresent()) {
-                      ASTLiteral literal = astExpression.getExpression().get()
-                          .getPrimaryExpression().get().getLiteral().get();
-                      if (literal instanceof ASTIntLiteral) {
-                        return;
-                      }
                     }
                   }
                 }

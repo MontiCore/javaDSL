@@ -18,36 +18,31 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTPrefixExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTPrefixExpressionCoCo;
+import de.monticore.java.expressions._ast.ASTBinaryAndOpExpression;
+import de.monticore.java.expressions._cocos.ExpressionsASTBinaryAndOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class PrefixOpValid implements ExpressionsASTPrefixExpressionCoCo {
+/**
+ * Created by Odgrlb on 08.06.2016.
+ */
+public class BinaryAndOpValid implements ExpressionsASTBinaryAndOpExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public PrefixOpValid(HCJavaDSLTypeResolver typeResolver) {
+  public BinaryAndOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
   
-  // JLS3 15.15.1-1, JLS3 15.15.2-1, JLS3 15.15.3-1, JLS3 15.15.4-1
+  // JLS3 15.22-1
   @Override
-  public void check(ASTPrefixExpression node) {
+  public void check(ASTBinaryAndOpExpression node) {  
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error(
-          "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
+          "0xA0511 operands of the bitwise/logical exclusive AND operator must both be of either an integral type or the type boolean.",
           node.get_SourcePositionStart());
-    }
-    if ("--".equals(node.getPrefixOp().get()) || "++".equals(node.getPrefixOp().get())) {
-      if (!JavaDSLHelper.isVariable(node.getExpression())) {
-        Log.error("0xA0573 the operand expression of prefix must be a variable.",
-            node.get_SourcePositionStart());
-        return;
-      }
-    }
+    }    
   }
   
 }
