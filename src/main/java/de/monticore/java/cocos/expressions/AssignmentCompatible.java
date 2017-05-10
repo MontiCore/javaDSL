@@ -41,27 +41,10 @@ public class AssignmentCompatible implements ExpressionsASTAssignmentExpressionC
           node.get_SourcePositionStart());
       return;
     }
-    typeResolver.handle(node.getLeftExpression());
-    JavaTypeSymbolReference leftType = typeResolver.getResult()
-        .get();
-    
-    typeResolver.handle(node.getRightExpression());
-    JavaTypeSymbolReference rightType = typeResolver.getResult()
-        .get();
-    // JLS3 5.2-1
-    if (JavaDSLHelper.safeAssignmentConversionAvailable(rightType, leftType)) {
-      return;
-    }
-    else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(rightType, leftType)) {
-      Log.warn(
-          "0xA0508 possible unchecked conversion from type '" + rightType.getName() + "' to '"
-              + leftType.getName() + "'.",
-          node.get_SourcePositionStart());
-    }
-    else {
-      Log.error(
-          "0xA0509 type '" + rightType.getName() + "' cannot be converted to type '" + leftType
-              .getName()
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+       Log.error(
+          "0xA0509 type '" + "" + "' cannot be converted to type '" + ""
               + "'.",
           node.get_SourcePositionStart());
     }

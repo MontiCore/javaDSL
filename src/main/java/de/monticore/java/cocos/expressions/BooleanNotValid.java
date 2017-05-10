@@ -36,13 +36,16 @@ public class BooleanNotValid implements ExpressionsASTBooleanNotExpressionCoCo {
   
   // JLS3 15.15.5-1, JLS3 15.15.6-1
   @Override
-  public void check(ASTBooleanNotExpression node) {   
+  public void check(ASTBooleanNotExpression node) {
+    if (!node.getBooleanNot().isPresent()) {
+      return;
+    }
     typeResolver.handle(node);
-    if ("!".equals(node.getBooleanNot()) && !typeResolver.getResult().isPresent()) {
+    if ("!".equals(node.getBooleanNot().get()) && !typeResolver.getResult().isPresent()) {
       Log.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean.",
           node.get_SourcePositionStart());
     }
-    if ("~".equals(node.getBooleanNot()) && !typeResolver.getResult().isPresent()) {
+    if ("~".equals(node.getBooleanNot().get()) && !typeResolver.getResult().isPresent()) {
       Log.error(
           "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.",
           node.get_SourcePositionStart());

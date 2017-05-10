@@ -101,7 +101,7 @@ ConstDeclaration implements InterfaceMemberDeclaration
     ;
 
 ConstantDeclarator
-    =   Name (dim:"[" "]")* "=" VariableInitializer
+    =   Name (dim:"[" "]")* "=" VariableInititializerOrExpression
     ;
 
 InterfaceMethodDeclaration implements InterfaceMemberDeclaration
@@ -124,17 +124,20 @@ Throws
     ;
 
 VariableDeclarator
-    =   DeclaratorId ("=" VariableInitializer)?
+    =   DeclaratorId ("=" VariableInititializerOrExpression)?
     ;
 
 DeclaratorId
     =   Name (dim:"[" "]")*
     ;
 
-interface VariableInitializer extends Expression;
+interface VariableInitializer;
+
+VariableInititializerOrExpression
+	= VariableInitializer | Expression;
 
 ArrayInitializer implements VariableInitializer
-    =   "{" (VariableInitializer || ",")* (",")? "}"
+    =   "{" (VariableInititializerOrExpression || ",")* (",")? "}"
     ;
 
 FormalParameters
@@ -168,13 +171,16 @@ AnnotationPairArguments implements AnnotationArguments
    ;
 
 ElementValuePair
-    =   Name "=" ElementValue
+    =   Name "=" ElementValueOrExpr
     ;
 
-interface ElementValue extends AnnotationArguments, Expression;
+interface ElementValue extends AnnotationArguments;
+
+ElementValueOrExpr
+	= ElementValue | Expression;
 
 ElementValueArrayInitializer implements ElementValue
-    =   "{" (ElementValue || ",")* (",")? "}"
+    =   "{" (ElementValueOrExpr || ",")* (",")? "}"
     ;
 
 AnnotationTypeDeclaration implements TypeDeclaration
@@ -196,7 +202,7 @@ AnnotationConstant implements AnnotationTypeElementDeclaration
     ;
 
 DefaultValue
-    =   "default" ElementValue
+    =   "default" ElementValueOrExpr
     ;
 
 // STATEMENTS / BLOCKS

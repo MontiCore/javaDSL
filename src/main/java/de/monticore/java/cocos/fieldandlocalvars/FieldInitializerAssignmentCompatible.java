@@ -25,7 +25,7 @@ import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.ASTArrayInitializer;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.javadsl._ast.ASTVariableInitializer;
+import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
@@ -63,10 +63,10 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
     for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
       if (JavaDSLHelper.isByteType(fieldType) || JavaDSLHelper.isCharType(fieldType)
           || JavaDSLHelper.isShortType(fieldType)) {
-        if (variableDeclarator.getVariableInitializer().isPresent()
-            && variableDeclarator.getVariableInitializer().get() instanceof ASTExpression) {
+        if (variableDeclarator.getVariableInititializerOrExpression().isPresent()
+            && variableDeclarator.getVariableInititializerOrExpression().get() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
-              .getVariableInitializer().get();
+              .getVariableInititializerOrExpression().get();
           if (astExpression instanceof ASTPrimaryExpression) {
             ASTPrimaryExpression primaryExpression =(ASTPrimaryExpression) astExpression;
             if (primaryExpression.literalIsPresent()) {
@@ -84,9 +84,9 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
       for (int i = 0; i < dim; i++) {
         expectedArray = expectedArray.concat("[]");
       }
-      if (variableDeclarator.getVariableInitializer().isPresent()
-          && variableDeclarator.getVariableInitializer().get() instanceof ASTArrayInitializer) {
-        variableDeclarator.getVariableInitializer().get().accept(arrayInitializerCollector);
+      if (variableDeclarator.getVariableInititializerOrExpression().isPresent() && variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().isPresent()
+          && variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get() instanceof ASTArrayInitializer) {
+        variableDeclarator.getVariableInititializerOrExpression().get().accept(arrayInitializerCollector);
         List<ASTArrayInitializer> arrList = arrayInitializerCollector
             .getArrayInitializerList();
         if (dim > 0 && (arrList.isEmpty() || (dim != arrList.size())) ||
@@ -102,8 +102,8 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
         }
         if (dim > 0) {
           for (ASTArrayInitializer arrayInitializer : arrList) {
-            for (ASTVariableInitializer variableInitializer : arrayInitializer
-                .getVariableInitializers()) {
+            for (ASTVariableInititializerOrExpression variableInitializer : arrayInitializer
+                .getVariableInititializerOrExpressions()) {
               typeResolver.handle(variableInitializer);
               if (typeResolver.getResult().isPresent()) {
                 JavaTypeSymbolReference arrType = JavaDSLHelper.getComponentType(typeResolver.getResult().get());
@@ -166,6 +166,10 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
                 + "' to '"
                 + fieldType.getName() + "'.",
                 node.get_SourcePositionStart());
+          }
+          // JLS3 5.2.-3 (§15.28)
+          else if (JavaDSLHelper.narrowingPrimitiveConversionAvailable(expType, fieldType)) {
+            return;
           }
           else {
             Log.error(

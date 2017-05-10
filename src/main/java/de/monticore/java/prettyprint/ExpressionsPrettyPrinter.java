@@ -21,6 +21,7 @@ package de.monticore.java.prettyprint;
 import java.util.Iterator;
 
 import de.monticore.java.expressions._ast.ASTAddExpression;
+import de.monticore.java.expressions._ast.ASTArguments;
 import de.monticore.java.expressions._ast.ASTArrayExpression;
 import de.monticore.java.expressions._ast.ASTAssignmentExpression;
 import de.monticore.java.expressions._ast.ASTBinaryAndOpExpression;
@@ -429,6 +430,15 @@ ExpressionsVisitor {
   }
 
 
+  @Override
+  public void handle(ASTArguments a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    getPrinter().print("(");
+    printExpressionsList(a.getExpressions().iterator(), ", ");
+    getPrinter().print(")");
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+  
   protected void printNode(String s) {
     getPrinter().print(s);
   }

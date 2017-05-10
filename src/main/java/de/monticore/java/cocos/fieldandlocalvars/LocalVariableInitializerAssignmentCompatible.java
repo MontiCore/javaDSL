@@ -62,10 +62,10 @@ public class LocalVariableInitializerAssignmentCompatible implements
         for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.getVariableInitializer().isPresent()) {
-              if (variableDeclarator.getVariableInitializer().get() instanceof ASTExpression) {
-                ASTExpression astExpression = (ASTExpression) variableDeclarator
-                    .getVariableInitializer().get();
+            if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().get().getExpression().isPresent()) {
+                ASTExpression astExpression =  variableDeclarator
+                    .getVariableInititializerOrExpression().get().getExpression().get();
                 if (astExpression instanceof ASTPrimaryExpression) {
                   ASTPrimaryExpression primaryExpression = (ASTPrimaryExpression) astExpression;
                   if (primaryExpression.literalIsPresent()) {
@@ -79,9 +79,10 @@ public class LocalVariableInitializerAssignmentCompatible implements
               }
             }
           }
-          if (variableDeclarator.getVariableInitializer().isPresent()) {
-            if(variableDeclarator.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
-              variableDeclarator.getVariableInitializer().get().accept(arrayInitializerCollector);
+          if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
+            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression().get();
+            if(varOrExpr.getVariableInitializer().isPresent() && varOrExpr.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
+              variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
                 Log.error("0xA0609 type mismatch, cannot convert from array to type '" + localVarType
@@ -95,7 +96,7 @@ public class LocalVariableInitializerAssignmentCompatible implements
               }
               if (localVarType.getDimension() > 0 && localVarType.getDimension() == arrList.size()) {
                 for (ASTArrayInitializer arrayInitializer : arrList) {
-                  for(ASTVariableInitializer variableInitializer : arrayInitializer.getVariableInitializers()) {
+                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressions()) {
                     typeResolver.handle(variableInitializer);
                     if (typeResolver.getResult().isPresent()) {
                       JavaTypeSymbolReference arrType = typeResolver.getResult().get();

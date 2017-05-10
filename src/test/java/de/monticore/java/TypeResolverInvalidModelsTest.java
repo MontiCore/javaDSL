@@ -60,9 +60,12 @@ import de.monticore.java.cocos.expressions.ArrayCreatorValid;
 import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
 import de.monticore.java.cocos.expressions.ArrayInitializerValid;
 import de.monticore.java.cocos.expressions.AssignmentCompatible;
+import de.monticore.java.cocos.expressions.BinaryAndOpValid;
 import de.monticore.java.cocos.expressions.BinaryOrOpValid;
+import de.monticore.java.cocos.expressions.BinaryXorOpValid;
 import de.monticore.java.cocos.expressions.BooleanAndValid;
 import de.monticore.java.cocos.expressions.BooleanNotValid;
+import de.monticore.java.cocos.expressions.BooleanOrValid;
 import de.monticore.java.cocos.expressions.CastConversionValid;
 import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
@@ -627,9 +630,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
-        Finding.error("0xA0503 an array required, but 'long' found."),
-        Finding.error("0xA0503 an array required, but 'nnn' found.")
-
+        Finding.error("0xA0503 an array required, but 'long' found.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/ArrayAccess", checker, expectedErrors);
@@ -694,6 +695,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   public void TestBitwiseOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new BinaryOrOpValid(typeResolver));
+    checker.addCoCo(new BinaryAndOpValid(typeResolver));
+    checker.addCoCo(new BinaryXorOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0511 operands of the bitwise/logical exclusive AND operator must both be of either an integral type or the type boolean."),
@@ -710,6 +713,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   public void TestBooleanAndOrValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new BooleanAndValid(typeResolver));
+    checker.addCoCo(new BooleanOrValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0514 operands of the conditional AND operator must both be of type boolean."),
@@ -830,7 +834,6 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     checker.addCoCo(new LocalVariableInitializerAssignmentCompatible(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0537 field access to 'm' is ambiguous."),
-        Finding.error("0xA0548 field access to 'm' is ambiguous."),
         Finding.error("0xA0544 constant 'h' is not member of enum 'D'."),
         Finding.error("0xA0542 cannot find symbol 'aa'.")
     );

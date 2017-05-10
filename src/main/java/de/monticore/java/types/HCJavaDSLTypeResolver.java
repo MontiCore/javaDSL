@@ -45,6 +45,7 @@ import de.monticore.java.expressions._ast.ASTPrefixExpression;
 import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
 import de.monticore.java.expressions._ast.ASTShiftExpression;
+import de.monticore.java.expressions._ast.ASTSuffixExpression;
 import de.monticore.java.expressions._ast.ASTTypeCastExpression;
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
 import de.monticore.java.javadsl._ast.ASTArrayCreator;
@@ -221,8 +222,8 @@ public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolRe
   }
   
   public void handle(ASTVariableDeclarator node) {
-    if (node.getVariableInitializer().isPresent()) {
-      handle(node.getVariableInitializer().get());
+    if (node.getVariableInititializerOrExpression().isPresent()) {
+      handle(node.getVariableInititializerOrExpression().get());
     }
   }
   
@@ -331,13 +332,18 @@ public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolRe
     handle(node.getLeftExpression());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
+      System.out.println("left: " + leftType.getName());
       handle(node.getRightExpression());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
+        System.out.println("rigjt:" + rightType.getName());
+
         this.setResult(
             JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "identityTest")
             .orElse(null));
       }
+    } else {
+      System.out.println("NoLeft");
     }
   }
   
@@ -412,6 +418,16 @@ public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolRe
     }
   }
   
+  public void handle(ASTSuffixExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference type = this.getResult().get();
+      if (!JavaDSLHelper.isNumericType(type)) {
+        this.setResult(null);
+      }
+    }
+  }
+
   public void handle(ASTAssignmentExpression node) {
     handle(node.getLeftExpression());
     if (this.getResult().isPresent()) {
@@ -497,34 +513,26 @@ public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolRe
     }
     if (paramTypes.size() == node.getParameterExpression().size()) {
       ASTExpression callExpression = node.getExpression();
-      this.handle(callExpression);
+      callExpression.accept(getRealThis());
       if (this.getResult().isPresent()) {
-        JavaTypeSymbolReference type = this.getResult().get();
-        // String completeName = JavaDSLHelper.getCompleteName(type);
-        if (node.getEnclosingScope().get().resolveMany(type.getName(), JavaTypeSymbol.KIND)
-            .size() == 1) {
-          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-              .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-          // TODO MB Check Parameter type.getName??
-          HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-              .resolveManyInSuperType(type.getName(), false, null, typeSymbol, null,
-                  paramTypes);
-          if (methodSymbols.size() == 1) {
-            HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
-                .getSubstitutedTypes(typeSymbol, type);
-            JavaTypeSymbolReference fReturn = JavaDSLHelper
-                .applyTypeSubstitution(substituted,
-                    methodSymbols.values().iterator().next());
-            this.setResult(fReturn);
-          }
-          else {
-            this.setResult(null);
-          }
+        JavaTypeSymbolReference tt = this.getResult().get();
+        String enclosingTypeName = JavaDSLHelper
+            .getEnclosingTypeSymbolName(callExpression);
+        JavaTypeSymbol enclosingType = (JavaTypeSymbol) node.getEnclosingScope().get()
+            .resolve(enclosingTypeName, JavaTypeSymbol.KIND).get();
+        HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
+            .resolveManyInSuperType(tt.getName(), false, null, enclosingType, null,
+                paramTypes);
+        if (methodSymbols.size() == 1) {
+          this.setResult(methodSymbols.values().iterator().next());
+        }
+        else {
+          this.setResult(null);
         }
       }
     }
   }
-    
+     
   public void handle(ASTQualifiedNameExpression node) {
     handle(node.getExpression());
     if (this.getResult().isPresent()) {
@@ -1176,5 +1184,14 @@ public class HCJavaDSLTypeResolver  extends GenericTypeResolver<JavaTypeSymbolRe
       }
     }
   }
+
+  /**
+   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTExpression)
+   */
+  @Override
+  public void handle(ASTExpression node) {
+    node.accept(getRealThis());
+  }
+  
   
 }

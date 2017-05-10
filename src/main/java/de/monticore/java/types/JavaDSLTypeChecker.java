@@ -28,6 +28,7 @@ import de.monticore.java.cocos.interfaces.*;
 import de.monticore.java.cocos.methods.*;
 import de.monticore.java.cocos.names.*;
 import de.monticore.java.cocos.statements.*;
+import de.monticore.java.expressions._cocos.ExpressionsCoCoChecker;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 
 /**
@@ -44,6 +45,7 @@ public class JavaDSLTypeChecker {
     javaDSLTypeCheckers.addChecker(getConstructorChecker());
     javaDSLTypeCheckers.addChecker(getEnumChecker());
     javaDSLTypeCheckers.addChecker(getExpressionChecker());
+    javaDSLTypeCheckers.addChecker(getJavaExpressionChecker());
     javaDSLTypeCheckers.addChecker(getFieldAndLocalVarsChecker());
     javaDSLTypeCheckers.addChecker(getInterfaceChecker());
     javaDSLTypeCheckers.addChecker(getMethodChecker());
@@ -109,20 +111,16 @@ public class JavaDSLTypeChecker {
     return enumChecker;
   }
 
-  public JavaDSLCoCoChecker getExpressionChecker(){
-    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+  public ExpressionsCoCoChecker getExpressionChecker(){
+    ExpressionsCoCoChecker expressionChecker = new ExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AdditiveOpsValid(typeResolver));
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
-    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
 //    expressionChecker.addCoCo(new ArrayDimensionByInitializerValid(typeResolver));  // CoCo nicht fertig
-    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
     expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
     expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
     expressionChecker.addCoCo(new ComparisonValid(typeResolver));
     expressionChecker.addCoCo(new ConditionValid(typeResolver));
     expressionChecker.addCoCo(new FieldAccessValid(typeResolver));
@@ -139,6 +137,14 @@ public class JavaDSLTypeChecker {
     return expressionChecker;
   }
 
+  public JavaDSLCoCoChecker getJavaExpressionChecker(){
+    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
+    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
+    return expressionChecker;
+  }
   public JavaDSLCoCoChecker getFieldAndLocalVarsChecker(){
     JavaDSLCoCoChecker fieldChecker = new JavaDSLCoCoChecker();
     fieldChecker.addCoCo(new FieldInitializerAssignmentCompatible(typeResolver));

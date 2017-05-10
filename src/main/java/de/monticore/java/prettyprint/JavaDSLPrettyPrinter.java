@@ -299,9 +299,9 @@ public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
   public void handle(ASTVariableDeclarator a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getDeclaratorId().accept(getRealThis());
-    if (a.getVariableInitializer().isPresent()) {
+    if (a.getVariableInititializerOrExpression().isPresent()) {
       getPrinter().print(" = ");
-      a.getVariableInitializer().get().accept(getRealThis());
+      a.getVariableInititializerOrExpression().get().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -320,7 +320,7 @@ public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
   public void handle(ASTArrayInitializer a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("{");
-    printSeparated(a.getVariableInitializers().iterator(), ", ");
+    printSeparated(a.getVariableInititializerOrExpressions().iterator(), ", ");
     getPrinter().print("}");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -354,7 +354,7 @@ public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
   public void handle(ASTDefaultValue a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print(" default ");
-    a.getElementValue().accept(getRealThis());
+    a.getElementValueOrExpr().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -639,7 +639,7 @@ public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
       getPrinter().print("[] ");
     }
     getPrinter().print(" = ");
-    a.getVariableInitializer().accept(getRealThis());
+    a.getVariableInititializerOrExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -721,7 +721,7 @@ public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printNode(a.getName());
     getPrinter().print(" = ");
-    a.getElementValue().accept(getRealThis());
+    a.getElementValueOrExpr().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
