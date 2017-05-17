@@ -115,7 +115,7 @@ public class TypeResolverDifferentInvalidModelsTest extends AbstractCoCoTestClas
   @Test
   public void testAstAdditionalAttributes(){
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0509 type 'boolean' cannot be converted to type 'java.lang.String'."),
+        Finding.error("0xA0509 type '' cannot be converted to type ''."),
         Finding.error("0xA0913 java.lang.Integer type of method cannot have return type java.lang.String."));
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/monticore/invalid/AstAdditionalAttributes", typeChecker.getAllTypeChecker(),expectedErrors);
@@ -141,8 +141,8 @@ public class TypeResolverDifferentInvalidModelsTest extends AbstractCoCoTestClas
         Finding.error("0xA0909 condition in if-statement must be a boolean expression."),
         Finding.error("0xA0909 condition in if-statement must be a boolean expression."),
         Finding.error("0xA0918 exception in throw-statement must be Throwable or subtype of it."),
-        Finding.error("0xA0563 method 'parseInt' is not found."),
-        Finding.error("0xA0509 type 'boolean' cannot be converted to type 'int'.")
+        Finding.error("0xA0574 method 'parseInt' is not found."),
+        Finding.error("0xA0509 type '' cannot be converted to type ''.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/monticore/invalid/LiteralsHelper", typeChecker.getAllTypeChecker(),
@@ -163,7 +163,7 @@ public class TypeResolverDifferentInvalidModelsTest extends AbstractCoCoTestClas
   public void testHelloWorld(){
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0574 method 'println' is not found."),
-        Finding.error("0xA0569 method 'printlnx' is not found.")
+        Finding.error("0xA0574 method 'printlnx' is not found.")
     );
     testModelForErrors("src/test/resources",
         "parsableButInvalidModels/HelloWorld", typeChecker.getAllTypeChecker(),

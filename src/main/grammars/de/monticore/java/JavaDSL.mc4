@@ -174,9 +174,9 @@ ElementValuePair
     =   Name "=" ElementValueOrExpr
     ;
 
-interface ElementValue extends AnnotationArguments;
+interface ElementValue;
 
-ElementValueOrExpr
+ElementValueOrExpr implements AnnotationArguments
 	= ElementValue | Expression;
 
 ElementValueArrayInitializer implements ElementValue

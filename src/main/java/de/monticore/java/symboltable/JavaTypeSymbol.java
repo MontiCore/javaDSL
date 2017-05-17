@@ -94,6 +94,14 @@ public class JavaTypeSymbol extends
     return ImmutableList.copyOf(annotations);
   }
   
+  /**
+   * @see de.monticore.symboltable.types.CommonJTypeSymbol#isClass()
+   */
+  @Override
+  public boolean isClass() {
+    return !isInterface() && !isEnum() && !isAnnotation();
+  }
+
   public static class JavaTypeSymbolKind extends JTypeSymbolKind {
 
     private static final String NAME = "de.monticore.java.symboltable.JavaTypeSymbolKind";

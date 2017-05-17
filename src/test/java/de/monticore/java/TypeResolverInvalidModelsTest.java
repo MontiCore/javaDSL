@@ -682,10 +682,10 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new AssignmentCompatible(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0509 type 'double' cannot be converted to type 'int'."),
-        Finding.error("0xA0509 type 'double' cannot be converted to type 'char'."),
+        Finding.error("0xA0509 type '' cannot be converted to type ''."),
+        Finding.error("0xA0509 type '' cannot be converted to type ''."),
         Finding.error("0xA0507 first operand of assignment expression must be a variable."),
-        Finding.error("0xA0509 type 'int' cannot be converted to type 'g'.")
+        Finding.error("0xA0509 type '' cannot be converted to type ''.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/AssignmentCompatible", checker, expectedErrors);

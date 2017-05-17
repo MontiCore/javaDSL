@@ -20,7 +20,6 @@ package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.expressions._ast.ASTAssignmentExpression;
 import de.monticore.java.expressions._cocos.ExpressionsASTAssignmentExpressionCoCo;
-import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;

@@ -223,7 +223,7 @@ public class EmfAttribute {
   }
 
   public String toString() {
-    return "+ of + "+ EType
+    return "+ of + "
         + getEmfType() + " + ";
   }
 

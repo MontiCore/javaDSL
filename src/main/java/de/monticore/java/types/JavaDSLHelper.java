@@ -357,6 +357,9 @@ public class JavaDSLHelper {
    * and for such cases, this method returns the complete name java.util.Map.Entry
    */
   public static String getCompleteName(JavaTypeSymbolReference type) {
+    if (type == null) {
+      System.out.println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+    }
     if(!isPrimitiveType(type) && !"?".equals(type.getName())) {
       if(type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
         JavaTypeSymbol symbol = (JavaTypeSymbol)type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).get();
@@ -2561,6 +2564,9 @@ public class JavaDSLHelper {
       if (from.getDimension() > 0 && to.getDimension() > 0) {
         return narrowingReferenceConversionAvailable(box(from), box(to));
       }
+      if (fromSymbol.isFormalTypeParameter() && !fromSymbol.getSuperClass().isPresent() && fromSymbol.getSuperTypes().isEmpty()) {
+        return true;
+      }
     }
 
     return false;
@@ -3416,9 +3422,6 @@ public class JavaDSLHelper {
   public  static Optional<JavaFieldSymbol> resolveFieldInSuperType(Scope scope, String fieldName) {
     if (scope.resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
       return Optional.of((JavaFieldSymbol) scope.resolve(fieldName, JavaFieldSymbol.KIND).get());
-    }
-    if(scope.getEnclosingScope().get().resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
-      return Optional.of((JavaFieldSymbol) scope.getEnclosingScope().get().resolve(fieldName, JavaFieldSymbol.KIND).get());
     }
     String enclosingType = getEnclosingTypeSymbolName(scope);
     if (enclosingType != null) {
