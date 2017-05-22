@@ -599,6 +599,13 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         }
         this.setResult(null);    
       }
+    } else {
+      String name = expType.getName() + "." + node.getName();
+      JavaTypeSymbolReference pName = new JavaTypeSymbolReference(name,
+          node.getEnclosingScope().get(), 0);
+      pName = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(pName),
+          pName.getEnclosingScope(), pName.getDimension());
+      this.setResult(pName);     
     }
     
   }

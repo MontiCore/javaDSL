@@ -57,6 +57,7 @@ import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
 import de.monticore.java.cocos.expressions.AdditiveOpsValid;
 import de.monticore.java.cocos.expressions.ArrayAccessValid;
 import de.monticore.java.cocos.expressions.ArrayCreatorValid;
+import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
 import de.monticore.java.cocos.expressions.ArrayInitializerValid;
 import de.monticore.java.cocos.expressions.AssignmentCompatible;
 import de.monticore.java.cocos.expressions.BinaryAndOpValid;
@@ -122,7 +123,6 @@ import de.monticore.java.cocos.statements.ThrowIsValid;
 import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.java.types.JavaDSLTypeChecker;
 import de.se_rwth.commons.logging.Finding;
 import de.se_rwth.commons.logging.Log;
 
@@ -650,7 +650,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestArrayDimensionByExpressionValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    JavaDSLTypeChecker checkerAll = new JavaDSLTypeChecker();
+    checker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'."),
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'."),
@@ -659,7 +659,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'.")
     );
     testModelForErrors("src/test/resources",
-        "typeSystemTestModels/invalid/expressions/ArrayDimensionByExpression", checkerAll.getAllTypeChecker(),
+        "typeSystemTestModels/invalid/expressions/ArrayDimensionByExpression", checker,
         expectedErrors);
   }
   
