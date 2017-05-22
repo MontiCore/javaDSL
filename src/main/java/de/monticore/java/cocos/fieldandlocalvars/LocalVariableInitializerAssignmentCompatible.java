@@ -140,6 +140,12 @@ public class LocalVariableInitializerAssignmentCompatible implements
                   JavaTypeSymbolReference expType = typeResolver.getResult()
                       .get();
                   //JLS3 5.2-1
+                  if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
+                      || JavaDSLHelper.isShortType(localVarType)) {
+                    if (JavaDSLHelper.isIntType(expType)) {
+                      return;
+                    }
+                  }
                   if (JavaDSLHelper.safeAssignmentConversionAvailable(expType, localVarType)) {
                     return;
                   }

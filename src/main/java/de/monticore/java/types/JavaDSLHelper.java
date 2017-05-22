@@ -357,9 +357,6 @@ public class JavaDSLHelper {
    * and for such cases, this method returns the complete name java.util.Map.Entry
    */
   public static String getCompleteName(JavaTypeSymbolReference type) {
-    if (type == null) {
-      System.out.println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
-    }
     if(!isPrimitiveType(type) && !"?".equals(type.getName())) {
       if(type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
         JavaTypeSymbol symbol = (JavaTypeSymbol)type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).get();

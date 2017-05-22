@@ -20,6 +20,7 @@ package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.expressions._ast.ASTAssignmentExpression;
 import de.monticore.java.expressions._cocos.ExpressionsASTAssignmentExpressionCoCo;
+import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
@@ -40,12 +41,43 @@ public class AssignmentCompatible implements ExpressionsASTAssignmentExpressionC
           node.get_SourcePositionStart());
       return;
     }
-    typeResolver.handle(node);
+    typeResolver.handle(node.getLeftExpression());
     if (!typeResolver.getResult().isPresent()) {
-       Log.error(
-          "0xA0509 type '" + "" + "' cannot be converted to type '" + ""
+      Log.error("0xA0538 type of the left side is not defined", node.getLeftExpression().get_SourcePositionStart());
+      return;
+    }
+    JavaTypeSymbolReference leftType = typeResolver.getResult()
+        .get();
+    
+    typeResolver.handle(node.getRightExpression());
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0507 type of the right side is not defined", node.getRightExpression().get_SourcePositionStart());
+      return;
+    }
+    JavaTypeSymbolReference rightType = typeResolver.getResult()
+        .get();
+    if (JavaDSLHelper.isByteType(leftType) || JavaDSLHelper.isCharType(leftType)
+        || JavaDSLHelper.isShortType(leftType)) {
+      if (JavaDSLHelper.isIntType(rightType)) {
+        return;
+      }
+    }
+    if (JavaDSLHelper.safeAssignmentConversionAvailable(rightType, leftType)) {
+      return;
+    }
+    else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(rightType, leftType)) {
+      Log.warn(
+          "0xA0508 possible unchecked conversion from type '" + rightType.getName() + "' to '"
+              + leftType.getName() + "'.",
+          node.get_SourcePositionStart());
+    }
+    else {
+      Log.error(
+          "0xA0509 type '" + rightType.getName() + "' cannot be converted to type '" + leftType
+              .getName()
               + "'.",
           node.get_SourcePositionStart());
     }
+   
   }
 }

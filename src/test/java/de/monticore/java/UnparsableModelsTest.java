@@ -30,6 +30,7 @@ import org.junit.Test;
  * @version $Revision$, $Date$
  */
 public class UnparsableModelsTest extends AbstractTestClass {
+
   @Test
   public void testBasicCompilationUnitMissingBracket() throws RecognitionException, IOException {
     testUnparsabilityOfModel("src/test/resources/unparsableModels/BasicCompilationUnitMissingBracket.java");
