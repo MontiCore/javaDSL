@@ -1,6 +1,6 @@
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.java.Expressions {
+grammar JavaDSL extends de.monticore.java.Expressions { 
 
 // starting point for parsing a java file
 CompilationUnit
@@ -352,10 +352,10 @@ DefaultSwitchLabel implements SwitchLabel
     =   "default" ":"
     ;
 
-InnerCreatorExpression implements Expression = <90>
+InnerCreatorExpression implements Expression <90> =
 	Expression "." InnerCreator;
  
-CreatorExpression implements Expression = <65>
+CreatorExpression implements Expression <65> =
 	Creator;
 
 interface Creator ;

@@ -57,7 +57,6 @@ import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
 import de.monticore.java.cocos.expressions.AdditiveOpsValid;
 import de.monticore.java.cocos.expressions.ArrayAccessValid;
 import de.monticore.java.cocos.expressions.ArrayCreatorValid;
-import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
 import de.monticore.java.cocos.expressions.ArrayInitializerValid;
 import de.monticore.java.cocos.expressions.AssignmentCompatible;
 import de.monticore.java.cocos.expressions.BinaryAndOpValid;
@@ -123,6 +122,7 @@ import de.monticore.java.cocos.statements.ThrowIsValid;
 import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLTypeChecker;
 import de.se_rwth.commons.logging.Finding;
 import de.se_rwth.commons.logging.Log;
 
@@ -650,7 +650,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestArrayDimensionByExpressionValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
+    JavaDSLTypeChecker checkerAll = new JavaDSLTypeChecker();
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'."),
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'."),
@@ -659,7 +659,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
         Finding.error("0xA0505 an array size must be specified by a type promotable to 'int'.")
     );
     testModelForErrors("src/test/resources",
-        "typeSystemTestModels/invalid/expressions/ArrayDimensionByExpression", checker,
+        "typeSystemTestModels/invalid/expressions/ArrayDimensionByExpression", checkerAll.getAllTypeChecker(),
         expectedErrors);
   }
   
@@ -748,7 +748,9 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
             "0xA0518 cannot cast an expression of type 'java.lang.String' to the target type 'java.lang.Integer'."),
         Finding.error(
             "0xA0518 cannot cast an expression of type 'typeSystemTestModels.invalid.expressions.AdditiveOps' to the target type 'typeSystemTestModels.invalid.expressions.ArrayInitializer'."),
-        Finding.error("0xA0518 cannot cast an expression of type 'int' to the target type 'java.util.List'.")
+        Finding.error("0xA0518 cannot cast an expression of type 'int' to the target type 'java.util.List'."),
+        Finding.error("0xA0614 cannot assign a value to 'str'."),
+        Finding.error("0xA0614 cannot assign a value to 'a'.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/CastConversion", checker, expectedErrors);
@@ -834,6 +836,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     checker.addCoCo(new LocalVariableInitializerAssignmentCompatible(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0537 field access to 'm' is ambiguous."),
+        Finding.error("0xA0614 cannot assign a value to 'n'."),
         Finding.error("0xA0544 constant 'h' is not member of enum 'D'."),
         Finding.error("0xA0542 cannot find symbol 'aa'.")
     );

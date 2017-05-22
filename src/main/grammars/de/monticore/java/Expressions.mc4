@@ -4,34 +4,34 @@ component grammar Expressions extends de.monticore.types.Types {
 
 interface Expression;
 
-QualifiedNameExpression implements Expression = <99> 
-	Expression "." Name&;
+QualifiedNameExpression implements Expression <99> = 
+	Expression "." Name;
 	
-ThisExpression implements Expression = <95>
+ThisExpression implements Expression <95> =
 	Expression "." ["this"];
 	
-SuperExpression implements Expression = <85>
+SuperExpression implements Expression <85> =
 	Expression "." "super" SuperSuffix;
 	
-ExplicitGenericInvocationExpression implements Expression = <80>
+ExplicitGenericInvocationExpression implements Expression <80> =
 	Expression "." ExplicitGenericInvocation;
 	
-ArrayExpression implements Expression = <75>
+ArrayExpression implements Expression <75> =
 	Expression "[" indexExpression:Expression "]";
 	
-CallExpression implements Expression = <70>
+CallExpression implements Expression <70> =
 	Expression "(" parameterExpression:(Expression || ",")* ")";
 	
-TypeCastExpression implements Expression = <60>
+TypeCastExpression implements Expression <60> =
 	"(" typeCastType:Type ")" Expression;
 	
-SuffixExpression implements Expression = <55>
+SuffixExpression implements Expression <55> =
 	Expression
         (   suffixOp:"++"
         |   suffixOp:"--"
         );
         
-PrefixExpression implements Expression = <50>
+PrefixExpression implements Expression <50> =
 	(   prefixOp:"+"
         |   prefixOp:"-"
         |   prefixOp:"++"
@@ -39,10 +39,10 @@ PrefixExpression implements Expression = <50>
         )
         Expression;
         
-BooleanNotExpression implements Expression = <45>
+BooleanNotExpression implements Expression <45> =
 	(booleanNot:"~"|booleanNot:"!") Expression;
 	
-MultExpression implements Expression = <40>
+MultExpression implements Expression <40> =
 	leftExpression:Expression
         (   multiplicativeOp:"*"
         |   multiplicativeOp:"/"
@@ -50,14 +50,14 @@ MultExpression implements Expression = <40>
         )
         rightExpression:Expression;
         
-AddExpression implements Expression = <35>
+AddExpression implements Expression <35> =
 	leftExpression:Expression
         (   additiveOp:"+"
         |   additiveOp:"-"
         )
 		rightExpression:Expression;
 		
-ShiftExpression implements Expression = <30>
+ShiftExpression implements Expression <30> =
 	leftExpression:Expression
 	    // It is not possible to define "<<", ">>" or ">>>".
         // Parsing generic typs like "List<List<String>>" leads to problems.
@@ -75,7 +75,7 @@ ShiftExpression implements Expression = <30>
         )
         rightExpression:Expression;
         
-ComparisonExpression implements Expression = <25>
+ComparisonExpression implements Expression <25> =
 	leftExpression:Expression
         (   comparison:"<="
         |   comparison:">=" 
@@ -84,35 +84,35 @@ ComparisonExpression implements Expression = <25>
         )
         rightExpression:Expression;
         
-InstanceofExpression implements Expression = <20>
+InstanceofExpression implements Expression <20> =
 	Expression "instanceof" instanceofType:Type;
 	
-IdentityExpression implements Expression = <15>
+IdentityExpression implements Expression <15> =
 	leftExpression:Expression
         (   identityTest:"=="
         |   identityTest:"!="
         )
         rightExpression:Expression;
         
-BinaryAndOpExpression implements Expression = <10>
+BinaryAndOpExpression implements Expression <10> =
 	leftExpression:Expression binaryAndOp :"&"  rightExpression:Expression;
 	
-BinaryXorOpExpression implements Expression = <9>
+BinaryXorOpExpression implements Expression <9> =
 	leftExpression:Expression binaryXorOp :"^"  rightExpression:Expression;
 	
-BinaryOrOpExpression implements Expression = <8>
+BinaryOrOpExpression implements Expression <8> =
 	leftExpression:Expression binaryOrOp  :"|"  rightExpression:Expression;
 	
-BooleanAndOpExpression implements Expression = <7>
+BooleanAndOpExpression implements Expression <7> =
 	leftExpression:Expression booleanAndOp:"&&" rightExpression:Expression;
 	
-BooleanOrOpExpression implements Expression = <6>
+BooleanOrOpExpression implements Expression <6> =
 	leftExpression:Expression booleanOrOp :"||" rightExpression:Expression;
 	
-ConditionalExpression implements Expression = <5>
+ConditionalExpression implements Expression <5> =
 	condition:Expression "?" trueExpression:Expression ":" falseExpression:Expression;
 	
-AssignmentExpression implements Expression = <4>
+AssignmentExpression implements Expression <4> = <rightassoc>
 	leftExpression:Expression
         (   assignment:"="
         |   assignment:"+="
@@ -129,8 +129,8 @@ AssignmentExpression implements Expression = <4>
         )
         rightExpression:Expression;
 
-PrimaryExpression implements Expression
-    =  <99> "(" Expression ")"
+PrimaryExpression implements Expression <200>
+    =  "(" Expression ")"
     |   ["this"]
     |   ["super"]
     |   Literal

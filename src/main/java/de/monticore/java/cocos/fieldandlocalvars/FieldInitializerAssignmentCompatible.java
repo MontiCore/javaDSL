@@ -179,6 +179,13 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
                     + "'.",
                     node.get_SourcePositionStart());
           }
+        } else {
+          Log.error(
+              "0xA0614 cannot assign a value to '"
+                  + variableDeclarator.getDeclaratorId().getName()
+                  + "'.",
+                  node.get_SourcePositionStart());
+
         }
       }
     }  

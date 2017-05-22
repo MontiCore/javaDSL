@@ -100,7 +100,6 @@ import de.monticore.literals.literals._ast.ASTSignedFloatLiteral;
 import de.monticore.literals.literals._ast.ASTSignedIntLiteral;
 import de.monticore.literals.literals._ast.ASTSignedLongLiteral;
 import de.monticore.literals.literals._ast.ASTStringLiteral;
-import de.monticore.symboltable.Symbol;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.types.types._ast.ASTComplexArrayType;
 import de.monticore.types.types._ast.ASTComplexReferenceType;
@@ -769,6 +768,20 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       }
       return;
     }
+    if (node.getReturnType().isPresent()) {
+      JavaTypeSymbolReference classType = new JavaTypeSymbolReference("java.lang.Class",
+          node.getEnclosingScope().get(), 0);
+      List<ActualTypeArgument> arg = new ArrayList<>();
+      node.getReturnType().get().accept(getRealThis());
+      if (getResult().isPresent()) {
+        ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false, getResult().get());
+        arg.add(actualTypeArgument);
+        classType.setActualTypeArguments(arg);
+        this.setResult(classType);
+        return;
+      }
+    }
+
     this.setResult(null);
   }
   

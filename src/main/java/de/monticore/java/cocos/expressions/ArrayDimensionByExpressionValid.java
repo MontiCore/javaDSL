@@ -42,14 +42,13 @@ public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimension
     }
     for (ASTExpression astExpression : node.getExpressions()) {
       typeResolver.handle(astExpression);
-      if (typeResolver.getResult().isPresent()) {
-        JavaTypeSymbolReference typDim = typeResolver.getResult()
-            .get();
-        if (!"int".equals(JavaDSLHelper.getUnaryNumericPromotionType(typDim).getName())) {
-          Log.error("0xA0505 an array size must be specified by a type promotable to 'int'.",
-              node.get_SourcePositionStart());
-        }
+      JavaTypeSymbolReference typeName = typeResolver.getResult().orElse(null);
+      if (!typeResolver.getResult().isPresent()
+          || !"int".equals(JavaDSLHelper.getUnaryNumericPromotionType(typeName).getName())) {
+        Log.error("0xA0505 an array size must be specified by a type promotable to 'int'.",
+            node.get_SourcePositionStart());
       }
     }
   }
+  
 }
