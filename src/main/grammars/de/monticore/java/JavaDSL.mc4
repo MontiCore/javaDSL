@@ -353,19 +353,19 @@ DefaultSwitchLabel implements SwitchLabel
     ;
 
 InnerCreatorExpression implements Expression <90> =
-	Expression "." InnerCreator;
+	Expression "." "new" InnerCreator;
  
 CreatorExpression implements Expression <65> =
-	Creator;
+	"new" Creator;
 
 interface Creator ;
 
 AnonymousClass implements Creator
-    =   "new" TypeArguments? CreatedName ClassCreatorRest
+    =   TypeArguments? CreatedName ClassCreatorRest
     ;
     
 ArrayCreator implements Creator
-    =   "new" CreatedName ArrayDimensionSpecifier
+    =   CreatedName ArrayDimensionSpecifier
     ;
 
 interface ArrayDimensionSpecifier ;
@@ -384,7 +384,7 @@ CreatedName
     ;
 
 InnerCreator
-    =   "new" firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
+    =   firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
     ;
     
 ClassCreatorRest

@@ -731,8 +731,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
             .resolveManyInSuperType(node.getName().get(), false, null, typeSymbol, null,
                 paramTypes);
         if (resolvedMethods.size() == 1) {
-          JavaMethodSymbol methodSymbol = resolvedMethods.entrySet().iterator().next().getKey();
-          this.setResult(methodSymbol.getReturnType());
+          this.setResult(resolvedMethods.values().iterator().next());
           return;
         }
       }
