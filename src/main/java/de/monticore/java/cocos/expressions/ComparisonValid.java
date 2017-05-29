@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTComparisonExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTComparisonExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTComparisonExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class ComparisonValid implements ExpressionsASTComparisonExpressionCoCo {
+public class ComparisonValid implements MCExpressionsASTComparisonExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

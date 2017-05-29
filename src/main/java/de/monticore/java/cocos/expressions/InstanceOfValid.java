@@ -18,14 +18,14 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTInstanceofExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTInstanceofExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTInstanceofExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class InstanceOfValid implements ExpressionsASTInstanceofExpressionCoCo {
+public class InstanceOfValid implements MCExpressionsASTInstanceofExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -45,7 +45,7 @@ public class InstanceOfValid implements ExpressionsASTInstanceofExpressionCoCo {
             "0xA0550 the relational expression operand of the 'instanceof' operator must be a reference type or the null type.",
             node.get_SourcePositionStart());
       }
-      node.getInstanceofType().accept(typeResolver);
+      node.getType().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference typeIns = typeResolver.getResult()
             .get();

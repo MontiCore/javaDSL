@@ -22,8 +22,6 @@ import java.util.List;
 
 import de.monticore.ast.ASTNode;
 import de.monticore.generating.templateengine.reporting.commons.Layouter;
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
 import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
 import de.monticore.java.javadsl._ast.ASTCatchClause;
@@ -43,6 +41,8 @@ import de.monticore.java.javadsl._ast.ASTLabeledStatement;
 import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
 import de.monticore.java.javadsl._ast.ASTMethodSignature;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
 import de.monticore.literals.literals._ast.ASTIntLiteral;
 import de.monticore.literals.literals._ast.ASTStringLiteral;
 import de.monticore.types.TypesNodeIdentHelper;

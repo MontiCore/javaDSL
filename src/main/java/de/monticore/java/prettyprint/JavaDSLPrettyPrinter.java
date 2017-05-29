@@ -107,7 +107,7 @@ import de.se_rwth.commons.Names;
  * $Id: JavaDSLWriterVisitor.java,v 1.4 2008-07-17 08:34:01 cficek Exp $
  */
 
-public class JavaDSLPrettyPrinter extends ExpressionsPrettyPrinter implements
+public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     JavaDSLVisitor {
 
   private boolean WRITE_COMMENTS = false;

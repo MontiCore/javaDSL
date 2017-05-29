@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTMultExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTMultExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTMultExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTMultExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class MultiplicativeOpsValid implements ExpressionsASTMultExpressionCoCo {
+public class MultiplicativeOpsValid implements MCExpressionsASTMultExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

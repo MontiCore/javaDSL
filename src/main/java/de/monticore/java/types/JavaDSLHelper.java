@@ -28,12 +28,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import de.monticore.java.expressions._ast.ASTCallExpression;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTTypeCastExpression;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
+import de.monticore.java.mcexpressions._ast.ASTCallExpression;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -3521,7 +3521,7 @@ public class JavaDSLHelper {
         return false;
       }
       else {
-        expr.getTypeCastType().accept(typeResolver);
+        expr.getType().accept(typeResolver);
         if(typeResolver.getResult().isPresent()) {
           return true;
         }

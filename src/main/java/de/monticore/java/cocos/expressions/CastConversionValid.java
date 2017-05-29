@@ -18,14 +18,14 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTTypeCastExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTTypeCastExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTTypeCastExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTTypeCastExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class CastConversionValid implements ExpressionsASTTypeCastExpressionCoCo {
+public class CastConversionValid implements MCExpressionsASTTypeCastExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 
@@ -37,7 +37,7 @@ public class CastConversionValid implements ExpressionsASTTypeCastExpressionCoCo
   @Override
   public void check(ASTTypeCastExpression node) {
     
-    node.getTypeCastType().accept(typeResolver);
+    node.getType().accept(typeResolver);
     JavaTypeSymbolReference typeCast = typeResolver.getResult()
         .get();
     typeResolver.handle(node.getExpression());

@@ -21,10 +21,10 @@ package de.monticore.java.types;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.monticore.java.expressions._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTArrayInitializer;
 import de.monticore.java.javadsl._ast.ASTVariableInitializer;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
 
 /**
  * TODO

@@ -18,15 +18,16 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTBinaryOrOpExpressionCoCo;
+import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.mcexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTBinaryOrOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BinaryOrOpValid implements ExpressionsASTBinaryOrOpExpressionCoCo {
+public class BinaryOrOpValid implements MCExpressionsASTBinaryOrOpExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

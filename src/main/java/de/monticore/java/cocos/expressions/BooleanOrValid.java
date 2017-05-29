@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTBooleanOrOpExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTBooleanOrOpExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTBooleanOrOpExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTBooleanOrOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BooleanOrValid implements ExpressionsASTBooleanOrOpExpressionCoCo {
+public class BooleanOrValid implements MCExpressionsASTBooleanOrOpExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

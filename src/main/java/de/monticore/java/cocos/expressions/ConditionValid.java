@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTConditionalExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTConditionalExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTConditionalExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
@@ -28,7 +28,7 @@ import de.se_rwth.commons.logging.Log;
 /**
  * Created by Odgrlb on 19.08.2016.
  */
-public class ConditionValid implements ExpressionsASTConditionalExpressionCoCo {
+public class ConditionValid implements MCExpressionsASTConditionalExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

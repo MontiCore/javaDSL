@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTAddExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTAddExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTAddExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTAddExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class AdditiveOpsValid implements ExpressionsASTAddExpressionCoCo {
+public class AdditiveOpsValid implements MCExpressionsASTAddExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

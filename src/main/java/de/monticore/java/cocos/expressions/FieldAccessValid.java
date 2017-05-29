@@ -20,9 +20,9 @@ package de.monticore.java.cocos.expressions;
 
 import java.util.Collection;
 
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
-import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -31,7 +31,7 @@ import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class FieldAccessValid implements ExpressionsASTQualifiedNameExpressionCoCo {
+public class FieldAccessValid implements MCExpressionsASTQualifiedNameExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -42,7 +42,7 @@ public class FieldAccessValid implements ExpressionsASTQualifiedNameExpressionCo
   // JLS3 15.11.1-1, JLS3 15.11.1-2, JLS3 15.11.1-3
   @Override
   public void check(ASTQualifiedNameExpression node) {
-    if (node.getExpression() instanceof de.monticore.java.expressions._ast.ASTPrimaryExpression) {
+    if (node.getExpression() instanceof ASTPrimaryExpression) {
       ASTPrimaryExpression primaryExpression = (ASTPrimaryExpression) node.getExpression();
       if (primaryExpression.isThis()) {
         typeResolver.handle(primaryExpression);

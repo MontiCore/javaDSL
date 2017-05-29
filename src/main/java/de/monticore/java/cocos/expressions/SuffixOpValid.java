@@ -18,13 +18,13 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTSuffixExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTSuffixExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTSuffixExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTSuffixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class SuffixOpValid implements ExpressionsASTSuffixExpressionCoCo {
+public class SuffixOpValid implements MCExpressionsASTSuffixExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

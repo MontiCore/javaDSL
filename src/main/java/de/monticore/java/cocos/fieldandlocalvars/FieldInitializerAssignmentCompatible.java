@@ -20,13 +20,13 @@ package de.monticore.java.cocos.fieldandlocalvars;
 
 import java.util.List;
 
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.ASTArrayInitializer;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;

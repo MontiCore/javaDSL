@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTIdentityExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTIdentityExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTIdentityExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class IdentityTestValid implements ExpressionsASTIdentityExpressionCoCo {
+public class IdentityTestValid implements MCExpressionsASTIdentityExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

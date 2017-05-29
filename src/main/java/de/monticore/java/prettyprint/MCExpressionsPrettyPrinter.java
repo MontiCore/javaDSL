@@ -20,48 +20,48 @@ package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
 
-import de.monticore.java.expressions._ast.ASTAddExpression;
-import de.monticore.java.expressions._ast.ASTArguments;
-import de.monticore.java.expressions._ast.ASTArrayExpression;
-import de.monticore.java.expressions._ast.ASTAssignmentExpression;
-import de.monticore.java.expressions._ast.ASTBinaryAndOpExpression;
-import de.monticore.java.expressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.java.expressions._ast.ASTBinaryXorOpExpression;
-import de.monticore.java.expressions._ast.ASTBooleanAndOpExpression;
-import de.monticore.java.expressions._ast.ASTBooleanNotExpression;
-import de.monticore.java.expressions._ast.ASTBooleanOrOpExpression;
-import de.monticore.java.expressions._ast.ASTCallExpression;
-import de.monticore.java.expressions._ast.ASTComparisonExpression;
-import de.monticore.java.expressions._ast.ASTConditionalExpression;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocation;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationSuffix;
-import de.monticore.java.expressions._ast.ASTExpressionsNode;
-import de.monticore.java.expressions._ast.ASTIdentityExpression;
-import de.monticore.java.expressions._ast.ASTInstanceofExpression;
-import de.monticore.java.expressions._ast.ASTMultExpression;
-import de.monticore.java.expressions._ast.ASTPrefixExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
-import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
-import de.monticore.java.expressions._ast.ASTShiftExpression;
-import de.monticore.java.expressions._ast.ASTSuffixExpression;
-import de.monticore.java.expressions._ast.ASTSuperExpression;
-import de.monticore.java.expressions._ast.ASTSuperSuffix;
-import de.monticore.java.expressions._ast.ASTThisExpression;
-import de.monticore.java.expressions._ast.ASTTypeCastExpression;
-import de.monticore.java.expressions._visitor.ExpressionsVisitor;
+import de.monticore.java.mcexpressions._ast.ASTAddExpression;
+import de.monticore.java.mcexpressions._ast.ASTArguments;
+import de.monticore.java.mcexpressions._ast.ASTArrayExpression;
+import de.monticore.java.mcexpressions._ast.ASTAssignmentExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryAndOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryXorOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanAndOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanNotExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanOrOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTCallExpression;
+import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
+import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocation;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
+import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
+import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._ast.ASTMCExpressionsNode;
+import de.monticore.java.mcexpressions._ast.ASTMultExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.java.mcexpressions._ast.ASTShiftExpression;
+import de.monticore.java.mcexpressions._ast.ASTSuffixExpression;
+import de.monticore.java.mcexpressions._ast.ASTSuperExpression;
+import de.monticore.java.mcexpressions._ast.ASTSuperSuffix;
+import de.monticore.java.mcexpressions._ast.ASTThisExpression;
+import de.monticore.java.mcexpressions._ast.ASTTypeCastExpression;
+import de.monticore.java.mcexpressions._visitor.MCExpressionsVisitor;
 import de.monticore.prettyprint.CommentPrettyPrinter;
 import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
 
-public class ExpressionsPrettyPrinter extends TypesPrettyPrinterConcreteVisitor implements
-ExpressionsVisitor {
+public class MCExpressionsPrettyPrinter extends TypesPrettyPrinterConcreteVisitor implements
+MCExpressionsVisitor {
 
   private boolean WRITE_COMMENTS = false;
   
-  private ExpressionsVisitor realThis = this;
+  private MCExpressionsVisitor realThis = this;
 
-  public ExpressionsPrettyPrinter(IndentPrinter out) {
+  public MCExpressionsPrettyPrinter(IndentPrinter out) {
     super(out);
     setWriteComments(true);
   }
@@ -175,9 +175,7 @@ ExpressionsVisitor {
   public void handle(ASTCallExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getExpression().accept(getRealThis());
-    getPrinter().print("(");
-    printExpressionsList(node.getParameterExpression().iterator(), ",");
-    getPrinter().print(")");
+    node.getArguments().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
@@ -188,7 +186,7 @@ ExpressionsVisitor {
   public void handle(ASTTypeCastExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     getPrinter().print("(");
-    node.getTypeCastType().accept(getRealThis());
+    node.getType().accept(getRealThis());
     getPrinter().print(")");
     node.getExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
@@ -222,7 +220,7 @@ ExpressionsVisitor {
   @Override
   public void handle(ASTBooleanNotExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
-    getPrinter().print("!");
+    getPrinter().print(node.getBooleanNot().get());
     node.getExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -283,7 +281,7 @@ ExpressionsVisitor {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getExpression().accept(getRealThis());
     getPrinter().print(" instanceof ");
-    node.getInstanceofType().accept(getRealThis());
+    node.getType().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
@@ -306,7 +304,7 @@ ExpressionsVisitor {
   public void handle(ASTBinaryAndOpExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getLeftExpression().accept(getRealThis());
-    getPrinter().print(node.getBinaryAndOp());
+    getPrinter().print("&");
     node.getRightExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -318,7 +316,7 @@ ExpressionsVisitor {
   public void handle(ASTBinaryXorOpExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getLeftExpression().accept(getRealThis());
-    getPrinter().print(node.getBinaryXorOp());
+    getPrinter().print("^");
     node.getRightExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -330,7 +328,7 @@ ExpressionsVisitor {
   public void handle(ASTBinaryOrOpExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getLeftExpression().accept(getRealThis());
-    getPrinter().print(node.getBinaryOrOp());
+    getPrinter().print("|");
     node.getRightExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -342,7 +340,7 @@ ExpressionsVisitor {
   public void handle(ASTBooleanAndOpExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getLeftExpression().accept(getRealThis());
-    getPrinter().print(node.getBooleanAndOp());
+    getPrinter().print("&&");
     node.getRightExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -354,7 +352,7 @@ ExpressionsVisitor {
   public void handle(ASTBooleanOrOpExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getLeftExpression().accept(getRealThis());
-    getPrinter().print(node.getBooleanOrOp());
+    getPrinter().print("||");
     node.getRightExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
@@ -446,7 +444,7 @@ ExpressionsVisitor {
     getPrinter().print(s);
   }
 
-  protected void printExpressionsList(Iterator<? extends ASTExpressionsNode> iter, String separator) {
+  protected void printExpressionsList(Iterator<? extends ASTMCExpressionsNode> iter, String separator) {
     // print by iterate through all items
     String sep = "";
     while (iter.hasNext()) {
@@ -470,19 +468,19 @@ ExpressionsVisitor {
    * @param a A node from Java.
    * @return String representation.
    */
-  public String prettyprint(ASTExpressionsNode a) {
+  public String prettyprint(ASTMCExpressionsNode a) {
     getPrinter().clearBuffer();
     a.accept(getRealThis());
     return getPrinter().getContent();
   }
 
   @Override
-  public void setRealThis(ExpressionsVisitor realThis) {
+  public void setRealThis(MCExpressionsVisitor realThis) {
     this.realThis = realThis;
   }
 
   @Override
-  public ExpressionsVisitor getRealThis() {
+  public MCExpressionsVisitor getRealThis() {
     return realThis;
   }
   

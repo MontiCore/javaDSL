@@ -28,8 +28,8 @@ import de.monticore.java.cocos.interfaces.*;
 import de.monticore.java.cocos.methods.*;
 import de.monticore.java.cocos.names.*;
 import de.monticore.java.cocos.statements.*;
-import de.monticore.java.expressions._cocos.ExpressionsCoCoChecker;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsCoCoChecker;
 
 /**
  * Created by Odgrlb on 23.10.2016.
@@ -111,8 +111,8 @@ public class JavaDSLTypeChecker {
     return enumChecker;
   }
 
-  public ExpressionsCoCoChecker getExpressionChecker(){
-    ExpressionsCoCoChecker expressionChecker = new ExpressionsCoCoChecker();
+  public MCExpressionsCoCoChecker getExpressionChecker(){
+    MCExpressionsCoCoChecker expressionChecker = new MCExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AdditiveOpsValid(typeResolver));
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
 //    expressionChecker.addCoCo(new ArrayDimensionByInitializerValid(typeResolver));  // CoCo nicht fertig

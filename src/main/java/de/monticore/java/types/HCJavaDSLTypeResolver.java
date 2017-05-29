@@ -27,32 +27,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Stack;
 
-import de.monticore.java.expressions._ast.ASTAddExpression;
-import de.monticore.java.expressions._ast.ASTArrayExpression;
-import de.monticore.java.expressions._ast.ASTAssignmentExpression;
-import de.monticore.java.expressions._ast.ASTBinaryAndOpExpression;
-import de.monticore.java.expressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.java.expressions._ast.ASTBinaryXorOpExpression;
-import de.monticore.java.expressions._ast.ASTBooleanAndOpExpression;
-import de.monticore.java.expressions._ast.ASTBooleanNotExpression;
-import de.monticore.java.expressions._ast.ASTBooleanOrOpExpression;
-import de.monticore.java.expressions._ast.ASTCallExpression;
-import de.monticore.java.expressions._ast.ASTComparisonExpression;
-import de.monticore.java.expressions._ast.ASTConditionalExpression;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocation;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationSuffix;
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTIdentityExpression;
-import de.monticore.java.expressions._ast.ASTInstanceofExpression;
-import de.monticore.java.expressions._ast.ASTMultExpression;
-import de.monticore.java.expressions._ast.ASTPrefixExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
-import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
-import de.monticore.java.expressions._ast.ASTShiftExpression;
-import de.monticore.java.expressions._ast.ASTSuffixExpression;
-import de.monticore.java.expressions._ast.ASTSuperExpression;
-import de.monticore.java.expressions._ast.ASTTypeCastExpression;
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
 import de.monticore.java.javadsl._ast.ASTArrayCreator;
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
@@ -87,6 +61,32 @@ import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInitializer;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
+import de.monticore.java.mcexpressions._ast.ASTAddExpression;
+import de.monticore.java.mcexpressions._ast.ASTArrayExpression;
+import de.monticore.java.mcexpressions._ast.ASTAssignmentExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryAndOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBinaryXorOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanAndOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanNotExpression;
+import de.monticore.java.mcexpressions._ast.ASTBooleanOrOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTCallExpression;
+import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
+import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocation;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
+import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._ast.ASTMultExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.java.mcexpressions._ast.ASTShiftExpression;
+import de.monticore.java.mcexpressions._ast.ASTSuffixExpression;
+import de.monticore.java.mcexpressions._ast.ASTSuperExpression;
+import de.monticore.java.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -550,13 +550,13 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   
   public void handle(ASTCallExpression node) {
     List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
-    for (ASTExpression paramExpression : node.getParameterExpression()) {
+    for (ASTExpression paramExpression : node.getArguments().getExpressions()) {
       this.handle(paramExpression);
       if (this.getResult().isPresent()) {
         paramTypes.add(this.getResult().get());
       }
     }
-    if (paramTypes.size() == node.getParameterExpression().size()) {
+    if (paramTypes.size() == node.getArguments().getExpressions().size()) {
       parameterStack.push(paramTypes);
       ASTExpression expr = node.getExpression();
       expr.accept(getRealThis());
@@ -674,7 +674,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     handle(node.getExpression());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference expType = this.getResult().get();
-      handle(node.getInstanceofType());
+      handle(node.getType());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference instanceType = this.getResult()
             .get();
@@ -692,7 +692,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       JavaTypeSymbolReference expressionType = new JavaTypeSymbolReference(
           JavaDSLHelper.getCompleteName(this.getResult().get()),
           this.getResult().get().getEnclosingScope(), this.getResult().get().getDimension());
-      node.getTypeCastType().accept(this);
+      node.getType().accept(this);
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference castType = this.getResult().get();
         if (!JavaDSLHelper.castTypeConversionAvailable(expressionType, castType)) {

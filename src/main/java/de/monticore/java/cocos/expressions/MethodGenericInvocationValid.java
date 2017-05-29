@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocation;
-import de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTExplicitGenericInvocationExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocation;
+import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTExplicitGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
@@ -39,7 +39,7 @@ import de.se_rwth.commons.logging.Log;
  * Created by Odgrlb on 07.08.2016.
  */
 public class MethodGenericInvocationValid
-    implements ExpressionsASTExplicitGenericInvocationExpressionCoCo {
+    implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

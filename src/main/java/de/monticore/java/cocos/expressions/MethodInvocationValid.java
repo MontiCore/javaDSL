@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTCallExpression;
-import de.monticore.java.expressions._ast.ASTExpression;
-import de.monticore.java.expressions._ast.ASTPrimaryExpression;
-import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTCallExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTCallExpression;
+import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTCallExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
-public class MethodInvocationValid implements ExpressionsASTCallExpressionCoCo {
+public class MethodInvocationValid implements MCExpressionsASTCallExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

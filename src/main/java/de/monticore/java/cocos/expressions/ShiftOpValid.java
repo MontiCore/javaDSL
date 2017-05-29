@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.expressions._ast.ASTShiftExpression;
-import de.monticore.java.expressions._cocos.ExpressionsASTShiftExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTShiftExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTShiftExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class ShiftOpValid implements ExpressionsASTShiftExpressionCoCo {
+public class ShiftOpValid implements MCExpressionsASTShiftExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
