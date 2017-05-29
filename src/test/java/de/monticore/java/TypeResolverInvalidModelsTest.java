@@ -877,8 +877,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   public void TestMethodInvocationValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0561 the method 'addAndReturn' is not found."),
-        Finding.error("0xA0565 method 'getSecondInt' is not found."),
+        Finding.error("0xA0611 cannot assign a value of type 'addAndReturn' to 'java.lang.Object'."),
+        Finding.error("0xA0574 method 'getSecondInt' is not found."),
         Finding.error("0xA0611 cannot assign a value of type 'void' to 'int'."),
         Finding.error("0xA0611 cannot assign a value of type '&' to 'java.lang.String'.")
     );

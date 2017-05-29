@@ -421,6 +421,9 @@ ExpressionsVisitor {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     if (node.getName().isPresent()) {
       getPrinter().print(".");
+      if (node.getTypeArguments().isPresent()) {
+        node.getTypeArguments().get().accept(getRealThis());
+      }
       printNode(node.getName().get());
     }
     if (node.getArguments().isPresent()) {

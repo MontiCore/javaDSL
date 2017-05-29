@@ -132,9 +132,9 @@ AssignmentExpression implements Expression <4> = <rightassoc>
 PrimaryExpression implements Expression <200>
     =  "(" Expression ")"
     |   ["this"]
-    |   ["super"]
+    |   ["super"] 
     |   Literal
-    |   Name&
+    |   Name
     |   ReturnType "." "class"
     |   ExplicitGenericInvocation
     |   TypeArguments "this" Arguments
@@ -151,7 +151,7 @@ ExplicitGenericInvocationSuffix
     
 SuperSuffix
     =   Arguments
-    |   "." Name Arguments?
+    |   "." TypeArguments? Name Arguments?
     ;
 
 Arguments

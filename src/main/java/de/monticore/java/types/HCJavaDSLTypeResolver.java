@@ -21,7 +21,9 @@ package de.monticore.java.types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Stack;
 
@@ -49,6 +51,7 @@ import de.monticore.java.expressions._ast.ASTPrimaryExpression;
 import de.monticore.java.expressions._ast.ASTQualifiedNameExpression;
 import de.monticore.java.expressions._ast.ASTShiftExpression;
 import de.monticore.java.expressions._ast.ASTSuffixExpression;
+import de.monticore.java.expressions._ast.ASTSuperExpression;
 import de.monticore.java.expressions._ast.ASTTypeCastExpression;
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
 import de.monticore.java.javadsl._ast.ASTArrayCreator;
@@ -100,6 +103,7 @@ import de.monticore.literals.literals._ast.ASTSignedFloatLiteral;
 import de.monticore.literals.literals._ast.ASTSignedIntLiteral;
 import de.monticore.literals.literals._ast.ASTSignedLongLiteral;
 import de.monticore.literals.literals._ast.ASTStringLiteral;
+import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.types.types._ast.ASTComplexArrayType;
 import de.monticore.types.types._ast.ASTComplexReferenceType;
@@ -242,6 +246,49 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       JavaTypeSymbolReference type = this.getResult().get();
       if (!JavaDSLHelper.isNumericType(type)) {
         this.setResult(null);
+      }
+    }
+  }
+  
+  /**
+   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTSuperExpression)
+   */
+  @Override
+  public void handle(ASTSuperExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      Scope scope = node.getEnclosingScope().get();
+      JavaTypeSymbolReference refType = this.getResult().get();
+      JavaTypeSymbol type = node.getEnclosingScope().get()
+          .<JavaTypeSymbol> resolve(refType.getName(), JavaTypeSymbol.KIND).get();
+      Collection<JavaTypeSymbolReference> superTypes = new HashSet(type.getSuperTypes());
+      if (type.getSuperClass().isPresent()) {
+        superTypes.add(type.getSuperClass().get());
+      }
+      if (node.getSuperSuffix().argumentsIsPresent()) {
+        List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
+        for (ASTExpression paramExpression : node.getSuperSuffix().getArguments().get()
+            .getExpressions()) {
+          this.handle(paramExpression);
+          if (this.getResult().isPresent()) {
+            paramTypes.add(this.getResult().get());
+          }
+        }
+        if (node.getSuperSuffix().getName().isPresent()) {
+          
+          for (JavaTypeSymbolReference superType : superTypes) {
+            JavaTypeSymbol currentSymbol = scope.<JavaTypeSymbol>resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+            HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methods = JavaDSLHelper
+                .resolveManyInSuperType(node.getSuperSuffix().getName().get(), false,
+                    superType, currentSymbol, new ArrayList<JavaTypeSymbolReference>(),
+                    paramTypes);
+            if (methods.size()== 1) {
+              Entry<JavaMethodSymbol, JavaTypeSymbolReference> m = methods.entrySet().iterator().next();
+              this.setResult(m.getKey().getReturnType());
+              return;
+            }
+          }
+        }
       }
     }
   }
@@ -849,21 +896,28 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTCreatedName node) {
     String finalName = "";
     List<ActualTypeArgument> list = new ArrayList<>();
-    for (int i = 0; i < node.getIdentifierAndTypeArguments().size(); i++) {
-      handle(node.getIdentifierAndTypeArguments().get(i));
+    if (node.getPrimitiveType().isPresent()) {
+      handle(node.getPrimitiveType().get());
       if (this.getResult().isPresent()) {
-        if ("".equals(finalName)) {
-          finalName = this.getResult().get().getName();
+        finalName = this.getResult().get().getName();
+      }
+    } else {
+      for (int i = 0; i < node.getIdentifierAndTypeArguments().size(); i++) {
+        handle(node.getIdentifierAndTypeArguments().get(i));
+        if (this.getResult().isPresent()) {
+          if ("".equals(finalName)) {
+            finalName = this.getResult().get().getName();
+          }
+          else {
+            finalName = finalName + "." + this.getResult().get().getName();
+          }
+          if (i == node.getIdentifierAndTypeArguments().size() - 1) {
+            list = new ArrayList<>(this.getResult().get().getActualTypeArguments());
+          }
         }
         else {
-          finalName = finalName + "." + this.getResult().get().getName();
+          break;
         }
-        if (i == node.getIdentifierAndTypeArguments().size() - 1) {
-          list = new ArrayList<>(this.getResult().get().getActualTypeArguments());
-        }
-      }
-      else {
-        break;
       }
     }
     JavaTypeSymbolReference type = new JavaTypeSymbolReference(finalName,
