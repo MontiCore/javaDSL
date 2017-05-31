@@ -81,12 +81,17 @@ public class JavaDSLHelper {
         return Optional.of(getBinaryNumericPromotion(unbox(firstOperand), unbox(secondOperand)));
       }
     }
-    if ("<".equals(operation)) {
+    if ("<<".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }
     }
-    if (">".equals(operation)) {
+    if (">>".equals(operation)) {
+      if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
+        return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
+      }
+    }
+    if (">>>".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }

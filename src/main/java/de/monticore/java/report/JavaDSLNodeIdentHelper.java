@@ -41,7 +41,6 @@ import de.monticore.java.javadsl._ast.ASTLabeledStatement;
 import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
 import de.monticore.java.javadsl._ast.ASTMethodSignature;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.mcexpressions._ast.ASTExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
 import de.monticore.literals.literals._ast.ASTIntLiteral;
 import de.monticore.literals.literals._ast.ASTStringLiteral;
@@ -231,9 +230,6 @@ public class JavaDSLNodeIdentHelper extends TypesNodeIdentHelper {
     }
     else if (a instanceof ASTFormalParameter) {
       return getIdent((ASTFormalParameter) a);
-    }
-    else if (a instanceof ASTExpression) {
-      return getIdent((ASTExpression) a);
     }
     else if (a instanceof ASTPrimaryExpression) {
       return getIdent((ASTPrimaryExpression) a);

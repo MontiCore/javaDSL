@@ -72,4 +72,9 @@ public class ODReportingTest extends AbstractTestClass {
     createAstAndST("src/test/resources/parsableAndCompilableModels/simpleTestClasses",
         "GenericClass");
   }
-}
+  
+  @Test
+  public void checkByte() throws IOException {
+    createAstAndST("src/test/resources/",
+        "java.lang.Byte");
+  }}

@@ -63,15 +63,18 @@ ShiftExpression implements Expression <170> =
         // Parsing generic typs like "List<List<String>>" leads to problems.
         (   shiftOp:"<" "<"
           {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
+          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?
+          {_aNode.setShiftOp("<<");}     
         |   shiftOp:">" ">" ">"
           {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
             (_input.LT(-3).getLine()==_input.LT(-2).getLine()) &&
             (_input.LT(-2).getCharPositionInLine()==_input.LT(-3).getCharPositionInLine()+1) &&
           	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
+         {_aNode.setShiftOp(">>>");}      
         |   shiftOp:">" ">"
          {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
+          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?
+         {_aNode.setShiftOp(">>");}      
         )
         rightExpression:Expression;
         

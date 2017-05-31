@@ -124,6 +124,7 @@ public class JavaDSLPrettyPrinterTest {
     // Prettyprinting input
     JavaDSLPrettyPrinter prettyPrinter = new JavaDSLPrettyPrinter(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
+    System.out.println(output);
     
     // Parsing printed input
     ASTJavaDSLNode printedAST = parse(new StringReader(output));

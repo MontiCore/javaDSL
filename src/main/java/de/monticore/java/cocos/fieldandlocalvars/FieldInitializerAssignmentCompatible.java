@@ -80,6 +80,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
         }
       }
       int dim = fieldType.getDimension()+variableDeclarator.getDeclaratorId().getDim().size();
+      fieldType.setDimension(dim);
       String expectedArray = "";
       for (int i = 0; i < dim; i++) {
         expectedArray = expectedArray.concat("[]");
