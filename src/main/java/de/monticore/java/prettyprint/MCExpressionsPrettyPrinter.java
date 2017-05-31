@@ -38,6 +38,7 @@ import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpressi
 import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._ast.ASTLogicalNotExpression;
 import de.monticore.java.mcexpressions._ast.ASTMCExpressionsNode;
 import de.monticore.java.mcexpressions._ast.ASTMultExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
@@ -220,7 +221,18 @@ MCExpressionsVisitor {
   @Override
   public void handle(ASTBooleanNotExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
-    getPrinter().print(node.getBooleanNot().get());
+    getPrinter().print("~");
+    node.getExpression().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  /**
+   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTLogicalNotExpression)
+   */
+  @Override
+  public void handle(ASTLogicalNotExpression node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    getPrinter().print("!");
     node.getExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }

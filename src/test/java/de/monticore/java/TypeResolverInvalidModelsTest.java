@@ -74,6 +74,7 @@ import de.monticore.java.cocos.expressions.ConditionValid;
 import de.monticore.java.cocos.expressions.FieldAccessValid;
 import de.monticore.java.cocos.expressions.IdentityTestValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LogicalNotValid;
 import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
 import de.monticore.java.cocos.expressions.MethodInvocationValid;
 import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
@@ -729,12 +730,22 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new BooleanNotValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean."),
         Finding.error(
             "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/BooleanNot", checker, expectedErrors);
+  }
+
+  @Test
+  public void TestLogicalNotValid() {
+    JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
+    checker.addCoCo(new LogicalNotValid(typeResolver));
+    Collection<Finding> expectedErrors = Arrays.asList(
+        Finding.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean.")
+    );
+    testModelForErrors("src/test/resources",
+        "typeSystemTestModels/invalid/expressions/LogicalNot", checker, expectedErrors);
   }
 
   @Test

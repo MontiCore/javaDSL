@@ -40,7 +40,10 @@ PrefixExpression implements Expression <210> =
         Expression;
         
 BooleanNotExpression implements Expression <200> =
-	(booleanNot:"~" | booleanNot:"!") Expression;
+	"~"  Expression;
+	
+LogicalNotExpression implements Expression <199> =
+	"!" Expression;
 	
 MultExpression implements Expression <190> =
 	leftExpression:Expression

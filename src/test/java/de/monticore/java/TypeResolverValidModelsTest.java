@@ -68,6 +68,7 @@ import de.monticore.java.cocos.expressions.ConditionValid;
 import de.monticore.java.cocos.expressions.FieldAccessValid;
 import de.monticore.java.cocos.expressions.IdentityTestValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LogicalNotValid;
 import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
 import de.monticore.java.cocos.expressions.MethodInvocationValid;
 import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
@@ -460,6 +461,14 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
         "typeSystemTestModels/valid/expressions/BooleanNot", checker);
   }
   
+  @Test
+  public void TestLogicalNotValid() {
+    JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
+    checker.addCoCo(new LogicalNotValid(typeResolver));
+    testModelNoErrors("src/test/resources",
+        "typeSystemTestModels/valid/expressions/LogicalNot", checker);
+  }
+
   @Test
   public void TestCastConversionValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();

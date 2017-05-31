@@ -120,6 +120,7 @@ public class JavaDSLTypeChecker {
     expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
     expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
+    expressionChecker.addCoCo(new LogicalNotValid(typeResolver));
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
     expressionChecker.addCoCo(new ComparisonValid(typeResolver));
     expressionChecker.addCoCo(new ConditionValid(typeResolver));

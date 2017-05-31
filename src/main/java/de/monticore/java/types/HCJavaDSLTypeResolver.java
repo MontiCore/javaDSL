@@ -79,6 +79,7 @@ import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._ast.ASTLogicalNotExpression;
 import de.monticore.java.mcexpressions._ast.ASTMultExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
@@ -707,17 +708,23 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference expressionType = this.getResult()
           .get();
-      if ("!".equals(node.getBooleanNot().get())
-          && !JavaDSLHelper.isBooleanType(expressionType)) {
-        this.setResult(null);
-      }
-      if ("~".equals(node.getBooleanNot().get())
-          && !JavaDSLHelper.isIntegralType(expressionType)) {
+      if (!JavaDSLHelper.isIntegralType(expressionType)) {
         this.setResult(null);
       }
     }
   }
   
+  public void handle(ASTLogicalNotExpression node) {
+    handle(node.getExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference expressionType = this.getResult()
+          .get();
+      if (!JavaDSLHelper.isBooleanType(expressionType)) {
+        this.setResult(null);
+      }
+    }
+  }
+
   public void handle(ASTConditionalExpression node) {
     handle(node.getCondition());
     if (this.getResult().isPresent()) {
