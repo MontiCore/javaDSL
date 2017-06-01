@@ -24,7 +24,7 @@ import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
 import de.monticore.java.javadsl._ast.ASTSwitchLabel;
 import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLASTSwitchStatementCoCo;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTNameExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
@@ -46,7 +46,6 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
   }
 
   @Override public void check(ASTSwitchStatement node) {
-    if (node.getExpression() instanceof ASTPrimaryExpression) {
       typeResolver.handle(node.getExpression());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference typeSwitch = typeResolver.getResult()
@@ -79,10 +78,10 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
             }
             else {
               ASTConstantExpressionSwitchLabel constant = (ASTConstantExpressionSwitchLabel) switchLabel;
-              if (JavaDSLHelper.isEnum(typeSwitch)) {
+              if (JavaDSLHelper.isEnum(typeSwitch) && constant.getConstantExpression() instanceof ASTNameExpression) {
                 // TODO MB 
-                String enumMember = ((ASTPrimaryExpression)constant.getConstantExpression())
-                    .getName().get();
+                String enumMember = ((ASTNameExpression)constant.getConstantExpression())
+                    .getName();
                 JavaTypeSymbolReference memberType = new JavaTypeSymbolReference(enumMember,
                     typeSwitch.getEnclosingScope(), 0);
                 //JLS3 14.11-2
@@ -110,5 +109,5 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
         }
       }
     }
-  }
+  
 }

@@ -30,19 +30,25 @@ import de.monticore.java.mcexpressions._ast.ASTBinaryXorOpExpression;
 import de.monticore.java.mcexpressions._ast.ASTBooleanAndOpExpression;
 import de.monticore.java.mcexpressions._ast.ASTBooleanNotExpression;
 import de.monticore.java.mcexpressions._ast.ASTBooleanOrOpExpression;
+import de.monticore.java.mcexpressions._ast.ASTBracketExpression;
 import de.monticore.java.mcexpressions._ast.ASTCallExpression;
+import de.monticore.java.mcexpressions._ast.ASTClassExpression;
 import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
 import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocation;
 import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
+import de.monticore.java.mcexpressions._ast.ASTGenericThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.java.mcexpressions._ast.ASTLiteralExpression;
 import de.monticore.java.mcexpressions._ast.ASTLogicalNotExpression;
 import de.monticore.java.mcexpressions._ast.ASTMCExpressionsNode;
 import de.monticore.java.mcexpressions._ast.ASTMultExpression;
+import de.monticore.java.mcexpressions._ast.ASTNameExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
 import de.monticore.java.mcexpressions._ast.ASTShiftExpression;
 import de.monticore.java.mcexpressions._ast.ASTSuffixExpression;
@@ -74,37 +80,64 @@ MCExpressionsVisitor {
   }
 
   @Override
-  public void handle(ASTPrimaryExpression a) {
+  public void handle(ASTBracketExpression a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.getExpression().isPresent()) {
-      getPrinter().print("(");
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(")");
-    }
-    if (a.isThis()) {
-      getPrinter().print("this");
-    }
-    if (a.isSuper()) {
-      getPrinter().print("super");
-    }
-    if (a.getLiteral().isPresent()) {
-      a.getLiteral().get().accept(getRealThis());
-    }
-    if (a.getName().isPresent()) {
-      printNode(a.getName().get());
-    }
-    if (a.getReturnType().isPresent()) {
-      a.getReturnType().get().accept(getRealThis());
-      getPrinter().print(".class");
-    }
-    if (a.getExplicitGenericInvocation().isPresent()) {
-      a.getExplicitGenericInvocation().get().accept(getRealThis());
-    }
-    if (a.getTypeArguments().isPresent()) {
-      a.getTypeArguments().get().accept(getRealThis());
-      getPrinter().print("this");
-      a.getArguments().get().accept(getRealThis());
-    }
+    getPrinter().print("(");
+    a.getExpression().accept(getRealThis());
+    getPrinter().print(")");
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTPrimaryThisExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    getPrinter().print("this");   
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTPrimarySuperExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    getPrinter().print("super");
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTLiteralExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    a.getLiteral().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTNameExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    printNode(a.getName());
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTClassExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    a.getReturnType().accept(getRealThis());
+    getPrinter().print(".class");
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTPrimaryExplicitGenericInvocationExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    a.getTypeArguments().accept(getRealThis());
+    a.getExplicitGenericInvocationSuffix().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTGenericThisExpression a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    a.getTypeArguments().accept(getRealThis());
+    getPrinter().print("this");
+    a.getArguments().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -152,7 +185,7 @@ MCExpressionsVisitor {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getExpression().accept(getRealThis());
     getPrinter().print(".");
-    node.getExplicitGenericInvocation().accept(getRealThis());
+    node.getPrimaryExplicitGenericInvocationExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
@@ -392,17 +425,6 @@ MCExpressionsVisitor {
     node.getLeftExpression().accept(getRealThis());
     getPrinter().print(node.getAssignment().orElse(""));
     node.getRightExpression().accept(getRealThis());
-    CommentPrettyPrinter.printPostComments(node, getPrinter());
-  }
-
-  /**
-   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTExplicitGenericInvocation)
-   */
-  @Override
-  public void handle(ASTExplicitGenericInvocation node) {
-    CommentPrettyPrinter.printPreComments(node, getPrinter());
-    node.getTypeArguments().accept(getRealThis());
-    node.getExplicitGenericInvocationSuffix().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 

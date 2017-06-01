@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocation;
 import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTNameExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryExplicitGenericInvocationExpression;
 import de.monticore.java.mcexpressions._cocos.MCExpressionsASTExplicitGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -39,7 +39,7 @@ import de.se_rwth.commons.logging.Log;
  * Created by Odgrlb on 07.08.2016.
  */
 public class MethodGenericInvocationValid
-    implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
+implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -53,7 +53,7 @@ public class MethodGenericInvocationValid
     List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
-    ASTExplicitGenericInvocation genericInvocation = node.getExplicitGenericInvocation();
+    ASTPrimaryExplicitGenericInvocationExpression genericInvocation = node.getPrimaryExplicitGenericInvocationExpression();
     for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
         .getTypeArguments()) {
       typeArgument.accept(typeResolver);
@@ -77,72 +77,47 @@ public class MethodGenericInvocationValid
     if (genericInvocation.getExplicitGenericInvocationSuffix().getName().isPresent()) {
       methodName = genericInvocation.getExplicitGenericInvocationSuffix().getName().get();
     }
-    if (node.getExpression() instanceof ASTPrimaryExpression) {
-      ASTPrimaryExpression primaryExpression = (ASTPrimaryExpression) node.getExpression();
-      if (primaryExpression.nameIsPresent()) {
-        String symbolName = primaryExpression.getName().get();
-        typeResolver.handle(primaryExpression);
-        JavaTypeSymbolReference type = typeResolver.getResult().get();
-        if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
-            .isPresent()) {
-          // for class method
-          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-              .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-          if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
-            HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                .resolveManyInSuperType(methodName, true, null, expSymbol,
-                    typeArguments, actualArguments);
-            if (methodSymbols.isEmpty()) {
-              Log.error("0xA0556 method '" + methodName + "' is not found.",
-                  node.get_SourcePositionStart());
-            }
-            if (methodSymbols.size() > 1) {
-              Log.error("0xA0557 the invocation of method '" + methodName + "' is ambiguous.",
-                  node.get_SourcePositionStart());
-            }
+    if (node.getExpression() instanceof ASTNameExpression) {
+      ASTNameExpression primaryExpression = (ASTNameExpression) node.getExpression();
+      String symbolName = primaryExpression.getName();
+      typeResolver.handle(primaryExpression);
+      JavaTypeSymbolReference type = typeResolver.getResult().get();
+      if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
+          .isPresent()) {
+        // for class method
+        JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+            .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+        if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
+          HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
+              .resolveManyInSuperType(methodName, true, null, expSymbol,
+                  typeArguments, actualArguments);
+          if (methodSymbols.isEmpty()) {
+            Log.error("0xA0556 method '" + methodName + "' is not found.",
+                node.get_SourcePositionStart());
           }
-          else {
-            HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                .resolveManyInSuperType(methodName, false, type, expSymbol,
-                    typeArguments, actualArguments);
-            if (methodSymbols.isEmpty()) {
-              Log.error("0xA0558 method '" + methodName + "' is not found.",
-                  node.get_SourcePositionStart());
-            }
-            if (methodSymbols.size() > 1) {
-              Log.error("0xA0559 the invocation of method '" + methodName + "' is ambiguous",
-                  node.get_SourcePositionStart());
-            }
+          if (methodSymbols.size() > 1) {
+            Log.error("0xA0557 the invocation of method '" + methodName + "' is ambiguous.",
+                node.get_SourcePositionStart());
           }
-          
         }
         else {
-          Log.error("the symbol '" + primaryExpression.getName().get() + "' "
-              + "is not found.", node.get_SourcePositionStart());
-        }
+          HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
+              .resolveManyInSuperType(methodName, false, type, expSymbol,
+                  typeArguments, actualArguments);
+          if (methodSymbols.isEmpty()) {
+            Log.error("0xA0558 method '" + methodName + "' is not found.",
+                node.get_SourcePositionStart());
+          }
+          if (methodSymbols.size() > 1) {
+            Log.error("0xA0559 the invocation of method '" + methodName + "' is ambiguous",
+                node.get_SourcePositionStart());
+          }
+        }       
       }
       else {
-        typeResolver.handle(primaryExpression);
-        if (typeResolver.getResult().isPresent()) {
-          JavaTypeSymbolReference expType = typeResolver.getResult().get();
-          if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
-              .isPresent()) {
-            JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-                .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-            HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                .resolveManyInSuperType(methodName, false, expType, expSymbol,
-                    typeArguments, actualArguments);
-            if (methodSymbols.isEmpty()) {
-              Log.error("0xA0558 method '" + methodName + "' is not found.",
-                  node.get_SourcePositionStart());
-            }
-            if (methodSymbols.size() > 1) {
-              Log.error("0xA0559 the invocation of method '" + methodName + "' is ambiguous",
-                  node.get_SourcePositionStart());
-            }
-          }
-        }
-      }
+        Log.error("the symbol '" + primaryExpression.getName() + "' "
+            + "is not found.", node.get_SourcePositionStart());
+      }    
     }
     else {
       typeResolver.handle(node.getExpression());

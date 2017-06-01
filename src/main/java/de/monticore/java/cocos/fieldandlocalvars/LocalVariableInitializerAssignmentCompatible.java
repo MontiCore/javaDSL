@@ -26,7 +26,7 @@ import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTLiteralExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
@@ -43,8 +43,8 @@ import de.se_rwth.commons.logging.Log;
  * @since TODO * TODO
  */
 public class LocalVariableInitializerAssignmentCompatible implements
-    JavaDSLASTLocalVariableDeclarationCoCo {
-    
+JavaDSLASTLocalVariableDeclarationCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
   
   public LocalVariableInitializerAssignmentCompatible(HCJavaDSLTypeResolver typeResolver) {
@@ -69,14 +69,11 @@ public class LocalVariableInitializerAssignmentCompatible implements
               if (variableDeclarator.getVariableInititializerOrExpression().get().getExpression().isPresent()) {
                 ASTExpression astExpression =  variableDeclarator
                     .getVariableInititializerOrExpression().get().getExpression().get();
-                if (astExpression instanceof ASTPrimaryExpression) {
-                  ASTPrimaryExpression primaryExpression = (ASTPrimaryExpression) astExpression;
-                  if (primaryExpression.literalIsPresent()) {
-                    ASTLiteral literal = primaryExpression.getLiteral()
-                        .get();
-                    if (literal instanceof ASTIntLiteral) {
-                      return;
-                    }
+                if (astExpression instanceof ASTLiteralExpression) {
+                  ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
+                  ASTLiteral literal = primaryExpression.getLiteral();
+                  if (literal instanceof ASTIntLiteral) {
+                    return;
                   }
                 }
               }
@@ -118,9 +115,9 @@ public class LocalVariableInitializerAssignmentCompatible implements
                             .unsafeAssignmentConversionAvailable(arrType, componentType)) {
                           Log.warn(
                               "0xA0610 Possible unchecked conversion from type '" + componentType
-                                  .getName()
-                                  + "' to '"
-                                  + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                              .getName()
+                              + "' to '"
+                              + localVarType.getName() + "'.", node.get_SourcePositionStart());
                           break;
                         }
                         else {
@@ -139,32 +136,32 @@ public class LocalVariableInitializerAssignmentCompatible implements
             else {
               variableDeclarator.accept(typeResolver);
               //  typeResolver.handle();
-                if (typeResolver.getResult().isPresent()) {
-                  JavaTypeSymbolReference expType = typeResolver.getResult()
-                      .get();
-                  //JLS3 5.2-1
-                  if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
-                      || JavaDSLHelper.isShortType(localVarType)) {
-                    if (JavaDSLHelper.isIntType(expType)) {
-                      return;
-                    }
-                  }
-                  if (JavaDSLHelper.safeAssignmentConversionAvailable(expType, localVarType)) {
+              if (typeResolver.getResult().isPresent()) {
+                JavaTypeSymbolReference expType = typeResolver.getResult()
+                    .get();
+                //JLS3 5.2-1
+                if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
+                    || JavaDSLHelper.isShortType(localVarType)) {
+                  if (JavaDSLHelper.isIntType(expType)) {
                     return;
                   }
-                  //JLS3 4.4-2
-                  else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(expType, localVarType)) {
-                    Log.warn(
-                        "0xA0610 Possible unchecked conversion from type '" + expType.getName()
-                            + "' to '"
-                            + localVarType.getName() + "'.", node.get_SourcePositionStart());
-                  }
-                  else {
-                    Log.error(
-                        "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
-                            + localVarType
-                            .getName() + "'.", node.get_SourcePositionStart());
-                  }
+                }
+                if (JavaDSLHelper.safeAssignmentConversionAvailable(expType, localVarType)) {
+                  return;
+                }
+                //JLS3 4.4-2
+                else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(expType, localVarType)) {
+                  Log.warn(
+                      "0xA0610 Possible unchecked conversion from type '" + expType.getName()
+                      + "' to '"
+                      + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                }
+                else {
+                  Log.error(
+                      "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
+                          + localVarType
+                          .getName() + "'.", node.get_SourcePositionStart());
+                }
               }
             }
           }

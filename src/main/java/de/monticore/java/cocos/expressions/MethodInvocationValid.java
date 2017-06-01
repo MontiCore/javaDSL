@@ -20,7 +20,7 @@ package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.mcexpressions._ast.ASTCallExpression;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTNameExpression;
 import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
 import de.monticore.java.mcexpressions._cocos.MCExpressionsASTCallExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
@@ -41,8 +41,8 @@ public class MethodInvocationValid implements MCExpressionsASTCallExpressionCoCo
     if (!typeResolver.getResult().isPresent()) {
       ASTExpression expr = node.getExpression();
       String name = "";
-      if (expr instanceof ASTPrimaryExpression) {
-        name = ((ASTPrimaryExpression) expr).getName().orElse("");
+      if (expr instanceof ASTNameExpression) {
+        name = ((ASTNameExpression) expr).getName();
       } else if (expr instanceof ASTQualifiedNameExpression) {
         name = ((ASTQualifiedNameExpression) expr).getName();
       }

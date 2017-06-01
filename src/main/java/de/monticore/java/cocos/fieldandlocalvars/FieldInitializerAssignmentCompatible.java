@@ -26,7 +26,7 @@ import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExpression;
+import de.monticore.java.mcexpressions._ast.ASTLiteralExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
@@ -67,14 +67,11 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
             && variableDeclarator.getVariableInititializerOrExpression().get() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
               .getVariableInititializerOrExpression().get();
-          if (astExpression instanceof ASTPrimaryExpression) {
-            ASTPrimaryExpression primaryExpression =(ASTPrimaryExpression) astExpression;
-            if (primaryExpression.literalIsPresent()) {
-              ASTLiteral literal = primaryExpression.getLiteral()
-                  .get();
-              if (literal instanceof ASTIntLiteral) {
-                return;
-              }
+          if (astExpression instanceof ASTLiteralExpression) {
+            ASTLiteralExpression primaryExpression =(ASTLiteralExpression) astExpression;
+            ASTLiteral literal = primaryExpression.getLiteral();
+            if (literal instanceof ASTIntLiteral) {
+              return;
             }
           }
         }
@@ -152,7 +149,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
           if (dim != expType.getDimension()) {
             Log.error(
                 "0xA0612  type mismatch, cannot convert from '"
-                  + expType.getName()  + "' to '" + fieldType.getName() + expectedArray + "'.",
+                    + expType.getName()  + "' to '" + fieldType.getName() + expectedArray + "'.",
                     node.get_SourcePositionStart());
             return;
           }
@@ -186,7 +183,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
                   + variableDeclarator.getDeclaratorId().getName()
                   + "'.",
                   node.get_SourcePositionStart());
-
+          
         }
       }
     }  
