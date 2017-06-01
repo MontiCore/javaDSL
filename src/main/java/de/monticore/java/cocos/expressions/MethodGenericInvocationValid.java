@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
 import de.monticore.java.mcexpressions._ast.ASTNameExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExplicitGenericInvocationExpression;
-import de.monticore.java.mcexpressions._cocos.MCExpressionsASTExplicitGenericInvocationExpressionCoCo;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryGenericInvocationExpression;
+import de.monticore.java.mcexpressions._cocos.MCExpressionsASTGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
@@ -39,7 +39,7 @@ import de.se_rwth.commons.logging.Log;
  * Created by Odgrlb on 07.08.2016.
  */
 public class MethodGenericInvocationValid
-implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
+implements MCExpressionsASTGenericInvocationExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -49,11 +49,11 @@ implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
   
   // //JLS3 15.12.1-1, JLS3 15.12.1-2, JLS3 15.12.1-3, JLS3 15.12.1-4, JLS3 15.12.1-5
   @Override
-  public void check(ASTExplicitGenericInvocationExpression node) {
+  public void check(ASTGenericInvocationExpression node) {
     List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
-    ASTPrimaryExplicitGenericInvocationExpression genericInvocation = node.getPrimaryExplicitGenericInvocationExpression();
+    ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
     for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
         .getTypeArguments()) {
       typeArgument.accept(typeResolver);
@@ -64,7 +64,7 @@ implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
         Log.error("0xA0554 type argument", node.get_SourcePositionStart());
       }
     }
-    for (ASTExpression expression : genericInvocation.getExplicitGenericInvocationSuffix()
+    for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
         .getArguments().get().getExpressions()) {
       expression.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
@@ -74,8 +74,8 @@ implements MCExpressionsASTExplicitGenericInvocationExpressionCoCo {
         Log.error("0xA0555 argument", node.get_SourcePositionStart());
       }
     }
-    if (genericInvocation.getExplicitGenericInvocationSuffix().getName().isPresent()) {
-      methodName = genericInvocation.getExplicitGenericInvocationSuffix().getName().get();
+    if (genericInvocation.getGenericInvocationSuffix().getName().isPresent()) {
+      methodName = genericInvocation.getGenericInvocationSuffix().getName().get();
     }
     if (node.getExpression() instanceof ASTNameExpression) {
       ASTNameExpression primaryExpression = (ASTNameExpression) node.getExpression();

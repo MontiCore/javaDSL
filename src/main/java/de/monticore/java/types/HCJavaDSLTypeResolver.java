@@ -75,9 +75,9 @@ import de.monticore.java.mcexpressions._ast.ASTCallExpression;
 import de.monticore.java.mcexpressions._ast.ASTClassExpression;
 import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
 import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
 import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.java.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTGenericInvocationSuffix;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
 import de.monticore.java.mcexpressions._ast.ASTLiteralExpression;
@@ -85,7 +85,7 @@ import de.monticore.java.mcexpressions._ast.ASTLogicalNotExpression;
 import de.monticore.java.mcexpressions._ast.ASTMultExpression;
 import de.monticore.java.mcexpressions._ast.ASTNameExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimarySuperExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimaryThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
@@ -496,11 +496,11 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTExplicitGenericInvocationExpression node) {
+  public void handle(ASTGenericInvocationExpression node) {
     List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
-    ASTPrimaryExplicitGenericInvocationExpression genericInvocation = node.getPrimaryExplicitGenericInvocationExpression();
+    ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
     for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
         .getTypeArguments()) {
       typeArgument.accept(this);
@@ -512,7 +512,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       }
     }
     if (genericInvocation.getTypeArguments().getTypeArguments().size() == typeArguments.size()) {
-      for (ASTExpression expression : genericInvocation.getExplicitGenericInvocationSuffix()
+      for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
           .getArguments().get().getExpressions()) {
         expression.accept(this);
         if (this.getResult().isPresent()) {
@@ -522,10 +522,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
           this.setResult(null);
         }
       }
-      if (genericInvocation.getExplicitGenericInvocationSuffix().getArguments().get()
+      if (genericInvocation.getGenericInvocationSuffix().getArguments().get()
           .getExpressions().size() == actualArguments.size()) {
-        if (genericInvocation.getExplicitGenericInvocationSuffix().getName().isPresent()) {
-          methodName = genericInvocation.getExplicitGenericInvocationSuffix().getName().get();
+        if (genericInvocation.getGenericInvocationSuffix().getName().isPresent()) {
+          methodName = genericInvocation.getGenericInvocationSuffix().getName().get();
         }
         
         this.handle(node.getExpression());
@@ -1190,12 +1190,12 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     this.setResult(new JavaTypeSymbolReference(node.getName(), node.getEnclosingScope().get(), 0));
   }
   
-  public void handle(ASTPrimaryExplicitGenericInvocationExpression node) {
+  public void handle(ASTPrimaryGenericInvocationExpression node) {
     //// TODO: 05.08.2016 node.getTypeArguments() <String, Integer>?
-    handle(node.getExplicitGenericInvocationSuffix());
+    handle(node.getGenericInvocationSuffix());
   }
   
-  public void handle(ASTExplicitGenericInvocationSuffix node) {
+  public void handle(ASTGenericInvocationSuffix node) {
     if (node.nameIsPresent()) {
       JavaTypeSymbolReference methodType = new JavaTypeSymbolReference(node.getName().get(),
           node.getEnclosingScope().get(), 0);

@@ -35,8 +35,8 @@ import de.monticore.java.mcexpressions._ast.ASTCallExpression;
 import de.monticore.java.mcexpressions._ast.ASTClassExpression;
 import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
 import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationExpression;
-import de.monticore.java.mcexpressions._ast.ASTExplicitGenericInvocationSuffix;
+import de.monticore.java.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTGenericInvocationSuffix;
 import de.monticore.java.mcexpressions._ast.ASTGenericThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
@@ -46,7 +46,7 @@ import de.monticore.java.mcexpressions._ast.ASTMCExpressionsNode;
 import de.monticore.java.mcexpressions._ast.ASTMultExpression;
 import de.monticore.java.mcexpressions._ast.ASTNameExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrefixExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryExplicitGenericInvocationExpression;
+import de.monticore.java.mcexpressions._ast.ASTPrimaryGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimarySuperExpression;
 import de.monticore.java.mcexpressions._ast.ASTPrimaryThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
@@ -125,10 +125,10 @@ MCExpressionsVisitor {
   }
 
   @Override
-  public void handle(ASTPrimaryExplicitGenericInvocationExpression a) {
+  public void handle(ASTPrimaryGenericInvocationExpression a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getTypeArguments().accept(getRealThis());
-    a.getExplicitGenericInvocationSuffix().accept(getRealThis());
+    a.getGenericInvocationSuffix().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -178,14 +178,14 @@ MCExpressionsVisitor {
   }
 
   /**
-   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTExplicitGenericInvocationExpression)
+   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTGenericInvocationExpression)
    */
   @Override
-  public void handle(ASTExplicitGenericInvocationExpression node) {
+  public void handle(ASTGenericInvocationExpression node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getExpression().accept(getRealThis());
     getPrinter().print(".");
-    node.getPrimaryExplicitGenericInvocationExpression().accept(getRealThis());
+    node.getPrimaryGenericInvocationExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
@@ -429,10 +429,10 @@ MCExpressionsVisitor {
   }
 
   /**
-   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTExplicitGenericInvocationSuffix)
+   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTGenericInvocationSuffix)
    */
   @Override
-  public void handle(ASTExplicitGenericInvocationSuffix node) {
+  public void handle(ASTGenericInvocationSuffix node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     if (node.getSuperSuffix().isPresent()) {
       getPrinter().print(" super ");

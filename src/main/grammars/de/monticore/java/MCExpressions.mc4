@@ -13,8 +13,8 @@ ThisExpression implements Expression <280> =
 SuperExpression implements Expression <270> =
 	Expression "." "super" SuperSuffix;
 	
-ExplicitGenericInvocationExpression implements Expression <260> =
-	Expression "." PrimaryExplicitGenericInvocationExpression;
+GenericInvocationExpression implements Expression <260> =
+	Expression "." PrimaryGenericInvocationExpression;
 	
 ArrayExpression implements Expression <250> =
 	Expression "[" indexExpression:Expression "]";
@@ -153,14 +153,14 @@ NameExpression implements Expression <300>
 ClassExpression implements Expression <300>
     = ReturnType "." "class";
    
-PrimaryExplicitGenericInvocationExpression implements Expression <300>
-    = TypeArguments ExplicitGenericInvocationSuffix
+PrimaryGenericInvocationExpression implements Expression <300>
+    = TypeArguments GenericInvocationSuffix
     ;
     
 GenericThisExpression implements Expression <300>
    = TypeArguments "this" Arguments;
 
-ExplicitGenericInvocationSuffix
+GenericInvocationSuffix
     =   "super" SuperSuffix
     |   Name Arguments
     ;
