@@ -37,7 +37,6 @@ import de.monticore.java.mcexpressions._ast.ASTComparisonExpression;
 import de.monticore.java.mcexpressions._ast.ASTConditionalExpression;
 import de.monticore.java.mcexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.java.mcexpressions._ast.ASTGenericInvocationSuffix;
-import de.monticore.java.mcexpressions._ast.ASTGenericThisExpression;
 import de.monticore.java.mcexpressions._ast.ASTIdentityExpression;
 import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
 import de.monticore.java.mcexpressions._ast.ASTLiteralExpression;
@@ -129,15 +128,6 @@ MCExpressionsVisitor {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getTypeArguments().accept(getRealThis());
     a.getGenericInvocationSuffix().accept(getRealThis());
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTGenericThisExpression a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    a.getTypeArguments().accept(getRealThis());
-    getPrinter().print("this");
-    a.getArguments().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -434,8 +424,12 @@ MCExpressionsVisitor {
   @Override
   public void handle(ASTGenericInvocationSuffix node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
-    if (node.getSuperSuffix().isPresent()) {
+    if (node.isSuper()) {
       getPrinter().print(" super ");
+      node.getSuperSuffix().get().accept(getRealThis());
+    }
+    if (node.isThis()) {
+      getPrinter().print(" this ");
       node.getSuperSuffix().get().accept(getRealThis());
     }
     if (node.getName().isPresent()) {

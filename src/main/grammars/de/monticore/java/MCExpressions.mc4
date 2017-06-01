@@ -157,11 +157,9 @@ PrimaryGenericInvocationExpression implements Expression <300>
     = TypeArguments GenericInvocationSuffix
     ;
     
-GenericThisExpression implements Expression <300>
-   = TypeArguments "this" Arguments;
-
 GenericInvocationSuffix
-    =   "super" SuperSuffix
+    =   ["super"] SuperSuffix
+    |   ["this"] Arguments
     |   Name Arguments
     ;
     
