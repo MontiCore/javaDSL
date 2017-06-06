@@ -1771,38 +1771,27 @@ public class JavaDSLHelper {
    */
 
   public static Optional<JavaMethodSymbol> phase3(JavaMethodSymbol methodSymbol, List<JavaTypeSymbolReference> formalParameters,
-      List<JavaTypeSymbolReference> actualParameters){
-    if (methodSymbol.isEllipsisParameterMethod()) {
+      List<JavaTypeSymbolReference> actualParameters) {
+    if(methodSymbol.isEllipsisParameterMethod()) {
       JavaTypeSymbolReference componentType = getComponentType(
-          formalParameters.get(formalParameters.size() - 1));
-      for (int i = formalParameters.size() - 1; i < actualParameters.size(); i++) {
-        if (methodInvocationConversionAvailable(actualParameters.get(i), componentType)) {
-          if (i == actualParameters.size() - 1) {
-            if (formalParameters.size() == 1) {
-              return Optional.of(methodSymbol);
-            }
-            else {
-              for (int j = 0; j < formalParameters.size() - 1; j++) {
-                if (methodInvocationConversionAvailable(actualParameters.get(j),
-                    formalParameters.get(j))) {
-                  if (j == formalParameters.size() - 2) {
-                    return Optional.of(methodSymbol);
-                  }
-                }
-                else {
-                  break;
-                }
-              }
-            }
+              formalParameters.get(formalParameters.size() - 1));
+      for(int i = 0; i < actualParameters.size(); i++) {
+        if(i < formalParameters.size() - 1) {
+          if(!methodInvocationConversionAvailable(actualParameters.get(i),
+                  formalParameters.get(i))) {
+            return Optional.empty();
+          }
+        } else {
+          if(!methodInvocationConversionAvailable(actualParameters.get(i), componentType)) {
+            return Optional.empty();
           }
         }
-        else {
-          break;
-        }
       }
+      return Optional.of(methodSymbol);
     }
     return Optional.empty();
   }
+
   /**
    *
    * @param isEllipsis indicates if the method is variable arity method
@@ -2687,10 +2676,10 @@ public class JavaDSLHelper {
    */
   public  static boolean safeCastTypeConversionAvailable(JavaTypeSymbolReference from,
       JavaTypeSymbolReference to) {
-    if(!isPrimitiveType(from) && !isPrimitiveType(to)) {
+    if(!isPrimitiveType(from)) {
       if ((from.getActualTypeArguments().isEmpty() && to.getActualTypeArguments().isEmpty())
           || (!from.getActualTypeArguments().isEmpty()) && to.getActualTypeArguments().isEmpty()) {
-        if (narrowingReferenceConversionAvailable(box(from), to)) {
+        if (narrowingReferenceConversionAvailable(box(from), box(to))) {
           return true;
         }
       }
