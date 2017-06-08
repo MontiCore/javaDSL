@@ -14,7 +14,6 @@
 
     <!-- .. Libraries ..................................................... -->
 
-    <java.lib.version>4.3.10-SNAPSHOT</java.lib.version>
     <guava.version>18.0</guava.version>
     <junit.version>4.11</junit.version>
     <se-commons.version>1.7.7</se-commons.version>
@@ -150,34 +149,6 @@
         </executions>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>${maven.dependency.version}</version>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>de.monticore</groupId>
-                  <artifactId>javaLib</artifactId>
-                  <classifier>models</classifier>
-                  <version>${java.lib.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
     </plugins>
 
   </build>
@@ -297,7 +268,7 @@
         </plugins>
       </build>
     </profile>
-    
+
     <profile>
       <id>testAll</id>
       <activation>

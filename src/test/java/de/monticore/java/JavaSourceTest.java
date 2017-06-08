@@ -52,6 +52,10 @@ public class JavaSourceTest {
 
   ParseJavaFileVisitor visitor = new ParseJavaFileVisitor(initialParsingFails);
   ParseJavaFileVisitor visitorFilesFailed = new ParseJavaFileVisitor();
+  
+  private static final int NUMBER_COCOS = 59;
+  
+  private static final int NUMBER_ERRORS = 532;
 
   @Before
   public void setup() {
@@ -75,6 +79,8 @@ public class JavaSourceTest {
       e.printStackTrace();
     }
     assertEquals(visitor.getNumberOfTests(), visitor.getSuccessCount());
+    assertEquals(NUMBER_COCOS, visitor.getFailClassesCount());
+    assertEquals(NUMBER_ERRORS, visitor.getFailCocosCount());
   }
  
   @Test
