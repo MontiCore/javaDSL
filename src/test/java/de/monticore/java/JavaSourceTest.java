@@ -51,6 +51,10 @@ public class JavaSourceTest {
 
   ParseJavaFileVisitor visitor = new ParseJavaFileVisitor(initialParsingFails);
   ParseJavaFileVisitor visitorFilesFailed = new ParseJavaFileVisitor();
+  
+  private static final int NUMBER_TESTS = 59;
+  
+  private static final int NUMBER_COCOS = 532;
 
   @Before
   public void setup() {
@@ -65,7 +69,7 @@ public class JavaSourceTest {
 
   @Test
   public void testAllJavaSourceFiles() {
-    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources");
+    Path path = FileSystems.getDefault().getPath("src", "test", "resources", "JDK", "java", "lang");
     
     try {
       Files.walkFileTree(path, visitor);
@@ -96,8 +100,8 @@ public class JavaSourceTest {
     Log.info("Success rate: " + visitor.getSuccessRate(), JavaSourceTest.class.getName());
     Log.info("Fail rate: " + visitorFilesFailed.getFailRate(), JavaSourceTest.class.getName());
     Log.info("Number of Tests: " + visitor.getNumberOfTests(), JavaSourceTest.class.getName());
-    Log.info("Number of Tests with failing cocos: " + visitor.getFailClassesCount(), JavaSourceTest.class.getName());
-    Log.info("Number of failing cocos: " + visitor.getFailCocosCount(), JavaSourceTest.class.getName());
+    Log.info("Number of Tests with failing cocos: " + visitor.getFailClassesCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_TESTS + ")");
+    Log.info("Number of failing cocos: " + visitor.getFailCocosCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_COCOS + ")");
     for (Path fileParsedWithErrors : visitorFilesFailed.fails) {
       Log.info(fileParsedWithErrors.toString(), JavaSourceTest.class.getName());
     }

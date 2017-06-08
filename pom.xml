@@ -6,15 +6,14 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.9-SNAPSHOT</version>
+  <version>4.3.10-SNAPSHOT</version>
 
   <properties>
 
-    <monticore.version>4.5.3-SNAPSHOT</monticore.version>
+    <monticore.version>4.5.3</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
-    <java.lib.version>4.3.9-SNAPSHOT</java.lib.version>
     <guava.version>18.0</guava.version>
     <junit.version>4.11</junit.version>
     <se-commons.version>1.7.7</se-commons.version>
@@ -27,7 +26,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>4.5.3-SNAPSHOT</mc4.maven.version>
+    <mc4.maven.version>4.5.3</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 
@@ -146,34 +145,6 @@
             <goals>
               <goal>single</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>${maven.dependency.version}</version>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>de.monticore</groupId>
-                  <artifactId>javaLib</artifactId>
-                  <classifier>models</classifier>
-                  <version>${java.lib.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -297,7 +268,7 @@
         </plugins>
       </build>
     </profile>
-    
+
     <profile>
       <id>testAll</id>
       <activation>

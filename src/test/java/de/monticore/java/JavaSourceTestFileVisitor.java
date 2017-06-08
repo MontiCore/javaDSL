@@ -126,7 +126,7 @@ class ParseJavaFileVisitor implements FileVisitor<Path> {
     if (model.endsWith(".java") && !ignorePathes.contains(file)) {
       Log.info("Parsing " + model, ParseJavaFileVisitor.class.getName());
       try {
-        String parentDirectory = "target/generated-test-resources";
+        String parentDirectory = "src/test/resources/JDK";
         String temp = file.toString().replace('\\', '/');
         String modelPath = temp.substring(parentDirectory.length() + 1, temp.lastIndexOf("."));
         optModel = parse(parentDirectory, modelPath);
