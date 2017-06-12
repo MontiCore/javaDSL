@@ -20,11 +20,11 @@ package de.monticore.java.cocos.expressions;
 
 import java.util.Collection;
 
-import de.monticore.java.mcexpressions._ast.ASTNameExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimarySuperExpression;
-import de.monticore.java.mcexpressions._ast.ASTPrimaryThisExpression;
-import de.monticore.java.mcexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.java.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTPrimaryThisExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;

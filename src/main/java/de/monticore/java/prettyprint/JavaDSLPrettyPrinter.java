@@ -20,6 +20,7 @@ package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
 
+import de.monticore.expressions.prettyprint.MCExpressionsPrettyPrinter;
 import de.monticore.java.javadsl._ast.ASTAnnotation;
 import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
 import de.monticore.java.javadsl._ast.ASTAnnotationMethod;

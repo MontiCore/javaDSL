@@ -21,8 +21,8 @@ package de.monticore.java.cocos.statements;
 import de.monticore.java.javadsl._ast.ASTSynchronizedStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLASTSynchronizedStatementCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**

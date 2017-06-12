@@ -10,7 +10,7 @@
 
   <properties>
 
-    <monticore.version>4.5.3</monticore.version>
+    <monticore.version>4.5.4-SNAPSHOT</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
@@ -56,6 +56,15 @@
   <!-- == DEFAULT BUILD SETTINGS =========================================== -->
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>${basedir}/src/test/resources</directory>
+        <excludes>
+          <exclude>JDK/**</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+    
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>

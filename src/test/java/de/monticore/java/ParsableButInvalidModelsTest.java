@@ -27,7 +27,13 @@ import org.junit.Test;
 
 import de.monticore.java.cocos.FieldNamesMustBePairWiseDifferent;
 import de.monticore.java.cocos.NestedTypeMayNotHaveSameNameAsEnclosingType;
-import de.monticore.java.cocos.classes.*;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBePrivate;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBeStatic;
+import de.monticore.java.cocos.classes.AbstractOrNativeMethodHasNoBody;
+import de.monticore.java.cocos.classes.ConcreteClassMayNotHaveAbstractMethod;
+import de.monticore.java.cocos.classes.ConstructorMayNotBeAbstract;
+import de.monticore.java.cocos.classes.NotAbstractAndNotFinal;
+import de.monticore.java.cocos.classes.SuperClassMayNotBeFinal;
 import de.monticore.java.cocos.methods.MethodFormalParametersVarargsNoArray;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.se_rwth.commons.logging.Log;

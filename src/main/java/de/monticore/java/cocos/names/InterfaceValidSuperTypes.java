@@ -18,6 +18,8 @@
  */
 package de.monticore.java.cocos.names;
 
+import java.util.Collection;
+
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTInterfaceDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -26,8 +28,6 @@ import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.types.types._ast.ASTType;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.Collection;
 
 /**
  * Created by Odgrlb on 29.10.2016.

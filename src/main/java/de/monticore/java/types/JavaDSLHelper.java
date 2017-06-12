@@ -30,10 +30,10 @@ import java.util.Set;
 
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.mcexpressions._ast.ASTCallExpression;
-import de.monticore.java.mcexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.java.mcexpressions._ast.ASTExpression;
-import de.monticore.java.mcexpressions._ast.ASTTypeCastExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;

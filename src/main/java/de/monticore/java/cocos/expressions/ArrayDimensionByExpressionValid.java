@@ -20,7 +20,7 @@ package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTArrayDimensionByExpressionCoCo;
-import de.monticore.java.mcexpressions._ast.ASTExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

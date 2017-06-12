@@ -22,8 +22,8 @@ import de.monticore.java.javadsl._ast.ASTCommonForControl;
 import de.monticore.java.javadsl._ast.ASTForStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLASTForStatementCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**

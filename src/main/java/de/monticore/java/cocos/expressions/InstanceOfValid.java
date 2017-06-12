@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.mcexpressions._ast.ASTInstanceofExpression;
-import de.monticore.java.mcexpressions._cocos.MCExpressionsASTInstanceofExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTInstanceofExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTInstanceofExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

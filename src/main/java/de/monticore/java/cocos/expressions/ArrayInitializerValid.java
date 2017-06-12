@@ -24,8 +24,8 @@ import de.monticore.java.javadsl._ast.ASTVariableInitializer;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTVariableDeclaratorCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 public class ArrayInitializerValid implements JavaDSLASTVariableDeclaratorCoCo {
