@@ -25,7 +25,6 @@ import org.junit.Test;
  * A simple test for java tool.
  *
  * @author (last commit) $Author$
- * @version $Revision$, $Date$
  */
 public class ParsableAndCompilableModelsTest extends AbstractTestClass {
 

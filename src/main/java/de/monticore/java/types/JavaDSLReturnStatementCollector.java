@@ -27,7 +27,6 @@ import java.util.List;
  * TODO
  *
  * @author (last commit) $$Author$$
- * @version $$Revision$$, $$Date$$
  * @since TODO
  */
 public class JavaDSLReturnStatementCollector implements JavaDSLVisitor {

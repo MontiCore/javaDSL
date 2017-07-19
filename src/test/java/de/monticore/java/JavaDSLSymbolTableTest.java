@@ -58,7 +58,6 @@ import de.monticore.symboltable.types.references.ActualTypeArgument;
  * A simple test for java tool.
  *
  * @author (last commit) $Author$
- * @version $Revision$, $Date$
  */
 public class JavaDSLSymbolTableTest extends AbstractTestClass {
   

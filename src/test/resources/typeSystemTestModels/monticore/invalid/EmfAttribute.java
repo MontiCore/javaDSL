@@ -8,7 +8,6 @@ import java.util.ArrayList;
  * Contains all attribute properties needed by emf generator
  *
  * @author (last commit) $Author$
- * @version $Revision$, $Date$
  */
 public class EmfAttribute {
 

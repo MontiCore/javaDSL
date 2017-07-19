@@ -28,7 +28,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  *
  * @author (last commit) $Author: breuer $
- * @version $Revision: 26242 $, $Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $
  */
 public class SuperClassMayNotBeFinal implements JavaDSLASTClassDeclarationCoCo {
 

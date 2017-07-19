@@ -26,7 +26,7 @@ import de.monticore.java.types.JavaDSLTypeChecker;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 22.10.2016.
+ *  on 22.10.2016.
  */
 public class TypeResolverJavaSDKTest extends AbstractCoCoTestClass {
 

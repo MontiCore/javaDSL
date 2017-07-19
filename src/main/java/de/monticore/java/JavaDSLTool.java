@@ -40,7 +40,6 @@ import de.se_rwth.commons.logging.Log;
  * Main class for the MyDSL tool.
  *
  * @author (last commit) $Author$
- * @version $Revision$, $Date$
  */
 public class JavaDSLTool {
   

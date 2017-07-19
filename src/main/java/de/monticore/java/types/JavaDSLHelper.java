@@ -40,7 +40,6 @@ import de.monticore.types.types._ast.ASTWildcardType;
  * TODO
  *
  * @author (last commit) $$Author$$
- * @version $$Revision$$, $$Date$$
  * @since TODO
  */
 public class JavaDSLHelper {

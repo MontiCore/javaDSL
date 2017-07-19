@@ -30,7 +30,7 @@ import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 25.09.2016.
+ *  on 25.09.2016.
  */
 public class NonAbstractClassImplementsAllAbstractMethods
     implements JavaDSLASTClassDeclarationCoCo {

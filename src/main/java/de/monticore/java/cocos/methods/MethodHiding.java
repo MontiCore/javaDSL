@@ -29,7 +29,7 @@ import de.se_rwth.commons.logging.Log;
 import java.util.List;
 
 /**
- * Created by Odgrlb on 24.09.2016.
+ *  on 24.09.2016.
  */
 public class MethodHiding implements JavaDSLASTClassDeclarationCoCo {
   

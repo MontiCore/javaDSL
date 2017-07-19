@@ -26,7 +26,6 @@ import de.se_rwth.commons.logging.Log;
  * TODO: Write me!
  *
  * @author (last commit) $Author: sinkovec $
- * @version $Revision: 26251 $, $Date: 2017-01-27 13:11:05 +0100 (Fri, 27 Jan 2017) $
  * @since TODO: add version number
  */
 public class MethodFormalParametersVarargsNoArray implements JavaDSLASTLastFormalParameterCoCo {

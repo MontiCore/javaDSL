@@ -27,7 +27,7 @@ import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 04.08.2016.
+ *  on 04.08.2016.
  */
 public class ClassInnerInstanceCreationValid implements JavaDSLASTExpressionCoCo {
 

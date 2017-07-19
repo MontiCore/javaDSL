@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Odgrlb on 18.08.2016.
+ *  on 18.08.2016.
  */
 public class ConstructorFormalParametersDifferentName implements
     JavaDSLASTConstructorDeclarationCoCo {

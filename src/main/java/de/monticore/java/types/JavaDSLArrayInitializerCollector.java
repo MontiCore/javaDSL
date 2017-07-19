@@ -30,7 +30,6 @@ import java.util.List;
  * TODO
  *
  * @author (last commit) $$Author$$
- * @version $$Revision$$, $$Date$$
  * @since TODO
  */
 public class JavaDSLArrayInitializerCollector implements JavaDSLVisitor {

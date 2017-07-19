@@ -28,7 +28,7 @@ import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 26.07.2016.
+ *  on 26.07.2016.
  */
 public class ClassInstanceCreationValid implements JavaDSLASTExpressionCoCo {
   

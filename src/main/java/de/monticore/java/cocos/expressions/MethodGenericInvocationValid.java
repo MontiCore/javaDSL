@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Created by Odgrlb on 07.08.2016.
+ *  on 07.08.2016.
  */
 public class MethodGenericInvocationValid implements JavaDSLASTExpressionCoCo {
 

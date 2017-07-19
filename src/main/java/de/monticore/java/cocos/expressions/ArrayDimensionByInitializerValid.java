@@ -19,7 +19,7 @@
 package de.monticore.java.cocos.expressions;
 
 /**
- * Created by Odgrlb on 03.11.2016.
+ *  on 03.11.2016.
  */
 public class ArrayDimensionByInitializerValid {
 }

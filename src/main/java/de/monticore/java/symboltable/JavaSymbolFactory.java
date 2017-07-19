@@ -24,7 +24,6 @@ import de.monticore.types.JTypeSymbolsHelper.JTypeFactory;
  * TODO: Write me!
  *
  * @author (last commit) $Author$
- * @version $Revision$, $Date$
  * @since TODO: add version number
  */
 public class JavaSymbolFactory implements JTypeFactory<JavaTypeSymbol> {

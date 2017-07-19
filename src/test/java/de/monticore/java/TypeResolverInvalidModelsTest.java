@@ -125,7 +125,7 @@ import de.se_rwth.commons.logging.Log;
 
 /**
  *
- * Created by Odgrlb
+ * 
  */
 public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
 

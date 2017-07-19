@@ -29,7 +29,6 @@ import de.se_rwth.commons.logging.Log;
  * TODO: Write me!
  *
  * @author (last commit) $Author: breuer $
- * @version $Revision: 26242 $, $Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $
  * @since TODO: add version number
  */
 public class NotAbstractAndNotFinal implements JavaDSLASTClassDeclarationCoCo {

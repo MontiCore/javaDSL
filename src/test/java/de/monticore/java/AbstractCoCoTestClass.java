@@ -44,7 +44,6 @@ import de.se_rwth.commons.logging.Log;
  * TODO
  *
  * @author (last commit) $$Author$$
- * @version $$Revision$$, $$Date$$
  * @since TODO
  */
 public class AbstractCoCoTestClass {

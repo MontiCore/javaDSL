@@ -28,7 +28,7 @@ import de.se_rwth.commons.logging.Log;
 import java.util.List;
 
 /**
- * Created by Odgrlb on 18.08.2016.
+ *  on 18.08.2016.
  */
 public class ClassMethodSignatureNoOverrideEquivalent implements JavaDSLASTClassDeclarationCoCo {
 

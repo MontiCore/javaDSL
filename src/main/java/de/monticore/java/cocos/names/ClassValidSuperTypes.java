@@ -30,7 +30,7 @@ import de.monticore.types.types._ast.ASTType;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 29.10.2016.
+ *  on 29.10.2016.
  */
 public class ClassValidSuperTypes implements JavaDSLASTClassDeclarationCoCo {
   

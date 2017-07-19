@@ -28,7 +28,7 @@ import de.se_rwth.commons.logging.Log;
 import java.util.List;
 
 /**
- * Created by Odgrlb on 25.09.2016.
+ *  on 25.09.2016.
  */
 public class InterfaceMethodSignatureNoOverrideEquivalent implements
     JavaDSLASTInterfaceDeclarationCoCo {

@@ -31,7 +31,7 @@ import de.monticore.java.cocos.statements.*;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 
 /**
- * Created by Odgrlb on 23.10.2016.
+ *  on 23.10.2016.
  */
 public class JavaDSLTypeChecker {
 

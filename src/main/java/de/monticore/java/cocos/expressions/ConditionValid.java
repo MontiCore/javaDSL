@@ -26,7 +26,7 @@ import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 19.08.2016.
+ *  on 19.08.2016.
  */
 public class ConditionValid implements JavaDSLASTExpressionCoCo {
 
