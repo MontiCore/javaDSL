@@ -18,180 +18,113 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import java.util.Collection;
+
+import de.monticore.expressions.mcexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTPrimaryThisExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.java.types.JavaDSLPredicate;
-import de.monticore.symboltable.Symbol;
-import de.monticore.symboltable.SymbolKind;
-import de.monticore.symboltable.modifiers.AccessModifier;
 import de.se_rwth.commons.logging.Log;
 
-import java.util.*;
-import java.util.function.Predicate;
-
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
-public class FieldAccessValid implements JavaDSLASTExpressionCoCo {
+public class FieldAccessValid implements MCExpressionsASTQualifiedNameExpressionCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
-
+  
   public FieldAccessValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-
-  //JLS3 15.11.1-1, JLS3 15.11.1-2, JLS3 15.11.1-3
+  
+  // JLS3 15.11.1-1, JLS3 15.11.1-2, JLS3 15.11.1-3
   @Override
-  public void check(ASTExpression node) {
-    if (node.expressionIsPresent() && node.nameIsPresent()) {
-      if (node.getExpression().get().getPrimaryExpression().isPresent()) {
-        ASTPrimaryExpression primaryExpression = node.getExpression().get().getPrimaryExpression()
-            .get();
-        if (primaryExpression.isThis()) {
-          typeResolver.handle(node.getExpression().get());
-          if (typeResolver.getResult().isPresent()) {
-            if (JavaDSLHelper.isPrimitiveType(typeResolver.getResult().get())) {
-              Log.error("0xA0536 the type of a primary access must be a reference type.",
-                  node.get_SourcePositionStart());
-            }
-            JavaTypeSymbolReference expType = typeResolver.getResult().get();
-            if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
-                .isPresent()) {
-              JavaTypeSymbol type = (JavaTypeSymbol) node.getEnclosingScope().get()
-                  .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-              if (type.getSpannedScope().resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-                  .size()>1) {
-                Log.error("0xA0537 field access to '" + node.getName().get() + "' is ambiguous.",
-                    node.get_SourcePositionStart());
-              }
-//              if (type.getSpannedScope().resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-//                  .isEmpty()) {
-//                Log.error(
-//                    "0xA0538 field '" + node.getName().get() + "' does not exist in the scope.",
-//                    node.get_SourcePositionStart());
-//              }
-              else {
-                return;
-              }
-            }
-
-          }
+  public void check(ASTQualifiedNameExpression node) {
+    if (node.getExpression() instanceof ASTPrimaryThisExpression) {
+      ASTPrimaryThisExpression primaryExpression = (ASTPrimaryThisExpression) node.getExpression();
+      typeResolver.handle(primaryExpression);
+      if (typeResolver.getResult().isPresent()) {
+        if (JavaDSLHelper.isPrimitiveType(typeResolver.getResult().get())) {
+          Log.error("0xA0536 the type of a primary access must be a reference type.",
+              node.get_SourcePositionStart());
         }
-        if (primaryExpression.isSuper()) {
-          typeResolver.handle(node.getExpression().get());
-          if (typeResolver.getResult().isPresent()) {
-            if (JavaDSLHelper.isPrimitiveType(typeResolver.getResult().get())) {
-              Log.error("0xA0539 super class does not exist.", node.get_SourcePositionStart());
-            }
-//            JavaTypeSymbolReference expType = typeResolver.getResult().get();
-//            if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
-//                .isPresent()) {
-//              JavaTypeSymbol type = (JavaTypeSymbol) node.getEnclosingScope().get()
-//                  .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-//              if (type.getSpannedScope().resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-//                  .size() > 1) {
-//                Log.error(
-//                    "0xA0540 field access to '" + node.getName().get() + "' in super class + '"
-//                        + expType
-//                        .getName() + "' is ambiguous.", node.get_SourcePositionStart());
-//              }
-//              if (type.getSpannedScope().resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-//                  .isEmpty()) {
-//                Log.error(
-//                    "0xA0541 field '" + node.getName().get() + "' does not exist in super class '"
-//                        + expType
-//                        .getName() + "'.", node.get_SourcePositionStart());
-//              }
-//              else {
-//                return;
-//              }
-//            }
+        JavaTypeSymbolReference expType = typeResolver.getResult().get();
+        if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
+            .isPresent()) {
+          JavaTypeSymbol type = (JavaTypeSymbol) node.getEnclosingScope().get()
+              .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
+          if (type.getSpannedScope().resolveMany(node.getName(), JavaFieldSymbol.KIND)
+              .size() > 1) {
+            Log.error("0xA0537 field access to '" + node.getName() + "' is ambiguous.",
+                node.get_SourcePositionStart());
           }
-        }
-        if (primaryExpression.getName().isPresent()) {
-          typeResolver.handle(node.getExpression().get());
-          if (typeResolver.getResult().isPresent()) {
-            String typeName = typeResolver.getResult().get().getName();
-            if (typeResolver.getResult().get().getDimension() > 0 && !node.getName().get()
-                .equals("length")) {
-              Log.error("0xA0542 cannot find symbol '" + node.getName().get() + "'.",
-                  node.get_SourcePositionStart());
-            }
-            if (typeResolver.getResult().get().getDimension() == 0 && JavaDSLHelper
-                .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-                    typeName)
-                .isPresent()) {
-              JavaTypeSymbolReference type =  JavaDSLHelper
-                  .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-                      typeName).get();
-              JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND).get();
-              if (node.getName().get().equals("super")) {
-                if (!typeSymbol.getSuperClass().isPresent()) {
-                  Log.error(
-                      "0xA0543 keyword 'super' is used but the class does not have a super class.",
-                      node.get_SourcePositionStart());
-                }
-              }
-              else if (typeSymbol.isEnum()) {
-                String name = node.getName().get();
-                Collection<JavaMethodSymbol> methods = typeSymbol.getSpannedScope().resolveMany(name, JavaMethodSymbol.KIND);
-                Collection<JavaTypeSymbol> constant = typeSymbol.getSpannedScope().resolveMany(name, JavaTypeSymbol.KIND);
-                if(methods.size() == 0) {
-                  if(constant.size() == 0) {
-                    Log.error(
-                            "0xA0544 constant '" + name + "' is not member of enum '"
-                                    + typeSymbol.getName() + "'.", node.get_SourcePositionStart());
-                  } else if(constant.size() > 1) {
-                    Log.error("access to constant '" + name + "' is ambiguous.", node.get_SourcePositionStart());
-                  }
-                }
-              }
-//              else if (
-//                  typeSymbol.getSpannedScope()
-//                      .resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-//                      .size() == 0) {
-//                Log.error(
-//                    "0xA0545 field '" + node.getName().get() + "' does not exist in class '"
-//                        + typeSymbol
-//                        .getName() + "'.", node.get_SourcePositionStart());
-//              }
-//              else if (typeSymbol.getSpannedScope()
-//                  .resolveMany(node.getName().get(), JavaFieldSymbol.KIND)
-//                  .size() > 1) {
-//                Log.error(
-//                    "0xA0546 field access to '" + node.getName().get() + "' in super class + '"
-//                        + typeSymbol
-//                        .getName() + "' is ambiguous.", node.get_SourcePositionStart());
-//              }
-            }
+          else {
+            return;
           }
+          
         }
       }
     }
-    if (node.getPrimaryExpression().isPresent()) {
-      if (node.getPrimaryExpression().get().getName().isPresent()) {
-        String name = node.getPrimaryExpression().get().getName().get();
-        JavaDSLPredicate predicate = new JavaDSLPredicate(node);
-        Collection<JavaFieldSymbol> localSymbols = node.getEnclosingScope().get().
-                resolveMany(name, JavaFieldSymbol.KIND, predicate);
-        if (localSymbols.size() > 1) {
-          Log.error("0xA0548 field access to '" + name + "' is ambiguous.",
+    else if (node.getExpression() instanceof ASTPrimarySuperExpression) {     
+      typeResolver.handle(node.getExpression());
+      if (typeResolver.getResult().isPresent()) {
+        if (JavaDSLHelper.isPrimitiveType(typeResolver.getResult().get())) {
+          Log.error("0xA0539 super class does not exist.", node.get_SourcePositionStart());
+        }
+      }
+    } 
+    else if (node.getExpression() instanceof ASTNameExpression) {
+      typeResolver.handle(node.getExpression());
+      if (typeResolver.getResult().isPresent()) {
+        String typeName = typeResolver.getResult().get().getName();
+        if (typeResolver.getResult().get().getDimension() > 0 && !node.getName()
+            .equals("length")) {
+          Log.error("0xA0542 cannot find symbol '" + node.getName() + "'.",
               node.get_SourcePositionStart());
         }
-        else {
-          return;
+        if (typeResolver.getResult().get().getDimension() == 0 && JavaDSLHelper
+            .visibleTypeSymbolFound(node.getEnclosingScope().get(),
+                typeName)
+            .isPresent()) {
+          JavaTypeSymbolReference type = JavaDSLHelper
+              .visibleTypeSymbolFound(node.getEnclosingScope().get(),
+                  typeName)
+              .get();
+          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+              .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+          if (node.getName().equals("super")) {
+            if (!typeSymbol.getSuperClass().isPresent()) {
+              Log.error(
+                  "0xA0543 keyword 'super' is used but the class does not have a super class.",
+                  node.get_SourcePositionStart());
+            }
+          }
+          else if (typeSymbol.isEnum()) {
+            String name = node.getName();
+            Collection<JavaMethodSymbol> methods = typeSymbol.getSpannedScope().resolveMany(name,
+                JavaMethodSymbol.KIND);
+            Collection<JavaTypeSymbol> constant = typeSymbol.getSpannedScope().resolveMany(name,
+                JavaTypeSymbol.KIND);
+            if (methods.size() == 0) {
+              if (constant.size() == 0) {
+                Log.error(
+                    "0xA0544 constant '" + name + "' is not member of enum '"
+                        + typeSymbol.getName() + "'.",
+                        node.get_SourcePositionStart());
+              }
+              else if (constant.size() > 1) {
+                Log.error("access to constant '" + name + "' is ambiguous.",
+                    node.get_SourcePositionStart());
+              }
+            }
+          } 
         }
       }
     }
   }
+  
 }

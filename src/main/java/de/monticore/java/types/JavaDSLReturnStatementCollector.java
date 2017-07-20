@@ -18,10 +18,11 @@
  */
 package de.monticore.java.types;
 
-import de.monticore.java.javadsl._ast.ASTReturnStatement;
-import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.monticore.java.javadsl._ast.ASTReturnStatement;
+import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 
 /**
  * TODO

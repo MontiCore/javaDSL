@@ -107,7 +107,12 @@ public abstract class AbstractTestClass {
   
   protected void testUnparsabilityOfModel(String model) throws RecognitionException, IOException {
     Log.debug("Parsing " + model, getClass().getName());
-    Optional<ASTCompilationUnit> optionalModel = parser.parse(model);
+    Optional<ASTCompilationUnit> optionalModel;
+    try {
+      optionalModel = parser.parse(model);
+    } catch (Exception e) {
+      optionalModel = Optional.ofNullable(null);
+    }
     assertFalse(!parser.hasErrors() && optionalModel.isPresent());
     Log.debug("Unparsability Test: At least one error is expected!", getClass().getName());
   }

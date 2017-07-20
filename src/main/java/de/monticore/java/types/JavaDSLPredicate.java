@@ -5,13 +5,13 @@
  */
 package de.monticore.java.types;
 
+import java.util.Optional;
+import java.util.function.Predicate;
+
 import de.monticore.ast.ASTNode;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.symboltable.ScopeSpanningSymbol;
 import de.monticore.symboltable.Symbol;
-
-import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * Predicate class for JavaDSL.

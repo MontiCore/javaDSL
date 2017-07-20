@@ -115,4 +115,21 @@ public class JavaDSLPrettyPrinterTest {
     ASTJavaDSLNode printedAST = parse(new StringReader(output));
     assertTrue(ast.deepEquals(printedAST));
   }
+  
+  @Test
+  public void test4() throws RecognitionException, IOException {
+    // Parse input
+    ASTJavaDSLNode ast = parse("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
+        
+    // Prettyprinting input
+    JavaDSLPrettyPrinter prettyPrinter = new JavaDSLPrettyPrinter(new IndentPrinter());
+    String output = prettyPrinter.prettyprint(ast);
+    System.out.println(output);
+    
+    // Parsing printed input
+    ASTJavaDSLNode printedAST = parse(new StringReader(output));
+    assertTrue(ast.deepEquals(printedAST));
+  }
+
+
 }

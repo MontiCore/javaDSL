@@ -18,6 +18,9 @@
  */
 package de.monticore.java.cocos.fieldandlocalvars;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTModifier;
 import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
@@ -25,9 +28,6 @@ import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * TODO

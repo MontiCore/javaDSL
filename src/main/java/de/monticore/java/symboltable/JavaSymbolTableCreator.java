@@ -43,7 +43,6 @@ import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
 import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
 import de.monticore.java.javadsl._ast.ASTCatchClause;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTCommonForControl;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTConstDeclaration;
 import de.monticore.java.javadsl._ast.ASTConstantDeclarator;

@@ -18,23 +18,14 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTAssignmentExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTAssignmentExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.literals.literals._ast.ASTLiteral;
-import de.monticore.literals.literals._ast.ASTIntLiteral;
 import de.se_rwth.commons.logging.Log;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
-public class AssignmentCompatible implements JavaDSLASTExpressionCoCo {
+public class AssignmentCompatible implements MCExpressionsASTAssignmentExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -44,66 +35,49 @@ public class AssignmentCompatible implements JavaDSLASTExpressionCoCo {
   
   // JLS3 15.26-1, JLS3 15.26-2
   @Override
-  public void check(ASTExpression node) {
-    if (node.leftExpressionIsPresent() && node.rightExpressionIsPresent() && node
-        .assignmentIsPresent()) {
-      if (JavaDSLHelper.rightAndLeftExpressionsValid(node)) {
-        if (!JavaDSLHelper.isVariable(node.getLeftExpression().get())) {
-          Log.error("0xA0507 first operand of assignment expression must be a variable.",
-              node.get_SourcePositionStart());
-          return;
-        }
-        typeResolver.handle(node.getLeftExpression().get());
-        JavaTypeSymbolReference leftType = typeResolver.getResult()
-            .get();
-        if (JavaDSLHelper.isByteType(leftType) || JavaDSLHelper.isCharType(leftType)
-            || JavaDSLHelper.isShortType(leftType)) {
-          if (node.getRightExpression().get().primaryExpressionIsPresent()) {
-            if (node.getRightExpression().get().getPrimaryExpression().get().literalIsPresent()) {
-              ASTLiteral literal = node.getRightExpression().get().getPrimaryExpression().get()
-                  .getLiteral().get();
-              if (literal instanceof ASTIntLiteral) {
-                return;
-              }
-            }
-          }
-          else if (node.getRightExpression().get().expressionIsPresent()) {
-            if (node.getRightExpression().get().getExpression().get()
-                .primaryExpressionIsPresent()) {
-              if (node.getRightExpression().get().getExpression().get().getPrimaryExpression().get()
-                  .literalIsPresent()) {
-                ASTLiteral literal = node.getRightExpression().get().getExpression().get()
-                    .getPrimaryExpression().get().getLiteral().get();
-                if (literal instanceof ASTIntLiteral) {
-                  return;
-                }
-              }
-            }
-          }
-          
-        }
-        typeResolver.handle(node.getRightExpression().get());
-        JavaTypeSymbolReference rightType = typeResolver.getResult()
-            .get();
-        // JLS3 5.2-1
-        if (JavaDSLHelper.safeAssignmentConversionAvailable(rightType, leftType)) {
-          return;
-        }
-        else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(rightType, leftType)) {
-          Log.warn(
-              "0xA0508 possible unchecked conversion from type '" + rightType.getName() + "' to '"
-                  + leftType.getName() + "'.",
-              node.get_SourcePositionStart());
-        }
-        else {
-          Log.error(
-              "0xA0509 type '" + rightType.getName() + "' cannot be converted to type '" + leftType
-                  .getName()
-                  + "'.",
-              node.get_SourcePositionStart());
-        }
-        
+  public void check(ASTAssignmentExpression node) {
+    if (!JavaDSLHelper.isVariable(node.getLeftExpression())) {
+      Log.error("0xA0507 first operand of assignment expression must be a variable.",
+          node.get_SourcePositionStart());
+      return;
+    }
+    typeResolver.handle(node.getLeftExpression());
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0538 type of the left side is not defined", node.getLeftExpression().get_SourcePositionStart());
+      return;
+    }
+    JavaTypeSymbolReference leftType = typeResolver.getResult()
+        .get();
+    
+    typeResolver.handle(node.getRightExpression());
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0507 type of the right side is not defined", node.getRightExpression().get_SourcePositionStart());
+      return;
+    }
+    JavaTypeSymbolReference rightType = typeResolver.getResult()
+        .get();
+    if (JavaDSLHelper.isByteType(leftType) || JavaDSLHelper.isCharType(leftType)
+        || JavaDSLHelper.isShortType(leftType)) {
+      if (JavaDSLHelper.isIntType(rightType)) {
+        return;
       }
     }
+    if (JavaDSLHelper.safeAssignmentConversionAvailable(rightType, leftType)) {
+      return;
+    }
+    else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(rightType, leftType)) {
+      Log.warn(
+          "0xA0508 possible unchecked conversion from type '" + rightType.getName() + "' to '"
+              + leftType.getName() + "'.",
+          node.get_SourcePositionStart());
+    }
+    else {
+      Log.error(
+          "0xA0509 type '" + rightType.getName() + "' cannot be converted to type '" + leftType
+              .getName()
+              + "'.",
+          node.get_SourcePositionStart());
+    }
+   
   }
 }

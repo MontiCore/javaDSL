@@ -19,20 +19,13 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTArrayDimensionByExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
 public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimensionByExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
@@ -49,14 +42,13 @@ public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimension
     }
     for (ASTExpression astExpression : node.getExpressions()) {
       typeResolver.handle(astExpression);
-      if (typeResolver.getResult().isPresent()) {
-        JavaTypeSymbolReference typDim = typeResolver.getResult()
-            .get();
-        if (!"int".equals(JavaDSLHelper.getUnaryNumericPromotionType(typDim).getName())) {
-          Log.error("0xA0505 an array size must be specified by a type promotable to 'int'.",
-              node.get_SourcePositionStart());
-        }
+      JavaTypeSymbolReference typeName = typeResolver.getResult().orElse(null);
+      if (!typeResolver.getResult().isPresent()
+          || !"int".equals(JavaDSLHelper.getUnaryNumericPromotionType(typeName).getName())) {
+        Log.error("0xA0505 an array size must be specified by a type promotable to 'int'.",
+            node.get_SourcePositionStart());
       }
     }
   }
+  
 }

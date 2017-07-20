@@ -18,29 +18,29 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.mcexpressions._ast.ASTBooleanNotExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTBooleanNotExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTBinaryOrOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BooleanNotValid implements MCExpressionsASTBooleanNotExpressionCoCo {
+public class BinaryOrOpValid implements MCExpressionsASTBinaryOrOpExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public BooleanNotValid(HCJavaDSLTypeResolver typeResolver) {
+  public BinaryOrOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
   
-  // JLS3 15.15.5-1, JLS3 15.15.6-1
+  // JLS3 15.22-1
   @Override
-  public void check(ASTBooleanNotExpression node) {
+  public void check(ASTBinaryOrOpExpression node) {
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error(
-          "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.",
+          "0xA0510 operands of the bitwise/logical exclusive OR operator must both be of either an integral type or the type boolean.",
           node.get_SourcePositionStart());
     }
   }

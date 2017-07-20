@@ -21,19 +21,13 @@ package de.monticore.java.cocos.expressions;
 import de.monticore.java.javadsl._ast.ASTArrayInitializer;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInitializer;
+import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTVariableDeclaratorCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
- * @since TODO
- */
 public class ArrayInitializerValid implements JavaDSLASTVariableDeclaratorCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
@@ -44,11 +38,11 @@ public class ArrayInitializerValid implements JavaDSLASTVariableDeclaratorCoCo {
 
   //JLS3 15.10-2
   @Override public void check(ASTVariableDeclarator node) {
-    if (node.getVariableInitializer().isPresent()) {
-      if (node.getVariableInitializer().get() instanceof ASTArrayInitializer) {
-        ASTArrayInitializer arrInitializer = (ASTArrayInitializer) node.getVariableInitializer()
-            .get();
-        for (ASTVariableInitializer var : arrInitializer.getVariableInitializers()) {
+    if (node.getVariableInititializerOrExpression().isPresent() && node.getVariableInititializerOrExpression().get().getVariableInitializer().isPresent()) {
+      ASTVariableInitializer varNode = node.getVariableInititializerOrExpression().get().getVariableInitializer().get();
+      if (varNode instanceof ASTArrayInitializer) {
+        ASTArrayInitializer arrInitializer = (ASTArrayInitializer) varNode;
+        for (ASTVariableInititializerOrExpression var : arrInitializer.getVariableInititializerOrExpressions()) {
           var.accept(typeResolver);
           JavaTypeSymbolReference extType = typeResolver.getResult()
               .get();

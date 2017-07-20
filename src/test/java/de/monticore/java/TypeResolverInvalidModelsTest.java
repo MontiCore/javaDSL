@@ -60,9 +60,12 @@ import de.monticore.java.cocos.expressions.ArrayCreatorValid;
 import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
 import de.monticore.java.cocos.expressions.ArrayInitializerValid;
 import de.monticore.java.cocos.expressions.AssignmentCompatible;
-import de.monticore.java.cocos.expressions.BitwiseOpsValid;
-import de.monticore.java.cocos.expressions.BooleanAndOrValid;
+import de.monticore.java.cocos.expressions.BinaryAndOpValid;
+import de.monticore.java.cocos.expressions.BinaryOrOpValid;
+import de.monticore.java.cocos.expressions.BinaryXorOpValid;
+import de.monticore.java.cocos.expressions.BooleanAndValid;
 import de.monticore.java.cocos.expressions.BooleanNotValid;
+import de.monticore.java.cocos.expressions.BooleanOrValid;
 import de.monticore.java.cocos.expressions.CastConversionValid;
 import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
@@ -71,6 +74,7 @@ import de.monticore.java.cocos.expressions.ConditionValid;
 import de.monticore.java.cocos.expressions.FieldAccessValid;
 import de.monticore.java.cocos.expressions.IdentityTestValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LogicalNotValid;
 import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
 import de.monticore.java.cocos.expressions.MethodInvocationValid;
 import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
@@ -627,9 +631,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
         Finding.error("0xA0502 an array index expression must have a type promotable to 'int'."),
-        Finding.error("0xA0503 an array required, but 'long' found."),
-        Finding.error("0xA0503 an array required, but 'nnn' found.")
-
+        Finding.error("0xA0503 an array required, but 'long' found.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/ArrayAccess", checker, expectedErrors);
@@ -693,7 +695,9 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestBitwiseOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new BitwiseOpsValid(typeResolver));
+    checker.addCoCo(new BinaryOrOpValid(typeResolver));
+    checker.addCoCo(new BinaryAndOpValid(typeResolver));
+    checker.addCoCo(new BinaryXorOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0511 operands of the bitwise/logical exclusive AND operator must both be of either an integral type or the type boolean."),
@@ -709,7 +713,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestBooleanAndOrValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new BooleanAndOrValid(typeResolver));
+    checker.addCoCo(new BooleanAndValid(typeResolver));
+    checker.addCoCo(new BooleanOrValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0514 operands of the conditional AND operator must both be of type boolean."),
@@ -725,12 +730,22 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new BooleanNotValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean."),
         Finding.error(
             "0xA0516 operand of the boolean NOT '~' operator must be convertible to primitive integral type.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/BooleanNot", checker, expectedErrors);
+  }
+
+  @Test
+  public void TestLogicalNotValid() {
+    JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
+    checker.addCoCo(new LogicalNotValid(typeResolver));
+    Collection<Finding> expectedErrors = Arrays.asList(
+        Finding.error("0xA0515 operand of the boolean NOT '!' operator must be of type boolean.")
+    );
+    testModelForErrors("src/test/resources",
+        "typeSystemTestModels/invalid/expressions/LogicalNot", checker, expectedErrors);
   }
 
   @Test
@@ -744,7 +759,9 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
             "0xA0518 cannot cast an expression of type 'java.lang.String' to the target type 'java.lang.Integer'."),
         Finding.error(
             "0xA0518 cannot cast an expression of type 'typeSystemTestModels.invalid.expressions.AdditiveOps' to the target type 'typeSystemTestModels.invalid.expressions.ArrayInitializer'."),
-        Finding.error("0xA0518 cannot cast an expression of type 'int' to the target type 'java.util.List'.")
+        Finding.error("0xA0518 cannot cast an expression of type 'int' to the target type 'java.util.List'."),
+        Finding.error("0xA0614 cannot assign a value to 'str'."),
+        Finding.error("0xA0614 cannot assign a value to 'a'.")
     );
     testModelForErrors("src/test/resources",
         "typeSystemTestModels/invalid/expressions/CastConversion", checker, expectedErrors);
@@ -830,7 +847,7 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     checker.addCoCo(new LocalVariableInitializerAssignmentCompatible(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0537 field access to 'm' is ambiguous."),
-        Finding.error("0xA0548 field access to 'm' is ambiguous."),
+        Finding.error("0xA0614 cannot assign a value to 'n'."),
         Finding.error("0xA0544 constant 'h' is not member of enum 'D'."),
         Finding.error("0xA0542 cannot find symbol 'aa'.")
     );
@@ -871,8 +888,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   public void TestMethodInvocationValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     Collection<Finding> expectedErrors = Arrays.asList(
-        Finding.error("0xA0561 the method 'addAndReturn' is not found."),
-        Finding.error("0xA0565 method 'getSecondInt' is not found."),
+        Finding.error("0xA0611 cannot assign a value of type 'addAndReturn' to 'java.lang.Object'."),
+        Finding.error("0xA0574 method 'getSecondInt' is not found."),
         Finding.error("0xA0611 cannot assign a value of type 'void' to 'int'."),
         Finding.error("0xA0611 cannot assign a value of type '&' to 'java.lang.String'.")
     );

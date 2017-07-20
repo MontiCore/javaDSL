@@ -23,8 +23,8 @@ import de.monticore.java.javadsl._ast.ASTCatchExceptionsHandler;
 import de.monticore.java.javadsl._ast.ASTTryStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLASTTryStatementCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**

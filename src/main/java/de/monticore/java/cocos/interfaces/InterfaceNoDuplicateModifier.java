@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.interfaces;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
 import de.monticore.java.javadsl._ast.ASTModifier;
 import de.monticore.java.javadsl._cocos.JavaDSLASTInterfaceDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * TODO

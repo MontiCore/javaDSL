@@ -1,5 +1,5 @@
 package typeSystemTestModels.valid.expressions;
 
-public class BooleanNot {
-  int n = ~1;
+public class LogicalNot {
+  boolean a = !true;
 }

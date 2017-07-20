@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+
 import de.monticore.symboltable.SymbolKind;
 import de.monticore.symboltable.types.CommonJTypeSymbol;
 import de.monticore.symboltable.types.JAttributeSymbolKind;
@@ -94,6 +95,14 @@ public class JavaTypeSymbol extends
     return ImmutableList.copyOf(annotations);
   }
   
+  /**
+   * @see de.monticore.symboltable.types.CommonJTypeSymbol#isClass()
+   */
+  @Override
+  public boolean isClass() {
+    return !isInterface() && !isEnum() && !isAnnotation();
+  }
+
   public static class JavaTypeSymbolKind extends JTypeSymbolKind {
 
     private static final String NAME = "de.monticore.java.symboltable.JavaTypeSymbolKind";

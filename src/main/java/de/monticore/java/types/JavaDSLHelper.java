@@ -18,12 +18,22 @@
  */
 package de.monticore.java.types;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.expressions.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -71,12 +81,17 @@ public class JavaDSLHelper {
         return Optional.of(getBinaryNumericPromotion(unbox(firstOperand), unbox(secondOperand)));
       }
     }
-    if ("<".equals(operation)) {
+    if ("<<".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }
     }
-    if (">".equals(operation)) {
+    if (">>".equals(operation)) {
+      if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
+        return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
+      }
+    }
+    if (">>>".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }
@@ -789,10 +804,10 @@ public class JavaDSLHelper {
    * @return false if the given expression is invoking a method
    */
   public  static boolean isVariable(ASTExpression node) {
-    if(node.getCallExpression().isPresent()) {
+    if(node instanceof ASTCallExpression) {
       return false;
     }
-    if(node.getExplicitGenericInvocation().isPresent()){
+    if(node instanceof ASTGenericInvocationExpression) {
       return false;
     }
     return true;
@@ -2540,6 +2555,9 @@ public class JavaDSLHelper {
       if (from.getDimension() > 0 && to.getDimension() > 0) {
         return narrowingReferenceConversionAvailable(box(from), box(to));
       }
+      if (fromSymbol.isFormalTypeParameter() && !fromSymbol.getSuperClass().isPresent() && fromSymbol.getSuperTypes().isEmpty()) {
+        return true;
+      }
     }
 
     return false;
@@ -3282,7 +3300,7 @@ public class JavaDSLHelper {
    * @param primaryExpression a Primary Expression
    * @return a String which is a name of the enclosing type symbol
    */
-  public  static String getEnclosingTypeSymbolName(ASTPrimaryExpression primaryExpression) {
+  public  static String getEnclosingTypeSymbolName(ASTExpression primaryExpression) {
     return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope().get());
   }
 
@@ -3396,9 +3414,6 @@ public class JavaDSLHelper {
     if (scope.resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
       return Optional.of((JavaFieldSymbol) scope.resolve(fieldName, JavaFieldSymbol.KIND).get());
     }
-    if(scope.getEnclosingScope().get().resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
-      return Optional.of((JavaFieldSymbol) scope.getEnclosingScope().get().resolve(fieldName, JavaFieldSymbol.KIND).get());
-    }
     String enclosingType = getEnclosingTypeSymbolName(scope);
     if (enclosingType != null) {
       JavaTypeSymbol typeSymbol = (JavaTypeSymbol) scope.getEnclosingScope().get()
@@ -3489,41 +3504,18 @@ public class JavaDSLHelper {
   /**
    *
    * @param node ASTExpression
-   * @return true if the leftExpression and rightExpression of the node
-   * has known types
-   */
-  public static boolean rightAndLeftExpressionsValid(ASTExpression node) {
-    HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
-    if( node.leftExpressionIsPresent() && node.rightExpressionIsPresent()) {
-      typeResolver.handle(node.getLeftExpression().get());
-      if(!typeResolver.getResult().isPresent()) {
-        return false;
-      }
-      else {
-        typeResolver.handle(node.getRightExpression().get());
-        if(!typeResolver.getResult().isPresent()) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   *
-   * @param node ASTExpression
    * @return true if the castTypeExpression and Expression of the node has known types
    */
   public static boolean typeCastTypeAndExpressionValid(ASTExpression node) {
     HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
-    if(node.typeCastTypeIsPresent() && node.expressionIsPresent()) {
-      typeResolver.handle(node.getExpression().get());
+    if(node instanceof ASTTypeCastExpression) {
+      ASTTypeCastExpression expr = (ASTTypeCastExpression) node;
+      typeResolver.handle(expr.getExpression());
       if(!typeResolver.getResult().isPresent()) {
         return false;
       }
       else {
-        node.getTypeCastType().get().accept(typeResolver);
+        expr.getType().accept(typeResolver);
         if(typeResolver.getResult().isPresent()) {
           return true;
         }

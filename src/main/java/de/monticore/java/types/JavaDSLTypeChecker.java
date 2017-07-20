@@ -18,17 +18,107 @@
  */
 package de.monticore.java.types;
 
-import de.monticore.java.cocos.annotations.*;
-import de.monticore.java.cocos.classes.*;
-import de.monticore.java.cocos.constructors.*;
-import de.monticore.java.cocos.enums.*;
-import de.monticore.java.cocos.expressions.*;
-import de.monticore.java.cocos.fieldandlocalvars.*;
-import de.monticore.java.cocos.interfaces.*;
-import de.monticore.java.cocos.methods.*;
-import de.monticore.java.cocos.names.*;
-import de.monticore.java.cocos.statements.*;
+import de.monticore.java.cocos.annotations.AnnotationMethodModifiers;
+import de.monticore.java.cocos.annotations.AnnotationMethodReturnTypes;
+import de.monticore.java.cocos.annotations.AnnotationNameNotAsEnclosingType;
+import de.monticore.java.cocos.annotations.AnnotationTypeModifiers;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBePrivate;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBeStatic;
+import de.monticore.java.cocos.classes.AbstractOrNativeMethodHasNoBody;
+import de.monticore.java.cocos.classes.ClassBoundErasuresAreDifferent;
+import de.monticore.java.cocos.classes.ClassCanOnlyExtendClass;
+import de.monticore.java.cocos.classes.ClassImplementsAllInterfaceMethods;
+import de.monticore.java.cocos.classes.ClassInnerTypeNotNamedAsEnclosing;
+import de.monticore.java.cocos.classes.ClassMethodSignatureNoOverrideEquivalent;
+import de.monticore.java.cocos.classes.ClassNoCircularity;
+import de.monticore.java.cocos.classes.ClassNoDuplicateDirectSuperInterface;
+import de.monticore.java.cocos.classes.ClassNoFinalSuperClass;
+import de.monticore.java.cocos.classes.ClassNoModifierDuplicate;
+import de.monticore.java.cocos.classes.ClassNotStatic;
+import de.monticore.java.cocos.classes.ClassOptionalBoundsAreInterfaces;
+import de.monticore.java.cocos.classes.ConcreteClassMayNotHaveAbstractMethod;
+import de.monticore.java.cocos.classes.ConstructorMayNotBeAbstract;
+import de.monticore.java.cocos.classes.GenericClassNotSubClassOfThrowable;
+import de.monticore.java.cocos.classes.NoProtectedOrPrivateTopLevelClass;
+import de.monticore.java.cocos.classes.NonAbstractClassImplementsAllAbstractMethods;
+import de.monticore.java.cocos.classes.NotAbstractAndNotFinal;
+import de.monticore.java.cocos.classes.SuperClassMayNotBeFinal;
+import de.monticore.java.cocos.constructors.ConstructorFormalParametersDifferentName;
+import de.monticore.java.cocos.constructors.ConstructorModifiersValid;
+import de.monticore.java.cocos.constructors.ConstructorMustNamedAsClass;
+import de.monticore.java.cocos.constructors.ConstructorNoAccessModifierPair;
+import de.monticore.java.cocos.constructors.ConstructorNoDuplicateModifier;
+import de.monticore.java.cocos.constructors.ConstructorsNoDuplicateSignature;
+import de.monticore.java.cocos.enums.EnumConstructorValidModifiers;
+import de.monticore.java.cocos.enums.EnumMayNotBeAbstract;
+import de.monticore.java.cocos.enums.EnumMethodModifiersValid;
+import de.monticore.java.cocos.enums.EnumModifiersValid;
+import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
+import de.monticore.java.cocos.expressions.AdditiveOpsValid;
+import de.monticore.java.cocos.expressions.ArrayAccessValid;
+import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
+import de.monticore.java.cocos.expressions.ArrayInitializerValid;
+import de.monticore.java.cocos.expressions.AssignmentCompatible;
+import de.monticore.java.cocos.expressions.BinaryOrOpValid;
+import de.monticore.java.cocos.expressions.BooleanAndValid;
+import de.monticore.java.cocos.expressions.BooleanNotValid;
+import de.monticore.java.cocos.expressions.CastConversionValid;
+import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
+import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
+import de.monticore.java.cocos.expressions.ComparisonValid;
+import de.monticore.java.cocos.expressions.ConditionValid;
+import de.monticore.java.cocos.expressions.FieldAccessValid;
+import de.monticore.java.cocos.expressions.IdentityTestValid;
+import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LogicalNotValid;
+import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
+import de.monticore.java.cocos.expressions.MethodInvocationValid;
+import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
+import de.monticore.java.cocos.expressions.PrefixOpValid;
+import de.monticore.java.cocos.expressions.PrimarySuperValid;
+import de.monticore.java.cocos.expressions.PrimaryThisValid;
+import de.monticore.java.cocos.expressions.ShiftOpValid;
+import de.monticore.java.cocos.expressions.SuffixOpValid;
+import de.monticore.java.cocos.fieldandlocalvars.FieldInitializerAssignmentCompatible;
+import de.monticore.java.cocos.fieldandlocalvars.FieldModifierAccessCombinations;
+import de.monticore.java.cocos.fieldandlocalvars.FieldNoDuplicateModifier;
+import de.monticore.java.cocos.fieldandlocalvars.LocalVariableInitializerAssignmentCompatible;
+import de.monticore.java.cocos.interfaces.InterfaceBoundErasuresAreDifferent;
+import de.monticore.java.cocos.interfaces.InterfaceCannotDependSelf;
+import de.monticore.java.cocos.interfaces.InterfaceCannotExtendClasses;
+import de.monticore.java.cocos.interfaces.InterfaceInnerTypeNotNamedAsEnclosing;
+import de.monticore.java.cocos.interfaces.InterfaceMethodSignatureNoOverrideEquivalent;
+import de.monticore.java.cocos.interfaces.InterfaceMethodsNotAllowedModifiers;
+import de.monticore.java.cocos.interfaces.InterfaceNoDuplicateModifier;
+import de.monticore.java.cocos.interfaces.InterfaceNoFinalMethod;
+import de.monticore.java.cocos.interfaces.InterfaceNoStaticMethod;
+import de.monticore.java.cocos.interfaces.InterfaceOptionalBoundsAreInterfaces;
+import de.monticore.java.cocos.methods.AbstractMethodDefinition;
+import de.monticore.java.cocos.methods.MethodAbstractAndOtherModifiers;
+import de.monticore.java.cocos.methods.MethodBodyAbsenceAndPresence;
+import de.monticore.java.cocos.methods.MethodExceptionThrows;
+import de.monticore.java.cocos.methods.MethodFormalParametersDifferentName;
+import de.monticore.java.cocos.methods.MethodHiding;
+import de.monticore.java.cocos.methods.MethodNoAccessPairModifier;
+import de.monticore.java.cocos.methods.MethodNoDuplicateModifier;
+import de.monticore.java.cocos.methods.MethodNoNativeAndStrictfp;
+import de.monticore.java.cocos.methods.MethodOverride;
+import de.monticore.java.cocos.names.ClassValidSuperTypes;
+import de.monticore.java.cocos.names.InterfaceValidSuperTypes;
+import de.monticore.java.cocos.statements.AssertIsValid;
+import de.monticore.java.cocos.statements.CatchIsValid;
+import de.monticore.java.cocos.statements.DoWhileConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ForConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ForEachIsValid;
+import de.monticore.java.cocos.statements.IfConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ResourceInTryStatementCloseable;
+import de.monticore.java.cocos.statements.ReturnTypeAssignmentIsValid;
+import de.monticore.java.cocos.statements.SwitchStatementValid;
+import de.monticore.java.cocos.statements.SynchronizedArgIsReftype;
+import de.monticore.java.cocos.statements.ThrowIsValid;
+import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsCoCoChecker;
 
 /**
  * Created by Odgrlb on 23.10.2016.
@@ -44,6 +134,7 @@ public class JavaDSLTypeChecker {
     javaDSLTypeCheckers.addChecker(getConstructorChecker());
     javaDSLTypeCheckers.addChecker(getEnumChecker());
     javaDSLTypeCheckers.addChecker(getExpressionChecker());
+    javaDSLTypeCheckers.addChecker(getJavaExpressionChecker());
     javaDSLTypeCheckers.addChecker(getFieldAndLocalVarsChecker());
     javaDSLTypeCheckers.addChecker(getInterfaceChecker());
     javaDSLTypeCheckers.addChecker(getMethodChecker());
@@ -109,20 +200,17 @@ public class JavaDSLTypeChecker {
     return enumChecker;
   }
 
-  public JavaDSLCoCoChecker getExpressionChecker(){
-    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+  public MCExpressionsCoCoChecker getExpressionChecker(){
+    MCExpressionsCoCoChecker expressionChecker = new MCExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AdditiveOpsValid(typeResolver));
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
-    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
 //    expressionChecker.addCoCo(new ArrayDimensionByInitializerValid(typeResolver));  // CoCo nicht fertig
-    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
-    expressionChecker.addCoCo(new BitwiseOpsValid(typeResolver));
-    expressionChecker.addCoCo(new BooleanAndOrValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
+    expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
+    expressionChecker.addCoCo(new LogicalNotValid(typeResolver));
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
     expressionChecker.addCoCo(new ComparisonValid(typeResolver));
     expressionChecker.addCoCo(new ConditionValid(typeResolver));
     expressionChecker.addCoCo(new FieldAccessValid(typeResolver));
@@ -139,6 +227,14 @@ public class JavaDSLTypeChecker {
     return expressionChecker;
   }
 
+  public JavaDSLCoCoChecker getJavaExpressionChecker(){
+    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
+    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
+    return expressionChecker;
+  }
   public JavaDSLCoCoChecker getFieldAndLocalVarsChecker(){
     JavaDSLCoCoChecker fieldChecker = new JavaDSLCoCoChecker();
     fieldChecker.addCoCo(new FieldInitializerAssignmentCompatible(typeResolver));

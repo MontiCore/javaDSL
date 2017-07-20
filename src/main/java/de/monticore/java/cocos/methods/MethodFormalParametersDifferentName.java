@@ -18,13 +18,13 @@
  */
 package de.monticore.java.cocos.methods;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTMethodDeclarationCoCo;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * TODO

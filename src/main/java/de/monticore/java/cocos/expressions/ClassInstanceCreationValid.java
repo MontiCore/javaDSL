@@ -19,8 +19,8 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.java.javadsl._ast.ASTCreatorExpression;
+import de.monticore.java.javadsl._cocos.JavaDSLASTCreatorExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
@@ -30,7 +30,7 @@ import de.se_rwth.commons.logging.Log;
 /**
  * Created by Odgrlb on 26.07.2016.
  */
-public class ClassInstanceCreationValid implements JavaDSLASTExpressionCoCo {
+public class ClassInstanceCreationValid implements JavaDSLASTCreatorExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -39,9 +39,9 @@ public class ClassInstanceCreationValid implements JavaDSLASTExpressionCoCo {
   }
   
   @Override
-  public void check(ASTExpression node) {
-    if (node.getCreator().isPresent() && node.getCreator().get() instanceof ASTAnonymousClass) {
-      node.getCreator().get().accept(typeResolver);
+  public void check(ASTCreatorExpression node) {
+    if (node.getCreator() instanceof ASTAnonymousClass) {
+      node.getCreator().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference creatorType = typeResolver.getResult().get();
         for (ActualTypeArgument actualTypeArgument : creatorType.getActualTypeArguments()) {
@@ -51,7 +51,7 @@ public class ClassInstanceCreationValid implements JavaDSLASTExpressionCoCo {
                 node.get_SourcePositionStart());
           }
         }
-        ASTAnonymousClass ast = (ASTAnonymousClass) node.getCreator().get();
+        ASTAnonymousClass ast = (ASTAnonymousClass) node.getCreator();
         if (creatorType.getEnclosingScope().resolve(creatorType.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
           JavaTypeSymbol typeSymbol = (JavaTypeSymbol) creatorType.getEnclosingScope()

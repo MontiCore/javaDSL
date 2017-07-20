@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTPrimaryExpressionCoCo;
+import de.monticore.expressions.mcexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTPrimarySuperExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
@@ -27,24 +27,22 @@ import de.se_rwth.commons.logging.Log;
 /**
  * Created by Odgrlb on 07.08.2016.
  */
-public class PrimarySuperValid implements JavaDSLASTPrimaryExpressionCoCo {
+public class PrimarySuperValid implements MCExpressionsASTPrimarySuperExpressionCoCo {
   
   @Override
-  public void check(ASTPrimaryExpression node) {
-    if (node.isSuper()) {
-      String enclosingType = JavaDSLHelper.getEnclosingTypeSymbolName(node);
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-          .resolve(enclosingType, JavaTypeSymbol.KIND).get();
-      if (typeSymbol.isInterface()) {
-        Log.error("0xA0575 keyword 'super' is not allowed in interface.",
-            node.get_SourcePositionStart());
-      }
-      if ("Object".equals(typeSymbol.getName())
-          || "java.lang.Object".equals(typeSymbol.getName())) {
-        Log.error("0xA0576 keyword 'super' is not allowed in class 'Object'.",
-            node.get_SourcePositionStart());
-        
-      }
+  public void check(ASTPrimarySuperExpression node) {
+    String enclosingType = JavaDSLHelper.getEnclosingTypeSymbolName(node);
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+        .resolve(enclosingType, JavaTypeSymbol.KIND).get();
+    if (typeSymbol.isInterface()) {
+      Log.error("0xA0575 keyword 'super' is not allowed in interface.",
+          node.get_SourcePositionStart());
+    }
+    if ("Object".equals(typeSymbol.getName())
+        || "java.lang.Object".equals(typeSymbol.getName())) {
+      Log.error("0xA0576 keyword 'super' is not allowed in class 'Object'.",
+          node.get_SourcePositionStart());     
     }
   }
+  
 }
