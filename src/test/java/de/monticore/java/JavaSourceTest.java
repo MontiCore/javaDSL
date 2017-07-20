@@ -69,7 +69,7 @@ public class JavaSourceTest {
 
   @Test
   public void testAllJavaSourceFiles() {
-    Path path = FileSystems.getDefault().getPath("src", "test", "resources", "JDK", "java", "lang");
+    Path path = FileSystems.getDefault().getPath("target", "generated-test-resources", "JDK", "java", "lang");
     
     try {
       Files.walkFileTree(path, visitor);
