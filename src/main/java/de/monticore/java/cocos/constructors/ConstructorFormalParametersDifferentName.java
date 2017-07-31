@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
- * MontiCore Language Workbench
- * Copyright (c) 2015, MontiCore, All rights reserved.
+ * MontiCore Language Workbench, www.monticore.de
+ * Copyright (c) 2017, MontiCore, All rights reserved.
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@ import de.monticore.java.javadsl._cocos.JavaDSLASTConstructorDeclarationCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * Created by Odgrlb on 18.08.2016.
+ *  on 18.08.2016.
  */
 public class ConstructorFormalParametersDifferentName implements
     JavaDSLASTConstructorDeclarationCoCo {

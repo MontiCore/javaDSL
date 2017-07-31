@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
- * MontiCore Language Workbench
- * Copyright (c) 2015, MontiCore, All rights reserved.
+ * MontiCore Language Workbench, www.monticore.de
+ * Copyright (c) 2017, MontiCore, All rights reserved.
  *
  * This project is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,6 @@ import de.se_rwth.commons.logging.Log;
  * TODO
  *
  * @author (last commit) $$Author: breuer $$
- * @version $$Revision: 26242 $$, $$Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $$
  * @since TODO
  */
 public class ClassNoDuplicateDirectSuperInterface implements JavaDSLASTClassDeclarationCoCo {
