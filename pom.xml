@@ -57,14 +57,7 @@
   <!-- == DEFAULT BUILD SETTINGS =========================================== -->
 
   <build>
-    <testResources>
-      <testResource>
-        <directory>${basedir}/src/test/resources</directory>
-        <excludes>
-          <exclude>JDK.zip</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
+
 
     <extensions>
       <extension>
