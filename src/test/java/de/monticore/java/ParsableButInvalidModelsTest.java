@@ -20,6 +20,7 @@ package de.monticore.java;
 
 import java.io.IOException;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -67,12 +68,13 @@ public class ParsableButInvalidModelsTest extends AbstractTestClass {
 
   @BeforeClass
   public static void init() {
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
 
   @Before
   public void setUp() throws RecognitionException, IOException {
-    Log.getFindings().clear();
+    LogStub.getFindings().clear();
   }
 
   @Test

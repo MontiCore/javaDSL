@@ -21,6 +21,7 @@ package de.monticore.java;
 import java.util.Arrays;
 import java.util.Collection;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,12 +39,13 @@ public class TypeResolverDifferentInvalidModelsTest extends AbstractCoCoTestClas
 
   @BeforeClass
   public static void init() {
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
 
   @Before
   public void setUp() {
-    Log.getFindings().clear();
+    LogStub.getFindings().clear();
   }
 
   /*

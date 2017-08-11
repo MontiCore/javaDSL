@@ -28,11 +28,11 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import de.se_rwth.commons.logging.Log;
+import de.se_rwth.commons.logging.LogStub;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import de.se_rwth.commons.logging.Log;
 
 /**
  * A simple test for MyDSL Tool.
@@ -58,6 +58,7 @@ public class JavaSourceTest {
 
   @Before
   public void setup() {
+    Log.init();
     Log.enableFailQuick(false);
   }
   
@@ -97,13 +98,13 @@ public class JavaSourceTest {
   
   @After
   public void printResult() {
-    Log.info("Success rate: " + visitor.getSuccessRate(), JavaSourceTest.class.getName());
-    Log.info("Fail rate: " + visitorFilesFailed.getFailRate(), JavaSourceTest.class.getName());
-    Log.info("Number of Tests: " + visitor.getNumberOfTests(), JavaSourceTest.class.getName());
-    Log.info("Number of Tests with failing cocos: " + visitor.getFailClassesCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_TESTS + ")");
-    Log.info("Number of failing cocos: " + visitor.getFailCocosCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_COCOS + ")");
+    LogStub.info("Success rate: " + visitor.getSuccessRate(), JavaSourceTest.class.getName());
+    LogStub.info("Fail rate: " + visitorFilesFailed.getFailRate(), JavaSourceTest.class.getName());
+    LogStub.info("Number of Tests: " + visitor.getNumberOfTests(), JavaSourceTest.class.getName());
+    LogStub.info("Number of Tests with failing cocos: " + visitor.getFailClassesCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_TESTS + ")");
+    LogStub.info("Number of failing cocos: " + visitor.getFailCocosCount(), JavaSourceTest.class.getName() + " (expecting: " + NUMBER_COCOS + ")");
     for (Path fileParsedWithErrors : visitorFilesFailed.fails) {
-      Log.info(fileParsedWithErrors.toString(), JavaSourceTest.class.getName());
+      LogStub.info(fileParsedWithErrors.toString(), JavaSourceTest.class.getName());
     }
   }
   

@@ -27,6 +27,7 @@ import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.monticore.expressions.mcexpressions._ast.ASTExpression;
 import de.monticore.expressions.mcexpressions._ast.ASTLiteralExpression;
+import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
@@ -53,10 +54,14 @@ JavaDSLASTLocalVariableDeclarationCoCo {
   
   @Override
   public void check(ASTLocalVariableDeclaration node) {
-    node.getType().accept(typeResolver);
-    if (typeResolver.getResult().isPresent()) {
-      JavaTypeSymbolReference localVarType = typeResolver.getResult()
-          .get();
+//    node.getType().accept(typeResolver);
+//    if (typeResolver.getResult().isPresent()) {
+//      JavaTypeSymbolReference localVarType = typeResolver.getResult()
+//          .get();
+    if(node.symbolIsPresent()) {
+      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol().get()).getType();
+      JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
+      localVarType.setActualTypeArguments(type.getActualTypeArguments());
       JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();
       if (node.getVariableDeclarators().isEmpty()) {
         return;

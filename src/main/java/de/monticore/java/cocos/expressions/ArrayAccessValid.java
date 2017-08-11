@@ -52,7 +52,6 @@ public class ArrayAccessValid implements MCExpressionsASTArrayExpressionCoCo {
       if (!"int".equals(JavaDSLHelper.getUnaryNumericPromotionType(typeIndex).getName())) {
         Log.error("0xA0502 an array index expression must have a type promotable to 'int'.",
             node.get_SourcePositionStart());
-        return;
       }
     }
   }

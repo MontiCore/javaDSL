@@ -28,4 +28,9 @@ public class JavaTypeSymbolReference extends CommonJTypeReference<JavaTypeSymbol
     super(name, JavaTypeSymbol.KIND, definingScopeOfReference);
     setDimension(arrayDimension);
   }
+
+  @Override
+  public String toString() {
+    return getName();
+  }
 }

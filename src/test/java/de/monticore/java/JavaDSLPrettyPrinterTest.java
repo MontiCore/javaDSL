@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,8 +53,8 @@ public class JavaDSLPrettyPrinterTest {
   
   @BeforeClass
   public static void setup() {
-    Slf4jLog.init();
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
   
   protected ASTJavaDSLNode parse(String modelName) throws RecognitionException, IOException{

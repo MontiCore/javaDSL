@@ -141,8 +141,8 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
           }
         }
       } else {
-        // typeResolver.handle(variableDeclarator);
-        variableDeclarator.accept(typeResolver);
+         typeResolver.handle(variableDeclarator);
+//        variableDeclarator.accept(typeResolver);
         if (typeResolver.getResult().isPresent()) {
           JavaTypeSymbolReference expType = typeResolver.getResult()
               .get();

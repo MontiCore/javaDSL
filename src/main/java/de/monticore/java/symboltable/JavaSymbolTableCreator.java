@@ -38,44 +38,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.monticore.ast.ASTNode;
-import de.monticore.java.javadsl._ast.ASTAnnotation;
-import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
-import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
-import de.monticore.java.javadsl._ast.ASTCatchClause;
-import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTConstDeclaration;
-import de.monticore.java.javadsl._ast.ASTConstantDeclarator;
-import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
-import de.monticore.java.javadsl._ast.ASTDeclaratorId;
-import de.monticore.java.javadsl._ast.ASTDoWhileStatement;
-import de.monticore.java.javadsl._ast.ASTEnhancedForControl;
-import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
-import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._ast.ASTForStatement;
-import de.monticore.java.javadsl._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTFormalParameterListing;
-import de.monticore.java.javadsl._ast.ASTIfStatement;
-import de.monticore.java.javadsl._ast.ASTImportDeclaration;
-import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTInterfaceMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
-import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
-import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodSignature;
-import de.monticore.java.javadsl._ast.ASTModifier;
-import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
-import de.monticore.java.javadsl._ast.ASTResource;
-import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
-import de.monticore.java.javadsl._ast.ASTSwitchStatement;
-import de.monticore.java.javadsl._ast.ASTThrows;
-import de.monticore.java.javadsl._ast.ASTTryStatement;
-import de.monticore.java.javadsl._ast.ASTTryStatementWithResources;
-import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.javadsl._ast.ASTWhileStatement;
+import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.symboltable.ArtifactScope;
 import de.monticore.symboltable.CommonScope;
@@ -227,11 +190,13 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     for (JavaTypeSymbol typeParameter : typeParameters) {
       currentScope().get().add(typeParameter);
     }
+    blockNodesStack.add(astClassDeclaration);
   }
   
   @Override
   public void endVisit(final ASTClassDeclaration astClassDeclaration) {
     removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
@@ -256,11 +221,13 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     for (JavaTypeSymbol typeParameter : typeParameters) {
       currentScope().get().add(typeParameter);
     }
+    blockNodesStack.add(astInterfaceDeclaration);
   }
   
   @Override
   public void endVisit(final ASTInterfaceDeclaration astInterfaceDeclaration) {
     removeCurrentScope();
+    blockNodesStack.removeLast();
   }
 
   private String enumTypeName = "";
@@ -279,15 +246,23 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // ... "{" (EnumConstantDeclaration || ",")* ","? ...
     
     // ... EnumBody? "}" (handled by other visit methods (ClassBody))
+
+    // enums are implicitly subtypes from "Enum"
+    JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
+            "java.lang.Enum", currentScope().get(), 0);
+    javaEnumTypeSymbol.setSuperClass(superClassReference);
+
     
     // no more nonterminals to process from here
     enumTypeName = astEnumDeclaration.getName();
     addToScopeAndLinkWithNode(javaEnumTypeSymbol, astEnumDeclaration);
+    blockNodesStack.add(astEnumDeclaration);
   }
   
   @Override
   public void endVisit(final ASTEnumDeclaration astEnumDeclaration) {
     removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
@@ -483,7 +458,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     for (JavaTypeSymbol javaTypeParameterSymbol : javaTypeParameters) {
       currentScope().get().add(javaTypeParameterSymbol);
     }
-   
+
     blockNodesStack.add(astConstructorDeclaration);
   }
   
@@ -533,39 +508,45 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   }
 
   @Override
-  public void visit(final ASTEnhancedForControl astEnhancedForControl) {
-    ASTFormalParameter astFormalParameter = astEnhancedForControl.getFormalParameter();
-    JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
-            astFormalParameter.getDeclaratorId().getName(), null);
-
-    // FormalParameter = PrimitiveModifier* ...
-    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifiers());
-
-    // ... Type ...
-    initializeJavaAttributeSymbol(javaFieldSymbol, astFormalParameter.getType(),
-            astFormalParameter.getDeclaratorId().getDim().size());
-
-    //no more nonterminals to process from here
-    addToScopeAndLinkWithNode(javaFieldSymbol, astFormalParameter);
+  public void visit(final ASTJavaBlock astCodeBlock) {
+    if (!isCurrentNodeAStatementOrMethodOrConstructor()) {
+      boolean isShadowingScope = isCurrentNodeAClassOrInterfaceOrEnum();
+      CommonScope commonScope = new CommonScope(isShadowingScope);
+      putOnStack(commonScope);
+      blockNodesStack.add(astCodeBlock);
+    }
   }
 
+  @Override
+  public void endVisit(final ASTJavaBlock astCodeBlock) {
+    if (!isCurrentNodeAStatementOrMethodOrConstructor()) {
+      CommonScope commonScope = (CommonScope) currentScope().get();
+      setLinkBetweenSpannedScopeAndNode(commonScope, astCodeBlock);
+      removeCurrentScope();
+      blockNodesStack.removeLast();
+    }
+  }
 
-  
   @Override
   public void visit(final ASTTryStatement astTryClause) {
-    CommonScope tryBlock = new CommonScope(false);
-    putOnStack(tryBlock);
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astTryClause);
+    blockNodesStack.add(astTryClause);
   }
-  
+
   @Override
   public void endVisit(final ASTTryStatement astTryClause) {
+    astTryClause.getJavaBlock().setEnclosingScope(currentScope().get());
     removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
   public void visit(final ASTTryStatementWithResources astTryClause) {
-    CommonScope tryBlock = new CommonScope(false);
-    putOnStack(tryBlock);
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astTryClause);
     for (ASTResource astResource : astTryClause.getResources()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
           astResource.getDeclaratorId().getName(), null);
@@ -580,17 +561,21 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       // no more nonterminals to process from here
       addToScopeAndLinkWithNode(javaFieldSymbol, astTryClause);
     }
+    blockNodesStack.add(astTryClause);
   }
   
   @Override
   public void endVisit(final ASTTryStatementWithResources astTryClause) {
+    astTryClause.getJavaBlock().setEnclosingScope(currentScope().get());
     removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
   public void visit(final ASTCatchClause astCatchClause) {
-    CommonScope tryBlock = new CommonScope(true);
-    putOnStack(tryBlock);
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astCatchClause);
     List<ASTQualifiedName> qualifiedNames = astCatchClause.getCatchType().getQualifiedNames();
     
     String qualifiedName = null;
@@ -610,26 +595,14 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaFieldSymbol, astCatchClause);
+    blockNodesStack.add(astCatchClause);
   }
   
   @Override
   public void endVisit(final ASTCatchClause astCatchClause) {
+    astCatchClause.getJavaBlock().setEnclosingScope(currentScope().get());
     removeCurrentScope();
-  }
-  
-  @Override
-  public void visit(final ASTJavaBlock astCodeBlock) {
-    if (!isCurrentNodeAMethodOrConstructor()) {
-      CommonScope commonScope = new CommonScope(true);
-      putOnStack(commonScope);
-    }
-  }
-
-  @Override
-  public void endVisit(final ASTJavaBlock astCodeBlock) {
-    if (!isCurrentNodeAMethodOrConstructor()) {
-      removeCurrentScope();
-    }
+    blockNodesStack.removeLast();
   }
 
   @Override
@@ -640,102 +613,134 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     if (null != astIfStatement.getThenStatement()) {
       CommonScope commonScope = new CommonScope(false);
       putOnStack(commonScope);
+      blockNodesStack.add(astIfStatement);
       setLinkBetweenSpannedScopeAndNode(commonScope, astIfStatement);
       astIfStatement.getThenStatement().accept(getRealThis());
       astIfStatement.getThenStatement().setEnclosingScope(currentScope().get());
       removeCurrentScope();
+      blockNodesStack.removeLast();
     }
     if (astIfStatement.getElseStatement().isPresent()) {
       CommonScope commonScope = new CommonScope(false);
       putOnStack(commonScope);
+      blockNodesStack.add(astIfStatement);
       setLinkBetweenSpannedScopeAndNode(commonScope, astIfStatement);
       astIfStatement.getElseStatement().get().accept(getRealThis());
       astIfStatement.getElseStatement().get().setEnclosingScope(currentScope().get());
       removeCurrentScope();
+      blockNodesStack.removeLast();
     }
   }
   
   @Override
   public void visit(final ASTForStatement astForStatement) {
-    if(isCurrentNodeAMethodOrConstructor()) {
-      CommonScope commonScope = new CommonScope(false);
-      putOnStack(commonScope);
-      setLinkBetweenSpannedScopeAndNode(commonScope, astForStatement);
-    }
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astForStatement);
+    blockNodesStack.add(astForStatement);
   }
 
   @Override
   public void endVisit(final ASTForStatement astForStatement) {
-    if(isCurrentNodeAMethodOrConstructor()) {
-      astForStatement.getForControl().setEnclosingScope(currentScope().get());
-      astForStatement.getStatement().setEnclosingScope(currentScope().get());
-      removeCurrentScope();
-    }
+    astForStatement.getForControl().setEnclosingScope(currentScope().get());
+    astForStatement.getStatement().setEnclosingScope(currentScope().get());
+    removeCurrentScope();
+    blockNodesStack.removeLast();
   }
-  
+
+  @Override
+  public void visit(final ASTEnhancedForControl astEnhancedForControl) {
+    ASTFormalParameter astFormalParameter = astEnhancedForControl.getFormalParameter();
+    JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
+            astFormalParameter.getDeclaratorId().getName(), null);
+
+    // FormalParameter = PrimitiveModifier* ...
+    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifiers());
+
+    // ... Type ...
+    initializeJavaAttributeSymbol(javaFieldSymbol, astFormalParameter.getType(),
+            astFormalParameter.getDeclaratorId().getDim().size());
+
+    //no more nonterminals to process from here
+    addToScopeAndLinkWithNode(javaFieldSymbol, astFormalParameter);
+  }
+
   @Override
   public void visit(final ASTWhileStatement astWhileStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      CommonScope commonScope = new CommonScope(false);
-      putOnStack(commonScope);
-      setLinkBetweenSpannedScopeAndNode(commonScope, astWhileStatement);
-    }
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astWhileStatement);
+    blockNodesStack.add(astWhileStatement);
   }
   
   @Override
   public void endVisit(final ASTWhileStatement astWhileStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      astWhileStatement.getCondition().setEnclosingScope(currentScope().get());
-      astWhileStatement.getStatement().setEnclosingScope(currentScope().get());
-      removeCurrentScope();
-    }
+    astWhileStatement.getCondition().setEnclosingScope(currentScope().get());
+    astWhileStatement.getStatement().setEnclosingScope(currentScope().get());
+    removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
   public void visit(final ASTDoWhileStatement astDoWhileStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      CommonScope commonScope = new CommonScope(false);
-      putOnStack(commonScope);
-      setLinkBetweenSpannedScopeAndNode(commonScope, astDoWhileStatement);
-    }
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astDoWhileStatement);
+    blockNodesStack.add(astDoWhileStatement);
   }
   
   @Override
   public void endVisit(final ASTDoWhileStatement astDoWhileStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      astDoWhileStatement.getCondition().setEnclosingScope(currentScope().get());
-      astDoWhileStatement.getStatement().setEnclosingScope(currentScope().get());
-      removeCurrentScope();
-    }
+    astDoWhileStatement.getCondition().setEnclosingScope(currentScope().get());
+    astDoWhileStatement.getStatement().setEnclosingScope(currentScope().get());
+    removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
   @Override
   public void visit(final ASTSwitchStatement astSwitchStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      CommonScope commonScope = new CommonScope(false);
-      putOnStack(commonScope);
-      setLinkBetweenSpannedScopeAndNode(commonScope, astSwitchStatement);
-    }
+    CommonScope commonScope = new CommonScope(false);
+    putOnStack(commonScope);
+    setLinkBetweenSpannedScopeAndNode(commonScope, astSwitchStatement);
+    blockNodesStack.add(astSwitchStatement);
   }
   
   @Override
   public void endVisit(final ASTSwitchStatement astSwitchStatement) {
-    if (isCurrentNodeAMethodOrConstructor()) {
-      for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroups()) {
-        astSwitchBlock.setEnclosingScope(currentScope().get());
-      }
-      removeCurrentScope();
+    for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroups()) {
+      astSwitchBlock.setEnclosingScope(currentScope().get());
     }
+    removeCurrentScope();
+    blockNodesStack.removeLast();
   }
   
-  protected boolean isCurrentNodeAMethodOrConstructor() {
+  protected boolean isCurrentNodeAStatementOrMethodOrConstructor() {
     if (!blockNodesStack.isEmpty()) {
       ASTNode currentNode = blockNodesStack.getLast();
       
-      return (currentNode instanceof ASTMethodDeclaration)
-          || (currentNode instanceof ASTConstructorDeclaration);
+      return (currentNode instanceof ASTIfStatement)
+              || (currentNode instanceof ASTForStatement)
+              || (currentNode instanceof ASTWhileStatement)
+              || (currentNode instanceof ASTDoWhileStatement)
+              || (currentNode instanceof ASTSwitchStatement)
+              || (currentNode instanceof ASTTryStatement)
+              || (currentNode instanceof ASTTryStatementWithResources)
+              || (currentNode instanceof ASTCatchClause)
+              || (currentNode instanceof ASTMethodDeclaration)
+              || (currentNode instanceof ASTConstructorDeclaration);
     }
     
+    return false;
+  }
+
+  protected boolean isCurrentNodeAClassOrInterfaceOrEnum() {
+    if (!blockNodesStack.isEmpty()) {
+      ASTNode currentNode = blockNodesStack.getLast();
+
+      return (currentNode instanceof ASTClassDeclaration)
+              || (currentNode instanceof ASTInterfaceDeclaration)
+              || (currentNode instanceof ASTEnumDeclaration);
+    }
     return false;
   }
   

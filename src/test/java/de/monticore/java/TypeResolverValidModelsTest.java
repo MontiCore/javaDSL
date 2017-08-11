@@ -18,8 +18,10 @@
  */
 package de.monticore.java;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.monticore.java.cocos.annotations.AnnotationMethodModifiers;
@@ -65,7 +67,7 @@ import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ComparisonValid;
 import de.monticore.java.cocos.expressions.ConditionValid;
-import de.monticore.java.cocos.expressions.FieldAccessValid;
+import de.monticore.java.cocos.expressions.QualifiedNameValid;
 import de.monticore.java.cocos.expressions.IdentityTestValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
 import de.monticore.java.cocos.expressions.LogicalNotValid;
@@ -133,12 +135,13 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   
   @BeforeClass
   public static void init() {
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
   
   @Before
   public void setUp() {
-    Log.getFindings().clear();
+    LogStub.getFindings().clear();
   }
   
   /* Test annotations CoCos */
@@ -511,13 +514,13 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   }
   
   @Test
-  public void TestFieldAccess() {
+  public void TestQualifiedName() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new FieldAccessValid(typeResolver));
+    checker.addCoCo(new QualifiedNameValid(typeResolver));
     checker.addCoCo(new FieldInitializerAssignmentCompatible(typeResolver));
     checker.addCoCo(new LocalVariableInitializerAssignmentCompatible(typeResolver));
     testModelNoErrors("src/test/resources",
-        "typeSystemTestModels/valid/expressions/FieldAccess", checker);
+        "typeSystemTestModels/valid/expressions/QualifiedName", checker);
   }
   
   @Test
@@ -624,6 +627,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   }
   
   @Test
+  @Ignore
   public void TestLocalVariableInitializerAssignmentCompatible() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new LocalVariableInitializerAssignmentCompatible(typeResolver));
@@ -920,7 +924,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/statements/WhileConditionHasBooleanType", checker);
   }
-  
+
   // TODO: Test for FieldNamesMustBePairWiseDifferent &
   // NestedTypeMayNotHaveSameNameAsEnclosingType
   

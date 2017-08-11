@@ -134,6 +134,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     implements JavaDSLVisitor {
   
   protected Stack<List<JavaTypeSymbolReference>> parameterStack = new Stack<>();
+
+  protected String fullName = "";
+
+  protected boolean isCallExpr = false;
   
   public JavaDSLVisitor getRealThis() {
     return this;
@@ -255,11 +259,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       }
     }
   }
-  
-  /**
-   * @see de.monticore.java.expressions._visitor.ExpressionsVisitor#handle(de.monticore.java.expressions._ast.ASTSuperExpression)
-   */
-  @Override
+
   public void handle(ASTSuperExpression node) {
     handle(node.getExpression());
     if (this.getResult().isPresent()) {
@@ -565,102 +565,153 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     if (paramTypes.size() == node.getArguments().getExpressions().size()) {
       parameterStack.push(paramTypes);
       ASTExpression expr = node.getExpression();
+      isCallExpr = true;
       expr.accept(getRealThis());
+      isCallExpr = false;
       parameterStack.pop();
     }
   }
   
   public void handle(ASTQualifiedNameExpression node) {
-    this.result = null;
+    if(!isCallExpr) {
+      // push dummy element, otherwise we would resolve a method while searching for a field
+      parameterStack.push(null);
+    }
+    isCallExpr = false;
     handle(node.getExpression());
-    if (!this.getResult().isPresent()) {
+    String name = node.getName();
+    Scope scope = node.getEnclosingScope().get();
+    if(!getResult().isPresent()) {
+      // expression could be a package name. try to resolve the fullname
+      fullName += "." + name;
+      Collection<JavaTypeSymbol> resolvedTypes = scope.resolveMany(fullName, JavaTypeSymbol.KIND);
+      if(resolvedTypes.size() == 1) {
+        JavaTypeSymbol typeSymbol = resolvedTypes.iterator().next();
+        setResult(new JavaTypeSymbolReference(typeSymbol.getFullName(), scope, 0));
+      }
+      // the result is either empty, because name is a package name again, or we found an acutal symbol
+      parameterStack.pop();
       return;
     }
-    JavaTypeSymbolReference expType = this.getResult().get();
-    if ("class".equals(node.getName())) {
-      JavaTypeSymbolReference classType = new JavaTypeSymbolReference("java.lang.Class",
-          node.getEnclosingScope().get(), 0);
-      List<ActualTypeArgument> arg = new ArrayList<>();
-      ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false, expType);
-      arg.add(actualTypeArgument);
-      classType.setActualTypeArguments(arg);
-      this.setResult(classType);
+    JavaTypeSymbolReference expType = getResult().get();
+    setResult(null);
+
+    if(expType.getDimension() > 0 && "length".equals(name)) {
+      setResult(new JavaTypeSymbolReference("int", expType.getEnclosingScope(), 0));
+      parameterStack.pop();
+      return;
     }
-    else if (this.getResult().get().getDimension() > 0
-        && "length".equals(node.getName())) {
-      this.setResult(new JavaTypeSymbolReference("int", expType.getEnclosingScope(), 0));
+
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) scope.resolve(expType.getName(), JavaTypeSymbol.KIND).get();
+
+    if(!parameterStack.isEmpty() && parameterStack.peek() != null) {
+      // try to resolve a method
+      List<JavaTypeSymbolReference> paramTypes = parameterStack.peek();
+      HashMap<JavaMethodSymbol, JavaTypeSymbolReference> resolvedMethods = JavaDSLHelper
+              .resolveManyInSuperType(name, false, expType, typeSymbol, null,
+                      paramTypes);
+
+      if(resolvedMethods.size() == 1) {
+        JavaMethodSymbol methodSymbol = resolvedMethods.entrySet().iterator().next().getKey();
+        HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
+                .getSubstitutedTypes(typeSymbol, expType);
+        JavaTypeSymbolReference returnType = JavaDSLHelper.applyTypeSubstitution(substituted,
+                methodSymbol.getReturnType());
+        setResult(returnType);
+      }
+      return;
     }
-    else if (JavaDSLHelper
-        .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-            this.getResult().get().getName())
-        .isPresent()) {
-      JavaTypeSymbolReference type = JavaDSLHelper
-          .visibleTypeSymbolFound(node.getEnclosingScope().get(),
-              this.getResult().get().getName())
-          .get();
-      String completeName = JavaDSLHelper.getCompleteName(type);
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-          .resolve(completeName, JavaTypeSymbol.KIND).get();
-      if ("super".equals(node.getName())) {
-        if (typeSymbol.getSuperClass().isPresent()) {
-          JavaTypeSymbolReference classType = typeSymbol.getSuperClass().get();
-          JavaTypeSymbolReference superType = new JavaTypeSymbolReference(classType.getName(),
-              node.getEnclosingScope().get(), classType.getDimension());
-          superType.setActualTypeArguments(classType.getActualTypeArguments());
-          this.setResult(superType);
-        }
-      }
-      else if (typeSymbol.isEnum()) {
-        if (typeSymbol.getSpannedScope()
-            .resolveMany(node.getName(), JavaTypeSymbol.KIND)
-            .size() == 1) {
-          this.setResult(
-              new JavaTypeSymbolReference(typeSymbol.getName(),
-                  typeSymbol.getEnclosingScope(),
-                  0));
-        }
-      }
-      else {
-        Collection<JavaFieldSymbol> resolvedFields = typeSymbol.getSpannedScope()
-            .<JavaFieldSymbol> resolveMany(node.getName(), JavaFieldSymbol.KIND);
-        if (resolvedFields.size() == 1) {
-          JavaTypeSymbolReference fieldType = resolvedFields.iterator().next()
-              .getType();
-          String completeTypeName = JavaDSLHelper.getCompleteName(fieldType);
-          JavaTypeSymbolReference newType = new JavaTypeSymbolReference(completeTypeName,
-              fieldType.getEnclosingScope(), fieldType.getDimension());
-          newType.setActualTypeArguments(fieldType.getActualTypeArguments());
-          this.setResult(newType);
-          return;
-        }
-        List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
-        if (!parameterStack.isEmpty()) {
-          paramTypes = parameterStack.peek();
-        }
-        HashMap<JavaMethodSymbol, JavaTypeSymbolReference> resolvedMethods = JavaDSLHelper
-            .resolveManyInSuperType(node.getName(), false, null, typeSymbol, null,
-                paramTypes);
-        if (resolvedMethods.size() == 1) {
-          JavaMethodSymbol methodSymbol = resolvedMethods.entrySet().iterator().next().getKey();
-          HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
-              .getSubstitutedTypes(typeSymbol, expType);
-          JavaTypeSymbolReference sReturnType = JavaDSLHelper.applyTypeSubstitution(substituted,
-              methodSymbol.getReturnType());
-          //// TODO: 01.11.2016 complete name?
-          this.setResult(sReturnType);
-          return;
-        }
-        this.setResult(null);    
-      }
-    } else {
-      String name = expType.getName() + "." + node.getName();
-      JavaTypeSymbolReference pName = new JavaTypeSymbolReference(name,
-          node.getEnclosingScope().get(), 0);
-      pName = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(pName),
-          pName.getEnclosingScope(), pName.getDimension());
-      this.setResult(pName);     
+
+    //try to resolve a local field
+    Collection<JavaFieldSymbol> resolvedFields = typeSymbol.getSpannedScope().resolveDownMany(name, JavaFieldSymbol.KIND);
+    if(resolvedFields.size() == 1) {
+      JavaTypeSymbolReference fieldType = resolvedFields.iterator().next().getType();
+      String completeTypeName = JavaDSLHelper.getCompleteName(fieldType);
+      fieldType = new JavaTypeSymbolReference(completeTypeName, fieldType.getEnclosingScope(), fieldType.getDimension());
+      fieldType.setActualTypeArguments(fieldType.getActualTypeArguments());
+      setResult(fieldType);
+      parameterStack.pop();
+      return;
     }
-    
+
+    // try to resolve a local constant
+    Collection<JavaTypeSymbol> resolvedConstants = typeSymbol.getSpannedScope().resolveDownMany(name, JavaTypeSymbol.KIND);
+    if(resolvedConstants.size() == 1) {
+      JavaTypeSymbol type = resolvedConstants.iterator().next();
+      setResult(new JavaTypeSymbolReference(type.getFullName(),
+              scope, 0));
+      parameterStack.pop();
+      return;
+    }
+
+    // try to resolve a type
+    Collection<JavaTypeSymbol> resolvedTypes = scope.resolveMany(name, JavaTypeSymbol.KIND);
+    if(resolvedTypes.size() == 1) {
+      JavaTypeSymbol type = resolvedTypes.iterator().next();
+      setResult(new JavaTypeSymbolReference(type.getFullName(),
+              scope, 0));
+      parameterStack.pop();
+      return;
+    }
+  }
+
+  public void handle(ASTNameExpression node) {
+    setResult(null);
+    String name = node.getName();
+    Scope scope = node.getEnclosingScope().get();
+    String typeSymbolName = JavaDSLHelper.getEnclosingTypeSymbolName(scope);
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) scope.resolve(typeSymbolName, JavaTypeSymbol.KIND).get();
+    JavaTypeSymbolReference expType = new JavaTypeSymbolReference(typeSymbolName, scope, 0);
+
+    if(!parameterStack.isEmpty() && parameterStack.peek() != null && isCallExpr) {
+      // try to resolve a method
+      List<JavaTypeSymbolReference> paramTypes = parameterStack.peek();
+      HashMap<JavaMethodSymbol, JavaTypeSymbolReference> resolvedMethods = JavaDSLHelper
+              .resolveManyInSuperType(name, false, expType, typeSymbol, null,
+                      paramTypes);
+
+      if(resolvedMethods.size() == 1) {
+        JavaMethodSymbol methodSymbol = resolvedMethods.entrySet().iterator().next().getKey();
+        HashMap<String, JavaTypeSymbolReference> substituted = JavaDSLHelper
+                .getSubstitutedTypes(typeSymbol, expType);
+        JavaTypeSymbolReference returnType = JavaDSLHelper.applyTypeSubstitution(substituted,
+                methodSymbol.getReturnType());
+        setResult(returnType);
+        return;
+      }
+    }
+
+    // try to resolve a local variable or a field (in super type)
+    Optional<JavaFieldSymbol> resolvedFields = JavaDSLHelper.resolveFieldInSuperType(scope, name);
+    if(resolvedFields.isPresent()) {
+      JavaTypeSymbolReference fieldType = resolvedFields.get().getType();
+      String completeTypeName = JavaDSLHelper.getCompleteName(fieldType);
+      JavaTypeSymbolReference newType = new JavaTypeSymbolReference(completeTypeName, fieldType.getEnclosingScope(), fieldType.getDimension());
+      newType.setActualTypeArguments(fieldType.getActualTypeArguments());
+      setResult(newType);
+      return;
+    }
+
+    // try to resolve a local constant
+    Collection<JavaTypeSymbol> resolvedConstants = typeSymbol.getSpannedScope().resolveDownMany(name, JavaTypeSymbol.KIND);
+    if(resolvedConstants.size() == 1) {
+      JavaTypeSymbol type = resolvedConstants.iterator().next();
+      setResult(new JavaTypeSymbolReference(type.getFullName(),
+              scope, 0));
+      return;
+    }
+
+    // try to resolve a type
+    Collection<JavaTypeSymbol> resolvedTypes = scope.resolveMany(name, JavaTypeSymbol.KIND);
+    if(resolvedTypes.size() == 1) {
+      JavaTypeSymbol type = resolvedTypes.iterator().next();
+      setResult(new JavaTypeSymbolReference(type.getFullName(),
+              scope, 0));
+      return;
+    }
+
+    // no symbol found for this expression. it could be a package name
+    fullName = name;
   }
   
   public void handle(ASTInnerCreatorExpression node) {
@@ -757,60 +808,18 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     handle(node.getExpression());
   }
   
-  public void handle(ASTNameExpression node) {
-    if (node.getEnclosingScope().isPresent()) {
-      // Try to resolve a field
-      Optional<JavaFieldSymbol> optField = JavaDSLHelper
-          .resolveFieldInSuperType(node.getEnclosingScope().get(), node.getName());
-      if (optField.isPresent()) {
-        JavaFieldSymbol fieldSymbol = optField.get();
-        if (fieldSymbol.getType() != null) {
-          this.setResult(JavaDSLHelper.convertToWildCard(fieldSymbol.getType()));
-          return;
-        }
-      }
-      
-      // Try to resolve a type
-      Optional<JavaTypeSymbol> optTypeSymbol = node.getEnclosingScope().get().<JavaTypeSymbol>resolve(node.getName(), JavaTypeSymbol.KIND);
-      if (optTypeSymbol.isPresent()) {
-        this.setResult(new JavaTypeSymbolReference(optTypeSymbol.get().getFullName(), node.getEnclosingScope().get(), 0));
-        return;
-      }
-      
-      // Try to resolve a method
-      List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
-      if (!parameterStack.isEmpty()) {
-        paramTypes = parameterStack.peek();
-      }     
-      String enclosingType = JavaDSLHelper.getEnclosingTypeSymbolName(node.getEnclosingScope().get());
-      if (enclosingType != null) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
-            .resolve(enclosingType, JavaTypeSymbol.KIND).get();
-        HashMap<JavaMethodSymbol, JavaTypeSymbolReference> resolvedMethods = JavaDSLHelper
-            .resolveManyInSuperType(node.getName(), false, null, typeSymbol, null,
-                paramTypes);
-        if (resolvedMethods.size() == 1) {
-          this.setResult(resolvedMethods.values().iterator().next());
-          return;
-        }
-      }
-      this.setResult(new JavaTypeSymbolReference(node.getName(), node.getEnclosingScope().get(), 0));
-      return;
-    }
-  }
-  
   public void handle(ASTLiteralExpression node) {
         node.getLiteral().accept(this);
   }
   
   public void handle(ASTPrimaryThisExpression node) {
     String className = JavaDSLHelper.getEnclosingTypeSymbolName(node);
-    JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+    JavaTypeSymbol symbol = (JavaTypeSymbol) node.getEnclosingScope().get()
         .resolve(className, JavaTypeSymbol.KIND).get();
     
-    if (classSymbol.isClass()) {
+    if (symbol.isClass() || symbol.isEnum()) {
       this.setResult(
-          new JavaTypeSymbolReference(classSymbol.getFullName(),
+          new JavaTypeSymbolReference(symbol.getFullName(),
               node.getEnclosingScope().get(), 0));
     }
     else {
@@ -1222,5 +1231,5 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTExpression node) {
     node.accept(getRealThis());
   }
-  
+
 }

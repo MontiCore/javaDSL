@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.Before;
 
@@ -86,7 +87,7 @@ public abstract class AbstractTestClass {
   
   @Before
   public void setup() {
-    Slf4jLog.init();
+    LogStub.init();
     Log.enableFailQuick(false);
     parser = new JavaDSLParser();
   }
