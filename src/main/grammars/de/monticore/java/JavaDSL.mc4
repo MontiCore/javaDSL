@@ -345,7 +345,8 @@ EmptyStatement implements Statement
 ExpressionStatement implements Statement
     =   Expression ";"
     ;
-    
+ 
+ /* Bugfix: TODO (MB): Delete after Bootstraping (4.5.4) */   
 ASTStatement implements Statement
 	= "de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());";
 

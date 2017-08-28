@@ -21,7 +21,7 @@ package de.monticore.java.prettyprint;
 import java.util.Iterator;
 
 import de.monticore.expressions.prettyprint.MCExpressionsPrettyPrinter;
-import de.monticore.java.javadsl._ast.ASTStatement;
+import de.monticore.java.javadsl._ast.ASTASTStatement;
 import de.monticore.java.javadsl._ast.ASTAnnotation;
 import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
 import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
@@ -122,10 +122,10 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   }
 
   /**
-   * @see de.monticore.java.javadsl._visitor.JavaDSLVisitor#handle(de.monticore.java.javadsl._ast.ASTStatement)
+   * @see de.monticore.java.javadsl._visitor.JavaDSLVisitor#handle(de.monticore.java.javadsl._ast.ASTASTStatement)
    */
   @Override
-  public void handle(ASTStatement node) {
+  public void handle(ASTASTStatement node) {
     getPrinter().println("de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
   }
 
