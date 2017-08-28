@@ -19,5 +19,5 @@
 
 package simpleTestClasses;
 
-public class EmptyClass {
+public class EmptyClass { 
 }
