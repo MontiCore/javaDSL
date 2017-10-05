@@ -19,7 +19,7 @@
 
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.expressions.MCExpressions {
+grammar JavaDSL extends de.monticore.MCExpressions {
 
 // starting point for parsing a java file
 CompilationUnit

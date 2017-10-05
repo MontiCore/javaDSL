@@ -20,10 +20,10 @@ package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTArrayDimensionByExpressionCoCo;
-import de.monticore.expressions.mcexpressions._ast.ASTExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.mcexpressions._ast.ASTExpression;
 import de.se_rwth.commons.logging.Log;
 
 public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimensionByExpressionCoCo {

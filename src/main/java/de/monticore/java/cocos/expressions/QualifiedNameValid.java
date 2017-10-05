@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.mcexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;

@@ -18,7 +18,7 @@
  */
 package de.monticore.java.report;
 
-import de.monticore.expressions.mcexpressions._od.MCExpressions2OD;
+import de.monticore.mcexpressions._od.MCExpressions2OD;
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
 import de.monticore.java.javadsl._visitor.CommonJavaDSLDelegatorVisitor;
@@ -39,7 +39,7 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
     visitor.set_de_monticore_literals_literals__visitor_LiteralsVisitor(
         new Literals2OD(printer, reporting));
     visitor.set_de_monticore_types_types__visitor_TypesVisitor(new Types2OD(printer, reporting));
-    visitor.set_de_monticore_expressions_mcexpressions__visitor_MCExpressionsVisitor(new MCExpressions2OD(printer, reporting));
+    visitor.set_de_monticore_mcexpressions__visitor_MCExpressionsVisitor(new MCExpressions2OD(printer, reporting));
     visitor.set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(this);
     setPrintEmptyList(true);
     setPrintEmptyOptional(true);

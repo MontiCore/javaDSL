@@ -20,8 +20,8 @@ package de.monticore.java.cocos.expressions;
 
 import java.util.Optional;
 
-import de.monticore.expressions.mcexpressions._ast.ASTTypeCastExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTTypeCastExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTTypeCastExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTTypeCastExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

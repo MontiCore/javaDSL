@@ -18,8 +18,8 @@
  */
 package de.monticore.java.types;
 
-import de.monticore.expressions.mcexpressions._ast.*;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsCoCoChecker;
+import de.monticore.mcexpressions._ast.*;
+import de.monticore.mcexpressions._cocos.MCExpressionsCoCoChecker;
 import de.monticore.java.cocos.annotations.AnnotationMethodModifiers;
 import de.monticore.java.cocos.annotations.AnnotationMethodReturnTypes;
 import de.monticore.java.cocos.annotations.AnnotationNameNotAsEnclosingType;

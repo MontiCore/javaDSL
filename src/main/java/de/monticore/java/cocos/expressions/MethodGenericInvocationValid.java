@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.monticore.expressions.mcexpressions._ast.ASTExpression;
-import de.monticore.expressions.mcexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.expressions.mcexpressions._ast.ASTNameExpression;
-import de.monticore.expressions.mcexpressions._ast.ASTPrimaryGenericInvocationExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTGenericInvocationExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTExpression;
+import de.monticore.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.mcexpressions._ast.ASTNameExpression;
+import de.monticore.mcexpressions._ast.ASTPrimaryGenericInvocationExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;

@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.mcexpressions._ast.ASTShiftExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTShiftExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTShiftExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTShiftExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.mcexpressions._ast.ASTPrimarySuperExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTPrimarySuperExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTPrimarySuperExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;

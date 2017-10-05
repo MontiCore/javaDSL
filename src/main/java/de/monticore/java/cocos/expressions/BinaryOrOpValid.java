@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.mcexpressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.expressions.mcexpressions._cocos.MCExpressionsASTBinaryOrOpExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTBinaryOrOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
