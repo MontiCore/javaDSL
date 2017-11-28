@@ -6,7 +6,7 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.9</version>
+  <version>4.3.9.1</version>
 
   <properties>
 

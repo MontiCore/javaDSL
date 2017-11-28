@@ -513,7 +513,7 @@ public class HCJavaDSLTypeResolver extends JavaDSLTypeResolver<JavaTypeSymbolRef
                   JavaTypeSymbol.KIND).isPresent()) {
                 JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
                     .resolve(type.getName(), JavaTypeSymbol.KIND).get();
-                if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
+                if (type.getName().endsWith(typeSymbol.getName()) || type.getName().equals(typeSymbol.getName())) {
                   HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
                       .resolveManyInSuperType(name, true, null, typeSymbol, null,
                           paramTypes);
