@@ -33,7 +33,7 @@ public class AbstractOrNativeMethodHasNoBody implements JavaDSLASTMethodDeclarat
   @Override
   public void check(ASTMethodDeclaration node) {
     JavaMethodSymbol javaMethodSymbol = (JavaMethodSymbol) node.getSymbol().get();
-    if (javaMethodSymbol.isAbstract() && node.getMethodBody().isPresent()) {
+    if (javaMethodSymbol.isAbstract() && node.isMethodBodyPresent()) {
       Log.error(ERROR_MESSAGE, node.get_SourcePositionStart());
     }
   }

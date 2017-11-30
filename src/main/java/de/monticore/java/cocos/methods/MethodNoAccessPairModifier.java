@@ -47,7 +47,7 @@ public class MethodNoAccessPairModifier implements JavaDSLASTMethodDeclarationCo
   //JLS3 8.4.3-2
   @Override public void check(ASTMethodDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getMethodSignature().getModifiers()) {
+    for (ASTModifier modifier : node.getMethodSignature().getModifierList()) {
       if(modifier instanceof ASTPrimitiveModifier) {
         modifier.accept(typeResolver);
         JavaTypeSymbolReference modifierType = typeResolver.getResult()

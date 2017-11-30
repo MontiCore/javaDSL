@@ -46,7 +46,7 @@ public class ConstructorModifiersValid implements JavaDSLASTConstructorDeclarati
   @Override
   public void check(ASTConstructorDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       modifier.accept(typeResolver);
       JavaTypeSymbolReference modifierType = typeResolver.getResult()
           .get();

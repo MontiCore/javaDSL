@@ -44,7 +44,7 @@ public class InterfaceNoDuplicateModifier implements JavaDSLASTInterfaceDeclarat
   //JLS3 8.8.3-1
   @Override public void check(ASTInterfaceDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       modifier.accept(typeResolver);
       JavaTypeSymbolReference modType = typeResolver.getResult()
           .get();

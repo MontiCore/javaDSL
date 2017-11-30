@@ -6,18 +6,18 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.10-SNAPSHOT</version>
+  <version>4.3.10</version>
 
   <properties>
 
-    <monticore.version>4.5.4-SNAPSHOT</monticore.version>
+    <monticore.version>4.5.5</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
     <guava.version>18.0</guava.version>
     <junit.version>4.11</junit.version>
     <se-commons.version>1.7.8-SNAPSHOT</se-commons.version>
-    <antlr.version>4.5</antlr.version>
+    <antlr.version>4.7.1</antlr.version>
     <emf.common.version>2.5.0</emf.common.version>
     <emf.ecore.version>2.5.0</emf.ecore.version>
     <emf.ecore.xmi.version>2.5.0</emf.ecore.xmi.version>
@@ -26,7 +26,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>4.5.3</mc4.maven.version>
+    <mc4.maven.version>4.5.5.Gen</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 

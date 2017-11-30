@@ -46,8 +46,8 @@ public class CatchIsValid implements JavaDSLASTTryStatementCoCo {
   public void check(ASTTryStatement node) {
     if (node.getExceptionHandler() instanceof ASTCatchExceptionsHandler) {
       ASTCatchExceptionsHandler handler = (ASTCatchExceptionsHandler) node.getExceptionHandler();
-      for (ASTCatchClause clause : handler.getCatchClauses()) {
-        if (clause.getCatchType().getQualifiedNames().size() == 1) {
+      for (ASTCatchClause clause : handler.getCatchClauseList()) {
+        if (clause.getCatchType().getQualifiedNameList().size() == 1) {
           typeResolver.handle(clause.getCatchType());
           JavaTypeSymbolReference expType = typeResolver.getResult().get();
           if (!JavaDSLHelper.isThrowable(expType)) {

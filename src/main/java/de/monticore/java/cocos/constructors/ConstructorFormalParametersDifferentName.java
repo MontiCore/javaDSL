@@ -36,9 +36,9 @@ public class ConstructorFormalParametersDifferentName implements
   @Override
   public void check(ASTConstructorDeclaration node) {
     List<String> names = new ArrayList<>();
-    if (node.getFormalParameters().formalParameterListingIsPresent()) {
+    if (node.getFormalParameters().isFormalParameterListingPresent()) {
       for (ASTFormalParameter formalParameter : node.getFormalParameters()
-          .getFormalParameterListing().get().getFormalParameters()) {
+          .getFormalParameterListing().getFormalParameterList()) {
         if (names.contains(formalParameter.getDeclaratorId().getName())) {
           Log.error("0xA0301 constructor '" + node.getName()
               + "' contains multiple formal parameters with name '" + formalParameter

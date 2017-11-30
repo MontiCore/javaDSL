@@ -55,7 +55,7 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
     for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
-        .getTypeArguments()) {
+        .getTypeArgumentList()) {
       typeArgument.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         typeArguments.add(typeResolver.getResult().get());
@@ -65,7 +65,7 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
       }
     }
     for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
-        .getArguments().get().getExpressions()) {
+        .getArguments().getExpressionList()) {
       expression.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         actualArguments.add(typeResolver.getResult().get());
@@ -74,8 +74,8 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
         Log.error("0xA0555 argument", node.get_SourcePositionStart());
       }
     }
-    if (genericInvocation.getGenericInvocationSuffix().getName().isPresent()) {
-      methodName = genericInvocation.getGenericInvocationSuffix().getName().get();
+    if (genericInvocation.getGenericInvocationSuffix().isNamePresent()) {
+      methodName = genericInvocation.getGenericInvocationSuffix().getName();
     }
     if (node.getExpression() instanceof ASTNameExpression) {
       ASTNameExpression primaryExpression = (ASTNameExpression) node.getExpression();

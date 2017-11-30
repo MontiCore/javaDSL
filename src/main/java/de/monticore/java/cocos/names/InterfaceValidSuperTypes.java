@@ -42,7 +42,7 @@ public class InterfaceValidSuperTypes implements JavaDSLASTInterfaceDeclarationC
   
   @Override
   public void check(ASTInterfaceDeclaration node) {
-    for (ASTType extendedInterface : node.getExtendedInterfaces()) {
+    for (ASTType extendedInterface : node.getExtendedInterfaceList()) {
       extendedInterface.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference extendedType = typeResolver.getResult().get();
