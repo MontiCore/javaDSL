@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTPrimaryThisExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTPrimaryThisExpressionCoCo;
+import de.monticore.shiftexpressions._ast.ASTPrimaryThisExpression;
+import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTPrimaryThisExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
@@ -27,7 +27,7 @@ import de.se_rwth.commons.logging.Log;
 /**
  *  on 07.08.2016.
  */
-public class PrimaryThisValid implements MCExpressionsASTPrimaryThisExpressionCoCo {
+public class PrimaryThisValid implements ShiftExpressionsASTPrimaryThisExpressionCoCo {
   
   //JLS3 14.21-1
   @Override

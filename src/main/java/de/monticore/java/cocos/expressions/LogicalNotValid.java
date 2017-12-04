@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTLogicalNotExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTLogicalNotExpressionCoCo;
+import de.monticore.commonexpressions._ast.ASTLogicalNotExpression;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTLogicalNotExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class LogicalNotValid implements MCExpressionsASTLogicalNotExpressionCoCo {
+public class LogicalNotValid implements CommonExpressionsASTLogicalNotExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

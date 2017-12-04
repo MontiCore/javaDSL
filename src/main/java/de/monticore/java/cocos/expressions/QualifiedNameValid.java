@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.mcbasictypes1._ast.ASTQualifiedName;
+import de.monticore.mcbasictypes1._cocos.MCBasicTypes1ASTQualifiedNameCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
@@ -28,7 +28,7 @@ import de.se_rwth.commons.logging.Log;
 
 import java.util.Collection;
 
-public class QualifiedNameValid implements MCExpressionsASTQualifiedNameExpressionCoCo {
+public class QualifiedNameValid implements MCBasicTypes1ASTQualifiedNameCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 
@@ -37,7 +37,7 @@ public class QualifiedNameValid implements MCExpressionsASTQualifiedNameExpressi
   }
 
   @Override
-  public void check(ASTQualifiedNameExpression node) {
+  public void check(ASTQualifiedName node) {
     String name = node.getName();
     Scope scope = node.getEnclosingScope().get();
     typeResolver.handle(node.getExpression());

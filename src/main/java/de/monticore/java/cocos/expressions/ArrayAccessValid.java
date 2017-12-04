@@ -21,11 +21,11 @@ package de.monticore.java.cocos.expressions;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.mcexpressions._ast.ASTArrayExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTArrayExpressionCoCo;
+import de.monticore.shiftexpressions._ast.ASTArrayExpression;
+import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTArrayExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
-public class ArrayAccessValid implements MCExpressionsASTArrayExpressionCoCo {
+public class ArrayAccessValid implements ShiftExpressionsASTArrayExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
