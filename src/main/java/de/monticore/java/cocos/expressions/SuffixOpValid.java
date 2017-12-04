@@ -18,13 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTSuffixExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTSuffixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTIncSuffixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTIncSuffixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTDecSuffixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTDecSuffixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class SuffixOpValid implements MCExpressionsASTSuffixExpressionCoCo {
+public class SuffixOpValid implements AssignmentExpressionsASTIncSuffixExpressionCoCo,AssignmentExpressionsASTDecSuffixExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -34,7 +36,22 @@ public class SuffixOpValid implements MCExpressionsASTSuffixExpressionCoCo {
   
   // JLS3 15.14.2-1, JLS3 15.14.2-2
   @Override
-  public void check(ASTSuffixExpression node) {
+  public void check(ASTIncSuffixExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0579 the operand expression of suffix operator must have type convertible to numeric type.",
+          node.get_SourcePositionStart());
+    }
+    if (!JavaDSLHelper.isVariable(node.getExpression())) {
+      Log.error("0xA0580 the operand expression of suffix must be a variable.",
+          node.get_SourcePositionStart());
+      return;
+    }
+  }
+  
+  @Override
+  public void check(ASTDecSuffixExpression node) {
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error(

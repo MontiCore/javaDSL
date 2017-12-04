@@ -25,8 +25,8 @@ import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
-import de.monticore.mcexpressions._ast.ASTExpression;
-import de.monticore.mcexpressions._ast.ASTLiteralExpression;
+import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.javaclassexpressions._ast.ASTLiteralExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
@@ -74,8 +74,8 @@ JavaDSLASTLocalVariableDeclarationCoCo {
                 ASTExpression astExpression =  variableDeclarator
                     .getVariableInititializerOrExpression().get().getExpression().get();
                 if (astExpression instanceof ASTLiteralExpression) {
-                  ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
-                  ASTLiteral literal = primaryExpression.getLiteral();
+                  ASTLiteral primaryExpression = (ASTLiteral) astExpression;
+                  ASTLiteral literal = primaryExpression;
                   if (literal instanceof ASTIntLiteral) {
                     return;
                   }

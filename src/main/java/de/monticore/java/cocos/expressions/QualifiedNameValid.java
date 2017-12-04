@@ -18,17 +18,16 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcbasictypes1._ast.ASTQualifiedName;
-import de.monticore.mcbasictypes1._cocos.MCBasicTypes1ASTQualifiedNameCoCo;
+import java.util.Collection;
+
 import de.monticore.java.symboltable.JavaTypeSymbol;
-import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.symboltable.Scope;
 import de.se_rwth.commons.logging.Log;
 
-import java.util.Collection;
-
-public class QualifiedNameValid implements MCBasicTypes1ASTQualifiedNameCoCo {
+public class QualifiedNameValid implements ShiftExpressionsASTQualifiedNameExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 
@@ -37,7 +36,7 @@ public class QualifiedNameValid implements MCBasicTypes1ASTQualifiedNameCoCo {
   }
 
   @Override
-  public void check(ASTQualifiedName node) {
+  public void check(ASTQualifiedNameExpression node) {
     String name = node.getName();
     Scope scope = node.getEnclosingScope().get();
     typeResolver.handle(node.getExpression());

@@ -25,14 +25,13 @@ import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
-import de.monticore.mcexpressions._ast.ASTExpression;
-import de.monticore.mcexpressions._ast.ASTLiteralExpression;
+import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.mcliterals._ast.ASTLiteral;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.literals.literals._ast.ASTIntLiteral;
-import de.monticore.literals.literals._ast.ASTLiteral;
 import de.se_rwth.commons.logging.Log;
 
 /**
@@ -66,9 +65,9 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
             && variableDeclarator.getVariableInititializerOrExpression().get() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
               .getVariableInititializerOrExpression().get();
-          if (astExpression instanceof ASTLiteralExpression) {
-            ASTLiteralExpression primaryExpression =(ASTLiteralExpression) astExpression;
-            ASTLiteral literal = primaryExpression.getLiteral();
+          if (astExpression instanceof ASTLiteral) {
+            ASTLiteral primaryExpression =(ASTLiteral) astExpression;
+            ASTLiteral literal = primaryExpression;
             if (literal instanceof ASTIntLiteral) {
               return;
             }

@@ -18,12 +18,12 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTNameExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTNameExpressionCoCo;
+import de.monticore.javaclassexpressions._ast.ASTNameExpression;
+import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTNameExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
-public class NameExpValid implements MCExpressionsASTNameExpressionCoCo {
+public class NameExpValid implements JavaClassExpressionsASTNameExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 

@@ -18,13 +18,22 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTPrefixExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTPrefixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTMinusPrefixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTMinusPrefixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTPlusPrefixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTPlusPrefixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTIncPrefixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTIncPrefixExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTDecPrefixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTDecPrefixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class PrefixOpValid implements MCExpressionsASTPrefixExpressionCoCo {
+public class PrefixOpValid implements AssignmentExpressionsASTMinusPrefixExpressionCoCo,
+    AssignmentExpressionsASTPlusPrefixExpressionCoCo,
+    AssignmentExpressionsASTIncPrefixExpressionCoCo,
+    AssignmentExpressionsASTDecPrefixExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -34,19 +43,56 @@ public class PrefixOpValid implements MCExpressionsASTPrefixExpressionCoCo {
   
   // JLS3 15.15.1-1, JLS3 15.15.2-1, JLS3 15.15.3-1, JLS3 15.15.4-1
   @Override
-  public void check(ASTPrefixExpression node) {
+  public void check(ASTPlusPrefixExpression node) {
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error(
           "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
           node.get_SourcePositionStart());
     }
-    if ("--".equals(node.getPrefixOp().get()) || "++".equals(node.getPrefixOp().get())) {
-      if (!JavaDSLHelper.isVariable(node.getExpression())) {
-        Log.error("0xA0573 the operand expression of prefix must be a variable.",
-            node.get_SourcePositionStart());
-        return;
-      }
+  }
+  
+  @Override
+  public void check(ASTMinusPrefixExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
+          node.get_SourcePositionStart());
+    }
+  }
+  
+  @Override
+  public void check(ASTIncPrefixExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
+          node.get_SourcePositionStart());
+    }
+    
+    if (!JavaDSLHelper.isVariable(node.getExpression())) {
+      Log.error("0xA0573 the operand expression of prefix must be a variable.",
+          node.get_SourcePositionStart());
+      return;
+      
+    }
+  }
+  
+  @Override
+  public void check(ASTDecPrefixExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error(
+          "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
+          node.get_SourcePositionStart());
+    }
+    
+    if (!JavaDSLHelper.isVariable(node.getExpression())) {
+      Log.error("0xA0573 the operand expression of prefix must be a variable.",
+          node.get_SourcePositionStart());
+      return;
+      
     }
   }
   

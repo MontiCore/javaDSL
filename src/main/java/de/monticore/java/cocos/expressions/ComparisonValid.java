@@ -18,15 +18,23 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTComparisonExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTComparisonExpressionCoCo;
+import de.monticore.commonexpressions._ast.ASTLessEqualExpression;
+import de.monticore.commonexpressions._ast.ASTGreaterEqualExpression;
+import de.monticore.commonexpressions._ast.ASTLessThanExpression;
+import de.monticore.commonexpressions._ast.ASTGreaterThanExpression;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTLessEqualExpressionCoCo;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTGreaterEqualExpressionCoCo;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTLessThanExpressionCoCo;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTGreaterThanExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
- *  on 08.06.2016.
+ * on 08.06.2016.
  */
-public class ComparisonValid implements MCExpressionsASTComparisonExpressionCoCo {
+public class ComparisonValid implements CommonExpressionsASTLessEqualExpressionCoCo,
+    CommonExpressionsASTGreaterEqualExpressionCoCo, CommonExpressionsASTLessThanExpressionCoCo,
+    CommonExpressionsASTGreaterThanExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -36,7 +44,34 @@ public class ComparisonValid implements MCExpressionsASTComparisonExpressionCoCo
   
   // JLS3 15.20.1-1
   @Override
-  public void check(ASTComparisonExpression node) {
+  public void check(ASTLessEqualExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",
+          node.get_SourcePositionStart());
+    }
+  }
+  
+  @Override
+  public void check(ASTGreaterEqualExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",
+          node.get_SourcePositionStart());
+    }
+  }
+  
+  @Override
+  public void check(ASTLessThanExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",
+          node.get_SourcePositionStart());
+    }
+  }
+  
+  @Override
+  public void check(ASTGreaterThanExpression node) {
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",

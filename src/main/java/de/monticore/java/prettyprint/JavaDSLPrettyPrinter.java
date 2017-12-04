@@ -19,8 +19,6 @@
 package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
-
-import de.monticore.expressions.prettyprint.MCExpressionsPrettyPrinter;
 import de.monticore.java.javadsl._ast.ASTASTStatement;
 import de.monticore.java.javadsl._ast.ASTAnnotation;
 import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
@@ -101,6 +99,7 @@ import de.monticore.prettyprint.CommentPrettyPrinter;
 import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.types.types._ast.ASTArrayType;
 import de.monticore.types.types._ast.ASTTypeVariableDeclaration;
+import de.monticore.types.types._ast.ASTTypesNode;
 import de.monticore.types.types._ast.ASTVoidType;
 import de.monticore.types.types._ast.ASTWildcardType;
 import de.se_rwth.commons.Names;
@@ -109,16 +108,46 @@ import de.se_rwth.commons.Names;
  * $Id: JavaDSLWriterVisitor.java,v 1.4 2008-07-17 08:34:01 cficek Exp $
  */
 
-public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
+public class JavaDSLPrettyPrinter implements
     JavaDSLVisitor {
+  
+  protected IndentPrinter printer = null;
 
   private boolean WRITE_COMMENTS = false;
   
   private JavaDSLVisitor realThis = this;
 
   public JavaDSLPrettyPrinter(IndentPrinter out) {
-    super(out);
+    this.printer = out;
     setWriteComments(true);
+  }
+  
+  public IndentPrinter getPrinter() {
+    return this.printer;
+  }
+  
+  protected void printNode(String s) {
+    getPrinter().print(s);
+  }
+  
+  protected void printList(Iterator<? extends ASTTypesNode> iter, String seperator) {
+    // print by iterate through all items
+    String sep = "";
+    while (iter.hasNext()) {
+      getPrinter().print(sep);
+      iter.next().accept(getRealThis());
+      sep = seperator;
+    }
+  }
+  
+  protected void printExpressionsList(Iterator<? extends ASTMCExpressionsNode> iter, String separator) {
+    // print by iterate through all items
+    String sep = "";
+    while (iter.hasNext()) {
+      getPrinter().print(sep);
+      iter.next().accept(getRealThis());
+      sep = separator;
+    }
   }
 
   /**

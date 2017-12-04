@@ -18,14 +18,14 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTAssignmentExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTAssignmentExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTAssignmentExpressionsNode;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionsNodeCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class AssignmentCompatible implements MCExpressionsASTAssignmentExpressionCoCo {
+public class AssignmentCompatible implements AssignmentExpressionsASTAssignmentExpressionsNodeCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -35,7 +35,7 @@ public class AssignmentCompatible implements MCExpressionsASTAssignmentExpressio
   
   // JLS3 15.26-1, JLS3 15.26-2
   @Override
-  public void check(ASTAssignmentExpression node) {
+  public void check(ASTAssignmentExpressionsNode node) {
     if (!JavaDSLHelper.isVariable(node.getLeftExpression())) {
       Log.error("0xA0507 first operand of assignment expression must be a variable.",
           node.get_SourcePositionStart());

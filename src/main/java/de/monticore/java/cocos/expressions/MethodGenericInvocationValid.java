@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.monticore.mcexpressions._ast.ASTExpression;
+import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.javaclassexpressions._ast.ASTETypeArgumentsExt;
 import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.mcexpressions._ast.ASTNameExpression;
+import de.monticore.javaclassexpressions._ast.ASTNameExpression;
 import de.monticore.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpression;
 import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
@@ -54,8 +55,7 @@ implements JavaClassExpressionsASTGenericInvocationExpressionCoCo {
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
-        .getTypeArguments()) {
+    for (ASTETypeArgumentsExt typeArgument : genericInvocation.getETypeArguments()) {
       typeArgument.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         typeArguments.add(typeResolver.getResult().get());
