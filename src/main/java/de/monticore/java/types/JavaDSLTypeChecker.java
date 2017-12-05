@@ -49,12 +49,12 @@ import de.monticore.java.cocos.statements.SwitchStatementValid;
 import de.monticore.java.cocos.statements.SynchronizedArgIsReftype;
 import de.monticore.java.cocos.statements.ThrowIsValid;
 import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
-import de.monticore.java.cocos.*;
 import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.javaclassexpressions._ast.*;
 import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsCoCoChecker;
 import de.monticore.shiftexpressions._ast.*;
+import de.monticore.shiftexpressions._ast.ASTLogiaclRightShiftExpression;
 import de.monticore.shiftexpressions._cocos.ShiftExpressionsCoCoChecker;
 
 /**
@@ -308,7 +308,13 @@ public class JavaDSLTypeChecker {
     public void traverse(ASTMinusExpression node) {}
 
     @Override
-    public void traverse(ASTShiftExpression node) {}
+    public void traverse(ASTLeftShiftExpression node) {}
+    
+    @Override
+    public void traverse(ASTRightShiftExpression node) {}
+    
+    @Override
+    public void traverse(ASTLogiaclRightShiftExpression node) {}
 
     @Override
     public void traverse(ASTLessEqualExpression node) {}
@@ -350,7 +356,28 @@ public class JavaDSLTypeChecker {
     public void traverse(ASTConditionalExpression node) {}
 
     @Override
-    public void traverse(ASTAssignmentExpression node) {}
+    public void traverse(ASTPlusAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTMultAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTDivideAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTAndAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTOrAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTRightShiftAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTModuloAssignmentExpression node) {}
+    
+    @Override
+    public void traverse(ASTLeftShiftAssignmentExpression node) {}
 
     @Override
     public void traverse(ASTBracketExpression node) {}

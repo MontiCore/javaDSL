@@ -39,7 +39,7 @@ public class CastConversionValid implements JavaClassExpressionsASTTypeCastExpre
   @Override
   public void check(ASTTypeCastExpression node) {
     
-    node.getType().accept(typeResolver);
+    node.getEType().accept(typeResolver);
     Optional<JavaTypeSymbolReference> typeCast = typeResolver.getResult();
     typeResolver.handle(node.getExpression());
     Optional<JavaTypeSymbolReference> typeExp = typeResolver.getResult();

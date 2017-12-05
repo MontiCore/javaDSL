@@ -19,6 +19,8 @@
 package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
+
+import de.monticore.expressionsbasis._ast.ASTExpressionsBasisNode;
 import de.monticore.java.javadsl._ast.ASTASTStatement;
 import de.monticore.java.javadsl._ast.ASTAnnotation;
 import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
@@ -140,7 +142,7 @@ public class JavaDSLPrettyPrinter implements
     }
   }
   
-  protected void printExpressionsList(Iterator<? extends ASTMCExpressionsNode> iter, String separator) {
+  protected void printExpressionsList(Iterator<? extends ASTExpressionsBasisNode> iter, String separator) {
     // print by iterate through all items
     String sep = "";
     while (iter.hasNext()) {

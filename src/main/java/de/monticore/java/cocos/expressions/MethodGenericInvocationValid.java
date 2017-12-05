@@ -55,15 +55,14 @@ implements JavaClassExpressionsASTGenericInvocationExpressionCoCo {
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    for (ASTETypeArgumentsExt typeArgument : genericInvocation.getETypeArguments()) {
-      typeArgument.accept(typeResolver);
+    genericInvocation.getETypeArguments().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         typeArguments.add(typeResolver.getResult().get());
       }
       else {
         Log.error("0xA0554 type argument", node.get_SourcePositionStart());
       }
-    }
+    
     for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
         .getArguments().get().getExpressions()) {
       expression.accept(typeResolver);

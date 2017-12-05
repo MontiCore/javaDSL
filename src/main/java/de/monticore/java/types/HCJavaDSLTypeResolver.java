@@ -64,8 +64,10 @@ import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.commonexpressions._ast.ASTPlusExpression;
 import de.monticore.commonexpressions._ast.ASTMinusExpression;
 import de.monticore.shiftexpressions._ast.ASTArrayExpression;
+import de.monticore.shiftexpressions._ast.ASTLeftShiftExpression;
+import de.monticore.shiftexpressions._ast.ASTLogiaclRightShiftExpression;
 //TODO
-import de.monticore.mcexpressions._ast.ASTAssignmentExpression;
+import de.monticore.assignmentexpressions._ast.ASTAssignmentExpressionsNode;
 import de.monticore.assignmentexpressions._ast.ASTBinaryAndExpression;
 import de.monticore.assignmentexpressions._ast.ASTBinaryOrOpExpression;
 import de.monticore.assignmentexpressions._ast.ASTBinaryXorExpression;
@@ -101,6 +103,7 @@ import de.monticore.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpress
 import de.monticore.javaclassexpressions._ast.ASTPrimarySuperExpression;
 import de.monticore.shiftexpressions._ast.ASTPrimaryThisExpression;
 import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.shiftexpressions._ast.ASTRightShiftExpression;
 //TODO
 import de.monticore.shiftexpressions._ast.ASTShiftExpression;
 import de.monticore.assignmentexpressions._ast.ASTIncSuffixExpression;
@@ -442,7 +445,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTShiftExpression node) {
+  public void handle(ASTRightShiftExpression node) {
     handle(node.getLeftExpression());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
@@ -451,7 +454,37 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
             JavaDSLHelper
-                .resolveTypeForExpressions(leftType, rightType, node.getShiftOp().get())
+                .resolveTypeForExpressions(leftType, rightType, node.getShiftOp())
+                .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTLeftShiftExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper
+                .resolveTypeForExpressions(leftType, rightType, node.getShiftOp())
+                .orElse(null));
+      }
+    }
+  }
+  
+  public void handle(ASTLogiaclRightShiftExpression node) {
+    handle(node.getLeftExpression());
+    if (this.getResult().isPresent()) {
+      JavaTypeSymbolReference leftType = this.getResult().get();
+      handle(node.getRightExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference rightType = this.getResult().get();
+        this.setResult(
+            JavaDSLHelper
+                .resolveTypeForExpressions(leftType, rightType, node.getShiftOp())
                 .orElse(null));
       }
     }
@@ -631,7 +664,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTAssignmentExpression node) {
+  public void handle(ASTAssignmentExpressionsNode node) {
     handle(node.getLeftExpression());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
@@ -1372,7 +1405,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       }
     }
   }
-  
+ 
   @Override
   public void handle(ASTExpression node) {
     node.accept(getRealThis());
