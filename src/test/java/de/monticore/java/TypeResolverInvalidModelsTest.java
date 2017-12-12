@@ -55,7 +55,6 @@ import de.monticore.java.cocos.enums.EnumMayNotBeAbstract;
 import de.monticore.java.cocos.enums.EnumMethodModifiersValid;
 import de.monticore.java.cocos.enums.EnumModifiersValid;
 import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
-import de.monticore.java.cocos.expressions.AdditiveOpsValid;
 import de.monticore.java.cocos.expressions.ArrayAccessValid;
 import de.monticore.java.cocos.expressions.ArrayCreatorValid;
 import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
@@ -70,20 +69,34 @@ import de.monticore.java.cocos.expressions.BooleanOrValid;
 import de.monticore.java.cocos.expressions.CastConversionValid;
 import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
-import de.monticore.java.cocos.expressions.ComparisonValid;
 import de.monticore.java.cocos.expressions.ConditionValid;
-import de.monticore.java.cocos.expressions.QualifiedNameValid;
-import de.monticore.java.cocos.expressions.IdentityTestValid;
+import de.monticore.java.cocos.expressions.DecPrefixOpValid;
+import de.monticore.java.cocos.expressions.DecSuffixOpValid;
+import de.monticore.java.cocos.expressions.DivideOpValid;
+import de.monticore.java.cocos.expressions.EqualsTestValid;
+import de.monticore.java.cocos.expressions.GreaterEqualOpValid;
+import de.monticore.java.cocos.expressions.GreaterThanOpValid;
+import de.monticore.java.cocos.expressions.IncPrefixOpValid;
+import de.monticore.java.cocos.expressions.IncSuffixOpValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LeftShiftOpValid;
+import de.monticore.java.cocos.expressions.LessEqualOpValid;
+import de.monticore.java.cocos.expressions.LessThanOpValid;
+import de.monticore.java.cocos.expressions.LogicalRightShiftOpValid;
 import de.monticore.java.cocos.expressions.LogicalNotValid;
 import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
 import de.monticore.java.cocos.expressions.MethodInvocationValid;
-import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
-import de.monticore.java.cocos.expressions.PrefixOpValid;
+import de.monticore.java.cocos.expressions.MinusOpValid;
+import de.monticore.java.cocos.expressions.MinusPrefixOpValid;
+import de.monticore.java.cocos.expressions.ModuloOpValid;
+import de.monticore.java.cocos.expressions.MultOpValid;
+import de.monticore.java.cocos.expressions.NotEqualsTestValid;
+import de.monticore.java.cocos.expressions.PlusOpValid;
+import de.monticore.java.cocos.expressions.PlusPrefixOpValid;
 import de.monticore.java.cocos.expressions.PrimarySuperValid;
 import de.monticore.java.cocos.expressions.PrimaryThisValid;
-import de.monticore.java.cocos.expressions.ShiftOpValid;
-import de.monticore.java.cocos.expressions.SuffixOpValid;
+import de.monticore.java.cocos.expressions.QualifiedNameValid;
+import de.monticore.java.cocos.expressions.RightShiftOpValid;
 import de.monticore.java.cocos.fieldandlocalvars.FieldInitializerAssignmentCompatible;
 import de.monticore.java.cocos.fieldandlocalvars.FieldModifierAccessCombinations;
 import de.monticore.java.cocos.fieldandlocalvars.FieldNoDuplicateModifier;
@@ -614,7 +627,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestAdditiveOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new AdditiveOpsValid(typeResolver));
+    checker.addCoCo(new PlusOpValid(typeResolver));
+    checker.addCoCo(new MinusOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0501 types of both operands of the additive operators must be numeric types."),
@@ -817,7 +831,10 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestComparison() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new ComparisonValid(typeResolver));
+    checker.addCoCo(new LessEqualOpValid(typeResolver));
+    checker.addCoCo(new GreaterEqualOpValid(typeResolver));
+    checker.addCoCo(new LessThanOpValid(typeResolver));
+    checker.addCoCo(new GreaterThanOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0532 each operand of a comparison operator must be of numeric type."),
         Finding.error("0xA0532 each operand of a comparison operator must be of numeric type."),
@@ -861,7 +878,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestIdentityTestValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new IdentityTestValid(typeResolver));
+    checker.addCoCo(new EqualsTestValid(typeResolver));
+    checker.addCoCo(new NotEqualsTestValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0549 operands of identity test operator have incompatible types."),
         Finding.error("0xA0549 operands of identity test operator have incompatible types.")
@@ -908,7 +926,11 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestMultiplicativeOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new MultiplicativeOpsValid(typeResolver));
+    checker.addCoCo(new MultOpValid(typeResolver));
+    checker.addCoCo(new DivideOpValid(typeResolver));
+    checker.addCoCo(new ModuloOpValid(typeResolver));
+    checker.addCoCo(new PlusOpValid(typeResolver));
+    checker.addCoCo(new MinusOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding
             .error("0xA0571 types of both operands of the multiplicative operators must be numeric types."),
@@ -922,7 +944,10 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestPrefixOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new PrefixOpValid(typeResolver));
+    checker.addCoCo(new PlusPrefixOpValid(typeResolver));
+    checker.addCoCo(new MinusPrefixOpValid(typeResolver));
+    checker.addCoCo(new IncPrefixOpValid(typeResolver));
+    checker.addCoCo(new DecPrefixOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0572 the operand expression of prefix operator must have type convertible to numeric type."),
@@ -959,7 +984,9 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestShiftOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new ShiftOpValid(typeResolver));
+    checker.addCoCo(new LeftShiftOpValid(typeResolver));
+    checker.addCoCo(new RightShiftOpValid(typeResolver));
+    checker.addCoCo(new LogicalRightShiftOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0578 operands of shift operator must have Integral type."),
         Finding.error("0xA0578 operands of shift operator must have Integral type.")
@@ -971,7 +998,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestSuffixOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new SuffixOpValid(typeResolver));
+    checker.addCoCo(new IncSuffixOpValid(typeResolver));
+    checker.addCoCo(new DecSuffixOpValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
             "0xA0579 the operand expression of suffix operator must have type convertible to numeric type."),
@@ -1504,7 +1532,8 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
   public void TestIfConditionHasBooleanType() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new IfConditionHasBooleanType(typeResolver));
-    checker.addCoCo(new IdentityTestValid(typeResolver));
+    checker.addCoCo(new EqualsTestValid(typeResolver));
+    checker.addCoCo(new NotEqualsTestValid(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0549 operands of identity test operator have incompatible types."),
         Finding.error("0xA0909 condition in if-statement must be a boolean expression.")

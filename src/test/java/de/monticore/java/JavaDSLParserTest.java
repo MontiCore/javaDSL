@@ -18,7 +18,9 @@
  */
 package de.monticore.java;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -32,6 +34,7 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import de.monticore.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
@@ -104,6 +107,13 @@ public class JavaDSLParserTest {
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
 //    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
+  }
+  
+  @Test
+  public void testCondition() throws IOException {
+    JavaDSLParser parser = new JavaDSLParser();
+    Optional<ASTExpression> ast = parser.parseString_Expression("ch = str.charAt(i) < 0x20");
+    assertTrue(ast.isPresent());
   }
 
 }

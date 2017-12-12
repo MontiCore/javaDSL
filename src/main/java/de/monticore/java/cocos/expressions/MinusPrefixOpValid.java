@@ -18,40 +18,28 @@
  */
 package de.monticore.java.cocos.expressions;
 
-
+import de.monticore.assignmentexpressions._ast.ASTMinusPrefixExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTMinusPrefixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.commonexpressions._ast.ASTPlusExpression;
-import de.monticore.commonexpressions._ast.ASTMinusExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTMinusExpressionCoCo;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTPlusExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
- *  on 08.06.2016.
+ * @author npichler
  */
-public class AdditiveOpsValid implements CommonExpressionsASTPlusExpressionCoCo, CommonExpressionsASTMinusExpressionCoCo {
+public class MinusPrefixOpValid implements AssignmentExpressionsASTMinusPrefixExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public AdditiveOpsValid(HCJavaDSLTypeResolver typeResolver) {
+  public MinusPrefixOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
   
-  // JLS3 15.18-1, JLS3 15.18-2
   @Override
-  public void check(ASTPlusExpression node) {
+  public void check(ASTMinusPrefixExpression node) {
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0501 types of both operands of the additive operators must be numeric types.",
-          node.get_SourcePositionStart());
-    }
-  }
-  
-  @Override
-  public void check(ASTMinusExpression node) {
-    typeResolver.handle(node);
-    if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0501 types of both operands of the additive operators must be numeric types.",
+      Log.error(
+          "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
           node.get_SourcePositionStart());
     }
   }

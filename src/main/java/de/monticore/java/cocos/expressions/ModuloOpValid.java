@@ -18,46 +18,20 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.commonexpressions._ast.ASTMultExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTMultExpressionCoCo;
-import de.monticore.commonexpressions._ast.ASTDivideExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTDivideExpressionCoCo;
 import de.monticore.commonexpressions._ast.ASTModuloExpression;
 import de.monticore.commonexpressions._cocos.CommonExpressionsASTModuloExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * on 08.06.2016.
+ * @author npichler
  */
-public class MultiplicativeOpsValid implements CommonExpressionsASTMultExpressionCoCo,
-    CommonExpressionsASTDivideExpressionCoCo, CommonExpressionsASTModuloExpressionCoCo {
+public class ModuloOpValid implements CommonExpressionsASTModuloExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public MultiplicativeOpsValid(HCJavaDSLTypeResolver typeResolver) {
+  public ModuloOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
-  }
-  
-  // JLS3 15.17-1
-  @Override
-  public void check(ASTMultExpression node) {
-    typeResolver.handle(node);
-    if (!typeResolver.getResult().isPresent()) {
-      Log.error(
-          "0xA0571 types of both operands of the multiplicative operators must be numeric types.",
-          node.get_SourcePositionStart());
-    }
-  }
-  
-  @Override
-  public void check(ASTDivideExpression node) {
-    typeResolver.handle(node);
-    if (!typeResolver.getResult().isPresent()) {
-      Log.error(
-          "0xA0571 types of both operands of the multiplicative operators must be numeric types.",
-          node.get_SourcePositionStart());
-    }
   }
   
   @Override
@@ -69,5 +43,4 @@ public class MultiplicativeOpsValid implements CommonExpressionsASTMultExpressio
           node.get_SourcePositionStart());
     }
   }
-  
 }

@@ -18,25 +18,19 @@
  */
 package de.monticore.java.cocos.expressions;
 
+import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.shiftexpressions._ast.ASTLeftShiftExpression;
 import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTLeftShiftExpressionCoCo;
-import de.monticore.shiftexpressions._ast.ASTRightShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTRightShiftExpressionCoCo;
-import de.monticore.shiftexpressions._ast.ASTLogiaclRightShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTLogiaclRightShiftExpressionCoCo;
-import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * on 08.06.2016.
  */
-public class ShiftOpValid implements ShiftExpressionsASTLeftShiftExpressionCoCo,
-    ShiftExpressionsASTRightShiftExpressionCoCo,
-    ShiftExpressionsASTLogiaclRightShiftExpressionCoCo {
+public class LeftShiftOpValid implements ShiftExpressionsASTLeftShiftExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public ShiftOpValid(HCJavaDSLTypeResolver typeResolver) {
+  public LeftShiftOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
   
@@ -50,22 +44,7 @@ public class ShiftOpValid implements ShiftExpressionsASTLeftShiftExpressionCoCo,
     }
   }
   
-  @Override
-  public void check(ASTRightShiftExpression node) {
-    typeResolver.handle(node);
-    if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0578 operands of shift operator must have Integral type.",
-          node.get_SourcePositionStart());
-    }
-  }
+ 
   
-  @Override
-  public void check(ASTLogiaclRightShiftExpression node) {
-    typeResolver.handle(node);
-    if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0578 operands of shift operator must have Integral type.",
-          node.get_SourcePositionStart());
-    }
-  }
   
 }

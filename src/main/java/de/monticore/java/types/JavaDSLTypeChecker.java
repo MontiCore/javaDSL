@@ -54,7 +54,7 @@ import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.javaclassexpressions._ast.*;
 import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsCoCoChecker;
 import de.monticore.shiftexpressions._ast.*;
-import de.monticore.shiftexpressions._ast.ASTLogiaclRightShiftExpression;
+import de.monticore.shiftexpressions._ast.ASTLogicalRightShiftExpression;
 import de.monticore.shiftexpressions._cocos.ShiftExpressionsCoCoChecker;
 
 /**
@@ -144,6 +144,9 @@ public class JavaDSLTypeChecker {
     ShiftExpressionsCoCoChecker expressionChecker = new ShiftExpressionsCoCoChecker();
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
     expressionChecker.addCoCo(new QualifiedNameValid(typeResolver));
+    expressionChecker.addCoCo(new LogicalRightShiftOpValid(typeResolver));
+    expressionChecker.addCoCo(new RightShiftOpValid(typeResolver));
+    expressionChecker.addCoCo(new LeftShiftOpValid(typeResolver));
     expressionChecker.addCoCo(new PrimaryThisValid());
     return expressionChecker;
   }
@@ -152,9 +155,21 @@ public class JavaDSLTypeChecker {
     CommonExpressionsCoCoChecker expressionChecker = new CommonExpressionsCoCoChecker();
     expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
+    expressionChecker.addCoCo(new BooleanOrValid(typeResolver));
     expressionChecker.addCoCo(new LogicalNotValid(typeResolver));
     expressionChecker.addCoCo(new ConditionValid(typeResolver));
     expressionChecker.addCoCo(new MethodInvocationValid(typeResolver));
+    expressionChecker.addCoCo(new MultOpValid(typeResolver));
+    expressionChecker.addCoCo(new ModuloOpValid(typeResolver));
+    expressionChecker.addCoCo(new DivideOpValid(typeResolver));
+    expressionChecker.addCoCo(new PlusOpValid(typeResolver));
+    expressionChecker.addCoCo(new MinusOpValid(typeResolver));
+    expressionChecker.addCoCo(new GreaterEqualOpValid(typeResolver));
+    expressionChecker.addCoCo(new GreaterThanOpValid(typeResolver));
+    expressionChecker.addCoCo(new LessEqualOpValid(typeResolver));
+    expressionChecker.addCoCo(new LessThanOpValid(typeResolver));
+    expressionChecker.addCoCo(new NotEqualsTestValid(typeResolver));
+    expressionChecker.addCoCo(new EqualsTestValid(typeResolver));
     return expressionChecker;
   }
   
@@ -162,6 +177,14 @@ public class JavaDSLTypeChecker {
     AssignmentExpressionsCoCoChecker expressionChecker = new AssignmentExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
     expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryXorOpValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryAndOpValid(typeResolver));
+    expressionChecker.addCoCo(new IncSuffixOpValid(typeResolver));
+    expressionChecker.addCoCo(new DecSuffixOpValid(typeResolver));
+    expressionChecker.addCoCo(new PlusPrefixOpValid(typeResolver));
+    expressionChecker.addCoCo(new MinusPrefixOpValid(typeResolver));
+    expressionChecker.addCoCo(new IncPrefixOpValid(typeResolver));
+    expressionChecker.addCoCo(new DecPrefixOpValid(typeResolver));
     return expressionChecker;
   }
   
@@ -314,7 +337,7 @@ public class JavaDSLTypeChecker {
     public void traverse(ASTRightShiftExpression node) {}
     
     @Override
-    public void traverse(ASTLogiaclRightShiftExpression node) {}
+    public void traverse(ASTLogicalRightShiftExpression node) {}
 
     @Override
     public void traverse(ASTLessEqualExpression node) {}
@@ -401,7 +424,7 @@ public class JavaDSLTypeChecker {
     public void traverse(ASTPrimaryGenericInvocationExpression node) {}
 
     @Override
-    public void traverse(ASTGenericSuperInvocationSuffix node) {}
+    public void traverse(ASTGenericInvocationSuffix node) {}
 
     @Override
     public void traverse(ASTSuperSuffix node) {}
