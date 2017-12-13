@@ -38,6 +38,8 @@ public class JavaDSLPrettyPrinterNew extends CommonJavaDSLDelegatorVisitor{
   protected IndentPrinter printer = null;
   
   public JavaDSLPrettyPrinterNew(IndentPrinter printer) {
+    this.realThis = this;
+    this.printer = printer;
     set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
     set_de_monticore_commonexpressions__visitor_CommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
     set_de_monticore_javaclassexpressions__visitor_JavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
@@ -47,7 +49,7 @@ public class JavaDSLPrettyPrinterNew extends CommonJavaDSLDelegatorVisitor{
     set_de_monticore_assignmentexpressions__visitor_AssignmentExpressionsVisitor(new AssignmentExpressionsPrettyPrinter(printer));
   }
   
-  public IndentPrinter getPrinter() {
+  protected IndentPrinter getPrinter() {
     return this.printer;
   }
   
