@@ -40,13 +40,13 @@ public class JavaDSLPrettyPrinterNew extends CommonJavaDSLDelegatorVisitor{
   public JavaDSLPrettyPrinterNew(IndentPrinter printer) {
     this.realThis = this;
     this.printer = printer;
-    set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
     set_de_monticore_commonexpressions__visitor_CommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
-    set_de_monticore_javaclassexpressions__visitor_JavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
-    set_de_monticore_literals_literals__visitor_LiteralsVisitor(new LiteralsPrettyPrinterConcreteVisitor(printer));
-    set_de_monticore_shiftexpressions__visitor_ShiftExpressionsVisitor(new ShiftExpressionsPrettyPrinter(printer));
-    set_de_monticore_types_types__visitor_TypesVisitor(new TypesPrettyPrinterConcreteVisitor(printer));
     set_de_monticore_assignmentexpressions__visitor_AssignmentExpressionsVisitor(new AssignmentExpressionsPrettyPrinter(printer));
+    set_de_monticore_javaclassexpressions__visitor_JavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
+    set_de_monticore_shiftexpressions__visitor_ShiftExpressionsVisitor(new ShiftExpressionsPrettyPrinter(printer));
+    set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
+    set_de_monticore_literals_literals__visitor_LiteralsVisitor(new LiteralsPrettyPrinterConcreteVisitor(printer));
+    set_de_monticore_types_types__visitor_TypesVisitor(new TypesPrettyPrinterConcreteVisitor(printer));
   }
   
   protected IndentPrinter getPrinter() {

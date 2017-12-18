@@ -18,9 +18,7 @@
  */
 package de.monticore.java;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -29,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,8 +35,7 @@ import de.monticore.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.se_rwth.commons.logging.Log;
-import de.se_rwth.commons.logging.Slf4jLog;
+import de.se_rwth.commons.logging.LogStub;
 
 public class JavaDSLParserTest {
   

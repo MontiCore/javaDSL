@@ -692,7 +692,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     else {
       this.setResult(null);
     }
-   // if (genericInvocation.getETypeArguments().size() == typeArguments.size()) {
+  
       for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
           .getArguments().get().getExpressions()) {
         expression.accept(this);
@@ -732,7 +732,6 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
           }
         }
       }
-   // }
   }
   
   public void handle(ASTCallExpression node) {

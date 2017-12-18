@@ -306,7 +306,7 @@ Resource
     ;
 
 IdentifierAndTypeArgument
-    =   Name& TypeArguments?
+    =   Name TypeArguments?
     ;
 
 CatchClause
@@ -412,7 +412,7 @@ CreatedName
     ;
 
 InnerCreator
-    =   firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
+    =   firstTypeArguments:TypeArguments? Name secondTypeArguments:TypeArguments? ClassCreatorRest
     ;
     
 ClassCreatorRest

@@ -34,7 +34,6 @@ import org.junit.Test;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.monticore.java.prettyprint.JavaDSLPrettyPrinter;
 import de.monticore.java.prettyprint.JavaDSLPrettyPrinterNew;
 import de.monticore.prettyprint.IndentPrinter;
 import de.se_rwth.commons.logging.LogStub;
