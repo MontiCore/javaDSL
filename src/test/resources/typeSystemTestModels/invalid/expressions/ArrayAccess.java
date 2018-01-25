@@ -23,10 +23,10 @@ public class ArrayAccess
 {
   int[] n = new int[1];
   int[][] nn = new int[1][2];
-  int[][][] nn = new int[1][2][3];
+  int[][][] nnn = new int[1][2][3];
   long l = 1;
 
-  public void tesArray(){
+  public void testArray(){
     n[1.2] = 1;
     nn[0]["String"] = 1;
     nnn[0][0][true] = 2;

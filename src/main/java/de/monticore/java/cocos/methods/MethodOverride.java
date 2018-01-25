@@ -48,16 +48,19 @@ public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
           if (overridden != null) {
             JavaTypeSymbol superSymbol = (JavaTypeSymbol) overridden.get(0);
             JavaMethodSymbol superMethod = (JavaMethodSymbol) overridden.get(1);
-            if (!JavaDSLHelper.isReturnTypeSubstitutable(classMethod.getReturnType(),
-                JavaDSLHelper.getSubstitutedReturnType(superType, superMethod.getReturnType()))) {
+            JavaTypeSymbolReference retType = classMethod.getReturnType();
+            JavaTypeSymbolReference returnType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(retType), retType.getEnclosingScope(), retType.getDimension());
+            returnType.setActualTypeArguments(retType.getActualTypeArguments());
+            JavaTypeSymbolReference substitutedReturnType = JavaDSLHelper.getSubstitutedReturnType(superType, superMethod.getReturnType());
+            if (!JavaDSLHelper.isReturnTypeSubstitutable(returnType, substitutedReturnType)) {
               Log.error(
                   "0xA0820 the return type is not compatible with '" + superSymbol.getName() + "."
                       + superMethod.getName() + "'.", node.get_SourcePositionStart());
             }
 
-            else if (!JavaDSLHelper.isSubType(classMethod.getReturnType(), superMethod.getReturnType())) {
+            else if (!JavaDSLHelper.isSubType(returnType, substitutedReturnType)) {
               Log.warn(
-                  "0xA0821 the return type '" + classMethod.getReturnType().getName() + "' for '"
+                  "0xA0821 the return type '" + returnType.getName() + "' for '"
                       + classMethod.getName() + "' from the type '" + classSymbol.getName()
                       + "' needs unchecked conversion to conform to '" + superMethod.getName()
                       + "' in type '" + superSymbol.getName() + "'.",

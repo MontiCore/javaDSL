@@ -18,13 +18,13 @@
  */
 package de.monticore.java.cocos.constructors;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
 import de.monticore.java.javadsl._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._cocos.JavaDSLASTConstructorDeclarationCoCo;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *  on 18.08.2016.

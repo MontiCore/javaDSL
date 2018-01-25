@@ -57,17 +57,6 @@ public class MethodInvocation extends UtilUtil{
   public void testMethodInvocation(){
     // only through name
     int n = getName("haha", 1, 2, 3, 4, 5);
-    n = getName();
-    n = getName(1);
-    n = getName(1, 1);
-
-    int m = InnerClass.getInt();
-    m = super.getPrimitive();
-
-    boolean same = this.<Integer, String>compare(p1, p2);
-
-    List<String> s3 = new ArrayList<String>();
-    Object o = pick("haha", s3);
   }
   static <T> T pick(T a1, T a2) {
     return a2;

@@ -18,16 +18,16 @@
  */
 package de.monticore.java.cocos.statements;
 
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
 import de.monticore.java.javadsl._ast.ASTReturnStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLASTMethodDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLReturnStatementCollector;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.java.types.JavaDSLReturnStatementCollector;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.List;
 
 /**
  * TODO

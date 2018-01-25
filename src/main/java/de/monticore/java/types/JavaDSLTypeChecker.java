@@ -18,16 +18,84 @@
  */
 package de.monticore.java.types;
 
-import de.monticore.java.cocos.annotations.*;
-import de.monticore.java.cocos.classes.*;
-import de.monticore.java.cocos.constructors.*;
-import de.monticore.java.cocos.enums.*;
+import de.monticore.mcexpressions._ast.*;
+import de.monticore.mcexpressions._cocos.MCExpressionsCoCoChecker;
+import de.monticore.java.cocos.annotations.AnnotationMethodModifiers;
+import de.monticore.java.cocos.annotations.AnnotationMethodReturnTypes;
+import de.monticore.java.cocos.annotations.AnnotationNameNotAsEnclosingType;
+import de.monticore.java.cocos.annotations.AnnotationTypeModifiers;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBePrivate;
+import de.monticore.java.cocos.classes.AbstractMethodMayNotBeStatic;
+import de.monticore.java.cocos.classes.AbstractOrNativeMethodHasNoBody;
+import de.monticore.java.cocos.classes.ClassBoundErasuresAreDifferent;
+import de.monticore.java.cocos.classes.ClassCanOnlyExtendClass;
+import de.monticore.java.cocos.classes.ClassImplementsAllInterfaceMethods;
+import de.monticore.java.cocos.classes.ClassInnerTypeNotNamedAsEnclosing;
+import de.monticore.java.cocos.classes.ClassMethodSignatureNoOverrideEquivalent;
+import de.monticore.java.cocos.classes.ClassNoCircularity;
+import de.monticore.java.cocos.classes.ClassNoDuplicateDirectSuperInterface;
+import de.monticore.java.cocos.classes.ClassNoFinalSuperClass;
+import de.monticore.java.cocos.classes.ClassNoModifierDuplicate;
+import de.monticore.java.cocos.classes.ClassNotStatic;
+import de.monticore.java.cocos.classes.ClassOptionalBoundsAreInterfaces;
+import de.monticore.java.cocos.classes.ConcreteClassMayNotHaveAbstractMethod;
+import de.monticore.java.cocos.classes.ConstructorMayNotBeAbstract;
+import de.monticore.java.cocos.classes.GenericClassNotSubClassOfThrowable;
+import de.monticore.java.cocos.classes.NoProtectedOrPrivateTopLevelClass;
+import de.monticore.java.cocos.classes.NonAbstractClassImplementsAllAbstractMethods;
+import de.monticore.java.cocos.classes.NotAbstractAndNotFinal;
+import de.monticore.java.cocos.classes.SuperClassMayNotBeFinal;
+import de.monticore.java.cocos.constructors.ConstructorFormalParametersDifferentName;
+import de.monticore.java.cocos.constructors.ConstructorModifiersValid;
+import de.monticore.java.cocos.constructors.ConstructorMustNamedAsClass;
+import de.monticore.java.cocos.constructors.ConstructorNoAccessModifierPair;
+import de.monticore.java.cocos.constructors.ConstructorNoDuplicateModifier;
+import de.monticore.java.cocos.constructors.ConstructorsNoDuplicateSignature;
+import de.monticore.java.cocos.enums.EnumConstructorValidModifiers;
+import de.monticore.java.cocos.enums.EnumMayNotBeAbstract;
+import de.monticore.java.cocos.enums.EnumMethodModifiersValid;
+import de.monticore.java.cocos.enums.EnumModifiersValid;
+import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
 import de.monticore.java.cocos.expressions.*;
-import de.monticore.java.cocos.fieldandlocalvars.*;
-import de.monticore.java.cocos.interfaces.*;
-import de.monticore.java.cocos.methods.*;
-import de.monticore.java.cocos.names.*;
-import de.monticore.java.cocos.statements.*;
+import de.monticore.java.cocos.fieldandlocalvars.FieldInitializerAssignmentCompatible;
+import de.monticore.java.cocos.fieldandlocalvars.FieldModifierAccessCombinations;
+import de.monticore.java.cocos.fieldandlocalvars.FieldNoDuplicateModifier;
+import de.monticore.java.cocos.fieldandlocalvars.LocalVariableInitializerAssignmentCompatible;
+import de.monticore.java.cocos.interfaces.InterfaceBoundErasuresAreDifferent;
+import de.monticore.java.cocos.interfaces.InterfaceCannotDependSelf;
+import de.monticore.java.cocos.interfaces.InterfaceCannotExtendClasses;
+import de.monticore.java.cocos.interfaces.InterfaceInnerTypeNotNamedAsEnclosing;
+import de.monticore.java.cocos.interfaces.InterfaceMethodSignatureNoOverrideEquivalent;
+import de.monticore.java.cocos.interfaces.InterfaceMethodsNotAllowedModifiers;
+import de.monticore.java.cocos.interfaces.InterfaceNoDuplicateModifier;
+import de.monticore.java.cocos.interfaces.InterfaceNoFinalMethod;
+import de.monticore.java.cocos.interfaces.InterfaceNoStaticMethod;
+import de.monticore.java.cocos.interfaces.InterfaceOptionalBoundsAreInterfaces;
+import de.monticore.java.cocos.methods.AbstractMethodDefinition;
+import de.monticore.java.cocos.methods.MethodAbstractAndOtherModifiers;
+import de.monticore.java.cocos.methods.MethodBodyAbsenceAndPresence;
+import de.monticore.java.cocos.methods.MethodExceptionThrows;
+import de.monticore.java.cocos.methods.MethodFormalParametersDifferentName;
+import de.monticore.java.cocos.methods.MethodHiding;
+import de.monticore.java.cocos.methods.MethodNoAccessPairModifier;
+import de.monticore.java.cocos.methods.MethodNoDuplicateModifier;
+import de.monticore.java.cocos.methods.MethodNoNativeAndStrictfp;
+import de.monticore.java.cocos.methods.MethodOverride;
+import de.monticore.java.cocos.names.ClassValidSuperTypes;
+import de.monticore.java.cocos.names.InterfaceValidSuperTypes;
+import de.monticore.java.cocos.statements.AssertIsValid;
+import de.monticore.java.cocos.statements.CatchIsValid;
+import de.monticore.java.cocos.statements.DoWhileConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ForConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ForEachIsValid;
+import de.monticore.java.cocos.statements.IfConditionHasBooleanType;
+import de.monticore.java.cocos.statements.ResourceInTryStatementCloseable;
+import de.monticore.java.cocos.statements.ReturnTypeAssignmentIsValid;
+import de.monticore.java.cocos.statements.SwitchStatementValid;
+import de.monticore.java.cocos.statements.SynchronizedArgIsReftype;
+import de.monticore.java.cocos.statements.ThrowIsValid;
+import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
+import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 
 /**
@@ -38,12 +106,13 @@ public class JavaDSLTypeChecker {
   HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
 
   public JavaDSLCoCoChecker getAllTypeChecker(){
-    JavaDSLCoCoChecker javaDSLTypeCheckers = new JavaDSLCoCoChecker();
+    JavaDSLCoCoChecker javaDSLTypeCheckers = new JavaDSLChecker();
     javaDSLTypeCheckers.addChecker(getAnnotationChecker());
     javaDSLTypeCheckers.addChecker(getClassChecker());
     javaDSLTypeCheckers.addChecker(getConstructorChecker());
     javaDSLTypeCheckers.addChecker(getEnumChecker());
     javaDSLTypeCheckers.addChecker(getExpressionChecker());
+    javaDSLTypeCheckers.addChecker(getJavaExpressionChecker());
     javaDSLTypeCheckers.addChecker(getFieldAndLocalVarsChecker());
     javaDSLTypeCheckers.addChecker(getInterfaceChecker());
     javaDSLTypeCheckers.addChecker(getMethodChecker());
@@ -109,28 +178,26 @@ public class JavaDSLTypeChecker {
     return enumChecker;
   }
 
-  public JavaDSLCoCoChecker getExpressionChecker(){
-    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+  public MCExpressionsCoCoChecker getExpressionChecker(){
+    MCExpressionsCoCoChecker expressionChecker = new MCExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AdditiveOpsValid(typeResolver));
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
-    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
 //    expressionChecker.addCoCo(new ArrayDimensionByInitializerValid(typeResolver));  // CoCo nicht fertig
-    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
-    expressionChecker.addCoCo(new BitwiseOpsValid(typeResolver));
-    expressionChecker.addCoCo(new BooleanAndOrValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
+    expressionChecker.addCoCo(new BooleanAndValid(typeResolver));
     expressionChecker.addCoCo(new BooleanNotValid(typeResolver));
+    expressionChecker.addCoCo(new LogicalNotValid(typeResolver));
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
-    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
     expressionChecker.addCoCo(new ComparisonValid(typeResolver));
     expressionChecker.addCoCo(new ConditionValid(typeResolver));
-    expressionChecker.addCoCo(new FieldAccessValid(typeResolver));
+    expressionChecker.addCoCo(new QualifiedNameValid(typeResolver));
     expressionChecker.addCoCo(new IdentityTestValid(typeResolver));
     expressionChecker.addCoCo(new InstanceOfValid(typeResolver));
     expressionChecker.addCoCo(new MethodGenericInvocationValid(typeResolver));
     expressionChecker.addCoCo(new MethodInvocationValid(typeResolver));
     expressionChecker.addCoCo(new MultiplicativeOpsValid(typeResolver));
+    expressionChecker.addCoCo(new NameExpValid(typeResolver));
     expressionChecker.addCoCo(new PrefixOpValid(typeResolver));
     expressionChecker.addCoCo(new PrimarySuperValid());
     expressionChecker.addCoCo(new PrimaryThisValid());
@@ -139,6 +206,14 @@ public class JavaDSLTypeChecker {
     return expressionChecker;
   }
 
+  public JavaDSLCoCoChecker getJavaExpressionChecker(){
+    JavaDSLCoCoChecker expressionChecker = new JavaDSLCoCoChecker();
+    expressionChecker.addCoCo(new ArrayDimensionByExpressionValid(typeResolver));
+    expressionChecker.addCoCo(new ArrayInitializerValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInnerInstanceCreationValid(typeResolver));
+    expressionChecker.addCoCo(new ClassInstanceCreationValid(typeResolver));
+    return expressionChecker;
+  }
   public JavaDSLCoCoChecker getFieldAndLocalVarsChecker(){
     JavaDSLCoCoChecker fieldChecker = new JavaDSLCoCoChecker();
     fieldChecker.addCoCo(new FieldInitializerAssignmentCompatible(typeResolver));
@@ -204,4 +279,111 @@ public class JavaDSLTypeChecker {
   }
 
 
+  private static class JavaDSLChecker extends JavaDSLCoCoChecker {
+
+    @Override
+    public void traverse(ASTSwitchStatement node) {}
+
+    @Override
+    public void traverse(ASTQualifiedNameExpression node) {}
+
+    @Override
+    public void traverse(ASTThisExpression node) {}
+
+    @Override
+    public void traverse(ASTSuperExpression node) {}
+
+    @Override
+    public void traverse(ASTGenericInvocationExpression node) {}
+
+    @Override
+    public void traverse(ASTArrayExpression node) {}
+
+    @Override
+    public void traverse(ASTCallExpression node) {}
+
+    @Override
+    public void traverse(ASTTypeCastExpression node) {}
+
+    @Override
+    public void traverse(ASTSuffixExpression node) {}
+
+    @Override
+    public void traverse(ASTPrefixExpression node) {}
+
+    @Override
+    public void traverse(ASTBooleanNotExpression node) {}
+
+    @Override
+    public void traverse(ASTLogicalNotExpression node) {}
+
+    @Override
+    public void traverse(ASTMultExpression node) {}
+
+    @Override
+    public void traverse(ASTAddExpression node) {}
+
+    @Override
+    public void traverse(ASTShiftExpression node) {}
+
+    @Override
+    public void traverse(ASTComparisonExpression node) {}
+
+    @Override
+    public void traverse(ASTInstanceofExpression node) {}
+
+    @Override
+    public void traverse(ASTIdentityExpression node) {}
+
+    @Override
+    public void traverse(ASTBinaryAndOpExpression node) {}
+
+    @Override
+    public void traverse(ASTBinaryXorOpExpression node) {}
+
+    @Override
+    public void traverse(ASTBinaryOrOpExpression node) {}
+
+    @Override
+    public void traverse(ASTBooleanAndOpExpression node) {}
+
+    @Override
+    public void traverse(ASTBooleanOrOpExpression node) {}
+
+    @Override
+    public void traverse(ASTConditionalExpression node) {}
+
+    @Override
+    public void traverse(ASTAssignmentExpression node) {}
+
+    @Override
+    public void traverse(ASTBracketExpression node) {}
+
+    @Override
+    public void traverse(ASTPrimaryThisExpression node) {}
+
+    @Override
+    public void traverse(ASTPrimarySuperExpression node) {}
+
+    @Override
+    public void traverse(ASTLiteralExpression node) {}
+
+    @Override
+    public void traverse(ASTNameExpression node) {}
+
+    @Override
+    public void traverse(ASTClassExpression node) {}
+
+    @Override
+    public void traverse(ASTPrimaryGenericInvocationExpression node) {}
+
+    @Override
+    public void traverse(ASTGenericInvocationSuffix node) {}
+
+    @Override
+    public void traverse(ASTSuperSuffix node) {}
+
+    @Override
+    public void traverse(ASTArguments node) {}
+  }
 }

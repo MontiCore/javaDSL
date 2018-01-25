@@ -18,6 +18,8 @@
  */
 package de.monticore.java.cocos.methods;
 
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTClassDeclarationCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
@@ -25,8 +27,6 @@ import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.List;
 
 /**
  *  on 24.09.2016.

@@ -18,14 +18,14 @@
  */
 package de.monticore.java.cocos.constructors;
 
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTClassDeclarationCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.List;
 
 /**
  * TODO

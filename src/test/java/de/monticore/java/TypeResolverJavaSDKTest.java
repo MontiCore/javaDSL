@@ -23,7 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import de.monticore.java.types.JavaDSLTypeChecker;
-import de.se_rwth.commons.logging.Log;
+import de.se_rwth.commons.logging.LogStub;
 
 /**
  *  on 22.10.2016.
@@ -34,12 +34,13 @@ public class TypeResolverJavaSDKTest extends AbstractCoCoTestClass {
 
   @BeforeClass
   public static void init() {
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
 
   @Before
   public void setUp() {
-    Log.getFindings().clear();
+    LogStub.getFindings().clear();
   }
 
   /*

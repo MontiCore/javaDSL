@@ -18,13 +18,13 @@
  */
 package de.monticore.java.types;
 
-import de.monticore.java.javadsl._ast.ASTArrayInitializer;
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._ast.ASTVariableInitializer;
-import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.monticore.java.javadsl._ast.ASTArrayInitializer;
+import de.monticore.java.javadsl._ast.ASTVariableInitializer;
+import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
+import de.monticore.mcexpressions._ast.ASTExpression;
 
 /**
  * TODO
@@ -64,7 +64,7 @@ public class JavaDSLArrayInitializerCollector implements JavaDSLVisitor {
   }
 
   @Override
-  public void traverse(ASTExpression node){
+  public void handle(ASTExpression node){
     // Don't traverse childs
   }
 }

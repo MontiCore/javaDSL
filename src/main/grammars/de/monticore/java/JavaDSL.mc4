@@ -19,7 +19,7 @@
 
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.types.Types {
+grammar JavaDSL extends de.monticore.MCExpressions {
 
 // starting point for parsing a java file
 CompilationUnit
@@ -120,7 +120,7 @@ ConstDeclaration implements InterfaceMemberDeclaration
     ;
 
 ConstantDeclarator
-    =   Name (dim:"[" "]")* "=" VariableInitializer
+    =   Name (dim:"[" "]")* "=" VariableInititializerOrExpression
     ;
 
 InterfaceMethodDeclaration implements InterfaceMemberDeclaration
@@ -143,17 +143,20 @@ Throws
     ;
 
 VariableDeclarator
-    =   DeclaratorId ("=" VariableInitializer)?
+    =   DeclaratorId ("=" VariableInititializerOrExpression)?
     ;
 
 DeclaratorId
     =   Name (dim:"[" "]")*
     ;
 
-interface VariableInitializer ;
+interface VariableInitializer;
+
+VariableInititializerOrExpression
+	= VariableInitializer | Expression;
 
 ArrayInitializer implements VariableInitializer
-    =   "{" (VariableInitializer || ",")* (",")? "}"
+    =   "{" (VariableInititializerOrExpression || ",")* (",")? "}"
     ;
 
 FormalParameters
@@ -187,13 +190,16 @@ AnnotationPairArguments implements AnnotationArguments
    ;
 
 ElementValuePair
-    =   Name "=" ElementValue
+    =   Name "=" ElementValueOrExpr
     ;
 
-interface ElementValue extends AnnotationArguments;
+interface ElementValue;
+
+ElementValueOrExpr implements AnnotationArguments
+	= ElementValue | Expression;
 
 ElementValueArrayInitializer implements ElementValue
-    =   "{" (ElementValue || ",")* (",")? "}"
+    =   "{" (ElementValueOrExpr || ",")* (",")? "}"
     ;
 
 AnnotationTypeDeclaration implements TypeDeclaration
@@ -215,7 +221,7 @@ AnnotationConstant implements AnnotationTypeElementDeclaration
     ;
 
 DefaultValue
-    =   "default" ElementValue
+    =   "default" ElementValueOrExpr
     ;
 
 // STATEMENTS / BLOCKS
@@ -339,6 +345,10 @@ EmptyStatement implements Statement
 ExpressionStatement implements Statement
     =   Expression ";"
     ;
+ 
+ /* Bugfix: TODO (MB): Delete after Bootstraping (4.5.4) */   
+ASTStatement implements Statement
+	= "de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());";
 
 LabeledStatement implements Statement
     =   label:Name ":" Statement
@@ -365,110 +375,20 @@ DefaultSwitchLabel implements SwitchLabel
     =   "default" ":"
     ;
 
-Expression implements ElementValue, VariableInitializer
-    =   PrimaryExpression
-    |   Expression "." Name&
-    |   Expression "." ["this"]
-    |   Expression "." InnerCreator
-    |   Expression "." "super" SuperSuffix
-    |   Expression "." ExplicitGenericInvocation
-    |   arrayExpression:Expression "[" indexExpression:Expression "]"
-    |   callExpression:Expression "(" parameterExpression:(Expression || ",")* ")"
-    |   Creator
-    |   "(" typeCastType:Type ")" Expression
-    |   Expression
-        (   suffixOp:"++"
-        |   suffixOp:"--"
-        )
-    |   (   prefixOp:"+"
-        |   prefixOp:"-"
-        |   prefixOp:"++"
-        |   prefixOp:"--"
-        )
-        Expression
-    |   (booleanNot:"~"|booleanNot:"!") Expression
-    |   leftExpression:Expression
-        (   multiplicativeOp:"*"
-        |   multiplicativeOp:"/"
-        |   multiplicativeOp:"%"
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression
-        (   additiveOp:"+"
-        |   additiveOp:"-"
-        )
-		rightExpression:Expression
-    |   leftExpression:Expression
-	    // It is not possible to define "<<", ">>" or ">>>".
-        // Parsing generic typs like "List<List<String>>" leads to problems.
-        (   shiftOp:"<" "<"
-          {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        |   shiftOp:">" ">" ">"
-          {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-            (_input.LT(-3).getLine()==_input.LT(-2).getLine()) &&
-            (_input.LT(-2).getCharPositionInLine()==_input.LT(-3).getCharPositionInLine()+1) &&
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        |   shiftOp:">" ">"
-         {((_input.LT(-2).getLine()==_input.LT(-1).getLine()) && 
-          	(_input.LT(-1).getCharPositionInLine()==_input.LT(-2).getCharPositionInLine()+1))}?        
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression
-        (   comparison:"<="
-        |   comparison:">=" 
-        |   comparison:">" 
-        |   comparison:"<"
-        )
-        rightExpression:Expression
-    |   Expression "instanceof" instanceofType:Type
-    |   leftExpression:Expression
-        (   identityTest:"=="
-        |   identityTest:"!="
-        )
-        rightExpression:Expression
-    |   leftExpression:Expression binaryAndOp :"&"  rightExpression:Expression
-    |   leftExpression:Expression binaryXorOp :"^"  rightExpression:Expression
-    |   leftExpression:Expression binaryOrOp  :"|"  rightExpression:Expression
-    |   leftExpression:Expression booleanAndOp:"&&" rightExpression:Expression
-    |   leftExpression:Expression booleanOrOp :"||" rightExpression:Expression
-    |   condition:Expression "?" trueExpression:Expression ":" falseExpression:Expression
-    |   leftExpression:Expression
-        (   assignment:"="
-        |   assignment:"+="
-        |   assignment:"-="
-        |   assignment:"*="
-        |   assignment:"/="
-        |   assignment:"&="
-        |   assignment:"|="
-        |   assignment:"^="
-        |   assignment:">>="
-        |   assignment:">>>="
-        |   assignment:"<<="
-        |   assignment:"%="
-        )
-        rightExpression:Expression
-    ;
-
-PrimaryExpression
-    =   "(" Expression ")"
-    |   ["this"]
-    |   ["super"]
-    |   Literal
-    |   Name&
-    |   ReturnType "." "class"
-    |   ExplicitGenericInvocation
-    |   TypeArguments "this" Arguments
-    ;
+InnerCreatorExpression implements Expression <275> =
+	Expression "." "new" InnerCreator;
+ 
+CreatorExpression implements Expression <235> =
+	"new" Creator;
 
 interface Creator ;
 
 AnonymousClass implements Creator
-    =   "new" TypeArguments? CreatedName ClassCreatorRest
+    =   TypeArguments? CreatedName ClassCreatorRest
     ;
     
 ArrayCreator implements Creator
-    =   "new" CreatedName ArrayDimensionSpecifier
+    =   CreatedName ArrayDimensionSpecifier
     ;
 
 interface ArrayDimensionSpecifier ;
@@ -487,28 +407,13 @@ CreatedName
     ;
 
 InnerCreator
-    =   "new" firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
+    =   firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
     ;
     
 ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-ExplicitGenericInvocation
-    =   TypeArguments ExplicitGenericInvocationSuffix
-    ;
-    
-ExplicitGenericInvocationSuffix
-    =   "super" SuperSuffix
-    |   Name Arguments
-    ;
-    
-SuperSuffix
-    =   Arguments
-    |   "." Name Arguments?
-    ;
 
-Arguments
-    =   "(" (Expression || ",")* ")"
-    ;
+
 }

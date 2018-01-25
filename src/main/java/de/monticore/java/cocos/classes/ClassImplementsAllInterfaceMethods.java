@@ -18,18 +18,18 @@
  */
 package de.monticore.java.cocos.classes;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTClassDeclarationCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.types.types._ast.ASTType;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *

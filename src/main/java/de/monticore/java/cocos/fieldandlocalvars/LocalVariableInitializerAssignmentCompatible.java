@@ -18,17 +18,23 @@
  */
 package de.monticore.java.cocos.fieldandlocalvars;
 
-import de.monticore.java.javadsl._ast.*;
+import java.util.List;
+
+import de.monticore.java.javadsl._ast.ASTArrayInitializer;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
+import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
+import de.monticore.mcexpressions._ast.ASTExpression;
+import de.monticore.mcexpressions._ast.ASTLiteralExpression;
+import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
+import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.literals.literals._ast.ASTLiteral;
 import de.monticore.literals.literals._ast.ASTIntLiteral;
+import de.monticore.literals.literals._ast.ASTLiteral;
 import de.se_rwth.commons.logging.Log;
-
-import java.util.List;
 
 /**
 
@@ -37,8 +43,8 @@ import java.util.List;
  * @since TODO * TODO
  */
 public class LocalVariableInitializerAssignmentCompatible implements
-    JavaDSLASTLocalVariableDeclarationCoCo {
-    
+JavaDSLASTLocalVariableDeclarationCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
   
   public LocalVariableInitializerAssignmentCompatible(HCJavaDSLTypeResolver typeResolver) {
@@ -47,10 +53,14 @@ public class LocalVariableInitializerAssignmentCompatible implements
   
   @Override
   public void check(ASTLocalVariableDeclaration node) {
-    node.getType().accept(typeResolver);
-    if (typeResolver.getResult().isPresent()) {
-      JavaTypeSymbolReference localVarType = typeResolver.getResult()
-          .get();
+//    node.getType().accept(typeResolver);
+//    if (typeResolver.getResult().isPresent()) {
+//      JavaTypeSymbolReference localVarType = typeResolver.getResult()
+//          .get();
+    if(node.symbolIsPresent()) {
+      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol().get()).getType();
+      JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
+      localVarType.setActualTypeArguments(type.getActualTypeArguments());
       JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();
       if (node.getVariableDeclarators().isEmpty()) {
         return;
@@ -59,37 +69,24 @@ public class LocalVariableInitializerAssignmentCompatible implements
         for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.getVariableInitializer().isPresent()) {
-              if (variableDeclarator.getVariableInitializer().get() instanceof ASTExpression) {
-                ASTExpression astExpression = (ASTExpression) variableDeclarator
-                    .getVariableInitializer().get();
-                if (astExpression.primaryExpressionIsPresent()) {
-                  if (astExpression.getPrimaryExpression().get().literalIsPresent()) {
-                    ASTLiteral literal = astExpression.getPrimaryExpression().get().getLiteral()
-                        .get();
-                    if (literal instanceof ASTIntLiteral) {
-                      return;
-                    }
-                  }
-                }
-                else if (astExpression.expressionIsPresent()) {
-                  if (astExpression.getExpression().get().primaryExpressionIsPresent()) {
-                    if (astExpression.getExpression().get().getPrimaryExpression().get()
-                        .literalIsPresent()) {
-                      ASTLiteral literal = astExpression.getExpression().get()
-                          .getPrimaryExpression().get().getLiteral().get();
-                      if (literal instanceof ASTIntLiteral) {
-                        return;
-                      }
-                    }
+            if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().get().getExpression().isPresent()) {
+                ASTExpression astExpression =  variableDeclarator
+                    .getVariableInititializerOrExpression().get().getExpression().get();
+                if (astExpression instanceof ASTLiteralExpression) {
+                  ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
+                  ASTLiteral literal = primaryExpression.getLiteral();
+                  if (literal instanceof ASTIntLiteral) {
+                    return;
                   }
                 }
               }
             }
           }
-          if (variableDeclarator.getVariableInitializer().isPresent()) {
-            if(variableDeclarator.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
-              variableDeclarator.getVariableInitializer().get().accept(arrayInitializerCollector);
+          if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
+            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression().get();
+            if(varOrExpr.getVariableInitializer().isPresent() && varOrExpr.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
+              variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
                 Log.error("0xA0609 type mismatch, cannot convert from array to type '" + localVarType
@@ -103,7 +100,7 @@ public class LocalVariableInitializerAssignmentCompatible implements
               }
               if (localVarType.getDimension() > 0 && localVarType.getDimension() == arrList.size()) {
                 for (ASTArrayInitializer arrayInitializer : arrList) {
-                  for(ASTVariableInitializer variableInitializer : arrayInitializer.getVariableInitializers()) {
+                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressions()) {
                     typeResolver.handle(variableInitializer);
                     if (typeResolver.getResult().isPresent()) {
                       JavaTypeSymbolReference arrType = typeResolver.getResult().get();
@@ -122,9 +119,9 @@ public class LocalVariableInitializerAssignmentCompatible implements
                             .unsafeAssignmentConversionAvailable(arrType, componentType)) {
                           Log.warn(
                               "0xA0610 Possible unchecked conversion from type '" + componentType
-                                  .getName()
-                                  + "' to '"
-                                  + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                              .getName()
+                              + "' to '"
+                              + localVarType.getName() + "'.", node.get_SourcePositionStart());
                           break;
                         }
                         else {
@@ -143,26 +140,32 @@ public class LocalVariableInitializerAssignmentCompatible implements
             else {
               variableDeclarator.accept(typeResolver);
               //  typeResolver.handle();
-                if (typeResolver.getResult().isPresent()) {
-                  JavaTypeSymbolReference expType = typeResolver.getResult()
-                      .get();
-                  //JLS3 5.2-1
-                  if (JavaDSLHelper.safeAssignmentConversionAvailable(expType, localVarType)) {
+              if (typeResolver.getResult().isPresent()) {
+                JavaTypeSymbolReference expType = typeResolver.getResult()
+                    .get();
+                //JLS3 5.2-1
+                if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
+                    || JavaDSLHelper.isShortType(localVarType)) {
+                  if (JavaDSLHelper.isIntType(expType)) {
                     return;
                   }
-                  //JLS3 4.4-2
-                  else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(expType, localVarType)) {
-                    Log.warn(
-                        "0xA0610 Possible unchecked conversion from type '" + expType.getName()
-                            + "' to '"
-                            + localVarType.getName() + "'.", node.get_SourcePositionStart());
-                  }
-                  else {
-                    Log.error(
-                        "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
-                            + localVarType
-                            .getName() + "'.", node.get_SourcePositionStart());
-                  }
+                }
+                if (JavaDSLHelper.safeAssignmentConversionAvailable(expType, localVarType)) {
+                  return;
+                }
+                //JLS3 4.4-2
+                else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(expType, localVarType)) {
+                  Log.warn(
+                      "0xA0610 Possible unchecked conversion from type '" + expType.getName()
+                      + "' to '"
+                      + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                }
+                else {
+                  Log.error(
+                      "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
+                          + localVarType
+                          .getName() + "'.", node.get_SourcePositionStart());
+                }
               }
             }
           }

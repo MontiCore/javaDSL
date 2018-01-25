@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,8 +42,8 @@ public class JavaDSLParserTest {
   
   @BeforeClass
   public static void setup() {
-    Slf4jLog.init();
-    Log.enableFailQuick(false);
+    LogStub.init();
+    LogStub.enableFailQuick(false);
   }
   
   @Test
@@ -93,4 +94,16 @@ public class JavaDSLParserTest {
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
   }
+  
+  @Test
+  public void test5() throws RecognitionException, IOException {
+    Path model = Paths
+        .get("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
+    JavaDSLParser parser = new JavaDSLParser();
+    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
+    assertFalse(parser.hasErrors());
+    assertTrue(ast.isPresent());
+//    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
+  }
+
 }

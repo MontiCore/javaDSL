@@ -18,12 +18,22 @@
  */
 package de.monticore.java.types;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
+import de.monticore.mcexpressions._ast.ASTCallExpression;
+import de.monticore.mcexpressions._ast.ASTExpression;
+import de.monticore.mcexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
@@ -70,12 +80,17 @@ public class JavaDSLHelper {
         return Optional.of(getBinaryNumericPromotion(unbox(firstOperand), unbox(secondOperand)));
       }
     }
-    if ("<".equals(operation)) {
+    if ("<<".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }
     }
-    if (">".equals(operation)) {
+    if (">>".equals(operation)) {
+      if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
+        return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
+      }
+    }
+    if (">>>".equals(operation)) {
       if (isIntegralType(firstOperand) && isIntegralType(secondOperand)) {
         return Optional.of(new JavaTypeSymbolReference("int", firstOperand.getEnclosingScope(), 0));
       }
@@ -308,10 +323,10 @@ public class JavaDSLHelper {
       return false;
     }
     for (int i = 0; i < leftType.getActualTypeArguments().size(); i++) {
-      JavaTypeSymbolReference leftArg = (JavaTypeSymbolReference) leftType.getActualTypeArguments()
-          .get(i).getType();
-      JavaTypeSymbolReference rightArg = (JavaTypeSymbolReference) rightType
-          .getActualTypeArguments().get(i).getType();
+      JavaTypeSymbolReference leftArg = box((JavaTypeSymbolReference) leftType.getActualTypeArguments()
+          .get(i).getType());
+      JavaTypeSymbolReference rightArg = box((JavaTypeSymbolReference) rightType
+          .getActualTypeArguments().get(i).getType());
       if (!areEqual(leftArg, rightArg)) {
         return false;
       }
@@ -510,38 +525,24 @@ public class JavaDSLHelper {
   }
 
   /**
+   * JLS-4.7
+   *
+   * A type is reifiable if and only if one of the following holds:
+   *
+   * (1) It refers to a non-generic class or interface type declaration.
+   * (2) It is a parameterized type in which all type arguments are unbounded wildcards
+   * (3) It is a raw type
+   * (4) It is a primitive type
+   * (5) It is an array type whose element type is reifiable
+   * (6) It is a nested type where, for each type T separated by a ".", T itself is reifiable
    *
    * @param type
    * @return checks if the given type is a reifiable type JLS3_4.7
    */
   public  static boolean isReifiableType(JavaTypeSymbolReference type) {
-    //primitive
-    if (isPrimitiveType(type)) {
-      return true;
-    }
-    //non-generic type declaration - no type variables means non generic or raw type
-    if (type.getActualTypeArguments().isEmpty()) {
-      return true;
-    }
-    //unbounded wildcard type
-    if (!isPrimitiveType(type) && !type.getActualTypeArguments().isEmpty()) {
-      for (int i = 0; i < type.getActualTypeArguments().size(); i++) {
-        if (type.getActualTypeArguments().get(i).getType() instanceof ASTWildcardType) {
-          ASTWildcardType wildcardType = (ASTWildcardType) type.getActualTypeArguments().get(i)
-              .getType();
-          if (wildcardType.getLowerBound().isPresent() || wildcardType.getUpperBound()
-              .isPresent()) {
-            return false;
-          }
-          else {
-            if (i == type.getActualTypeArguments().size() - 1) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-    return false;
+    return isPrimitiveType(type) || type.getActualTypeArguments().isEmpty()
+            || allArgsAreBoundlessWildCards(type.getActualTypeArguments())
+            || isRawType(type);
   }
 
   /**
@@ -788,10 +789,10 @@ public class JavaDSLHelper {
    * @return false if the given expression is invoking a method
    */
   public  static boolean isVariable(ASTExpression node) {
-    if(node.getCallExpression().isPresent()) {
+    if(node instanceof ASTCallExpression) {
       return false;
     }
-    if(node.getExplicitGenericInvocation().isPresent()){
+    if(node instanceof ASTGenericInvocationExpression) {
       return false;
     }
     return true;
@@ -982,12 +983,9 @@ public class JavaDSLHelper {
     return type;
   }
 
-  /*
+  /**
    * checks if the given superMethod (a method in a supertype) is overridden by one of the methods in
    * the classMethods, superMethodParameters are substituted formal parameters of the superMethod.
-   */
-
-  /**
    *
    * @param classMethods the methods of the class
    * @param superMethod a method from a super type of the class
@@ -1692,11 +1690,13 @@ public class JavaDSLHelper {
       List<JavaTypeSymbolReference> actualParameters){
     if(!methodSymbol.isEllipsisParameterMethod() && formalParameters.size() == actualParameters.size()) {
       for(int i = 0; i < formalParameters.size(); i++) {
-        if(!anIdentityConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
-          break;
+        if(anIdentityConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
+          if(i == formalParameters.size()-1){
+            return Optional.of(methodSymbol);
+          }
         }
-        if(i == formalParameters.size()-1){
-          return Optional.of(methodSymbol);
+        else {
+          break;
         }
       }
 
@@ -1718,13 +1718,15 @@ public class JavaDSLHelper {
       List<JavaTypeSymbolReference> actualParameters){
     if(!methodSymbol.isEllipsisParameterMethod() && formalParameters.size() == actualParameters.size()) {
       for(int i = 0; i < formalParameters.size(); i++) {
-        if(!isSubType(actualParameters.get(i), formalParameters.get(i))
-            && !wideningPrimitiveConversionAvailable(actualParameters.get(i), formalParameters.get(i))
-            && !anIdentityConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
-          break;
+        if(isSubType(actualParameters.get(i), formalParameters.get(i))
+            && wideningPrimitiveConversionAvailable(actualParameters.get(i), formalParameters.get(i))
+            && anIdentityConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
+          if(i == formalParameters.size()-1){
+            return Optional.of(methodSymbol);
+          }
         }
-        if(i == formalParameters.size()-1){
-          return Optional.of(methodSymbol);
+        else {
+          break;
         }
       }
     }
@@ -1746,11 +1748,13 @@ public class JavaDSLHelper {
       List<JavaTypeSymbolReference> actualParameters){
     if(!methodSymbol.isEllipsisParameterMethod() && formalParameters.size() == actualParameters.size()) {
       for(int i = 0; i < formalParameters.size(); i++) {
-        if(!methodInvocationConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
-          break;
+        if(methodInvocationConversionAvailable(actualParameters.get(i), formalParameters.get(i))){
+          if(i == formalParameters.size()-1){
+            return Optional.of(methodSymbol);
+          }
         }
-        if(i == formalParameters.size()-1){
-          return Optional.of(methodSymbol);
+        else {
+          break;
         }
       }
     }
@@ -2286,6 +2290,9 @@ public class JavaDSLHelper {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
       }
+      if(typeSymbol.isEnum()) {
+        result.addAll(typeSymbol.getSuperTypes());
+      }
     }
     return result;
   }
@@ -2539,6 +2546,9 @@ public class JavaDSLHelper {
       if (from.getDimension() > 0 && to.getDimension() > 0) {
         return narrowingReferenceConversionAvailable(box(from), box(to));
       }
+      if (fromSymbol.isFormalTypeParameter() && !fromSymbol.getSuperClass().isPresent() && fromSymbol.getSuperTypes().isEmpty()) {
+        return true;
+      }
     }
 
     return false;
@@ -2630,7 +2640,6 @@ public class JavaDSLHelper {
         wideningReferenceConversionAvailable(box(from), to) ||
         boxingConversionAvailable(from, to) ||
         unboxingConversionAvailable(from, to));
-
   }
 
   /**
@@ -3126,7 +3135,6 @@ public class JavaDSLHelper {
    */
   public static JavaTypeSymbolReference applyTypeSubstitutionAndCapture(JavaTypeSymbolReference type,
       HashMap<String, JavaTypeSymbolReference> substitutedTypes) {
-    type = getComponentType(type);
     List<ActualTypeArgument> argList = new ArrayList<>();
     if (substitutedTypes == null) {
       return type;
@@ -3281,7 +3289,7 @@ public class JavaDSLHelper {
    * @param primaryExpression a Primary Expression
    * @return a String which is a name of the enclosing type symbol
    */
-  public  static String getEnclosingTypeSymbolName(ASTPrimaryExpression primaryExpression) {
+  public  static String getEnclosingTypeSymbolName(ASTExpression primaryExpression) {
     return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope().get());
   }
 
@@ -3395,9 +3403,6 @@ public class JavaDSLHelper {
     if (scope.resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
       return Optional.of((JavaFieldSymbol) scope.resolve(fieldName, JavaFieldSymbol.KIND).get());
     }
-    if(scope.getEnclosingScope().get().resolveMany(fieldName, JavaFieldSymbol.KIND).size() == 1) {
-      return Optional.of((JavaFieldSymbol) scope.getEnclosingScope().get().resolve(fieldName, JavaFieldSymbol.KIND).get());
-    }
     String enclosingType = getEnclosingTypeSymbolName(scope);
     if (enclosingType != null) {
       JavaTypeSymbol typeSymbol = (JavaTypeSymbol) scope.getEnclosingScope().get()
@@ -3483,53 +3488,6 @@ public class JavaDSLHelper {
    */
   public  static JavaTypeSymbolReference getObjectType(Scope scope) {
     return new JavaTypeSymbolReference("java.lang.Object", scope, 0);
-  }
-
-  /**
-   *
-   * @param node ASTExpression
-   * @return true if the leftExpression and rightExpression of the node
-   * has known types
-   */
-  public static boolean rightAndLeftExpressionsValid(ASTExpression node) {
-    HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
-    if( node.leftExpressionIsPresent() && node.rightExpressionIsPresent()) {
-      typeResolver.handle(node.getLeftExpression().get());
-      if(!typeResolver.getResult().isPresent()) {
-        return false;
-      }
-      else {
-        typeResolver.handle(node.getRightExpression().get());
-        if(!typeResolver.getResult().isPresent()) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   *
-   * @param node ASTExpression
-   * @return true if the castTypeExpression and Expression of the node has known types
-   */
-  public static boolean typeCastTypeAndExpressionValid(ASTExpression node) {
-    HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
-    if(node.typeCastTypeIsPresent() && node.expressionIsPresent()) {
-      typeResolver.handle(node.getExpression().get());
-      if(!typeResolver.getResult().isPresent()) {
-        return false;
-      }
-      else {
-        node.getTypeCastType().get().accept(typeResolver);
-        if(typeResolver.getResult().isPresent()) {
-          return true;
-        }
-        return false;
-      }
-    }
-    return false;
   }
 
 }

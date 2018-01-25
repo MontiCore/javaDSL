@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import de.se_rwth.commons.logging.LogStub;
 import org.antlr.v4.runtime.RecognitionException;
 import org.junit.Before;
 
@@ -85,7 +86,7 @@ public abstract class AbstractTestClass {
   
   @Before
   public void setup() {
-    Slf4jLog.init();
+    LogStub.init();
     Log.enableFailQuick(false);
     parser = new JavaDSLParser();
   }
@@ -106,7 +107,12 @@ public abstract class AbstractTestClass {
   
   protected void testUnparsabilityOfModel(String model) throws RecognitionException, IOException {
     Log.debug("Parsing " + model, getClass().getName());
-    Optional<ASTCompilationUnit> optionalModel = parser.parse(model);
+    Optional<ASTCompilationUnit> optionalModel;
+    try {
+      optionalModel = parser.parse(model);
+    } catch (Exception e) {
+      optionalModel = Optional.ofNullable(null);
+    }
     assertFalse(!parser.hasErrors() && optionalModel.isPresent());
     Log.debug("Unparsability Test: At least one error is expected!", getClass().getName());
   }

@@ -20,6 +20,8 @@ package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
 
+import de.monticore.expressions.prettyprint.MCExpressionsPrettyPrinter;
+import de.monticore.java.javadsl._ast.ASTASTStatement;
 import de.monticore.java.javadsl._ast.ASTAnnotation;
 import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
 import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
@@ -27,7 +29,6 @@ import de.monticore.java.javadsl._ast.ASTAnnotationPairArguments;
 import de.monticore.java.javadsl._ast.ASTAnnotationTypeBody;
 import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
 import de.monticore.java.javadsl._ast.ASTAnonymousClass;
-import de.monticore.java.javadsl._ast.ASTArguments;
 import de.monticore.java.javadsl._ast.ASTArrayCreator;
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
 import de.monticore.java.javadsl._ast.ASTArrayDimensionByInitializer;
@@ -61,8 +62,6 @@ import de.monticore.java.javadsl._ast.ASTEnumBody;
 import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
 import de.monticore.java.javadsl._ast.ASTEnumConstantSwitchLabel;
 import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTExplicitGenericInvocationSuffix;
-import de.monticore.java.javadsl._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTExpressionStatement;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTFinallyBlockOnlyHandler;
@@ -86,11 +85,9 @@ import de.monticore.java.javadsl._ast.ASTLocalVariableDeclarationStatement;
 import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
 import de.monticore.java.javadsl._ast.ASTMethodSignature;
 import de.monticore.java.javadsl._ast.ASTPackageDeclaration;
-import de.monticore.java.javadsl._ast.ASTPrimaryExpression;
 import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
 import de.monticore.java.javadsl._ast.ASTResource;
 import de.monticore.java.javadsl._ast.ASTReturnStatement;
-import de.monticore.java.javadsl._ast.ASTSuperSuffix;
 import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._ast.ASTSynchronizedStatement;
 import de.monticore.java.javadsl._ast.ASTThrowStatement;
@@ -102,7 +99,6 @@ import de.monticore.java.javadsl._ast.ASTWhileStatement;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.prettyprint.CommentPrettyPrinter;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
 import de.monticore.types.types._ast.ASTArrayType;
 import de.monticore.types.types._ast.ASTTypeVariableDeclaration;
 import de.monticore.types.types._ast.ASTVoidType;
@@ -113,7 +109,7 @@ import de.se_rwth.commons.Names;
  * $Id: JavaDSLWriterVisitor.java,v 1.4 2008-07-17 08:34:01 cficek Exp $
  */
 
-public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor implements
+public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     JavaDSLVisitor {
 
   private boolean WRITE_COMMENTS = false;
@@ -123,6 +119,14 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public JavaDSLPrettyPrinter(IndentPrinter out) {
     super(out);
     setWriteComments(true);
+  }
+
+  /**
+   * @see de.monticore.java.javadsl._visitor.JavaDSLVisitor#handle(de.monticore.java.javadsl._ast.ASTASTStatement)
+   */
+  @Override
+  public void handle(ASTASTStatement node) {
+    getPrinter().println("de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
   }
 
   @Override
@@ -305,9 +309,9 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public void handle(ASTVariableDeclarator a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getDeclaratorId().accept(getRealThis());
-    if (a.getVariableInitializer().isPresent()) {
+    if (a.getVariableInititializerOrExpression().isPresent()) {
       getPrinter().print(" = ");
-      a.getVariableInitializer().get().accept(getRealThis());
+      a.getVariableInititializerOrExpression().get().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -326,7 +330,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public void handle(ASTArrayInitializer a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("{");
-    printSeparated(a.getVariableInitializers().iterator(), ", ");
+    printSeparated(a.getVariableInititializerOrExpressions().iterator(), ", ");
     getPrinter().print("}");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -360,7 +364,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public void handle(ASTDefaultValue a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print(" default ");
-    a.getElementValue().accept(getRealThis());
+    a.getElementValueOrExpr().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -575,7 +579,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
       a.getCondition().get().accept(getRealThis());
     }
     getPrinter().print(";");
-    printSeparated(a.getExpressions().iterator(), ",");
+    printExpressionsList(a.getExpressions().iterator(), ",");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -583,7 +587,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public void handle(ASTForInitByExpressions a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print(" ");
-    printSeparated(a.getExpressions().iterator(), ", ");
+    printExpressionsList(a.getExpressions().iterator(), ", ");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -645,7 +649,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
       getPrinter().print("[] ");
     }
     getPrinter().print(" = ");
-    a.getVariableInitializer().accept(getRealThis());
+    a.getVariableInititializerOrExpression().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -727,7 +731,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printNode(a.getName());
     getPrinter().print(" = ");
-    a.getElementValue().accept(getRealThis());
+    a.getElementValueOrExpr().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -917,204 +921,6 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   }
 
   @Override
-  public void handle(ASTExpression a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.getPrimaryExpression().isPresent()) {
-      a.getPrimaryExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getName().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(".");
-      printNode(a.getName().get());
-      return;
-    }
-    if (a.isThis()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(".this");
-      return;
-    }
-    if (a.getInnerCreator().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(".");
-      a.getInnerCreator().get().accept(getRealThis());
-      return;
-    }
-    if (a.getSuperSuffix().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(".super");
-      a.getSuperSuffix().get().accept(getRealThis());
-      return;
-    }
-    if (a.getExplicitGenericInvocation().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(".");
-      a.getExplicitGenericInvocation().get().accept(getRealThis());
-      return;
-    }
-    if (a.getArrayExpression().isPresent()) {
-      a.getArrayExpression().get().accept(getRealThis());
-      getPrinter().print("[");
-      a.getIndexExpression().get().accept(getRealThis());
-      getPrinter().print("]");
-      return;
-    }
-    if (a.getCallExpression().isPresent()) {
-      a.getCallExpression().get().accept(getRealThis());
-      getPrinter().print("(");
-      printSeparated(a.getParameterExpression().iterator(), ", ");
-      getPrinter().print(")");
-      return;
-    }
-    if (a.getCreator().isPresent()) {
-      a.getCreator().get().accept(getRealThis());
-      return;
-    }
-    if (a.getTypeCastType().isPresent()) {
-      getPrinter().print("(");
-      a.getTypeCastType().get().accept(getRealThis());
-      getPrinter().print(")");
-      a.getExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getSuffixOp().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(a.getSuffixOp().get());
-      return;
-    }
-    if (a.getPrefixOp().isPresent()) {
-      getPrinter().print(a.getPrefixOp().get());
-      a.getExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getBooleanNot().isPresent()) {
-      getPrinter().print(a.getBooleanNot().get());
-      a.getExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getMultiplicativeOp().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getMultiplicativeOp().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getAdditiveOp().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getAdditiveOp().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getShiftOp().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getShiftOp().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getComparison().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getComparison().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getInstanceofType().isPresent()) {
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(" instanceof ");
-      a.getInstanceofType().get().accept(getRealThis());
-      return;
-    }
-    if (a.getIdentityTest().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getIdentityTest().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.binaryAndOpIsPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print("&");
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.binaryXorOpIsPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print("^");
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.binaryOrOpIsPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print("|");
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.booleanAndOpIsPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print("&&");
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.booleanOrOpIsPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print("||");
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getCondition().isPresent()) {
-      a.getCondition().get().accept(getRealThis());
-      getPrinter().print("?");
-      a.getTrueExpression().get().accept(getRealThis());
-      getPrinter().print(":");
-      a.getFalseExpression().get().accept(getRealThis());
-      return;
-    }
-    if (a.getAssignment().isPresent()) {
-      a.getLeftExpression().get().accept(getRealThis());
-      getPrinter().print(a.getAssignment().get());
-      a.getRightExpression().get().accept(getRealThis());
-      return;
-    }
-  }
-
-  @Override
-  public void endVisit(ASTExpression a) {
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTPrimaryExpression a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.getExpression().isPresent()) {
-      getPrinter().print("(");
-      a.getExpression().get().accept(getRealThis());
-      getPrinter().print(")");
-    }
-    if (a.isThis()) {
-      getPrinter().print("this");
-    }
-    if (a.isSuper()) {
-      getPrinter().print("super");
-    }
-    if (a.getLiteral().isPresent()) {
-      a.getLiteral().get().accept(getRealThis());
-    }
-    if (a.getName().isPresent()) {
-      printNode(a.getName().get());
-    }
-    if (a.getReturnType().isPresent()) {
-      a.getReturnType().get().accept(getRealThis());
-      getPrinter().print(".class");
-    }
-    if (a.getExplicitGenericInvocation().isPresent()) {
-      a.getExplicitGenericInvocation().get().accept(getRealThis());
-    }
-    if (a.getTypeArguments().isPresent()) {
-      a.getTypeArguments().get().accept(getRealThis());
-      getPrinter().print("this");
-      a.getArguments().get().accept(getRealThis());
-    }
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
   public void handle(ASTAnonymousClass a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("new ");
@@ -1150,7 +956,7 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
   public void handle(ASTArrayDimensionByExpression a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("[");
-    printSeparated(a.getExpressions().iterator(), "");
+    printExpressionsList(a.getExpressions().iterator(), "");
     getPrinter().print("]");
     for (int i = 0; i < a.getDim().size(); i++) {
       getPrinter().print("[]");
@@ -1181,46 +987,6 @@ public class JavaDSLPrettyPrinter extends TypesPrettyPrinterConcreteVisitor impl
     }
     a.getClassCreatorRest().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTExplicitGenericInvocationSuffix a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.getSuperSuffix().isPresent()) {
-      getPrinter().print("super");
-      a.getSuperSuffix().get().accept(getRealThis());
-    }
-    if (a.getName().isPresent()) {
-      printNode(a.getName().get());
-      a.getArguments().get().accept(getRealThis());
-    }
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTSuperSuffix a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.getName().isPresent()) {
-      getPrinter().print(".");
-      printNode(a.getName().get());
-    }
-    if (a.getArguments().isPresent()) {
-      a.getArguments().get().accept(getRealThis());
-    }
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTArguments a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    getPrinter().print("(");
-    printSeparated(a.getExpressions().iterator(), ", ");
-    getPrinter().print(")");
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  protected void printNode(String s) {
-    getPrinter().print(s);
   }
 
   protected void printSeparated(Iterator<? extends ASTJavaDSLNode> iter, String separator) {

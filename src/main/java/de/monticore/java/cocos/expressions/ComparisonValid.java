@@ -18,34 +18,30 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTComparisonExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTComparisonExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
  *  on 08.06.2016.
  */
-public class ComparisonValid implements JavaDSLASTExpressionCoCo {
+public class ComparisonValid implements MCExpressionsASTComparisonExpressionCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
-
+  
   public ComparisonValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-
-  //JLS3 15.20.1-1
+  
+  // JLS3 15.20.1-1
   @Override
-  public void check(ASTExpression node) {
-    if (node.leftExpressionIsPresent() && node.rightExpressionIsPresent() && node
-        .comparisonIsPresent()) {
-      if (JavaDSLHelper.rightAndLeftExpressionsValid(node)) {
-        typeResolver.handle(node);
-        if (!typeResolver.getResult().isPresent()) {
-          Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",
-              node.get_SourcePositionStart());
-        }
-      }
+  public void check(ASTComparisonExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0532 each operand of a comparison operator must be of numeric type.",
+          node.get_SourcePositionStart());
     }
   }
+  
 }

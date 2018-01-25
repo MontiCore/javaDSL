@@ -18,36 +18,30 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.java.javadsl._ast.ASTExpression;
-import de.monticore.java.javadsl._cocos.JavaDSLASTExpressionCoCo;
+import de.monticore.mcexpressions._ast.ASTIdentityExpression;
+import de.monticore.mcexpressions._cocos.MCExpressionsASTIdentityExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
  *  on 08.06.2016.
  */
-public class IdentityTestValid implements JavaDSLASTExpressionCoCo {
-
+public class IdentityTestValid implements MCExpressionsASTIdentityExpressionCoCo {
+  
   HCJavaDSLTypeResolver typeResolver;
-
+  
   public IdentityTestValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-
-  //JLS3 15.21-2, JLS3 15.21-3-1
+  
+  // JLS3 15.21-2, JLS3 15.21-3-1
   @Override
-  public void check(ASTExpression node) {
-    if (node.leftExpressionIsPresent() && node.rightExpressionIsPresent() && node
-        .identityTestIsPresent()) {
-      if (JavaDSLHelper.rightAndLeftExpressionsValid(node) && node.getIdentityTest()
-          .isPresent()) {
-        typeResolver.handle(node);
-        if (!typeResolver.getResult().isPresent()) {
-          Log.error("0xA0549 operands of identity test operator have incompatible types.", 
-              node.get_SourcePositionStart());
-        }
-      }
+  public void check(ASTIdentityExpression node) {
+    typeResolver.handle(node);
+    if (!typeResolver.getResult().isPresent()) {
+      Log.error("0xA0549 operands of identity test operator have incompatible types.",
+          node.get_SourcePositionStart());
     }
   }
+  
 }
