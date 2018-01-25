@@ -46,7 +46,7 @@ public class AnnotationMethodModifiers implements JavaDSLASTAnnotationMethodCoCo
   @Override public void check(ASTAnnotationMethod node) {
     JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       modifier.accept(typeResolver);
       JavaTypeSymbolReference modifierType = typeResolver.getResult().get();
       modifiers.add((modifierType.getName()));

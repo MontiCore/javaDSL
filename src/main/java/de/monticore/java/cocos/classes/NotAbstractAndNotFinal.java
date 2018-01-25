@@ -40,7 +40,7 @@ public class NotAbstractAndNotFinal implements JavaDSLASTClassDeclarationCoCo {
 
     boolean isAbstract = false;
     boolean isFinal = false;
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       if (modifier instanceof ASTPrimitiveModifier) {
         ASTPrimitiveModifier primitiveModifier = (ASTPrimitiveModifier) modifier;
 

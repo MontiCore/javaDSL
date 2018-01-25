@@ -48,16 +48,16 @@ public class ReturnTypeAssignmentIsValid implements JavaDSLASTMethodDeclarationC
     typeResolver.handle(node);
     JavaTypeSymbolReference typeOfMethod = typeResolver.getResult()
         .get();
-    if (node.getMethodBody().isPresent()) {
+    if (node.isMethodBodyPresent()) {
       JavaDSLReturnStatementCollector JavaDSLReturnStatementCollector = new JavaDSLReturnStatementCollector();
-      node.getMethodBody().get().accept(JavaDSLReturnStatementCollector);
-      JavaDSLReturnStatementCollector.handle(node.getMethodBody().get());
+      node.getMethodBody().accept(JavaDSLReturnStatementCollector);
+      JavaDSLReturnStatementCollector.handle(node.getMethodBody());
       List<ASTReturnStatement> returnStatements = JavaDSLReturnStatementCollector
           .getReturnStatementList();
       //JLS3 14.17-2
       if (JavaDSLHelper.isVoidType(typeOfMethod)) {
         for(ASTReturnStatement statement : returnStatements) {
-          if(statement.getExpression().isPresent()) {
+          if(statement.isExpressionPresent()) {
             Log.error("0xA0910 unexpected return-statement with expression for method with void type.",
                 node.get_SourcePositionStart());
           }
@@ -74,7 +74,7 @@ public class ReturnTypeAssignmentIsValid implements JavaDSLASTMethodDeclarationC
         for (ASTReturnStatement returnStatement : JavaDSLReturnStatementCollector
             .getReturnStatementList()) {
           //JLS3 14.17-3
-          if (!returnStatement.getExpression().isPresent()) {
+          if (!returnStatement.isExpressionPresent()) {
             Log.error("0xA0912 expression is missing in return-statement.",
                 node.get_SourcePositionStart());
           }

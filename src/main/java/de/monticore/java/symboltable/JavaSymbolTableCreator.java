@@ -62,6 +62,7 @@ import de.monticore.types.types._ast.ASTReturnType;
 import de.monticore.types.types._ast.ASTSimpleReferenceType;
 import de.monticore.types.types._ast.ASTType;
 import de.monticore.types.types._ast.ASTTypeParameters;
+import de.monticore.types.types._ast.TypesMill;
 import de.se_rwth.commons.Names;
 
 public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements JavaDSLVisitor,
@@ -119,17 +120,17 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   public void visit(final ASTCompilationUnit astCompilationUnit) {
     // CompilationUnit = PackageDeclaration? ...
     String packageName = "";
-    if (astCompilationUnit.getPackageDeclaration().isPresent()) {
-      packageName = Names.getQualifiedName(astCompilationUnit.getPackageDeclaration().get()
-          .getQualifiedName().getParts());
+    if (astCompilationUnit.isPackageDeclarationPresent()) {
+      packageName = Names.getQualifiedName(astCompilationUnit.getPackageDeclaration()
+          .getQualifiedName().getPartList());
       
       // ... ImportDeclaration* ...
       List<ImportStatement> importStatements = new ArrayList<>();
       // always import java.lang.*;
       importStatements.add(new ImportStatement("java.lang", true));
-      for (ASTImportDeclaration astImportDeclaration : astCompilationUnit.getImportDeclarations()) {
+      for (ASTImportDeclaration astImportDeclaration : astCompilationUnit.getImportDeclarationList()) {
         String qualifiedName = Names.getQualifiedName(astImportDeclaration.getQualifiedName()
-            .getParts());
+            .getPartList());
         boolean isStar = astImportDeclaration.isSTAR();
         // TODO Process static imports when supported by ImportStatement.
         boolean isStatic = astImportDeclaration.isStatic();
@@ -159,17 +160,17 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // ClassDeclaration implements TypeDeclaration = Modifier* "class" Name ...
     JavaTypeSymbol javaClassTypeSymbol = symbolFactory
         .createClassSymbol(astClassDeclaration.getName());
-    addModifiersToType(javaClassTypeSymbol, astClassDeclaration.getModifiers());
+    addModifiersToType(javaClassTypeSymbol, astClassDeclaration.getModifierList());
     
     // ... TypeParameters? ...
     List<JavaTypeSymbol> typeParameters = addTypeParametersToType(javaClassTypeSymbol,
-        astClassDeclaration.getTypeParameters());
+        astClassDeclaration.getTypeParametersOpt());
     
     // ... ("extends" superClass:Type)? ...
-    if (astClassDeclaration.getSuperClass().isPresent()) {
+    if (astClassDeclaration.isSuperClassPresent()) {
       JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
           TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astClassDeclaration
-              .getSuperClass().get()),
+              .getSuperClass()),
           currentScope().get(), 0);
       javaClassTypeSymbol.setSuperClass(superClassReference);
     }
@@ -181,7 +182,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     
     
     // ... ("implements" implementedInterfaces:(Type || ",")+)? ...
-    addInterfacesToType(javaClassTypeSymbol, astClassDeclaration.getImplementedInterfaces());
+    addInterfacesToType(javaClassTypeSymbol, astClassDeclaration.getImplementedInterfaceList());
     
     // ... ClassBody (handled by other visit methods)
     
@@ -205,14 +206,14 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // Name ...
     JavaTypeSymbol javaTypeDeclarationSymbol = symbolFactory.createInterfaceSymbol(
         astInterfaceDeclaration.getName());
-    addModifiersToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getModifiers());
+    addModifiersToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getModifierList());
     
     // ... TypeParameters? ...
     List<JavaTypeSymbol> typeParameters = addTypeParametersToType(javaTypeDeclarationSymbol,
-        astInterfaceDeclaration.getTypeParameters());
+        astInterfaceDeclaration.getTypeParametersOpt());
     
     // ... ("extends" extendedInterfaces:(Type || ",")+)? ...
-    addInterfacesToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getExtendedInterfaces());
+    addInterfacesToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getExtendedInterfaceList());
     
     // ... InterfaceBody (handled by other visit methods)
     
@@ -238,10 +239,10 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     JavaTypeSymbol javaEnumTypeSymbol = symbolFactory.createEnumSymbol(astEnumDeclaration
         .getName());
     
-    addModifiersToType(javaEnumTypeSymbol, astEnumDeclaration.getModifiers());
+    addModifiersToType(javaEnumTypeSymbol, astEnumDeclaration.getModifierList());
     
     // ... ("implements" (Type || ",")+)? ...
-    addInterfacesToType(javaEnumTypeSymbol, astEnumDeclaration.getImplementedInterfaces());
+    addInterfacesToType(javaEnumTypeSymbol, astEnumDeclaration.getImplementedInterfaceList());
     
     // ... "{" (EnumConstantDeclaration || ",")* ","? ...
     
@@ -281,8 +282,8 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         astEnumConstantDeclaration.getName(), JavaFieldSymbol.KIND, enumReference);
 
     // EnumConstantDeclaration = Annotation* ...
-    for (ASTAnnotation astAnnotation : astEnumConstantDeclaration.getAnnotations()) {
-      String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+    for (ASTAnnotation astAnnotation : astEnumConstantDeclaration.getAnnotationList()) {
+      String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
       JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(qualifiedName,
           currentScope().get(), 0);
       javaEnumImplementationTypeSymbol.addAnnotation(javaTypeSymbolReference);
@@ -311,7 +312,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // = Modifier* "@" "interface" Name
     JavaTypeSymbol javaAnnotationTypeSymbol = symbolFactory.createAnnotation(
         astAnnotationTypeDeclaration.getName());
-    addModifiersToType(javaAnnotationTypeSymbol, astAnnotationTypeDeclaration.getModifiers());
+    addModifiersToType(javaAnnotationTypeSymbol, astAnnotationTypeDeclaration.getModifierList());
     
     // AnnotationTypeBody (handled by other visit methods)
     
@@ -329,7 +330,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     JavaMethodSymbol javaAnnotationMethodSymbol = new JavaMethodSymbol(
         astAnnotationMethod.getName(), JavaMethodSymbol.KIND);
     // AnnotationMethod = Modifier* = ...
-    addModifiersToMethod(javaAnnotationMethodSymbol, astAnnotationMethod.getModifiers());
+    addModifiersToMethod(javaAnnotationMethodSymbol, astAnnotationMethod.getModifierList());
     
     // ... Type ...
     JavaTypeSymbolReference javaTypeSymbolReference = null;
@@ -359,16 +360,16 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   
   @Override
   public void visit(final ASTFieldDeclaration astFieldDeclaration) {
-    for (ASTVariableDeclarator variableDeclarator : astFieldDeclaration.getVariableDeclarators()) {
+    for (ASTVariableDeclarator variableDeclarator : astFieldDeclaration.getVariableDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createFieldSymbol(
           variableDeclarator.getDeclaratorId().getName(), null);
       
       // FieldDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astFieldDeclaration.getModifiers());
+      addModifiersToField(javaFieldSymbol, astFieldDeclaration.getModifierList());
       
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astFieldDeclaration.getType(),
-          variableDeclarator.getDeclaratorId().getDim().size());
+          variableDeclarator.getDeclaratorId().getDimList().size());
       
       // ... (VariableDeclarator || ",")+
       // VariableDeclarator is handled by the for loop
@@ -381,16 +382,16 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   @Override
   public void visit(final ASTConstDeclaration astConstDeclaration) {
     for (ASTConstantDeclarator astConstantDeclarator : astConstDeclaration
-        .getConstantDeclarators()) {
+        .getConstantDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createFieldSymbol(
           astConstantDeclarator.getName(), null);
       
       // ConstDeclaration implements InterfaceMemberDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astConstDeclaration.getModifiers());
+      addModifiersToField(javaFieldSymbol, astConstDeclaration.getModifierList());
       
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astConstDeclaration.getType(),
-          astConstantDeclarator.getDim().size());
+          astConstantDeclarator.getDimList().size());
       
       // ... (ConstantDeclarator || ",")+ ";"
       // ConstantDeclaratorList is handled by the for loop
@@ -437,19 +438,19 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     javaConstructorSymbol.setConstructor(true);
     
     // ConstructorDeclaration implements ClassMemberDeclaration = Modifier* ...
-    addModifiersToMethod(javaConstructorSymbol, astConstructorDeclaration.getModifiers());
+    addModifiersToMethod(javaConstructorSymbol, astConstructorDeclaration.getModifierList());
     
     // ... TypeParameters? ...
     List<JavaTypeSymbol> javaTypeParameters = addTypeParametersToMethod(javaConstructorSymbol,
-        astConstructorDeclaration.getTypeParameters());
+        astConstructorDeclaration.getTypeParametersOpt());
     
     // ... FormalParameters ...
     addFormalParametersToMethod(
         javaConstructorSymbol, astConstructorDeclaration.getFormalParameters()
-            .getFormalParameterListing());
+            .getFormalParameterListingOpt());
     
     // ... ("throws" Throws)? ...
-    addThrowsToMethod(javaConstructorSymbol, astConstructorDeclaration.getThrows());
+    addThrowsToMethod(javaConstructorSymbol, astConstructorDeclaration.getThrowsOpt());
     
     // ... ConstructorBody (handled by other visit methods)
     
@@ -488,16 +489,16 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   @Override
   public void visit(final ASTLocalVariableDeclaration astLocalVariableDeclaration) {
     for (ASTVariableDeclarator variableDeclarator : astLocalVariableDeclaration
-        .getVariableDeclarators()) {
+        .getVariableDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
           variableDeclarator.getDeclaratorId().getName(), null);
       
       // FieldDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astLocalVariableDeclaration.getPrimitiveModifiers());
+      addModifiersToField(javaFieldSymbol, astLocalVariableDeclaration.getPrimitiveModifierList());
       
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astLocalVariableDeclaration.getType(),
-          variableDeclarator.getDeclaratorId().getDim().size());
+          variableDeclarator.getDeclaratorId().getDimList().size());
       
       // ... (VariableDeclarator || ",")+
       // VariableDeclarator is handled by the for loop
@@ -547,15 +548,15 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     CommonScope commonScope = new CommonScope(false);
     putOnStack(commonScope);
     setLinkBetweenSpannedScopeAndNode(commonScope, astTryClause);
-    for (ASTResource astResource : astTryClause.getResources()) {
+    for (ASTResource astResource : astTryClause.getResourceList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
           astResource.getDeclaratorId().getName(), null);
       
       // Resource = VariableModifier* ...
-      addModifiersToField(javaFieldSymbol, astResource.getPrimitiveModifiers());
+      addModifiersToField(javaFieldSymbol, astResource.getPrimitiveModifierList());
       
       // ... ClassOrInterfaceType ...
-      JTypeSymbolsHelper.initializeJAttributeSymbol(javaFieldSymbol, astResource.getType(), astResource.getDeclaratorId().getDim().size(),
+      JTypeSymbolsHelper.initializeJAttributeSymbol(javaFieldSymbol, astResource.getType(), astResource.getDeclaratorId().getDimList().size(),
           currentScope().get(), typeRefFactory);
       
       // no more nonterminals to process from here
@@ -576,12 +577,12 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     CommonScope commonScope = new CommonScope(false);
     putOnStack(commonScope);
     setLinkBetweenSpannedScopeAndNode(commonScope, astCatchClause);
-    List<ASTQualifiedName> qualifiedNames = astCatchClause.getCatchType().getQualifiedNames();
+    List<ASTQualifiedName> qualifiedNames = astCatchClause.getCatchType().getQualifiedNameList();
     
     String qualifiedName = null;
     // if there is only one type use that type ...
     if (qualifiedNames.size() == 1) {
-      qualifiedName = Names.getQualifiedName(qualifiedNames.get(0).getParts());
+      qualifiedName = Names.getQualifiedName(qualifiedNames.get(0).getPartList());
     }
     else // ... otherwise its a multicatch so use Throwable the super class of
     {    // all exception
@@ -620,13 +621,13 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       removeCurrentScope();
       blockNodesStack.removeLast();
     }
-    if (astIfStatement.getElseStatement().isPresent()) {
+    if (astIfStatement.isElseStatementPresent()) {
       CommonScope commonScope = new CommonScope(false);
       putOnStack(commonScope);
       blockNodesStack.add(astIfStatement);
       setLinkBetweenSpannedScopeAndNode(commonScope, astIfStatement);
-      astIfStatement.getElseStatement().get().accept(getRealThis());
-      astIfStatement.getElseStatement().get().setEnclosingScope(currentScope().get());
+      astIfStatement.getElseStatement().accept(getRealThis());
+      astIfStatement.getElseStatement().setEnclosingScope(currentScope().get());
       removeCurrentScope();
       blockNodesStack.removeLast();
     }
@@ -655,11 +656,11 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
             astFormalParameter.getDeclaratorId().getName(), null);
 
     // FormalParameter = PrimitiveModifier* ...
-    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifiers());
+    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifierList());
 
     // ... Type ...
     initializeJavaAttributeSymbol(javaFieldSymbol, astFormalParameter.getType(),
-            astFormalParameter.getDeclaratorId().getDim().size());
+            astFormalParameter.getDeclaratorId().getDimList().size());
 
     //no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaFieldSymbol, astFormalParameter);
@@ -707,7 +708,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   
   @Override
   public void endVisit(final ASTSwitchStatement astSwitchStatement) {
-    for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroups()) {
+    for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroupList()) {
       astSwitchBlock.setEnclosingScope(currentScope().get());
     }
     removeCurrentScope();
@@ -753,7 +754,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
         JavaTypeSymbolReference javaAnnotationTypeSymbolReference = new JavaTypeSymbolReference(
-            Names.getQualifiedName(astAnnotation.getAnnotationName().getParts()),
+            Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList()),
             currentScope().get(), 0);
         javaFieldSymbol.addAnnotation(javaAnnotationTypeSymbolReference);
       }
@@ -794,11 +795,11 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   protected Pair<List<JavaTypeSymbol>, List<JavaFieldSymbol>> addMethodSignatureToMethod(
       JavaMethodSymbol javaMethodSymbol, ASTMethodSignature methodSignature) {
     // MethodSignature = Modifier* ...
-    addModifiersToMethod(javaMethodSymbol, methodSignature.getModifiers());
+    addModifiersToMethod(javaMethodSymbol, methodSignature.getModifierList());
     
     // ... TypeParameters? ...
     List<JavaTypeSymbol> javaTypeParameters = addTypeParametersToMethod(javaMethodSymbol,
-        methodSignature.getTypeParameters());
+        methodSignature.getTypeParametersOpt());
     
     // ... ReturnType ...
     // ASTReturnType is either ASTVoidType or ASTType
@@ -808,14 +809,14 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       ASTType nonVoidReturnType = (ASTType) methodSignature.getReturnType();
       final String returnTypeName = TypesPrinter
           .printTypeWithoutTypeArgumentsAndDimension(nonVoidReturnType);
-      final int additionalDimensions = methodSignature.getDim().size();
+      final int additionalDimensions = methodSignature.getDimList().size();
       javaTypeSymbolReference = new JavaTypeSymbolReference(returnTypeName, currentScope().get(),
           TypesHelper.getArrayDimensionIfArrayOrZero(nonVoidReturnType) + additionalDimensions);
       addTypeArgumentsToTypeSymbol(javaTypeSymbolReference, nonVoidReturnType);
     }
     else {
       // The return type is ASTVoidType here
-      int additionalDimensions = methodSignature.getDim().size();
+      int additionalDimensions = methodSignature.getDimList().size();
       javaTypeSymbolReference = new JavaTypeSymbolReference(VOID,
           currentScope().get(), additionalDimensions);
       // Grammar allows "void method()[][] ;" so we process the trailing
@@ -830,18 +831,18 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     
     // ... FormalParameters ...
     Optional<ASTFormalParameterListing> optionalFormalParameterListing = methodSignature
-        .getFormalParameters().getFormalParameterListing();
+        .getFormalParameters().getFormalParameterListingOpt();
     List<JavaFieldSymbol> javaFormalParameterSymbols = addFormalParametersToMethod(
         javaMethodSymbol, optionalFormalParameterListing);
     
     // ... Ellipsis
     if (optionalFormalParameterListing.isPresent()) {
       javaMethodSymbol.setEllipsisParameterMethod(
-          optionalFormalParameterListing.get().getLastFormalParameter().isPresent());
+          optionalFormalParameterListing.get().isLastFormalParameterPresent());
     }
     
     // ... ("throws" Throws)?
-    addThrowsToMethod(javaMethodSymbol, methodSignature.getThrows());
+    addThrowsToMethod(javaMethodSymbol, methodSignature.getThrowsOpt());
     
     // no more nonterminals to process from here
     return new Pair<>(javaTypeParameters, javaFormalParameterSymbols);
@@ -855,7 +856,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       }
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(
             qualifiedName, currentScope().get(), 0);
         javaMethodSymbol.addAnnotation(javaTypeSymbolReference);
@@ -907,9 +908,9 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       // add the leading formal parameters, so no varargs here
       ASTFormalParameterListing astFormalParameterListing = optionalFormalParameterListing.get();
       for (ASTFormalParameter astFormalParameter : astFormalParameterListing
-          .getFormalParameters()) {
+          .getFormalParameterList()) {
         JavaFieldSymbol javaFormalParameterSymbol = addOneFormalParameterToMethod(
-            javaMethodSymbol, astFormalParameter.getPrimitiveModifiers(),
+            javaMethodSymbol, astFormalParameter.getPrimitiveModifierList(),
             astFormalParameter.getType(), astFormalParameter.getDeclaratorId());
         
         javaFormalParameterSymbols.add(javaFormalParameterSymbol);
@@ -917,7 +918,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       }
       // add ASTLastFormalParameter (varargs)
       Optional<ASTLastFormalParameter> optionalLastFormalParameter = astFormalParameterListing
-          .getLastFormalParameter();
+          .getLastFormalParameterOpt();
       if (optionalLastFormalParameter.isPresent()) {
         ASTLastFormalParameter astLastFormalParameter = optionalLastFormalParameter.get();
         
@@ -925,12 +926,12 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         ASTArrayType arrayType;
         ASTType type = astLastFormalParameter.getType();
         if (type instanceof ASTPrimitiveType) {
-          arrayType = ASTPrimitiveArrayType.getBuilder()
+          arrayType = TypesMill.primitiveArrayTypeBuilder()
               .componentType(type).dimensions(1).build();
         }
         else if ((type instanceof ASTComplexReferenceType)
             || (type instanceof ASTSimpleReferenceType)) {
-          arrayType = ASTComplexArrayType.getBuilder()
+          arrayType = TypesMill.complexArrayTypeBuilder()
               .componentType(type).dimensions(1).build();
         }
         else if (type instanceof ASTArrayType) {
@@ -944,7 +945,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         
         JavaFieldSymbol javaFormalParameterSymbol = addOneFormalParameterToMethod(
             javaMethodSymbol,
-            astLastFormalParameter.getPrimitiveModifiers(),
+            astLastFormalParameter.getPrimitiveModifierList(),
             arrayType, astLastFormalParameter.getDeclaratorId());
         
         javaFormalParameterSymbols.add(javaFormalParameterSymbol);
@@ -958,7 +959,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       Iterable<? extends ASTModifier> modifiers, ASTType astType, ASTDeclaratorId astDeclaratorId) {
     // new JavaFieldSymbol
     final String typeName = TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astType);
-    final int additionalDimensions = astDeclaratorId.getDim().size();
+    final int additionalDimensions = astDeclaratorId.getDimList().size();
     JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(typeName,
         currentScope().get(), TypesHelper.getArrayDimensionIfArrayOrZero(astType)
             + additionalDimensions);
@@ -978,7 +979,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
         String annotationName = Names
-            .getQualifiedName(astAnnotation.getAnnotationName().getParts());
+            .getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         javaFormalParameterSymbol.addAnnotation(new JavaTypeSymbolReference(
             annotationName, currentScope().get(), 0));
       }
@@ -992,8 +993,8 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   protected void addThrowsToMethod(JavaMethodSymbol javaMethodSymbol, Optional<ASTThrows> throws1) {
     if (throws1.isPresent()) {
       ASTThrows astThrows = throws1.get();
-      for (ASTQualifiedName astQualifiedName : astThrows.getQualifiedNames()) {
-        String qualifiedName = Names.getQualifiedName(astQualifiedName.getParts());
+      for (ASTQualifiedName astQualifiedName : astThrows.getQualifiedNameList()) {
+        String qualifiedName = Names.getQualifiedName(astQualifiedName.getPartList());
         
         // Grammar has no trailingArrayBrackets here, so dimension=0
         javaMethodSymbol.addException(new JavaTypeSymbolReference(qualifiedName, currentScope()
@@ -1010,7 +1011,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       }
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         JavaTypeSymbolReference javaAnnotationTypeSymbolReference = new JavaTypeSymbolReference(
             qualifiedName, currentScope().get(), 0);
         javaTypeSymbol.addAnnotation(javaAnnotationTypeSymbolReference);

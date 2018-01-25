@@ -45,7 +45,7 @@ public class FieldNoDuplicateModifier implements JavaDSLASTFieldDeclarationCoCo 
   //JLS3 8.3.1-1
   @Override public void check(ASTFieldDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       if(modifier instanceof ASTPrimitiveModifier) {
         modifier.accept(typeResolver);
         JavaTypeSymbolReference modType = typeResolver.getResult()

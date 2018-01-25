@@ -2266,15 +2266,15 @@ public class JavaDSLHelper {
     if (typeSymbol.getAstNode().isPresent()) {
       if (typeSymbol.isClass()) {
         ASTClassDeclaration classAST = (ASTClassDeclaration) typeSymbol.getAstNode().get();
-        if (classAST.getSuperClass().isPresent()) {
-          classAST.getSuperClass().get().accept(typeResolver);
+        if (classAST.isSuperClassPresent()) {
+          classAST.getSuperClass().accept(typeResolver);
           result.add(typeResolver.getResult().get());
           result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));
         }
         else {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
-        for (ASTType astType : classAST.getImplementedInterfaces()) {
+        for (ASTType astType : classAST.getImplementedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }
@@ -2282,11 +2282,11 @@ public class JavaDSLHelper {
       if (typeSymbol.isInterface()) {
         ASTInterfaceDeclaration interfaceAST = (ASTInterfaceDeclaration) typeSymbol.getAstNode()
             .get();
-        for (ASTType astType : interfaceAST.getExtendedInterfaces()) {
+        for (ASTType astType : interfaceAST.getExtendedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }
-        if (interfaceAST.getExtendedInterfaces().isEmpty()) {
+        if (interfaceAST.getExtendedInterfaceList().isEmpty()) {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
       }

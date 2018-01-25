@@ -45,7 +45,7 @@ public class AnnotationTypeModifiers implements JavaDSLASTAnnotationTypeDeclarat
 
   @Override public void check(ASTAnnotationTypeDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       if (modifier instanceof ASTPrimitiveModifier) {
         modifier.accept(typeResolver);
         JavaTypeSymbolReference type = typeResolver.getResult().get();

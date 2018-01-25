@@ -46,7 +46,7 @@ public class ConstructorNoAccessModifierPair implements JavaDSLASTConstructorDec
   @Override
   public void check(ASTConstructorDeclaration node) {
     List<String> listModifier = new ArrayList<>();
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       modifier.accept(typeResolver);
       JavaTypeSymbolReference mod = typeResolver.getResult().get();
       listModifier.add(mod.getName());

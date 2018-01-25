@@ -61,8 +61,8 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
         }
         int defaultNum = 0;
         for (ASTSwitchBlockStatementGroup switchBlockStatementGroup : node
-            .getSwitchBlockStatementGroups()) {
-          for (ASTSwitchLabel switchLabel : switchBlockStatementGroup.getSwitchLabels()) {
+            .getSwitchBlockStatementGroupList()) {
+          for (ASTSwitchLabel switchLabel : switchBlockStatementGroup.getSwitchLabelList()) {
             //JLS3 14.11-2
             if (switchLabel == null) {
               Log.error("0xA0914 switch-label must be not null", node.get_SourcePositionStart());

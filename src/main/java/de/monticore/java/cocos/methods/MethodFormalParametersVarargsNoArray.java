@@ -34,7 +34,7 @@ public class MethodFormalParametersVarargsNoArray implements JavaDSLASTLastForma
   
   @Override
   public void check(ASTLastFormalParameter node) {
-    if(!node.getDeclaratorId().getDim().isEmpty()) {
+    if(!node.getDeclaratorId().getDimList().isEmpty()) {
       Log.error(String.format(ERROR_MESSAGE, node.getDeclaratorId().getName()), 
           node.get_SourcePositionStart());
     }
