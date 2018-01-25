@@ -45,7 +45,7 @@ public class MethodNoDuplicateModifier implements JavaDSLASTMethodDeclarationCoC
   //JLS3 8.4.3-1
   @Override public void check(ASTMethodDeclaration node) {
     List<String> modifiers = new ArrayList<>();
-    for (ASTModifier modifier : node.getMethodSignature().getModifiers()) {
+    for (ASTModifier modifier : node.getMethodSignature().getModifierList()) {
       if(modifier instanceof ASTPrimitiveModifier) {
         modifier.accept(typeResolver);
         JavaTypeSymbolReference modType = typeResolver.getResult()

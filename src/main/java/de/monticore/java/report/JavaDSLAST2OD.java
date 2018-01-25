@@ -18,12 +18,12 @@
  */
 package de.monticore.java.report;
 
-import de.monticore.mcexpressions._od.MCExpressions2OD;
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
-import de.monticore.java.javadsl._visitor.CommonJavaDSLDelegatorVisitor;
+import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.literals.literals._od.Literals2OD;
+import de.monticore.mcexpressions._od.MCExpressions2OD;
 import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.types.types._od.Types2OD;
 
@@ -31,16 +31,16 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
   
   private JavaDSLVisitor realThis = this;
   
-  protected CommonJavaDSLDelegatorVisitor visitor;
+  protected JavaDSLDelegatorVisitor visitor;
       
   public JavaDSLAST2OD(IndentPrinter printer, ReportingRepository reporting) {
     super(printer, reporting);
-    visitor = new CommonJavaDSLDelegatorVisitor();
-    visitor.set_de_monticore_literals_literals__visitor_LiteralsVisitor(
+    visitor = new JavaDSLDelegatorVisitor();
+    visitor.setLiteralsVisitor(
         new Literals2OD(printer, reporting));
-    visitor.set_de_monticore_types_types__visitor_TypesVisitor(new Types2OD(printer, reporting));
-    visitor.set_de_monticore_mcexpressions__visitor_MCExpressionsVisitor(new MCExpressions2OD(printer, reporting));
-    visitor.set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(this);
+    visitor.setTypesVisitor(new Types2OD(printer, reporting));
+    visitor.setMCExpressionsVisitor(new MCExpressions2OD(printer, reporting));
+    visitor.setJavaDSLVisitor(this);
     setPrintEmptyList(true);
     setPrintEmptyOptional(true);
   }

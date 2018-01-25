@@ -37,7 +37,7 @@ public class InterfaceNoFinalMethod implements JavaDSLASTInterfaceDeclarationCoC
   @Override
   public void check(ASTInterfaceDeclaration node) {
     for (ASTInterfaceBodyDeclaration bodyDeclaration : node.getInterfaceBody()
-        .getInterfaceBodyDeclarations()) {
+        .getInterfaceBodyDeclarationList()) {
       if (bodyDeclaration instanceof ASTInterfaceMethodDeclaration) {
         ASTInterfaceMethodDeclaration methodDeclaration = (ASTInterfaceMethodDeclaration) bodyDeclaration;
         if (methodDeclaration.getSymbol().isPresent()) {

@@ -42,8 +42,8 @@ public class ClassValidSuperTypes implements JavaDSLASTClassDeclarationCoCo {
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.getSuperClass().isPresent()) {
-      node.getSuperClass().get().accept(typeResolver);
+    if (node.isSuperClassPresent()) {
+      node.getSuperClass().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference classType = typeResolver.getResult().get();
         
@@ -85,7 +85,7 @@ public class ClassValidSuperTypes implements JavaDSLASTClassDeclarationCoCo {
             node.get_SourcePositionStart());
       }
     }
-    for (ASTType superInterface : node.getImplementedInterfaces()) {
+    for (ASTType superInterface : node.getImplementedInterfaceList()) {
       superInterface.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference interfaceType = typeResolver.getResult().get();

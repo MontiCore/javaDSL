@@ -41,8 +41,8 @@ public class ClassCanOnlyExtendClass implements JavaDSLASTClassDeclarationCoCo {
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.superClassIsPresent()) {
-      node.getSuperClass().get().accept(typeResolver);
+    if (node.isSuperClassPresent()) {
+      node.getSuperClass().accept(typeResolver);
       JavaTypeSymbolReference type = typeResolver.getResult().get();
       if (node.getEnclosingScope().isPresent()) {
         if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)

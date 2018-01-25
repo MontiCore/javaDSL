@@ -62,17 +62,17 @@ JavaDSLASTLocalVariableDeclarationCoCo {
       JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
       localVarType.setActualTypeArguments(type.getActualTypeArguments());
       JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();
-      if (node.getVariableDeclarators().isEmpty()) {
+      if (node.getVariableDeclaratorList().isEmpty()) {
         return;
       }
       else
-        for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
+        for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
-              if (variableDeclarator.getVariableInititializerOrExpression().get().getExpression().isPresent()) {
+            if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().isExpressionPresent()) {
                 ASTExpression astExpression =  variableDeclarator
-                    .getVariableInititializerOrExpression().get().getExpression().get();
+                    .getVariableInititializerOrExpression().getExpression();
                 if (astExpression instanceof ASTLiteralExpression) {
                   ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
                   ASTLiteral literal = primaryExpression.getLiteral();
@@ -83,10 +83,10 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
             }
           }
-          if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
-            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression().get();
-            if(varOrExpr.getVariableInitializer().isPresent() && varOrExpr.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
-              variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get().accept(arrayInitializerCollector);
+          if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
+            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression();
+            if(varOrExpr.isVariableInitializerPresent() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
+              variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
                 Log.error("0xA0609 type mismatch, cannot convert from array to type '" + localVarType
@@ -100,7 +100,7 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
               if (localVarType.getDimension() > 0 && localVarType.getDimension() == arrList.size()) {
                 for (ASTArrayInitializer arrayInitializer : arrList) {
-                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressions()) {
+                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressionList()) {
                     typeResolver.handle(variableInitializer);
                     if (typeResolver.getResult().isPresent()) {
                       JavaTypeSymbolReference arrType = typeResolver.getResult().get();

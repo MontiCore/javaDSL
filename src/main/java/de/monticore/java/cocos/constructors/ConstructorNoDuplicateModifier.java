@@ -48,7 +48,7 @@ public class ConstructorNoDuplicateModifier implements JavaDSLASTConstructorDecl
   public void check(ASTConstructorDeclaration node) {
     List<String> modifiers = new ArrayList<>();
     
-    for (ASTModifier modifier : node.getModifiers()) {
+    for (ASTModifier modifier : node.getModifierList()) {
       if (modifier instanceof ASTPrimitiveModifier) {
         modifier.accept(typeResolver);
         JavaTypeSymbolReference modType = typeResolver.getResult()

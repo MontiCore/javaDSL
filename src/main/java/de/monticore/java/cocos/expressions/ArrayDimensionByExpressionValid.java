@@ -37,10 +37,10 @@ public class ArrayDimensionByExpressionValid implements JavaDSLASTArrayDimension
   // JLS3 15.10-1
   @Override
   public void check(ASTArrayDimensionByExpression node) {
-    if (node.getExpressions().isEmpty()) {
+    if (node.getExpressionList().isEmpty()) {
       Log.error("an array dimension must be declared.", node.get_SourcePositionStart());
     }
-    for (ASTExpression astExpression : node.getExpressions()) {
+    for (ASTExpression astExpression : node.getExpressionList()) {
       typeResolver.handle(astExpression);
       JavaTypeSymbolReference typeName = typeResolver.getResult().orElse(null);
       if (!typeResolver.getResult().isPresent()

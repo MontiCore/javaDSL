@@ -36,18 +36,18 @@ public class MethodBodyAbsenceAndPresence implements JavaDSLASTMethodDeclaration
     if (node.getSymbol().isPresent()) {
       JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
       // JLS3 8.4.7-1
-      if (methodSymbol.isAbstract() && node.methodBodyIsPresent()) {
+      if (methodSymbol.isAbstract() && node.isMethodBodyPresent()) {
         Log.error(
             "0xA0808 abstract method '" + methodSymbol.getName() + "' must not specify a body.");
       }
       // JLS3 8.4.7-1
-      if (methodSymbol.isNative() && node.methodBodyIsPresent()) {
+      if (methodSymbol.isNative() && node.isMethodBodyPresent()) {
         Log.error(
             "0xA0809 native method '" + methodSymbol.getName() + "' must not specify a body.");
       }
       // JLS3 8.4.7-2
       if (!methodSymbol.isAbstract() && !methodSymbol.isNative()
-          && !node.getMethodBody().isPresent()) {
+          && !node.isMethodBodyPresent()) {
         Log.error("0xA0810 method '" + methodSymbol.getName() + "' must specify a body.",
             node.get_SourcePositionStart());
       }
