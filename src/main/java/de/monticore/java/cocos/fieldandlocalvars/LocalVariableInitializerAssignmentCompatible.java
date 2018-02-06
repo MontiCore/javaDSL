@@ -69,8 +69,8 @@ JavaDSLASTLocalVariableDeclarationCoCo {
         for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
-              if (variableDeclarator.getVariableInititializerOrExpression().isExpressionPresent()) {
+            if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().isPresentExpression()) {
                 ASTExpression astExpression =  variableDeclarator
                     .getVariableInititializerOrExpression().getExpression();
                 if (astExpression instanceof ASTLiteralExpression) {
@@ -83,9 +83,9 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
             }
           }
-          if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
+          if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
             ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression();
-            if(varOrExpr.isVariableInitializerPresent() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
+            if(varOrExpr.isPresentVariableInitializer() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
               variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {

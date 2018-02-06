@@ -2266,7 +2266,7 @@ public class JavaDSLHelper {
     if (typeSymbol.getAstNode().isPresent()) {
       if (typeSymbol.isClass()) {
         ASTClassDeclaration classAST = (ASTClassDeclaration) typeSymbol.getAstNode().get();
-        if (classAST.isSuperClassPresent()) {
+        if (classAST.isPresentSuperClass()) {
           classAST.getSuperClass().accept(typeResolver);
           result.add(typeResolver.getResult().get());
           result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));

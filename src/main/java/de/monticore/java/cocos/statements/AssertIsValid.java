@@ -48,7 +48,7 @@ public class AssertIsValid implements JavaDSLASTAssertStatementCoCo {
             node.get_SourcePositionStart());
       }
     }
-    if (node.isMessagePresent()) {
+    if (node.isPresentMessage()) {
       typeResolver.handle(node.getMessage());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference messageType = typeResolver.getResult().get();

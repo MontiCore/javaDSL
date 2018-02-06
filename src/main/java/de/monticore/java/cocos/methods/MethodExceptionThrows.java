@@ -39,7 +39,7 @@ public class MethodExceptionThrows implements JavaDSLASTMethodDeclarationCoCo {
   }
 
   @Override public void check(ASTMethodDeclaration node) {
-    if (node.getMethodSignature().isThrowsPresent()) {
+    if (node.getMethodSignature().isPresentThrows()) {
       ASTThrows astThrows = node.getMethodSignature().getThrows();
       for (ASTQualifiedName name : astThrows.getQualifiedNameList()) {
         typeResolver.handle(name);

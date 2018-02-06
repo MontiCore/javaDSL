@@ -169,7 +169,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
     JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
         completeName, type.getEnclosingScope().get(), 0);
-    if (type.isTypeArgumentsPresent()) {
+    if (type.isPresentTypeArguments()) {
       List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
       for (ASTTypeArgument typeArgument : type.getTypeArguments().getTypeArgumentList()) {
         typeArgument.accept(this);
@@ -195,7 +195,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference wildType = new JavaTypeSymbolReference("ASTWildcardType",
         type.getEnclosingScope().get(), 0);
     List<ActualTypeArgument> typeArguments = new ArrayList<>();
-    if (type.isLowerBoundPresent()) {
+    if (type.isPresentLowerBound()) {
       type.getLowerBound().accept(this);
       if (this.getResult().isPresent()) {
         ActualTypeArgument typeArgument = new ActualTypeArgument(true, false,
@@ -203,7 +203,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         typeArguments.add(typeArgument);
       }
     }
-    if (type.isUpperBoundPresent()) {
+    if (type.isPresentUpperBound()) {
       type.getUpperBound().accept(this);
       if (this.getResult().isPresent()) {
         ActualTypeArgument typeArgument = new ActualTypeArgument(false, true,
@@ -240,7 +240,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTVariableDeclarator node) {
-    if (node.isVariableInititializerOrExpressionPresent()) {
+    if (node.isPresentVariableInititializerOrExpression()) {
       handle(node.getVariableInititializerOrExpression());
     }
   }
@@ -270,7 +270,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       if (type.getSuperClass().isPresent()) {
         superTypes.add(type.getSuperClass().get());
       }
-      if (node.getSuperSuffix().isArgumentsPresent()) {
+      if (node.getSuperSuffix().isPresentArguments()) {
         List<JavaTypeSymbolReference> paramTypes = new ArrayList<>();
         for (ASTExpression paramExpression : node.getSuperSuffix().getArguments()
             .getExpressionList()) {
@@ -279,7 +279,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
             paramTypes.add(this.getResult().get());
           }
         }
-        if (node.getSuperSuffix().isNamePresent()) {
+        if (node.getSuperSuffix().isPresentName()) {
           
           for (JavaTypeSymbolReference superType : superTypes) {
             JavaTypeSymbol currentSymbol = scope.<JavaTypeSymbol>resolve(superType.getName(), JavaTypeSymbol.KIND).get();
@@ -913,7 +913,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTCreatedName node) {
     String finalName = "";
     List<ActualTypeArgument> list = new ArrayList<>();
-    if (node.isPrimitiveTypePresent()) {
+    if (node.isPresentPrimitiveType()) {
       handle(node.getPrimitiveType());
       if (this.getResult().isPresent()) {
         finalName = this.getResult().get().getName();
@@ -951,7 +951,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         node.getEnclosingScope().get(), 0);
     String completeName = JavaDSLHelper.getCompleteName(tempType);
     List<ActualTypeArgument> actualTypeArguments = new ArrayList<>();
-    if (node.isTypeArgumentsPresent()) {
+    if (node.isPresentTypeArguments()) {
       if (!node.getTypeArguments().getTypeArgumentList().isEmpty()) {
         for (ASTTypeArgument typeArgument : node.getTypeArguments().getTypeArgumentList()) {
           typeArgument.accept(this);
@@ -981,7 +981,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTReturnStatement node) {
-    if (node.isExpressionPresent()) {
+    if (node.isPresentExpression()) {
       handle(node.getExpression());
     }
   }
@@ -1046,7 +1046,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference classType = new JavaTypeSymbolReference(completeName,
         node.getEnclosingScope().get(), 0);
     List<ActualTypeArgument> classArgumentList = new ArrayList<>();
-    if (node.isTypeParametersPresent()) {
+    if (node.isPresentTypeParameters()) {
       for (ASTTypeVariableDeclaration typeVariableDeclaration : node.getTypeParameters()
           .getTypeVariableDeclarationList()) {
         List<ActualTypeArgument> argList = new ArrayList<>();
@@ -1072,7 +1072,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference interfaceType = new JavaTypeSymbolReference(completeName,
         node.getEnclosingScope().get(), 0);
     List<ActualTypeArgument> classArgumentList = new ArrayList<>();
-    if (node.isTypeParametersPresent()) {
+    if (node.isPresentTypeParameters()) {
       for (ASTTypeVariableDeclaration typeVariableDeclaration : node.getTypeParameters()
           .getTypeVariableDeclarationList()) {
         List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
@@ -1204,10 +1204,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTGenericInvocationSuffix node) {
-    if (node.isNamePresent()) {
+    if (node.isPresentName()) {
       JavaTypeSymbolReference methodType = new JavaTypeSymbolReference(node.getName(),
           node.getEnclosingScope().get(), 0);
-      if (node.isArgumentsPresent()) {
+      if (node.isPresentArguments()) {
         List<ActualTypeArgument> argList = new ArrayList<>();
         for (ASTExpression astExpression : node.getArguments().getExpressionList()) {
           handle(astExpression);

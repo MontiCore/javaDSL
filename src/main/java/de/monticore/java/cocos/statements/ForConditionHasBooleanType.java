@@ -44,7 +44,7 @@ public class ForConditionHasBooleanType implements JavaDSLASTForStatementCoCo {
   @Override public void check(ASTForStatement node) {
     if (node.getForControl() instanceof ASTCommonForControl) {
       ASTCommonForControl forControl = (ASTCommonForControl) node.getForControl();
-      if (forControl.isConditionPresent()) {
+      if (forControl.isPresentCondition()) {
         typeResolver.handle(forControl.getCondition());
         if (typeResolver.getResult().isPresent()) {
           JavaTypeSymbolReference typeOfCondition = typeResolver

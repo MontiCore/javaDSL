@@ -37,7 +37,7 @@ public class MethodFormalParametersDifferentName implements JavaDSLASTMethodDecl
   //JLS3 8.4.1-1
   @Override public void check(ASTMethodDeclaration node) {
     List<String> names = new ArrayList<>();
-    if (node.getMethodSignature().getFormalParameters().isFormalParameterListingPresent()) {
+    if (node.getMethodSignature().getFormalParameters().isPresentFormalParameterListing()) {
       for (ASTFormalParameter formalParameter : node.getMethodSignature().getFormalParameters()
           .getFormalParameterListing().getFormalParameterList()) {
         if (names.contains(formalParameter.getDeclaratorId().getName())) {

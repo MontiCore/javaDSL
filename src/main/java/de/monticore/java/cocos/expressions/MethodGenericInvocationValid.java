@@ -74,7 +74,7 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
         Log.error("0xA0555 argument", node.get_SourcePositionStart());
       }
     }
-    if (genericInvocation.getGenericInvocationSuffix().isNamePresent()) {
+    if (genericInvocation.getGenericInvocationSuffix().isPresentName()) {
       methodName = genericInvocation.getGenericInvocationSuffix().getName();
     }
     if (node.getExpression() instanceof ASTNameExpression) {

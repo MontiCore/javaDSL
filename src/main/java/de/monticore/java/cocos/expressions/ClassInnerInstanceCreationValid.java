@@ -68,7 +68,7 @@ public class ClassInnerInstanceCreationValid implements JavaDSLASTInnerCreatorEx
           JavaTypeSymbol innerType = (JavaTypeSymbol) typeSymbol.getSpannedScope()
               .resolve(node.getInnerCreator().getName(), JavaTypeSymbol.KIND).get();
           // JLS3 15.9.1-2
-          if (node.getInnerCreator().getClassCreatorRest().isClassBodyPresent()) {
+          if (node.getInnerCreator().getClassCreatorRest().isPresentClassBody()) {
             if (innerType.isFinal()) {
               Log.error("0xA0523 cannot create an instance of final inner class.",
                   node.get_SourcePositionStart());

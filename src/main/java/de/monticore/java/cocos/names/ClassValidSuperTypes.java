@@ -42,7 +42,7 @@ public class ClassValidSuperTypes implements JavaDSLASTClassDeclarationCoCo {
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.isSuperClassPresent()) {
+    if (node.isPresentSuperClass()) {
       node.getSuperClass().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference classType = typeResolver.getResult().get();

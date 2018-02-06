@@ -132,7 +132,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   @Override
   public void handle(ASTCompilationUnit a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.isPackageDeclarationPresent()) {
+    if (a.isPresentPackageDeclaration()) {
       a.getPackageDeclaration().accept(getRealThis());
     }
     printSeparated(a.getImportDeclarationList().iterator(), "");
@@ -164,7 +164,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     printSeparated(a.getModifierList().iterator(), " ");
     getPrinter().print("interface ");
     printNode(a.getName());
-    if (a.isTypeParametersPresent()) {
+    if (a.isPresentTypeParameters()) {
       a.getTypeParameters().accept(getRealThis());
     }
     if (!a.getExtendedInterfaceList().isEmpty()) {
@@ -201,10 +201,10 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     printSeparated(a.getModifierList().iterator(), " ");
     getPrinter().print("class ");
     printNode(a.getName());
-    if (a.isTypeParametersPresent()) {
+    if (a.isPresentTypeParameters()) {
       a.getTypeParameters().accept(getRealThis());
     }
-    if (a.isSuperClassPresent()) {
+    if (a.isPresentSuperClass()) {
       getPrinter().print(" extends ");
       a.getSuperClass().accept(getRealThis());
     }
@@ -275,7 +275,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     getPrinter().println(" {");
     getPrinter().indent();
     printSeparated(a.getEnumConstantDeclarationList().iterator(), ", ");
-    if (a.isEnumBodyPresent()) {
+    if (a.isPresentEnumBody()) {
       a.getEnumBody().accept(getRealThis());
     }
     getPrinter().unindent();
@@ -296,10 +296,10 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getAnnotationList().iterator(), "");
     printNode(a.getName());
-    if (a.isArgumentsPresent()) {
+    if (a.isPresentArguments()) {
       a.getArguments().accept(getRealThis());
     }
-    if (a.isClassBodyPresent()) {
+    if (a.isPresentClassBody()) {
       a.getClassBody().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -309,7 +309,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTVariableDeclarator a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getDeclaratorId().accept(getRealThis());
-    if (a.isVariableInititializerOrExpressionPresent()) {
+    if (a.isPresentVariableInititializerOrExpression()) {
       getPrinter().print(" = ");
       a.getVariableInititializerOrExpression().accept(getRealThis());
     }
@@ -343,7 +343,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     getPrinter().print(" ");
     printNode(a.getName());
     getPrinter().print("()");
-    if (a.isDefaultValuePresent()) {
+    if (a.isPresentDefaultValue()) {
       a.getDefaultValue().accept(getRealThis());
     }
     getPrinter().print(";");
@@ -402,7 +402,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTMethodDeclaration a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     a.getMethodSignature().accept(getRealThis());
-    if (a.isMethodBodyPresent()) {
+    if (a.isPresentMethodBody()) {
       a.getMethodBody().accept(getRealThis());
     }
     else {
@@ -415,7 +415,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTMethodSignature a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    if (a.isTypeParametersPresent()) {
+    if (a.isPresentTypeParameters()) {
       a.getTypeParameters().accept(getRealThis());
     }
     a.getReturnType().accept(getRealThis());
@@ -425,7 +425,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     for (int i = 0; i > a.getDimList().size(); i++) {
       getPrinter().print("[]");
     }
-    if (a.isThrowsPresent()) {
+    if (a.isPresentThrows()) {
       getPrinter().print(" throws ");
       a.getThrows().accept(getRealThis());
     }
@@ -444,7 +444,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     a.getCondition().accept(getRealThis());
     getPrinter().print(") ");
     a.getThenStatement().accept(getRealThis());
-    if (a.isElseStatementPresent()) {
+    if (a.isPresentElseStatement()) {
       getPrinter().println("else ");
       a.getElseStatement().accept(getRealThis());
     }
@@ -506,7 +506,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTCatchExceptionsHandler a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getCatchClauseList().iterator(), "");
-    if (a.isFinallyBlockPresent()) {
+    if (a.isPresentFinallyBlock()) {
       getPrinter().println();
       getPrinter().println("finally");
       getPrinter().indent();
@@ -536,7 +536,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     getPrinter().println(") ");
     a.getJavaBlock().accept(getRealThis());
     printSeparated(a.getCatchClauseList().iterator(), "");
-    if (a.isFinallyBlockPresent()) {
+    if (a.isPresentFinallyBlock()) {
       getPrinter().println();
       getPrinter().println("finally");
       getPrinter().indent();
@@ -562,7 +562,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTIdentifierAndTypeArgument a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printNode(a.getName());
-    if (a.isTypeArgumentsPresent()) {
+    if (a.isPresentTypeArguments()) {
       a.getTypeArguments().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -571,11 +571,11 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   @Override
   public void handle(ASTCommonForControl a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
-    if (a.isForInitPresent()) {
+    if (a.isPresentForInit()) {
       a.getForInit().accept(getRealThis());
     }
     getPrinter().print(";");
-    if (a.isConditionPresent()) {
+    if (a.isPresentCondition()) {
       a.getCondition().accept(getRealThis());
     }
     getPrinter().print(";");
@@ -605,13 +605,13 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().println();
     printSeparated(a.getModifierList().iterator(), " ");
-    if (a.isTypeParametersPresent()) {
+    if (a.isPresentTypeParameters()) {
       a.getTypeParameters().accept(getRealThis());
     }
     printNode(a.getName());
     a.getFormalParameters().accept(getRealThis());
 
-    if (a.isThrowsPresent()) {
+    if (a.isPresentThrows()) {
       getPrinter().print(" throws ");
       a.getThrows().accept(getRealThis());
     }
@@ -657,7 +657,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTFormalParameters a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("(");
-    if (a.isFormalParameterListingPresent()) {
+    if (a.isPresentFormalParameterListing()) {
       a.getFormalParameterListing().accept(getRealThis());
     }
     getPrinter().print(")");
@@ -668,10 +668,10 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTFormalParameterListing a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getFormalParameterList().iterator(), ",");
-    if (!a.getFormalParameterList().isEmpty() && a.isLastFormalParameterPresent()) {
+    if (!a.getFormalParameterList().isEmpty() && a.isPresentLastFormalParameter()) {
       getPrinter().print(",");
     }
-    if (a.isLastFormalParameterPresent()) {
+    if (a.isPresentLastFormalParameter()) {
       a.getLastFormalParameter().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -701,7 +701,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTAnnotation a) {
     getPrinter().print("@");
     a.getAnnotationName().accept(getRealThis());
-    if (a.isAnnotationArgumentsPresent()) {
+    if (a.isPresentAnnotationArguments()) {
       getPrinter().print("(");
       a.getAnnotationArguments().accept(getRealThis());
       getPrinter().print(");");
@@ -739,14 +739,14 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTWildcardType a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("?");
-    if (a.isLowerBoundPresent()) {
+    if (a.isPresentLowerBound()) {
       getPrinter().print(" super ");
       a.getLowerBound().accept(getRealThis());
       if (a.getUpperBound() != null) {
         getPrinter().print(",");
       }
     }
-    if (a.isUpperBoundPresent()) {
+    if (a.isPresentUpperBound()) {
       getPrinter().print(" extends ");
       a.getUpperBound().accept(getRealThis());
     }
@@ -787,7 +787,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("assert ");
     a.getAssertion().accept(getRealThis());
-    if (a.isMessagePresent()) {
+    if (a.isPresentMessage()) {
       getPrinter().print(" : ");
       a.getMessage().accept(getRealThis());
     }
@@ -799,7 +799,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTBreakStatement a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("break");
-    if (a.isLabelPresent()) {
+    if (a.isPresentLabel()) {
       printNode(a.getLabel());
     }
     getPrinter().println(";");
@@ -810,7 +810,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTContinueStatement a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("continue");
-    if (a.isLabelPresent()) {
+    if (a.isPresentLabel()) {
       printNode(a.getLabel());
     }
     getPrinter().println(";");
@@ -831,7 +831,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTReturnStatement a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("return ");
-    if (a.isExpressionPresent()) {
+    if (a.isPresentExpression()) {
       a.getExpression().accept(getRealThis());
     }
     getPrinter().println(";");
@@ -924,7 +924,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTAnonymousClass a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("new ");
-    if (a.isTypeArgumentsPresent()) {
+    if (a.isPresentTypeArguments()) {
       a.getTypeArguments().accept(getRealThis());
     }
     a.getCreatedName().accept(getRealThis());
@@ -968,7 +968,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTCreatedName a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getIdentifierAndTypeArgumentList().iterator(), ".");
-    if (a.isPrimitiveTypePresent()) {
+    if (a.isPresentPrimitiveType()) {
       a.getPrimitiveType().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -978,11 +978,11 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
   public void handle(ASTInnerCreator a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().print("new ");
-    if (a.isFirstTypeArgumentsPresent()) {
+    if (a.isPresentFirstTypeArguments()) {
       a.getFirstTypeArguments().accept(getRealThis());
     }
     printNode(a.getName());
-    if (a.isSecondTypeArgumentsPresent()) {
+    if (a.isPresentSecondTypeArguments()) {
       a.getSecondTypeArguments().accept(getRealThis());
     }
     a.getClassCreatorRest().accept(getRealThis());

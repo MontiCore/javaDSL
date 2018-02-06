@@ -57,7 +57,7 @@ public class ClassInstanceCreationValid implements JavaDSLASTCreatorExpressionCo
           JavaTypeSymbol typeSymbol = (JavaTypeSymbol) creatorType.getEnclosingScope()
               .resolve(creatorType.getName(), JavaTypeSymbol.KIND).get();
           // JLS3 15.9.1-1
-          if (ast.getClassCreatorRest().isClassBodyPresent()) {
+          if (ast.getClassCreatorRest().isPresentClassBody()) {
             // Anonymous Class
             if (typeSymbol.isFinal()) {
               Log.error("0xA0528 cannot create an instance of final class.",

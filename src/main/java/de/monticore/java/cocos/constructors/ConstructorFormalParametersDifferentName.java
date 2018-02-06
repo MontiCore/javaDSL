@@ -36,7 +36,7 @@ public class ConstructorFormalParametersDifferentName implements
   @Override
   public void check(ASTConstructorDeclaration node) {
     List<String> names = new ArrayList<>();
-    if (node.getFormalParameters().isFormalParameterListingPresent()) {
+    if (node.getFormalParameters().isPresentFormalParameterListing()) {
       for (ASTFormalParameter formalParameter : node.getFormalParameters()
           .getFormalParameterListing().getFormalParameterList()) {
         if (names.contains(formalParameter.getDeclaratorId().getName())) {

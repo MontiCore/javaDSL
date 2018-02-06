@@ -38,7 +38,7 @@ public class ArrayInitializerValid implements JavaDSLASTVariableDeclaratorCoCo {
 
   //JLS3 15.10-2
   @Override public void check(ASTVariableDeclarator node) {
-    if (node.isVariableInititializerOrExpressionPresent() && node.getVariableInititializerOrExpression().isVariableInitializerPresent()) {
+    if (node.isPresentVariableInititializerOrExpression() && node.getVariableInititializerOrExpression().isPresentVariableInitializer()) {
       ASTVariableInitializer varNode = node.getVariableInititializerOrExpression().getVariableInitializer();
       if (varNode instanceof ASTArrayInitializer) {
         ASTArrayInitializer arrInitializer = (ASTArrayInitializer) varNode;

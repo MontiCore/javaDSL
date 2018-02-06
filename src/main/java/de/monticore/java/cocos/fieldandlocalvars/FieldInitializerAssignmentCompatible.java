@@ -62,7 +62,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
     for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
       if (JavaDSLHelper.isByteType(fieldType) || JavaDSLHelper.isCharType(fieldType)
           || JavaDSLHelper.isShortType(fieldType)) {
-        if (variableDeclarator.isVariableInititializerOrExpressionPresent()
+        if (variableDeclarator.isPresentVariableInititializerOrExpression()
             && variableDeclarator.getVariableInititializerOrExpression() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
               .getVariableInititializerOrExpression();
@@ -81,7 +81,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
       for (int i = 0; i < dim; i++) {
         expectedArray = expectedArray.concat("[]");
       }
-      if (variableDeclarator.isVariableInititializerOrExpressionPresent() && variableDeclarator.getVariableInititializerOrExpression().isVariableInitializerPresent()
+      if (variableDeclarator.isPresentVariableInititializerOrExpression() && variableDeclarator.getVariableInititializerOrExpression().isPresentVariableInitializer()
           && variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer() instanceof ASTArrayInitializer) {
         variableDeclarator.getVariableInititializerOrExpression().accept(arrayInitializerCollector);
         List<ASTArrayInitializer> arrList = arrayInitializerCollector
