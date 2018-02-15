@@ -33,7 +33,7 @@ public class InterfaceMethodsNotAllowedModifiers implements
   //JLS3 9.4-2
   @Override
   public void check(ASTInterfaceDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
       for (JavaMethodSymbol methodSymbol : interfaceSymbol.getMethods()) {
         if (methodSymbol.isStrictfp()) {

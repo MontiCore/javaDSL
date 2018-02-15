@@ -32,7 +32,7 @@ public class AbstractMethodDefinition implements JavaDSLASTMethodDeclarationCoCo
   
   @Override
   public void check(ASTMethodDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
       if (methodSymbol.isAbstract() && node.getEnclosingScope().isPresent()) {
         String name = JavaDSLHelper.getEnclosingTypeSymbolName(node.getEnclosingScope().get());

@@ -40,7 +40,7 @@ public class ConstructorsNoDuplicateSignature implements
   //JLS3 8.8.2-2
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
       List<JavaMethodSymbol> constructors = typeSymbol.getConstructors();
       for (int i = 1; i < constructors.size(); i++) {

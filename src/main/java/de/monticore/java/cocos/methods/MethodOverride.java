@@ -39,7 +39,7 @@ public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
 
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol().get();
       for (JavaMethodSymbol classMethod : classSymbol.getMethods()) {
         for (JavaTypeSymbolReference superType : JavaDSLHelper.getReferencedSuperTypes(classSymbol)) {

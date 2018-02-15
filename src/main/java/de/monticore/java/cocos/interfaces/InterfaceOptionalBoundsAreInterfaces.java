@@ -34,7 +34,7 @@ public class InterfaceOptionalBoundsAreInterfaces implements JavaDSLASTInterface
   //JLS3 4.4-1
   @Override
   public void check(ASTInterfaceDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
       for (JavaTypeSymbol superSymbol : interfaceSymbol.getFormalTypeParameters()) {
         for (int i = 1; i < superSymbol.getSuperTypes().size(); i++) {

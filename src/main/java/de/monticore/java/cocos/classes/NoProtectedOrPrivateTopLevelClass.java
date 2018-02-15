@@ -33,7 +33,7 @@ public class NoProtectedOrPrivateTopLevelClass implements JavaDSLASTClassDeclara
 
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol symbol = (JavaTypeSymbol) node.getSymbol().get();
       for (JavaTypeSymbol typeSymbol : symbol.getInnerTypes()) {
         typeSymbol.setInnerType(true);

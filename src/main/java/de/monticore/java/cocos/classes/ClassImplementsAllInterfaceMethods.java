@@ -45,7 +45,7 @@ public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclar
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
       for (ASTType type : node.getImplementedInterfaceList()) {
         type.accept(typeResolver);

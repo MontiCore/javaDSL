@@ -35,7 +35,7 @@ public class MethodHiding implements JavaDSLASTClassDeclarationCoCo {
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
+    if (node.isPresentSymbol()) {
       JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
       for (JavaTypeSymbolReference superType : classTypeSymbol.getSuperTypes()) {
         if (node.getEnclosingScope().get().resolve(superType.getName(), JavaTypeSymbol.KIND)
