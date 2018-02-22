@@ -166,7 +166,7 @@ public abstract class AbstractTestClass {
         .loadModel(modelPath, parentModelPath).get();
         
     ResolvingConfiguration resolvingConfiguration = new ResolvingConfiguration();
-    resolvingConfiguration.addDefaultFilters(javaDSLLanguage.getResolvers());
+    resolvingConfiguration.addDefaultFilters(javaDSLLanguage.getResolvingFilters());
     GlobalScope globalScope = new GlobalScope(parentModelPath, javaDSLLanguage,
         resolvingConfiguration);
     Optional<JavaSymbolTableCreator> stc = javaDSLLanguage

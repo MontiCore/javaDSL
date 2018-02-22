@@ -117,7 +117,7 @@ public class JavaDSLTool {
   public static Scope createSymbolTable(JavaDSLLanguage lang,
       ASTCompilationUnit ast) {
     final ResolvingConfiguration resolvingConfiguration = new ResolvingConfiguration();
-    resolvingConfiguration.addDefaultFilters(lang.getResolvers());
+    resolvingConfiguration.addDefaultFilters(lang.getResolvingFilters());
     
     GlobalScope globalScope = new GlobalScope(new ModelPath(), lang, resolvingConfiguration);
     
