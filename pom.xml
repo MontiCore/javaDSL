@@ -42,6 +42,7 @@
     <grammars.classifier>grammars</grammars.classifier>
     <symbols.classifier>symbols</symbols.classifier>
     <models.classifier>models</models.classifier>
+    <emf.classifier>emf</emf.classifier>
 
     <!-- .. Misc .......................................................... -->
 
@@ -210,6 +211,7 @@
       <groupId>de.monticore</groupId>
       <artifactId>monticore-grammar</artifactId>
       <version>${monticore.version}</version>
+      <classifier>${emf.classifier}</classifier>
     </dependency>
 
     <!-- Grammar Dependencies -->
