@@ -1,12 +1,4 @@
-
-/* %W% %E%
- *
- * Copyright (c) 1994, 2002, Oracle and/or its affiliates. All rights reserved.
- *
- * This software is the proprietary information of Oracle.
- * Use is subject to license terms.
- *
- */
+/* (c) https://github.com/MontiCore/monticore */
 
 package java.lang;
 
