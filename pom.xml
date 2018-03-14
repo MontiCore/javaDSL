@@ -6,10 +6,10 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.11-SNAPSHOT</version>
+  <version>4.3.11</version>
   <properties>
 
-    <monticore.version>4.5.6-SNAPSHOT</monticore.version>
+    <monticore.version>5.0.0</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
