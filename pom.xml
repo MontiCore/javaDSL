@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.10</version>
+  <version>4.3.11</version>
   <properties>
 
-    <monticore.version>4.5.5</monticore.version>
+    <monticore.version>5.0.0</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
@@ -25,7 +25,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>4.5.5.Gen</mc4.maven.version>
+    <mc4.maven.version>4.5.5.1</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 
@@ -42,6 +42,7 @@
     <grammars.classifier>grammars</grammars.classifier>
     <symbols.classifier>symbols</symbols.classifier>
     <models.classifier>models</models.classifier>
+    <emf.classifier>emf</emf.classifier>
 
     <!-- .. Misc .......................................................... -->
 
@@ -56,8 +57,6 @@
   <!-- == DEFAULT BUILD SETTINGS =========================================== -->
 
   <build>
-
-
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
@@ -67,25 +66,6 @@
     </extensions>
 
     <plugins>
-
-      <!-- MontiCore AST generation -->
-      <plugin>
-        <groupId>de.monticore.mojo</groupId>
-        <artifactId>monticore-maven-plugin</artifactId>
-        <version>${mc4.maven.version}</version>
-        <configuration>
-          <skip>false</skip>
-          <!-- <script>de/monticore/monticore_noemf.groovy</script> -->
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- Other Configuration -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -114,38 +94,6 @@
             <phase>package</phase>
             <goals>
               <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Create grammars jar -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>${maven.assembly.version}</version>
-        <dependencies>
-          <dependency>
-            <groupId>de.monticore</groupId>
-            <artifactId>mc-assemblies</artifactId>
-            <version>${mc.grammars.assembly.version}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>grammars</id>
-            <configuration>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <descriptorRefs>
-                <descriptorRef>grammars-assembly</descriptorRef>
-              </descriptorRefs>
-              <formats>
-                <format>jar</format>
-              </formats>
-            </configuration>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
             </goals>
           </execution>
         </executions>
@@ -206,12 +154,6 @@
       <version>${monticore.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>de.monticore</groupId>
-      <artifactId>monticore-grammar</artifactId>
-      <version>${monticore.version}</version>
-    </dependency>
-
     <!-- Grammar Dependencies -->
     <dependency>
       <groupId>de.monticore</groupId>
@@ -255,8 +197,68 @@
   <profiles>
     <profile>
       <id>testJavaSource</id>
+      <dependencies>
+        <dependency>
+          <groupId>de.monticore</groupId>
+          <artifactId>monticore-grammar</artifactId>
+          <version>${monticore.version}</version>
+        </dependency>
+      </dependencies>
+
       <build>
+
         <plugins>
+          <!-- MontiCore AST generation -->
+          <plugin>
+            <groupId>de.monticore.mojo</groupId>
+            <artifactId>monticore-maven-plugin</artifactId>
+            <version>${mc4.maven.version}</version>
+            <configuration>
+              <skip>false</skip>
+              <script>de/monticore/monticore_noemf.groovy</script>
+            </configuration>
+            <executions>
+              <execution>
+                <id>generate-default</id>
+                <goals>
+                  <goal>generate</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Create grammars jar -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>${maven.assembly.version}</version>
+            <dependencies>
+              <dependency>
+                <groupId>de.monticore</groupId>
+                <artifactId>mc-assemblies</artifactId>
+                <version>${mc.grammars.assembly.version}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>grammars</id>
+                <configuration>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <descriptorRefs>
+                    <descriptorRef>grammars-assembly</descriptorRef>
+                  </descriptorRefs>
+                  <formats>
+                    <format>jar</format>
+                  </formats>
+                </configuration>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
@@ -295,8 +297,67 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
+      <dependencies>
+        <dependency>
+          <groupId>de.monticore</groupId>
+          <artifactId>monticore-grammar</artifactId>
+          <version>${monticore.version}</version>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
+
+          <!-- MontiCore AST generation -->
+          <plugin>
+            <groupId>de.monticore.mojo</groupId>
+            <artifactId>monticore-maven-plugin</artifactId>
+            <version>${mc4.maven.version}</version>
+            <configuration>
+              <skip>false</skip>
+              <script>de/monticore/monticore_noemf.groovy</script>
+            </configuration>
+            <executions>
+              <execution>
+                <id>generate-default</id>
+                <goals>
+                  <goal>generate</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Create grammars jar -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>${maven.assembly.version}</version>
+            <dependencies>
+              <dependency>
+                <groupId>de.monticore</groupId>
+                <artifactId>mc-assemblies</artifactId>
+                <version>${mc.grammars.assembly.version}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>grammars</id>
+                <configuration>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <descriptorRefs>
+                    <descriptorRef>grammars-assembly</descriptorRef>
+                  </descriptorRefs>
+                  <formats>
+                    <format>jar</format>
+                  </formats>
+                </configuration>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -310,6 +371,89 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>emf</id>
+      <dependencies>
+        <dependency>
+          <groupId>de.monticore</groupId>
+          <artifactId>monticore-grammar</artifactId>
+          <version>${monticore.version}</version>
+          <classifier>${emf.classifier}</classifier>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <!-- generate with emf -->
+          <plugin>
+            <groupId>de.monticore.mojo</groupId>
+            <artifactId>monticore-maven-plugin</artifactId>
+            <version>${mc4.maven.version}</version>
+            <configuration>
+              <skip>false</skip>
+              <script>de/monticore/monticore_emf.groovy</script>
+            </configuration>
+            <executions>
+              <execution>
+                <id>generate-emf</id>
+                <goals>
+                  <goal>generate</goal>
+                </goals>
+                <phase>generate-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- package with emf -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>2.6</version>
+            <executions>
+              <execution>
+                <id>default-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <classifier>${emf.classifier}</classifier>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <classifier>${emf.classifier}-sources</classifier>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire.plugin}</version>
+            <configuration>
+              <excludes>
+                <exclude>**/JavaSourceTest.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
 
   <!-- == DISTRIBUTION ==================================================== -->

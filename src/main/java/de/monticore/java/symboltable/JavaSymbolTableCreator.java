@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.symboltable;
 
 import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.ABSTRACT;
@@ -38,7 +22,44 @@ import java.util.List;
 import java.util.Optional;
 
 import de.monticore.ast.ASTNode;
-import de.monticore.java.javadsl._ast.*;
+import de.monticore.java.javadsl._ast.ASTAnnotation;
+import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
+import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
+import de.monticore.java.javadsl._ast.ASTCatchClause;
+import de.monticore.java.javadsl._ast.ASTClassDeclaration;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTConstDeclaration;
+import de.monticore.java.javadsl._ast.ASTConstantDeclarator;
+import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
+import de.monticore.java.javadsl._ast.ASTDeclaratorId;
+import de.monticore.java.javadsl._ast.ASTDoWhileStatement;
+import de.monticore.java.javadsl._ast.ASTEnhancedForControl;
+import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
+import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
+import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTForStatement;
+import de.monticore.java.javadsl._ast.ASTFormalParameter;
+import de.monticore.java.javadsl._ast.ASTFormalParameterListing;
+import de.monticore.java.javadsl._ast.ASTIfStatement;
+import de.monticore.java.javadsl._ast.ASTImportDeclaration;
+import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
+import de.monticore.java.javadsl._ast.ASTInterfaceMethodDeclaration;
+import de.monticore.java.javadsl._ast.ASTJavaBlock;
+import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
+import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
+import de.monticore.java.javadsl._ast.ASTMethodSignature;
+import de.monticore.java.javadsl._ast.ASTModifier;
+import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
+import de.monticore.java.javadsl._ast.ASTResource;
+import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
+import de.monticore.java.javadsl._ast.ASTSwitchStatement;
+import de.monticore.java.javadsl._ast.ASTThrows;
+import de.monticore.java.javadsl._ast.ASTTryStatement;
+import de.monticore.java.javadsl._ast.ASTTryStatementWithResources;
+import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
+import de.monticore.java.javadsl._ast.ASTWhileStatement;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.symboltable.ArtifactScope;
 import de.monticore.symboltable.CommonScope;
@@ -53,9 +74,7 @@ import de.monticore.types.JTypeSymbolsHelper.JTypeReferenceFactory;
 import de.monticore.types.TypesHelper;
 import de.monticore.types.TypesPrinter;
 import de.monticore.types.types._ast.ASTArrayType;
-import de.monticore.types.types._ast.ASTComplexArrayType;
 import de.monticore.types.types._ast.ASTComplexReferenceType;
-import de.monticore.types.types._ast.ASTPrimitiveArrayType;
 import de.monticore.types.types._ast.ASTPrimitiveType;
 import de.monticore.types.types._ast.ASTQualifiedName;
 import de.monticore.types.types._ast.ASTReturnType;
@@ -120,7 +139,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   public void visit(final ASTCompilationUnit astCompilationUnit) {
     // CompilationUnit = PackageDeclaration? ...
     String packageName = "";
-    if (astCompilationUnit.isPackageDeclarationPresent()) {
+    if (astCompilationUnit.isPresentPackageDeclaration()) {
       packageName = Names.getQualifiedName(astCompilationUnit.getPackageDeclaration()
           .getQualifiedName().getPartList());
       
@@ -167,7 +186,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         astClassDeclaration.getTypeParametersOpt());
     
     // ... ("extends" superClass:Type)? ...
-    if (astClassDeclaration.isSuperClassPresent()) {
+    if (astClassDeclaration.isPresentSuperClass()) {
       JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
           TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astClassDeclaration
               .getSuperClass()),
@@ -621,7 +640,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       removeCurrentScope();
       blockNodesStack.removeLast();
     }
-    if (astIfStatement.isElseStatementPresent()) {
+    if (astIfStatement.isPresentElseStatement()) {
       CommonScope commonScope = new CommonScope(false);
       putOnStack(commonScope);
       blockNodesStack.add(astIfStatement);
@@ -838,7 +857,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // ... Ellipsis
     if (optionalFormalParameterListing.isPresent()) {
       javaMethodSymbol.setEllipsisParameterMethod(
-          optionalFormalParameterListing.get().isLastFormalParameterPresent());
+          optionalFormalParameterListing.get().isPresentLastFormalParameter());
     }
     
     // ... ("throws" Throws)?
@@ -927,12 +946,12 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         ASTType type = astLastFormalParameter.getType();
         if (type instanceof ASTPrimitiveType) {
           arrayType = TypesMill.primitiveArrayTypeBuilder()
-              .componentType(type).dimensions(1).build();
+              .setComponentType(type).setDimensions(1).build();
         }
         else if ((type instanceof ASTComplexReferenceType)
             || (type instanceof ASTSimpleReferenceType)) {
           arrayType = TypesMill.complexArrayTypeBuilder()
-              .componentType(type).dimensions(1).build();
+              .setComponentType(type).setDimensions(1).build();
         }
         else if (type instanceof ASTArrayType) {
           arrayType = (ASTArrayType) type;

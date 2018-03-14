@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.statements;
 
 import java.util.List;
@@ -48,7 +32,7 @@ public class ReturnTypeAssignmentIsValid implements JavaDSLASTMethodDeclarationC
     typeResolver.handle(node);
     JavaTypeSymbolReference typeOfMethod = typeResolver.getResult()
         .get();
-    if (node.isMethodBodyPresent()) {
+    if (node.isPresentMethodBody()) {
       JavaDSLReturnStatementCollector JavaDSLReturnStatementCollector = new JavaDSLReturnStatementCollector();
       node.getMethodBody().accept(JavaDSLReturnStatementCollector);
       JavaDSLReturnStatementCollector.handle(node.getMethodBody());
@@ -57,7 +41,7 @@ public class ReturnTypeAssignmentIsValid implements JavaDSLASTMethodDeclarationC
       //JLS3 14.17-2
       if (JavaDSLHelper.isVoidType(typeOfMethod)) {
         for(ASTReturnStatement statement : returnStatements) {
-          if(statement.isExpressionPresent()) {
+          if(statement.isPresentExpression()) {
             Log.error("0xA0910 unexpected return-statement with expression for method with void type.",
                 node.get_SourcePositionStart());
           }
@@ -74,7 +58,7 @@ public class ReturnTypeAssignmentIsValid implements JavaDSLASTMethodDeclarationC
         for (ASTReturnStatement returnStatement : JavaDSLReturnStatementCollector
             .getReturnStatementList()) {
           //JLS3 14.17-3
-          if (!returnStatement.isExpressionPresent()) {
+          if (!returnStatement.isPresentExpression()) {
             Log.error("0xA0912 expression is missing in return-statement.",
                 node.get_SourcePositionStart());
           }

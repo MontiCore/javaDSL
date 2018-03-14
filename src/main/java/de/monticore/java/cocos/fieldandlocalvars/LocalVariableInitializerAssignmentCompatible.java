@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.fieldandlocalvars;
 
 import java.util.List;
@@ -57,7 +41,7 @@ JavaDSLASTLocalVariableDeclarationCoCo {
 //    if (typeResolver.getResult().isPresent()) {
 //      JavaTypeSymbolReference localVarType = typeResolver.getResult()
 //          .get();
-    if(node.symbolIsPresent()) {
+    if(node.isPresentSymbol()) {
       JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol().get()).getType();
       JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
       localVarType.setActualTypeArguments(type.getActualTypeArguments());
@@ -69,8 +53,8 @@ JavaDSLASTLocalVariableDeclarationCoCo {
         for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
-              if (variableDeclarator.getVariableInititializerOrExpression().isExpressionPresent()) {
+            if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().isPresentExpression()) {
                 ASTExpression astExpression =  variableDeclarator
                     .getVariableInititializerOrExpression().getExpression();
                 if (astExpression instanceof ASTLiteralExpression) {
@@ -83,9 +67,9 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
             }
           }
-          if (variableDeclarator.isVariableInititializerOrExpressionPresent()) {
+          if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
             ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression();
-            if(varOrExpr.isVariableInitializerPresent() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
+            if(varOrExpr.isPresentVariableInitializer() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
               variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
