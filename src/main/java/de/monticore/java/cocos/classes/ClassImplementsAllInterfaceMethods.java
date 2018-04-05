@@ -30,15 +30,15 @@ public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclar
   @Override
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol();
       for (ASTType type : node.getImplementedInterfaceList()) {
         type.accept(typeResolver);
         JavaTypeSymbolReference interfaceType = typeResolver
             .getResult().get();
-        if (node.getEnclosingScope().isPresent()) {
-          if (node.getEnclosingScope().get()
+        if (node.isPresentEnclosingScope()) {
+          if (node.getEnclosingScope()
               .resolve(interfaceType.getName(), JavaTypeSymbol.KIND).isPresent()) {
-            JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+            JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getEnclosingScope()
                 .resolve(interfaceType.getName(), JavaTypeSymbol.KIND).get();
             for (JavaMethodSymbol interfaceMethod : interfaceSymbol.getMethods()) {
               List<JavaTypeSymbolReference> list = JavaDSLHelper
@@ -47,9 +47,9 @@ public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclar
               List<JavaMethodSymbol> classMethods = new ArrayList<>(classTypeSymbol.getMethods());
               if (classTypeSymbol.getSuperClass().isPresent()) {
                 JavaTypeSymbolReference superClass = classTypeSymbol.getSuperClass().get();
-                if (node.getEnclosingScope().get()
+                if (node.getEnclosingScope()
                     .resolve(superClass.getName(), JavaTypeSymbol.KIND).isPresent()) {
-                  JavaTypeSymbol superSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+                  JavaTypeSymbol superSymbol = (JavaTypeSymbol) node.getEnclosingScope()
                       .resolve(superClass.getName(),
                           JavaTypeSymbol.KIND)
                       .get();

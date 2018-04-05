@@ -17,7 +17,7 @@ public class AbstractMethodMayNotBeStatic implements JavaDSLASTMethodDeclaration
 
   @Override
   public void check(ASTMethodDeclaration node) {
-    JavaMethodSymbol javaMethodSymbol = (JavaMethodSymbol) node.getSymbol().get();
+    JavaMethodSymbol javaMethodSymbol = (JavaMethodSymbol) node.getSymbol();
     if (javaMethodSymbol.isAbstract() && javaMethodSymbol.isStatic()) {
       Log.error(ERROR_MESSAGE, node.get_SourcePositionStart());
     }

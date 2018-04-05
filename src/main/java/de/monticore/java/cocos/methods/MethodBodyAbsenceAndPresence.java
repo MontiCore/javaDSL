@@ -17,8 +17,8 @@ public class MethodBodyAbsenceAndPresence implements JavaDSLASTMethodDeclaration
   
   @Override
   public void check(ASTMethodDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol();
       // JLS3 8.4.7-1
       if (methodSymbol.isAbstract() && node.isPresentMethodBody()) {
         Log.error(

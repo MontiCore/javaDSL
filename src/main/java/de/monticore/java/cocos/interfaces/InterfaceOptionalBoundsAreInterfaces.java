@@ -19,13 +19,13 @@ public class InterfaceOptionalBoundsAreInterfaces implements JavaDSLASTInterface
   @Override
   public void check(ASTInterfaceDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbol superSymbol : interfaceSymbol.getFormalTypeParameters()) {
         for (int i = 1; i < superSymbol.getSuperTypes().size(); i++) {
-          if (node.getEnclosingScope().get()
+          if (node.getEnclosingScope()
               .resolve(superSymbol.getSuperTypes().get(i).getName(), JavaTypeSymbol.KIND)
               .isPresent()) {
-            JavaTypeSymbol superType = (JavaTypeSymbol) node.getEnclosingScope().get()
+            JavaTypeSymbol superType = (JavaTypeSymbol) node.getEnclosingScope()
                 .resolve(superSymbol.getSuperTypes().get(i).getName(), JavaTypeSymbol.KIND).get();
             if (!superType.isInterface()) {
               Log.error(

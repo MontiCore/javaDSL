@@ -23,7 +23,7 @@ public class FieldNamesMustBePairWiseDifferent implements JavaDSLASTTypeDeclarat
   @Override
   public void check(ASTTypeDeclaration node) {
     Set<String> names = new HashSet<String>();
-    JavaTypeSymbol javaTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol javaTypeSymbol = (JavaTypeSymbol) node.getSymbol();
     for (JavaFieldSymbol javaFieldSymbol : javaTypeSymbol.getFields()) {
       String name = javaFieldSymbol.getName();
       if (names.contains(name)) {

@@ -25,7 +25,7 @@ public class ConstructorsNoDuplicateSignature implements
   @Override
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       List<JavaMethodSymbol> constructors = typeSymbol.getConstructors();
       for (int i = 1; i < constructors.size(); i++) {
         for (int j = 0; j < i; j++) {

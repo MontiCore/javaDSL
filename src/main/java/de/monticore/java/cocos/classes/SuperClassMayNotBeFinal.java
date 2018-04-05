@@ -19,7 +19,7 @@ public class SuperClassMayNotBeFinal implements JavaDSLASTClassDeclarationCoCo {
 
   @Override
   public void check(ASTClassDeclaration node) {
-    Symbol symbol = node.getSymbol().orElse(null);
+    Symbol symbol = node.getSymbolOpt().orElse(null);
     if (symbol == null) {
       Log.error("ASTClassDeclaration must have a Symbol.");
     }

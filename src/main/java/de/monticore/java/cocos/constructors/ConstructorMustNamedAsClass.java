@@ -18,7 +18,7 @@ public class ConstructorMustNamedAsClass implements JavaDSLASTClassDeclarationCo
   
   @Override
   public void check(ASTClassDeclaration node) {
-    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
     for (JavaMethodSymbol methodSymbol : typeSymbol.getConstructors()) {
       if (!node.getName().equals(methodSymbol.getName())) {
         Log.error(

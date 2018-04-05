@@ -18,7 +18,7 @@ public class ClassNotStatic implements JavaDSLASTClassDeclarationCoCo {
   @Override
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       if (!typeSymbol.getInnerTypes().isEmpty()) {
         for (JavaTypeSymbol innerType : typeSymbol.getInnerTypes()) {
           innerType.setInnerType(true);

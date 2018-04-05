@@ -17,7 +17,7 @@ public class PrimaryThisValid implements MCExpressionsASTPrimaryThisExpressionCo
   @Override
   public void check(ASTPrimaryThisExpression node) {
     String enclosingType = JavaDSLHelper.getEnclosingTypeSymbolName(node);
-    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
         .resolve(enclosingType, JavaTypeSymbol.KIND).get();
     if (typeSymbol.isInterface()) {
       Log.error("0xA0577 keyword 'this' is not allowed in interface.",

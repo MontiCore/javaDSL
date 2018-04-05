@@ -3274,7 +3274,7 @@ public class JavaDSLHelper {
    * @return a String which is a name of the enclosing type symbol
    */
   public  static String getEnclosingTypeSymbolName(ASTExpression primaryExpression) {
-    return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope().get());
+    return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope());
   }
 
   /**

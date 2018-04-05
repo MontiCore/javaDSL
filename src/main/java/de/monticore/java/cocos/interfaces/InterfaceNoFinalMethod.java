@@ -24,8 +24,8 @@ public class InterfaceNoFinalMethod implements JavaDSLASTInterfaceDeclarationCoC
         .getInterfaceBodyDeclarationList()) {
       if (bodyDeclaration instanceof ASTInterfaceMethodDeclaration) {
         ASTInterfaceMethodDeclaration methodDeclaration = (ASTInterfaceMethodDeclaration) bodyDeclaration;
-        if (methodDeclaration.getSymbol().isPresent()) {
-          JavaMethodSymbol methodSymbol = (JavaMethodSymbol) methodDeclaration.getSymbol().get();
+        if (methodDeclaration.isPresentSymbol()) {
+          JavaMethodSymbol methodSymbol = (JavaMethodSymbol) methodDeclaration.getSymbol();
           if (methodSymbol.isFinal()) {
             Log.error(
                 "0xA0712 method '" + methodSymbol.getName() + "' is declared final in interface '"

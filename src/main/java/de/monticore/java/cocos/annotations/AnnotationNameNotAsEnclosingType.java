@@ -15,8 +15,8 @@ public class AnnotationNameNotAsEnclosingType implements JavaDSLASTTypeDeclarati
   // JLS3 9.6-1
   @Override
   public void check(ASTTypeDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbol innerType : JavaDSLHelper.getAllInnerTypes(typeSymbol)) {
         if (innerType.isAnnotation() && typeSymbol.getName().equals(innerType.getName())) {
           Log.error("0xA0111 annotation type can not be named as the enclosing type.",

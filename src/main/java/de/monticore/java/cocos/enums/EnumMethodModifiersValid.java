@@ -18,8 +18,8 @@ public class EnumMethodModifiersValid implements JavaDSLASTEnumDeclarationCoCo {
   
   @Override
   public void check(ASTEnumDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaMethodSymbol methodSymbol : enumSymbol.getMethods()) {
         if (methodSymbol.isAbstract()) {
           Log.error(

@@ -42,7 +42,7 @@ JavaDSLASTLocalVariableDeclarationCoCo {
 //      JavaTypeSymbolReference localVarType = typeResolver.getResult()
 //          .get();
     if(node.isPresentSymbol()) {
-      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol().get()).getType();
+      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol()).getType();
       JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
       localVarType.setActualTypeArguments(type.getActualTypeArguments());
       JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();

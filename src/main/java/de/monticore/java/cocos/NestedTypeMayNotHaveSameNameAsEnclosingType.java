@@ -23,7 +23,7 @@ public class NestedTypeMayNotHaveSameNameAsEnclosingType implements JavaDSLASTTy
 
   @Override
   public void check(ASTTypeDeclaration node) {
-    JavaTypeSymbol javaTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol javaTypeSymbol = (JavaTypeSymbol) node.getSymbol();
     for (Entry<String, Collection<Symbol>> entry : javaTypeSymbol.getSpannedScope()
         .getLocalSymbols().entrySet()) {
       for (Symbol nestedSymbol : entry.getValue()) {

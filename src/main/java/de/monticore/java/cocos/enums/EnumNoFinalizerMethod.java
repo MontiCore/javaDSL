@@ -17,7 +17,7 @@ import de.se_rwth.commons.logging.Log;
 public class EnumNoFinalizerMethod implements JavaDSLASTEnumDeclarationCoCo {
 
   @Override public void check(ASTEnumDeclaration node) {
-    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
     for (JavaMethodSymbol methodSymbol : typeSymbol.getMethods()) {
       if ("finalize".equals(methodSymbol.getName())) {
         Log.error(

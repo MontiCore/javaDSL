@@ -20,7 +20,7 @@ public class ClassMethodSignatureNoOverrideEquivalent implements JavaDSLASTClass
   //JLS3 8.4.2-1
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       List<JavaMethodSymbol> methods = typeSymbol.getMethods();
       for (int i = 1; i < methods.size(); i++) {
         for (int j = 0; j < i; j++) {

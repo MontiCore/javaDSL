@@ -66,10 +66,10 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
       String symbolName = primaryExpression.getName();
       typeResolver.handle(primaryExpression);
       JavaTypeSymbolReference type = typeResolver.getResult().get();
-      if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
+      if (node.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND)
           .isPresent()) {
         // for class method
-        JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+        JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
             .resolve(type.getName(), JavaTypeSymbol.KIND).get();
         if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
@@ -107,9 +107,9 @@ implements MCExpressionsASTGenericInvocationExpressionCoCo {
       typeResolver.handle(node.getExpression());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference expType = typeResolver.getResult().get();
-        if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
+        if (node.getEnclosingScope().resolve(expType.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
-          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
               .resolveManyInSuperType(methodName, false, expType, expSymbol,

@@ -24,8 +24,8 @@ public class InterfaceNoStaticMethod implements JavaDSLASTInterfaceDeclarationCo
         .getInterfaceBodyDeclarationList()) {
       if (bodyDeclaration instanceof ASTInterfaceMethodDeclaration) {
         ASTInterfaceMethodDeclaration methodDeclaration = (ASTInterfaceMethodDeclaration) bodyDeclaration;
-        if (methodDeclaration.getSymbol().isPresent()) {
-          JavaMethodSymbol methodSymbol = (JavaMethodSymbol) methodDeclaration.getSymbol().get();
+        if (methodDeclaration.isPresentSymbol()) {
+          JavaMethodSymbol methodSymbol = (JavaMethodSymbol) methodDeclaration.getSymbol();
           if (methodSymbol.isStatic()) {
             Log.error(
                 "0xA0713 method '" + methodSymbol.getName() + "' is declared static in interface '"
