@@ -12,7 +12,7 @@ public class EnumMayNotBeAbstract implements JavaDSLASTEnumDeclarationCoCo {
 
   @Override
   public void check(ASTEnumDeclaration node) {
-    Symbol symbol = node.getSymbol().orElse(null);
+    Symbol symbol = node.getSymbolOpt().orElse(null);
     if (symbol == null) {
       Log.error("ASTEnumDeclaration must have a Symbol.");
     }

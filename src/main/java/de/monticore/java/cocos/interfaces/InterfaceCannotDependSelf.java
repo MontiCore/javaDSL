@@ -17,8 +17,8 @@ import de.se_rwth.commons.logging.Log;
 public class InterfaceCannotDependSelf implements JavaDSLASTInterfaceDeclarationCoCo {
 
   @Override public void check(ASTInterfaceDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbolReference superInterface : typeSymbol.getInterfaces()) {
         if (superInterface.getName().equals(typeSymbol.getName())) {
           Log.error("0xA0702 interface '" + node.getName() + "' must not extend itself.",

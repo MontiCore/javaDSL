@@ -18,8 +18,8 @@ public class InterfaceInnerTypeNotNamedAsEnclosing implements
     JavaDSLASTInterfaceDeclarationCoCo {
 
   @Override public void check(ASTInterfaceDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbol innerType : JavaDSLHelper.getAllInnerTypes(typeSymbol)) {
         if (typeSymbol.getName().equals(innerType.getName())) {
           if (innerType.isInterface()) {

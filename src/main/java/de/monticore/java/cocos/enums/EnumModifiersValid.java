@@ -17,8 +17,8 @@ public class EnumModifiersValid implements JavaDSLASTEnumDeclarationCoCo {
   
   @Override
   public void check(ASTEnumDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol();
       // JLS3 8.9-1
       if (enumSymbol.isAbstract()) {
         Log.error("0xA0404 an enum must not be declared 'abstract' at declaration of enum '" + node

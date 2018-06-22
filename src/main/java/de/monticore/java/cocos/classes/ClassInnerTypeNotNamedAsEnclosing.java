@@ -17,8 +17,8 @@ import de.se_rwth.commons.logging.Log;
 public class ClassInnerTypeNotNamedAsEnclosing implements JavaDSLASTClassDeclarationCoCo {
 
   @Override public void check(ASTClassDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbol typeSymbol : JavaDSLHelper.getAllInnerTypes(classSymbol)) {
         if (classSymbol.getName().equals(typeSymbol.getName())) {
           if (typeSymbol.isClass()) {

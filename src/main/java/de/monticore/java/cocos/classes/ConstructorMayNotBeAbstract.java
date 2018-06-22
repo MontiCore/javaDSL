@@ -18,7 +18,7 @@ public class ConstructorMayNotBeAbstract implements
 
   @Override
   public void check(ASTConstructorDeclaration node) {
-    JavaMethodSymbol javaMethodSymbol = (JavaMethodSymbol) node.getSymbol().get();
+    JavaMethodSymbol javaMethodSymbol = (JavaMethodSymbol) node.getSymbol();
     if (javaMethodSymbol.isConstructor() && javaMethodSymbol.isAbstract()) {
       Log.error(ERROR_MESSAGE, node.get_SourcePositionStart());
     }

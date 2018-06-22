@@ -32,9 +32,9 @@ public class ClassInnerInstanceCreationValid implements JavaDSLASTInnerCreatorEx
         Log.error("0xA0520 Inner class must have a simple name.");
       }
       JavaTypeSymbolReference primaryType = typeResolver.getResult().get();
-      if (node.getEnclosingScope().get().resolve(primaryType.getName(), JavaTypeSymbol.KIND)
+      if (node.getEnclosingScope().resolve(primaryType.getName(), JavaTypeSymbol.KIND)
           .isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
             .resolve(primaryType.getName(), JavaTypeSymbol.KIND).get();
         if (typeSymbol.getSpannedScope()
             .resolveMany(node.getInnerCreator().getName(), JavaTypeSymbol.KIND).size() > 1) {

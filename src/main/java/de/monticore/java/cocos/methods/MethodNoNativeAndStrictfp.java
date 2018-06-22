@@ -17,8 +17,8 @@ public class MethodNoNativeAndStrictfp implements JavaDSLASTMethodDeclarationCoC
 
   //JLS3 8.4.3-4
   @Override public void check(ASTMethodDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol();
       if (methodSymbol.isNative() && methodSymbol.isStrictfp()) {
         Log.error("0xA0819 method '" + node.getMethodSignature().getName()
                 + "' must not be both 'native' and 'strictfp'.",

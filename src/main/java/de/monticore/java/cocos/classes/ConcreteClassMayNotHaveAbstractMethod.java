@@ -15,7 +15,7 @@ public class ConcreteClassMayNotHaveAbstractMethod implements JavaDSLASTClassDec
 
   @Override
   public void check(ASTClassDeclaration node) {
-    Symbol symbol = node.getSymbol().orElse(null);
+    Symbol symbol = node.getSymbolOpt().orElse(null);
     if (symbol == null) {
       Log.error("0xA1203 ASTClassDeclaration must have a Symbol.");
     }

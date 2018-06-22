@@ -23,7 +23,7 @@ public class QualifiedNameValid implements MCExpressionsASTQualifiedNameExpressi
   @Override
   public void check(ASTQualifiedNameExpression node) {
     String name = node.getName();
-    Scope scope = node.getEnclosingScope().get();
+    Scope scope = node.getEnclosingScope();
     typeResolver.handle(node.getExpression());
     if(!typeResolver.getResult().isPresent()) {
       // expression could be a package. try to resolve the name

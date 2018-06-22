@@ -17,12 +17,12 @@ import de.se_rwth.commons.logging.Log;
 public class InterfaceCannotExtendClasses implements JavaDSLASTInterfaceDeclarationCoCo {
 
   @Override public void check(ASTInterfaceDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbolReference type : typeSymbol.getInterfaces()) {
-        if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
+        if (node.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
-          JavaTypeSymbol typeOfSuper = (JavaTypeSymbol) node.getEnclosingScope().get()
+          JavaTypeSymbol typeOfSuper = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(type.getName(), JavaTypeSymbol.KIND).get();
           if (typeOfSuper.isClass()) {
             Log.error("0xA0703 interface '" + node.getName() + "' must extend only interface.",

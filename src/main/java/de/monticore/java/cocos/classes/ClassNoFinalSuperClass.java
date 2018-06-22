@@ -18,13 +18,13 @@ public class ClassNoFinalSuperClass implements JavaDSLASTClassDeclarationCoCo {
 
   //JLS3 8.1.1-2
   @Override public void check(ASTClassDeclaration node) {
-    JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol();
     if (classSymbol.getSuperClass().isPresent()) {
       JavaTypeSymbolReference superType = classSymbol.getSuperClass().get();
-      if (node.getEnclosingScope().isPresent()) {
-        if (node.getEnclosingScope().get().resolve(superType.getName(), JavaTypeSymbol.KIND)
+      if (node.isPresentEnclosingScope()) {
+        if (node.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
-          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
           if (typeSymbol.isFinal()) {
             Log.error("0xA0215 class is extending a final class '" + typeSymbol.getName() + "'.",

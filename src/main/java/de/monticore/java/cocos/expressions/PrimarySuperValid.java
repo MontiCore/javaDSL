@@ -16,7 +16,7 @@ public class PrimarySuperValid implements MCExpressionsASTPrimarySuperExpression
   @Override
   public void check(ASTPrimarySuperExpression node) {
     String enclosingType = JavaDSLHelper.getEnclosingTypeSymbolName(node);
-    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+    JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
         .resolve(enclosingType, JavaTypeSymbol.KIND).get();
     if (typeSymbol.isInterface()) {
       Log.error("0xA0575 keyword 'super' is not allowed in interface.",

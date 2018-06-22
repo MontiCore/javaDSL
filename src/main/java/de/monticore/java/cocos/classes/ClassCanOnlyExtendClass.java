@@ -28,10 +28,10 @@ public class ClassCanOnlyExtendClass implements JavaDSLASTClassDeclarationCoCo {
     if (node.isPresentSuperClass()) {
       node.getSuperClass().accept(typeResolver);
       JavaTypeSymbolReference type = typeResolver.getResult().get();
-      if (node.getEnclosingScope().isPresent()) {
-        if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
+      if (node.isPresentEnclosingScope()) {
+        if (node.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
-          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(type.getName(), JavaTypeSymbol.KIND).get();
           if (!typeSymbol.isClass()) {
             Log.error(

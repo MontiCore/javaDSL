@@ -17,12 +17,12 @@ public class AbstractMethodDefinition implements JavaDSLASTMethodDeclarationCoCo
   @Override
   public void check(ASTMethodDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
-      if (methodSymbol.isAbstract() && node.getEnclosingScope().isPresent()) {
-        String name = JavaDSLHelper.getEnclosingTypeSymbolName(node.getEnclosingScope().get());
+      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol();
+      if (methodSymbol.isAbstract() && node.isPresentEnclosingScope()) {
+        String name = JavaDSLHelper.getEnclosingTypeSymbolName(node.getEnclosingScope());
         if (name != null
-            && node.getEnclosingScope().get().resolve(name, JavaTypeSymbol.KIND).isPresent()) {
-          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+            && node.getEnclosingScope().resolve(name, JavaTypeSymbol.KIND).isPresent()) {
+          JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(name, JavaTypeSymbol.KIND).get();
           if (typeSymbol.isInterface()) {
             return;

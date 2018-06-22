@@ -28,7 +28,7 @@ public class NonAbstractClassImplementsAllAbstractMethods
   @Override
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol();
       if (node.isPresentSuperClass()) {
         node.getSuperClass().accept(typeResolver);
         if (typeResolver.getResult().isPresent()) {

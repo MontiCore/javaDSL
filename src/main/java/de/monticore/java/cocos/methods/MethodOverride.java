@@ -24,7 +24,7 @@ public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
   @Override
   public void check(ASTClassDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol classSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaMethodSymbol classMethod : classSymbol.getMethods()) {
         for (JavaTypeSymbolReference superType : JavaDSLHelper.getReferencedSuperTypes(classSymbol)) {
           List<Symbol> overridden = JavaDSLHelper.overriddenMethodFoundInSuperTypes(classMethod, superType)

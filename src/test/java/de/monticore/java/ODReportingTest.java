@@ -28,7 +28,7 @@ public class ODReportingTest extends AbstractTestClass {
   
   protected void createAstAndST(String pathName, String modelName) throws IOException {
     ASTCompilationUnit astCompilationUnit = parse(pathName, modelName);
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     
     Optional<Symbol> sym = artifactScope.resolveLocally(modelName, JavaTypeSymbol.KIND);
     assertTrue(sym.isPresent());

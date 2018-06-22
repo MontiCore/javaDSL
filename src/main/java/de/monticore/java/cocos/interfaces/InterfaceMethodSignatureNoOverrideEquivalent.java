@@ -20,7 +20,7 @@ public class InterfaceMethodSignatureNoOverrideEquivalent implements
   //JLS3 8.4.2-1
   @Override public void check(ASTInterfaceDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol();
       List<JavaMethodSymbol> methods = interfaceSymbol.getMethods();
       for (int i = 1; i < methods.size(); i++) {
         for (int j = 0; j < i; j++) {

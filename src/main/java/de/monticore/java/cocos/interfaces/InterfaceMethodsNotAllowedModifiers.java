@@ -18,7 +18,7 @@ public class InterfaceMethodsNotAllowedModifiers implements
   @Override
   public void check(ASTInterfaceDeclaration node) {
     if (node.isPresentSymbol()) {
-      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
+      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaMethodSymbol methodSymbol : interfaceSymbol.getMethods()) {
         if (methodSymbol.isStrictfp()) {
           Log.error(

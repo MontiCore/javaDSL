@@ -15,7 +15,7 @@ public class EnumConstructorValidModifiers implements JavaDSLASTEnumDeclarationC
 
   @Override
   public void check(ASTEnumDeclaration node) {
-    JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    JavaTypeSymbol enumSymbol = (JavaTypeSymbol) node.getSymbol();
     for (JavaMethodSymbol methodSymbol : enumSymbol.getConstructors()) {
       if (methodSymbol.isPublic()) {
         Log.error(

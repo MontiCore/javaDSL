@@ -17,8 +17,8 @@ public class MethodAbstractAndOtherModifiers implements JavaDSLASTMethodDeclarat
 
   //JLS3 8.4.3-3
   @Override public void check(ASTMethodDeclaration node) {
-    if (node.getSymbol().isPresent()) {
-      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaMethodSymbol methodSymbol = (JavaMethodSymbol) node.getSymbol();
       if (methodSymbol.isAbstract()) {
         if (methodSymbol.isPrivate()) {
           Log.error("0xA0802 abstract method must not be declared 'private'.",
