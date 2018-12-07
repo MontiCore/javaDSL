@@ -1,16 +1,9 @@
-/*
- * %W% %E%
- *
- * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
- */
+//* (c) https://github.com/MontiCore/monticore */
 
 package java.lang.instrument;
 
 import java.lang.Class;
 import java.lang.NullPointerException;
-/*
- * Copyright 2003 Wily Technology, Inc.
- */
 
 /**
  * This class serves as a parameter block to the <code>Instrumentation.redefineClasses</code> method.

@@ -1,21 +1,4 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
 import static org.junit.Assert.assertEquals;
@@ -80,7 +63,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/types/SimpleAnnotationTestModel");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     
     Symbol annotationSymbol = artifactScope.resolveLocally("SimpleAnnotationTestModel",
         JavaTypeSymbol.KIND).orElse(null);
@@ -107,7 +90,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/types/SimpleClassTestModel");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     
     Symbol classSymbol = artifactScope.resolveLocally("SimpleClassTestModel",
         JavaTypeSymbol.KIND).orElse(null);
@@ -141,7 +124,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/types/SimpleInterfaceTestModel");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope interfaceScope = artifactScope.getSubScopes().get(0);
     {
@@ -169,7 +152,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_EmptyClass() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/EmptyClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(0, classScope.getSubScopes().size());
@@ -180,7 +163,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_ExtendsObject() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources", 
         "parsableAndCompilableModels/simpleTestClasses/ExtendsObject");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(2, artifactScope.getSubScopes().size());
     JavaTypeSymbol class1Symbol = artifactScope.<JavaTypeSymbol> resolve("ExtendsObject", 
         JavaTypeSymbol.KIND).orElse(null);
@@ -196,7 +179,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_ImportJavaLang() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels", 
         "simpleTestClasses/ImportJavaLang");
-    ArtifactScope artifactScope = (ArtifactScope) astCompilationUnit.getEnclosingScope().get();
+    ArtifactScope artifactScope = (ArtifactScope) astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(0, classScope.getLocalSymbols().size());
@@ -210,7 +193,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_HelloWorld() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/HelloWorld");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(1, classScope.getSubScopes().size());
@@ -233,7 +216,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_MethodWithEllipsis() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/MethodWithEllipsis");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(1, classScope.getSubScopes().size());
@@ -250,7 +233,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_simpleTestClasses_OneFieldClass() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/OneFieldClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(1, classScope.getSymbolsSize());
@@ -269,7 +252,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "simpleTestClasses/QualifiedNameTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(1, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     assertEquals(5, classScope.getSymbolsSize());
@@ -303,7 +286,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/enums/EnumViaJavaEnum");
-    Scope artifactScpope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScpope = astCompilationUnit.getEnclosingScope();
     JavaTypeSymbol enumViaJavaEnumSymbol = artifactScpope.<JavaTypeSymbol> resolve(
         "EnumViaJavaEnum", JavaTypeSymbol.KIND).orElse(null);
     assertTrue(enumViaJavaEnumSymbol != null);
@@ -339,7 +322,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/enums/EnumViaJavaInterface");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     JavaTypeSymbol enumViaJavaInterfaceSymbol = artifactScope.<JavaTypeSymbol> resolve(
         "EnumViaJavaInterface", JavaTypeSymbol.KIND).orElse(null);
     assertTrue(enumViaJavaInterfaceSymbol != null);
@@ -367,7 +350,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
     // There should be four scopes (not counting global scope)
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/resolve/GeneralResolveTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     Scope superClassScope = artifactScope.getSubScopes().get(0);
     assertEquals("SuperClass", superClassScope.getSpanningSymbol().get().getName());
     Scope classScope = artifactScope.getSubScopes().get(1);
@@ -435,7 +418,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
     // There should be nine scopes (not counting global scope)
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/resolve/TypeVariableShadowingTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     Scope outerMostTClassScope = artifactScope.getSubScopes().get(0);
     assertEquals("T", outerMostTClassScope.getSpanningSymbol().get().getName());
     {
@@ -475,7 +458,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass");
-    Scope globalScope = astCompilationUnit.getEnclosingScope().get().getEnclosingScope().get();
+    Scope globalScope = astCompilationUnit.getEnclosingScope().getEnclosingScope().get();
     Scope artifactScope = globalScope.getSubScopes().get(0);
     Scope classScope = artifactScope.getSubScopes().get(0);
     Set<Entry<String, Collection<Symbol>>> entry = classScope.getLocalSymbols().entrySet();
@@ -625,7 +608,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/typeArgumentsAndParameters/TypeParameterTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     
     Optional<Symbol> resolve = artifactScope.resolve("TypeParameterTestClass", JavaTypeSymbol.KIND);
     assertTrue(resolve.isPresent());
@@ -639,7 +622,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
       throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/ScopesSymbolTableTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     // TODO scope asserts
     Scope someInterfaceScope = artifactScope.getSubScopes().get(0);
     Scope someReturnTypeScope = artifactScope.getSubScopes().get(1);
@@ -662,7 +645,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_symbolTable_VariablesTestClass() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/VariablesTestClass");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     assertEquals(2, artifactScope.getSubScopes().size());
     Scope classScope = artifactScope.getSubScopes().get(0);
     {
@@ -790,7 +773,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
   public void test_symbolTable_typevariableUpperbounds() throws RecognitionException, IOException {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources",
         "generics/IComplexComponent");
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     
     JavaTypeSymbol interf = (JavaTypeSymbol) artifactScope.resolveLocally("IComplexComponent",
         JavaTypeSymbol.KIND).orElse(null);
@@ -813,7 +796,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
     ASTCompilationUnit astCompilationUnit = parse("src/test/resources/parsableAndCompilableModels",
         "symbolTable/MethodParametersAndLocalVariablesAreDefinedInSameScope");
     
-    Scope artifactScope = astCompilationUnit.getEnclosingScope().get();
+    Scope artifactScope = astCompilationUnit.getEnclosingScope();
     JavaTypeSymbol typeSymbol = artifactScope.<JavaTypeSymbol> resolve(
         "MethodParametersAndLocalVariablesAreDefinedInSameScope", JavaTypeSymbol.KIND).orElse(null);
     assertNotNull(typeSymbol);

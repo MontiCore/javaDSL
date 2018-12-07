@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.statements;
 
 import de.monticore.java.javadsl._ast.ASTCatchClause;
@@ -46,8 +30,8 @@ public class CatchIsValid implements JavaDSLASTTryStatementCoCo {
   public void check(ASTTryStatement node) {
     if (node.getExceptionHandler() instanceof ASTCatchExceptionsHandler) {
       ASTCatchExceptionsHandler handler = (ASTCatchExceptionsHandler) node.getExceptionHandler();
-      for (ASTCatchClause clause : handler.getCatchClauses()) {
-        if (clause.getCatchType().getQualifiedNames().size() == 1) {
+      for (ASTCatchClause clause : handler.getCatchClauseList()) {
+        if (clause.getCatchType().getQualifiedNameList().size() == 1) {
           typeResolver.handle(clause.getCatchType());
           JavaTypeSymbolReference expType = typeResolver.getResult().get();
           if (!JavaDSLHelper.isThrowable(expType)) {

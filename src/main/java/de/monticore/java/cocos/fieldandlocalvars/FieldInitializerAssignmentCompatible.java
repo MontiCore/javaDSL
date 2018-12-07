@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.fieldandlocalvars;
 
 import java.util.List;
@@ -58,31 +42,31 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
     JavaTypeSymbolReference fieldType = typeResolver.getResult()
         .get();
     JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();
-    for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
+    for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
       if (JavaDSLHelper.isByteType(fieldType) || JavaDSLHelper.isCharType(fieldType)
           || JavaDSLHelper.isShortType(fieldType)) {
-        if (variableDeclarator.getVariableInititializerOrExpression().isPresent()
-            && variableDeclarator.getVariableInititializerOrExpression().get() instanceof ASTExpression) {
+        if (variableDeclarator.isPresentVariableInititializerOrExpression()
+            && variableDeclarator.getVariableInititializerOrExpression() instanceof ASTExpression) {
           ASTExpression astExpression = (ASTExpression) variableDeclarator
-              .getVariableInititializerOrExpression().get();
-          if (astExpression instanceof ASTLiteral) {
-            ASTLiteral primaryExpression =(ASTLiteral) astExpression;
-            ASTLiteral literal = primaryExpression;
+              .getVariableInititializerOrExpression();
+          if (astExpression instanceof ASTLiteralExpression) {
+            ASTLiteralExpression primaryExpression =(ASTLiteralExpression) astExpression;
+            ASTLiteral literal = primaryExpression.getLiteral();
             if (literal instanceof ASTIntLiteral) {
               return;
             }
           }
         }
       }
-      int dim = fieldType.getDimension()+variableDeclarator.getDeclaratorId().getDim().size();
+      int dim = fieldType.getDimension()+variableDeclarator.getDeclaratorId().getDimList().size();
       fieldType.setDimension(dim);
       String expectedArray = "";
       for (int i = 0; i < dim; i++) {
         expectedArray = expectedArray.concat("[]");
       }
-      if (variableDeclarator.getVariableInititializerOrExpression().isPresent() && variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().isPresent()
-          && variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get() instanceof ASTArrayInitializer) {
-        variableDeclarator.getVariableInititializerOrExpression().get().accept(arrayInitializerCollector);
+      if (variableDeclarator.isPresentVariableInititializerOrExpression() && variableDeclarator.getVariableInititializerOrExpression().isPresentVariableInitializer()
+          && variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer() instanceof ASTArrayInitializer) {
+        variableDeclarator.getVariableInititializerOrExpression().accept(arrayInitializerCollector);
         List<ASTArrayInitializer> arrList = arrayInitializerCollector
             .getArrayInitializerList();
         if (dim > 0 && (arrList.isEmpty() || (dim != arrList.size())) ||
@@ -99,7 +83,7 @@ public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDecl
         if (dim > 0) {
           for (ASTArrayInitializer arrayInitializer : arrList) {
             for (ASTVariableInititializerOrExpression variableInitializer : arrayInitializer
-                .getVariableInititializerOrExpressions()) {
+                .getVariableInititializerOrExpressionList()) {
               typeResolver.handle(variableInitializer);
               if (typeResolver.getResult().isPresent()) {
                 JavaTypeSymbolReference arrType = JavaDSLHelper.getComponentType(typeResolver.getResult().get());

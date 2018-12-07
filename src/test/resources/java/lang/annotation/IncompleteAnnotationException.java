@@ -1,3 +1,5 @@
+/* (c) https://github.com/MontiCore/monticore */
+
 package java.lang.annotation;
 
 import java.lang.RuntimeException;

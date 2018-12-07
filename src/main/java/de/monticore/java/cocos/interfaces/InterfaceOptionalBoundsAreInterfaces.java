@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.interfaces;
 
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
@@ -34,14 +18,14 @@ public class InterfaceOptionalBoundsAreInterfaces implements JavaDSLASTInterface
   //JLS3 4.4-1
   @Override
   public void check(ASTInterfaceDeclaration node) {
-    if (node.symbolIsPresent()) {
-      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol().get();
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getSymbol();
       for (JavaTypeSymbol superSymbol : interfaceSymbol.getFormalTypeParameters()) {
         for (int i = 1; i < superSymbol.getSuperTypes().size(); i++) {
-          if (node.getEnclosingScope().get()
+          if (node.getEnclosingScope()
               .resolve(superSymbol.getSuperTypes().get(i).getName(), JavaTypeSymbol.KIND)
               .isPresent()) {
-            JavaTypeSymbol superType = (JavaTypeSymbol) node.getEnclosingScope().get()
+            JavaTypeSymbol superType = (JavaTypeSymbol) node.getEnclosingScope()
                 .resolve(superSymbol.getSuperTypes().get(i).getName(), JavaTypeSymbol.KIND).get();
             if (!superType.isInterface()) {
               Log.error(

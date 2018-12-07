@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.types;
 
 import java.util.ArrayList;
@@ -2264,15 +2248,15 @@ public class JavaDSLHelper {
     if (typeSymbol.getAstNode().isPresent()) {
       if (typeSymbol.isClass()) {
         ASTClassDeclaration classAST = (ASTClassDeclaration) typeSymbol.getAstNode().get();
-        if (classAST.getSuperClass().isPresent()) {
-          classAST.getSuperClass().get().accept(typeResolver);
+        if (classAST.isPresentSuperClass()) {
+          classAST.getSuperClass().accept(typeResolver);
           result.add(typeResolver.getResult().get());
           result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));
         }
         else {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
-        for (ASTType astType : classAST.getImplementedInterfaces()) {
+        for (ASTType astType : classAST.getImplementedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }
@@ -2280,11 +2264,11 @@ public class JavaDSLHelper {
       if (typeSymbol.isInterface()) {
         ASTInterfaceDeclaration interfaceAST = (ASTInterfaceDeclaration) typeSymbol.getAstNode()
             .get();
-        for (ASTType astType : interfaceAST.getExtendedInterfaces()) {
+        for (ASTType astType : interfaceAST.getExtendedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }
-        if (interfaceAST.getExtendedInterfaces().isEmpty()) {
+        if (interfaceAST.getExtendedInterfaceList().isEmpty()) {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
       }
@@ -3288,7 +3272,7 @@ public class JavaDSLHelper {
    * @return a String which is a name of the enclosing type symbol
    */
   public  static String getEnclosingTypeSymbolName(ASTExpression primaryExpression) {
-    return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope().get());
+    return getEnclosingTypeSymbolName(primaryExpression.getEnclosingScope());
   }
 
   /**

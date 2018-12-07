@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.fieldandlocalvars;
 
 import java.util.List;
@@ -56,25 +40,25 @@ JavaDSLASTLocalVariableDeclarationCoCo {
 //    if (typeResolver.getResult().isPresent()) {
 //      JavaTypeSymbolReference localVarType = typeResolver.getResult()
 //          .get();
-    if(node.symbolIsPresent()) {
-      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol().get()).getType();
+    if(node.isPresentSymbol()) {
+      JavaTypeSymbolReference type = ((JavaFieldSymbol) node.getSymbol()).getType();
       JavaTypeSymbolReference localVarType = new JavaTypeSymbolReference(JavaDSLHelper.getCompleteName(type), type.getEnclosingScope(), type.getDimension());
       localVarType.setActualTypeArguments(type.getActualTypeArguments());
       JavaDSLArrayInitializerCollector arrayInitializerCollector = new JavaDSLArrayInitializerCollector();
-      if (node.getVariableDeclarators().isEmpty()) {
+      if (node.getVariableDeclaratorList().isEmpty()) {
         return;
       }
       else
-        for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclarators()) {
+        for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
               || JavaDSLHelper.isShortType(localVarType)) {
-            if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
-              if (variableDeclarator.getVariableInititializerOrExpression().get().getExpression().isPresent()) {
+            if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
+              if (variableDeclarator.getVariableInititializerOrExpression().isPresentExpression()) {
                 ASTExpression astExpression =  variableDeclarator
-                    .getVariableInititializerOrExpression().get().getExpression().get();
-                if (astExpression instanceof ASTLiteral) {
-                  ASTLiteral primaryExpression = (ASTLiteral) astExpression;
-                  ASTLiteral literal = primaryExpression;
+                    .getVariableInititializerOrExpression().getExpression();
+                if (astExpression instanceof ASTLiteralExpression) {
+                  ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
+                  ASTLiteral literal = primaryExpression.getLiteral();
                   if (literal instanceof ASTIntLiteral) {
                     return;
                   }
@@ -82,10 +66,10 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
             }
           }
-          if (variableDeclarator.getVariableInititializerOrExpression().isPresent()) {
-            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression().get();
-            if(varOrExpr.getVariableInitializer().isPresent() && varOrExpr.getVariableInitializer().get() instanceof  ASTArrayInitializer) {
-              variableDeclarator.getVariableInititializerOrExpression().get().getVariableInitializer().get().accept(arrayInitializerCollector);
+          if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
+            ASTVariableInititializerOrExpression varOrExpr = variableDeclarator.getVariableInititializerOrExpression();
+            if(varOrExpr.isPresentVariableInitializer() && varOrExpr.getVariableInitializer() instanceof  ASTArrayInitializer) {
+              variableDeclarator.getVariableInititializerOrExpression().getVariableInitializer().accept(arrayInitializerCollector);
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
                 Log.error("0xA0609 type mismatch, cannot convert from array to type '" + localVarType
@@ -99,7 +83,7 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               }
               if (localVarType.getDimension() > 0 && localVarType.getDimension() == arrList.size()) {
                 for (ASTArrayInitializer arrayInitializer : arrList) {
-                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressions()) {
+                  for(ASTVariableInititializerOrExpression variableInitializer : arrayInitializer.getVariableInititializerOrExpressionList()) {
                     typeResolver.handle(variableInitializer);
                     if (typeResolver.getResult().isPresent()) {
                       JavaTypeSymbolReference arrType = typeResolver.getResult().get();

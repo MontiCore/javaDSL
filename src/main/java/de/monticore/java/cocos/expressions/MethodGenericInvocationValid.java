@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.expressions;
 
 import java.util.ArrayList;
@@ -51,16 +35,18 @@ HCJavaDSLTypeResolver typeResolver;
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    genericInvocation.getETypeArguments().accept(typeResolver);
+    for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
+        .getTypeArgumentList()) {
+      typeArgument.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         typeArguments.add(typeResolver.getResult().get());
       }
       else {
         Log.error("0xA0554 type argument", node.get_SourcePositionStart());
       }
-    
+
     for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
-        .getArguments().get().getExpressions()) {
+        .getArguments().getExpressionList()) {
       expression.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         actualArguments.add(typeResolver.getResult().get());
@@ -69,18 +55,18 @@ HCJavaDSLTypeResolver typeResolver;
         Log.error("0xA0555 argument", node.get_SourcePositionStart());
       }
     }
-    if (genericInvocation.getGenericInvocationSuffix().getName().isPresent()) {
-      methodName = genericInvocation.getGenericInvocationSuffix().getName().get();
+    if (genericInvocation.getGenericInvocationSuffix().isPresentName()) {
+      methodName = genericInvocation.getGenericInvocationSuffix().getName();
     }
     if (node.getExpression() instanceof ASTNameExpression) {
       ASTNameExpression primaryExpression = (ASTNameExpression) node.getExpression();
       String symbolName = primaryExpression.getName();
       typeResolver.handle(primaryExpression);
       JavaTypeSymbolReference type = typeResolver.getResult().get();
-      if (node.getEnclosingScope().get().resolve(type.getName(), JavaTypeSymbol.KIND)
+      if (node.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND)
           .isPresent()) {
         // for class method
-        JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+        JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
             .resolve(type.getName(), JavaTypeSymbol.KIND).get();
         if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
@@ -118,9 +104,9 @@ HCJavaDSLTypeResolver typeResolver;
       typeResolver.handle(node.getExpression());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference expType = typeResolver.getResult().get();
-        if (node.getEnclosingScope().get().resolve(expType.getName(), JavaTypeSymbol.KIND)
+        if (node.getEnclosingScope().resolve(expType.getName(), JavaTypeSymbol.KIND)
             .isPresent()) {
-          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
               .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
               .resolveManyInSuperType(methodName, false, expType, expSymbol,

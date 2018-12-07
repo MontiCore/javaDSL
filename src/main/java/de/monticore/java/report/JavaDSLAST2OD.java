@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.report;
 
 import de.monticore.assignmentexpressions._od.AssignmentExpressions2OD;
@@ -23,7 +7,7 @@ import de.monticore.commonexpressions._od.CommonExpressions2OD;
 import de.monticore.expressionsbasis._od.ExpressionsBasis2OD;
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
-import de.monticore.java.javadsl._visitor.CommonJavaDSLDelegatorVisitor;
+import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.javaclassexpressions._od.JavaClassExpressions2OD;
 import de.monticore.lexicals.lexicals._od.Lexicals2OD;
@@ -37,12 +21,12 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
   
   private JavaDSLVisitor realThis = this;
   
-  protected CommonJavaDSLDelegatorVisitor visitor;
+  protected JavaDSLDelegatorVisitor visitor;
       
   public JavaDSLAST2OD(IndentPrinter printer, ReportingRepository reporting) {
     super(printer, reporting);
-    visitor = new CommonJavaDSLDelegatorVisitor();
-    visitor.set_de_monticore_literals_literals__visitor_LiteralsVisitor(
+    visitor = new JavaDSLDelegatorVisitor();
+    visitor.setLiteralsVisitor(
         new Literals2OD(printer, reporting));
     visitor.set_de_monticore_types_types__visitor_TypesVisitor(new Types2OD(printer, reporting));
     visitor.set_de_monticore_expressionsbasis__visitor_ExpressionsBasisVisitor(new ExpressionsBasis2OD(printer, reporting));

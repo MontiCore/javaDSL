@@ -34,7 +34,7 @@ public class DecPrefixOpValid implements AssignmentExpressionsASTDecPrefixExpres
   public DecPrefixOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-  
+
   @Override
   public void check(ASTDecPrefixExpression node) {
     typeResolver.handle(node);
@@ -43,12 +43,13 @@ public class DecPrefixOpValid implements AssignmentExpressionsASTDecPrefixExpres
           "0xA0572 the operand expression of prefix operator must have type convertible to numeric type.",
           node.get_SourcePositionStart());
     }
-    
-    if (!JavaDSLHelper.isVariable(node.getExpression())) {
-      Log.error("0xA0573 the operand expression of prefix must be a variable.",
-          node.get_SourcePositionStart());
-      return;
-      
+    if ("--".equals(node.getPrefixOp()) || "++".equals(node.getPrefixOp())) {
+      if (!JavaDSLHelper.isVariable(node.getExpression())) {
+        Log.error("0xA0573 the operand expression of prefix must be a variable.",
+            node.get_SourcePositionStart());
+        return;
+      }
     }
   }
+  
 }

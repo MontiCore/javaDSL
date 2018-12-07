@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.statements;
 
 import de.monticore.java.javadsl._ast.ASTCommonForControl;
@@ -44,8 +28,8 @@ public class ForConditionHasBooleanType implements JavaDSLASTForStatementCoCo {
   @Override public void check(ASTForStatement node) {
     if (node.getForControl() instanceof ASTCommonForControl) {
       ASTCommonForControl forControl = (ASTCommonForControl) node.getForControl();
-      if (forControl.conditionIsPresent()) {
-        typeResolver.handle(forControl.getCondition().get());
+      if (forControl.isPresentCondition()) {
+        typeResolver.handle(forControl.getCondition());
         if (typeResolver.getResult().isPresent()) {
           JavaTypeSymbolReference typeOfCondition = typeResolver
               .getResult().get();

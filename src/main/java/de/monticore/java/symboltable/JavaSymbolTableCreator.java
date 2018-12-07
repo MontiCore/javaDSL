@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.symboltable;
 
 import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.ABSTRACT;
@@ -38,7 +22,44 @@ import java.util.List;
 import java.util.Optional;
 
 import de.monticore.ast.ASTNode;
-import de.monticore.java.javadsl._ast.*;
+import de.monticore.java.javadsl._ast.ASTAnnotation;
+import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
+import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
+import de.monticore.java.javadsl._ast.ASTCatchClause;
+import de.monticore.java.javadsl._ast.ASTClassDeclaration;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTConstDeclaration;
+import de.monticore.java.javadsl._ast.ASTConstantDeclarator;
+import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
+import de.monticore.java.javadsl._ast.ASTDeclaratorId;
+import de.monticore.java.javadsl._ast.ASTDoWhileStatement;
+import de.monticore.java.javadsl._ast.ASTEnhancedForControl;
+import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
+import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
+import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTForStatement;
+import de.monticore.java.javadsl._ast.ASTFormalParameter;
+import de.monticore.java.javadsl._ast.ASTFormalParameterListing;
+import de.monticore.java.javadsl._ast.ASTIfStatement;
+import de.monticore.java.javadsl._ast.ASTImportDeclaration;
+import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
+import de.monticore.java.javadsl._ast.ASTInterfaceMethodDeclaration;
+import de.monticore.java.javadsl._ast.ASTJavaBlock;
+import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
+import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
+import de.monticore.java.javadsl._ast.ASTMethodSignature;
+import de.monticore.java.javadsl._ast.ASTModifier;
+import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
+import de.monticore.java.javadsl._ast.ASTResource;
+import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
+import de.monticore.java.javadsl._ast.ASTSwitchStatement;
+import de.monticore.java.javadsl._ast.ASTThrows;
+import de.monticore.java.javadsl._ast.ASTTryStatement;
+import de.monticore.java.javadsl._ast.ASTTryStatementWithResources;
+import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
+import de.monticore.java.javadsl._ast.ASTWhileStatement;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.symboltable.ArtifactScope;
 import de.monticore.symboltable.CommonScope;
@@ -53,31 +74,30 @@ import de.monticore.types.JTypeSymbolsHelper.JTypeReferenceFactory;
 import de.monticore.types.TypesHelper;
 import de.monticore.types.TypesPrinter;
 import de.monticore.types.types._ast.ASTArrayType;
-import de.monticore.types.types._ast.ASTComplexArrayType;
 import de.monticore.types.types._ast.ASTComplexReferenceType;
-import de.monticore.types.types._ast.ASTPrimitiveArrayType;
 import de.monticore.types.types._ast.ASTPrimitiveType;
 import de.monticore.types.types._ast.ASTQualifiedName;
 import de.monticore.types.types._ast.ASTReturnType;
 import de.monticore.types.types._ast.ASTSimpleReferenceType;
 import de.monticore.types.types._ast.ASTType;
 import de.monticore.types.types._ast.ASTTypeParameters;
+import de.monticore.types.types._ast.TypesMill;
 import de.se_rwth.commons.Names;
 
 public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements JavaDSLVisitor,
-    SymbolTableCreator {
-  
+        SymbolTableCreator {
+
   public static final String THROWABLE = "Throwable";
-  
+
   public static final String VOID = "void";
-  
+
   protected JavaSymbolFactory symbolFactory = new JavaSymbolFactory();
-  
+
   protected JTypeReferenceFactory<JavaTypeSymbolReference> typeRefFactory = (name, scope,
-      dim) -> new JavaTypeSymbolReference(name, scope, dim);
-  
+                                                                             dim) -> new JavaTypeSymbolReference(name, scope, dim);
+
   protected String artifactName;
-  
+
   /**
    * Stack for managing block nodes as well as method and constructor nodes. It
    * is required to prevent that two scopes are created for a method or a
@@ -85,23 +105,23 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
    * two nodes.
    */
   private Deque<ASTNode> blockNodesStack = new ArrayDeque<>();
-  
+
   public JavaSymbolTableCreator(
-      final ResolvingConfiguration resolvingConfig,
-      final MutableScope enclosingScope) {
+          final ResolvingConfiguration resolvingConfig,
+          final MutableScope enclosingScope) {
     super(resolvingConfig, enclosingScope);
   }
-  
+
   public JavaSymbolTableCreator(
-      final ResolvingConfiguration resolvingConfig,
-      final Deque<MutableScope> scopeStack) {
+          final ResolvingConfiguration resolvingConfig,
+          final Deque<MutableScope> scopeStack) {
     super(resolvingConfig, scopeStack);
   }
-  
+
   public void setArtifactName(String artifactName) {
     this.artifactName = artifactName;
   }
-  
+
   /**
    * Creates the symbol table starting from the <code>rootNode</code> and
    * returns the first scope that was created.
@@ -114,116 +134,111 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     rootNode.accept(this);
     return getFirstCreatedScope();
   }
-  
+
   @Override
   public void visit(final ASTCompilationUnit astCompilationUnit) {
     // CompilationUnit = PackageDeclaration? ...
     String packageName = "";
-    if (astCompilationUnit.getPackageDeclaration().isPresent()) {
-      packageName = Names.getQualifiedName(astCompilationUnit.getPackageDeclaration().get()
-          .getQualifiedName().getParts());
-      
+    if (astCompilationUnit.isPresentPackageDeclaration()) {
+      packageName = Names.getQualifiedName(astCompilationUnit.getPackageDeclaration()
+              .getQualifiedName().getPartList());
+
       // ... ImportDeclaration* ...
       List<ImportStatement> importStatements = new ArrayList<>();
       // always import java.lang.*;
       importStatements.add(new ImportStatement("java.lang", true));
-      for (ASTImportDeclaration astImportDeclaration : astCompilationUnit.getImportDeclarations()) {
+      for (ASTImportDeclaration astImportDeclaration : astCompilationUnit.getImportDeclarationList()) {
         String qualifiedName = Names.getQualifiedName(astImportDeclaration.getQualifiedName()
-            .getParts());
+                .getPartList());
         boolean isStar = astImportDeclaration.isSTAR();
         // TODO Process static imports when supported by ImportStatement.
         boolean isStatic = astImportDeclaration.isStatic();
         importStatements.add(new ImportStatement(qualifiedName, isStar));
       }
-      
+
       // ... TypeDeclaration* (handled by other visit methods)
-      
+
       // no more nonterminals to process from here
       final ArtifactScope artifactScope = new ArtifactScope(Optional.empty(), packageName,
-          importStatements);
+              importStatements);
       artifactScope.setName(artifactName);
       artifactScope.setAstNode(astCompilationUnit);
       astCompilationUnit.setEnclosingScope(artifactScope);
       putOnStack(artifactScope);
     }
   }
-  
+
   @Override
   public void endVisit(final ASTCompilationUnit astCompilationUnit) {
     removeCurrentScope();
     setEnclosingScopeOfNodes(astCompilationUnit);
   }
-  
+
   @Override
   public void visit(final ASTClassDeclaration astClassDeclaration) {
     // ClassDeclaration implements TypeDeclaration = Modifier* "class" Name ...
     JavaTypeSymbol javaClassTypeSymbol = symbolFactory
-        .createClassSymbol(astClassDeclaration.getName());
-    addModifiersToType(javaClassTypeSymbol, astClassDeclaration.getModifiers());
-    
+            .createClassSymbol(astClassDeclaration.getName());
+    addModifiersToType(javaClassTypeSymbol, astClassDeclaration.getModifierList());
+
     // ... TypeParameters? ...
-    List<JavaTypeSymbol> typeParameters = addTypeParametersToType(javaClassTypeSymbol,
-        astClassDeclaration.getTypeParameters());
-    
+    addTypeParametersToType(javaClassTypeSymbol,
+            astClassDeclaration.getTypeParametersOpt());
+
     // ... ("extends" superClass:Type)? ...
-    if (astClassDeclaration.getSuperClass().isPresent()) {
+    if (astClassDeclaration.isPresentSuperClass()) {
       JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
-          TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astClassDeclaration
-              .getSuperClass().get()),
-          currentScope().get(), 0);
+              TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astClassDeclaration
+                      .getSuperClass()),
+              currentScope().get(), 0);
       javaClassTypeSymbol.setSuperClass(superClassReference);
+      JTypeSymbolsHelper.addTypeArgumentsToTypeSymbol(superClassReference, astClassDeclaration.getSuperClass(),
+              javaClassTypeSymbol.getSpannedScope(), typeRefFactory);
     }
     else if(!("Object").equals(astClassDeclaration.getName())){
       JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
-          "Object", currentScope().get(), 0);
+              "Object", currentScope().get(), 0);
       javaClassTypeSymbol.setSuperClass(superClassReference);
     }
-    
-    
-    // ... ("implements" implementedInterfaces:(Type || ",")+)? ...
-    addInterfacesToType(javaClassTypeSymbol, astClassDeclaration.getImplementedInterfaces());
-    
-    // ... ClassBody (handled by other visit methods)
-    
-    // no more nonterminals to process from here
+
     addToScopeAndLinkWithNode(javaClassTypeSymbol, astClassDeclaration);
-    for (JavaTypeSymbol typeParameter : typeParameters) {
-      currentScope().get().add(typeParameter);
-    }
+
+    // ... ("implements" implementedInterfaces:(Type || ",")+)? ...
+    addInterfacesToType(javaClassTypeSymbol, astClassDeclaration.getImplementedInterfaceList());
+
+    // ... ClassBody (handled by other visit methods)
+
     blockNodesStack.add(astClassDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTClassDeclaration astClassDeclaration) {
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTInterfaceDeclaration astInterfaceDeclaration) {
     // InterfaceDeclaration implements TypeDeclaration = Modifier* "interface"
     // Name ...
     JavaTypeSymbol javaTypeDeclarationSymbol = symbolFactory.createInterfaceSymbol(
-        astInterfaceDeclaration.getName());
-    addModifiersToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getModifiers());
-    
+            astInterfaceDeclaration.getName());
+    addModifiersToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getModifierList());
+
     // ... TypeParameters? ...
-    List<JavaTypeSymbol> typeParameters = addTypeParametersToType(javaTypeDeclarationSymbol,
-        astInterfaceDeclaration.getTypeParameters());
-    
-    // ... ("extends" extendedInterfaces:(Type || ",")+)? ...
-    addInterfacesToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getExtendedInterfaces());
-    
-    // ... InterfaceBody (handled by other visit methods)
-    
-    // no more nonterminals to process from here
+    addTypeParametersToType(javaTypeDeclarationSymbol,
+            astInterfaceDeclaration.getTypeParametersOpt());
+
     addToScopeAndLinkWithNode(javaTypeDeclarationSymbol, astInterfaceDeclaration);
-    for (JavaTypeSymbol typeParameter : typeParameters) {
-      currentScope().get().add(typeParameter);
-    }
+
+    // ... ("extends" extendedInterfaces:(Type || ",")+)? ...
+    addInterfacesToType(javaTypeDeclarationSymbol, astInterfaceDeclaration.getExtendedInterfaceList());
+
+    // ... InterfaceBody (handled by other visit methods)
+
     blockNodesStack.add(astInterfaceDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTInterfaceDeclaration astInterfaceDeclaration) {
     removeCurrentScope();
@@ -236,15 +251,15 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   public void visit(final ASTEnumDeclaration astEnumDeclaration) {
     // EnumDeclaration implements TypeDeclaration = Modifier* "enum" Name ...
     JavaTypeSymbol javaEnumTypeSymbol = symbolFactory.createEnumSymbol(astEnumDeclaration
-        .getName());
-    
-    addModifiersToType(javaEnumTypeSymbol, astEnumDeclaration.getModifiers());
-    
+            .getName());
+
+    addModifiersToType(javaEnumTypeSymbol, astEnumDeclaration.getModifierList());
+
     // ... ("implements" (Type || ",")+)? ...
-    addInterfacesToType(javaEnumTypeSymbol, astEnumDeclaration.getImplementedInterfaces());
-    
+    addInterfacesToType(javaEnumTypeSymbol, astEnumDeclaration.getImplementedInterfaceList());
+
     // ... "{" (EnumConstantDeclaration || ",")* ","? ...
-    
+
     // ... EnumBody? "}" (handled by other visit methods (ClassBody))
 
     // enums are implicitly subtypes from "Enum"
@@ -252,19 +267,19 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
             "java.lang.Enum", currentScope().get(), 0);
     javaEnumTypeSymbol.setSuperClass(superClassReference);
 
-    
+
     // no more nonterminals to process from here
     enumTypeName = astEnumDeclaration.getName();
     addToScopeAndLinkWithNode(javaEnumTypeSymbol, astEnumDeclaration);
     blockNodesStack.add(astEnumDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTEnumDeclaration astEnumDeclaration) {
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTEnumConstantDeclaration astEnumConstantDeclaration) {
     /* A enum constant can be seen as a singleton object of an anonymous
@@ -272,149 +287,149 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
      * final). Create two symbols here: 1. Implementing Symbol (a type) 2.
      * Constant (an attribute) */
     JavaTypeSymbol javaEnumImplementationTypeSymbol = symbolFactory
-        .createEnumSymbol(astEnumConstantDeclaration.getName());
-    
+            .createEnumSymbol(astEnumConstantDeclaration.getName());
+
     JavaTypeSymbolReference enumReference = new JavaTypeSymbolReference(
-        enumTypeName, currentScope().get(), 0);
+            enumTypeName, currentScope().get(), 0);
 
     JavaFieldSymbol javaEnumSingletonConstantSymbol = new JavaFieldSymbol(
-        astEnumConstantDeclaration.getName(), JavaFieldSymbol.KIND, enumReference);
+            astEnumConstantDeclaration.getName(), JavaFieldSymbol.KIND, enumReference);
 
     // EnumConstantDeclaration = Annotation* ...
-    for (ASTAnnotation astAnnotation : astEnumConstantDeclaration.getAnnotations()) {
-      String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+    for (ASTAnnotation astAnnotation : astEnumConstantDeclaration.getAnnotationList()) {
+      String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
       JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(qualifiedName,
-          currentScope().get(), 0);
+              currentScope().get(), 0);
       javaEnumImplementationTypeSymbol.addAnnotation(javaTypeSymbolReference);
     }
-    
+
     // ... Name Arguments? ...
     // Name is processed first (needed for instantiation).
-    
+
     // ... ClassBody? (handled by other visit methods)
-    
+
     // no more nonterminals to process from here
-    
+
     // Put constant first into scope since type is a scope spanning symbol
     addToScopeAndLinkWithNode(javaEnumSingletonConstantSymbol, astEnumConstantDeclaration);
     addToScopeAndLinkWithNode(javaEnumImplementationTypeSymbol, astEnumConstantDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTEnumConstantDeclaration astEnumConstantDeclaration) {
     removeCurrentScope();
   }
-  
+
   @Override
   public void visit(final ASTAnnotationTypeDeclaration astAnnotationTypeDeclaration) {
     // AnnotationTypeDeclaration implements TypeDeclaration
     // = Modifier* "@" "interface" Name
     JavaTypeSymbol javaAnnotationTypeSymbol = symbolFactory.createAnnotation(
-        astAnnotationTypeDeclaration.getName());
-    addModifiersToType(javaAnnotationTypeSymbol, astAnnotationTypeDeclaration.getModifiers());
-    
+            astAnnotationTypeDeclaration.getName());
+    addModifiersToType(javaAnnotationTypeSymbol, astAnnotationTypeDeclaration.getModifierList());
+
     // AnnotationTypeBody (handled by other visit methods)
-    
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaAnnotationTypeSymbol, astAnnotationTypeDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTAnnotationTypeDeclaration astAnnotationTypeDeclaration) {
     removeCurrentScope();
   }
-  
+
   @Override
   public void visit(final ASTAnnotationMethod astAnnotationMethod) {
     JavaMethodSymbol javaAnnotationMethodSymbol = new JavaMethodSymbol(
-        astAnnotationMethod.getName(), JavaMethodSymbol.KIND);
+            astAnnotationMethod.getName(), JavaMethodSymbol.KIND);
     // AnnotationMethod = Modifier* = ...
-    addModifiersToMethod(javaAnnotationMethodSymbol, astAnnotationMethod.getModifiers());
-    
+    addModifiersToMethod(javaAnnotationMethodSymbol, astAnnotationMethod.getModifierList());
+
     // ... Type ...
     JavaTypeSymbolReference javaTypeSymbolReference = null;
-    
+
     final String returnTypeName = TypesPrinter
-        .printTypeWithoutTypeArgumentsAndDimension(astAnnotationMethod
-            .getType());
+            .printTypeWithoutTypeArgumentsAndDimension(astAnnotationMethod
+                    .getType());
     javaTypeSymbolReference = new JavaTypeSymbolReference(returnTypeName, currentScope().get(),
-        TypesHelper.getArrayDimensionIfArrayOrZero(astAnnotationMethod.getType()));
-     
+            TypesHelper.getArrayDimensionIfArrayOrZero(astAnnotationMethod.getType()));
+
     javaAnnotationMethodSymbol.setReturnType(javaTypeSymbolReference);
-    
+
     // ... Name "(" ")" ...
     // processed at the beginning of this method
-    
+
     // ... DefaultValue? ";"
     // DefaultValue is an expression not a Symbol.
-    
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaAnnotationMethodSymbol, astAnnotationMethod);
   }
-  
+
   @Override
   public void endVisit(final ASTAnnotationMethod astAnnotationMethod) {
     removeCurrentScope();
   }
-  
+
   @Override
   public void visit(final ASTFieldDeclaration astFieldDeclaration) {
-    for (ASTVariableDeclarator variableDeclarator : astFieldDeclaration.getVariableDeclarators()) {
+    for (ASTVariableDeclarator variableDeclarator : astFieldDeclaration.getVariableDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createFieldSymbol(
-          variableDeclarator.getDeclaratorId().getName(), null);
-      
+              variableDeclarator.getDeclaratorId().getName(), null);
+
       // FieldDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astFieldDeclaration.getModifiers());
-      
+      addModifiersToField(javaFieldSymbol, astFieldDeclaration.getModifierList());
+
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astFieldDeclaration.getType(),
-          variableDeclarator.getDeclaratorId().getDim().size());
-      
+              variableDeclarator.getDeclaratorId().getDimList().size());
+
       // ... (VariableDeclarator || ",")+
       // VariableDeclarator is handled by the for loop
-      
+
       // no more nonterminals to process from here
       addToScopeAndLinkWithNode(javaFieldSymbol, astFieldDeclaration);
     }
   }
-  
+
   @Override
   public void visit(final ASTConstDeclaration astConstDeclaration) {
     for (ASTConstantDeclarator astConstantDeclarator : astConstDeclaration
-        .getConstantDeclarators()) {
+            .getConstantDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createFieldSymbol(
-          astConstantDeclarator.getName(), null);
-      
+              astConstantDeclarator.getName(), null);
+
       // ConstDeclaration implements InterfaceMemberDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astConstDeclaration.getModifiers());
-      
+      addModifiersToField(javaFieldSymbol, astConstDeclaration.getModifierList());
+
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astConstDeclaration.getType(),
-          astConstantDeclarator.getDim().size());
-      
+              astConstantDeclarator.getDimList().size());
+
       // ... (ConstantDeclarator || ",")+ ";"
       // ConstantDeclaratorList is handled by the for loop
-      
+
       // no more nonterminals to process from here
       addToScopeAndLinkWithNode(javaFieldSymbol, astConstDeclaration);
     }
   }
-  
+
   protected void initializeJavaAttributeSymbol(JavaFieldSymbol javaFieldSymbol,
-      ASTType astType, int additionalDimensions) {
+                                               ASTType astType, int additionalDimensions) {
     JTypeSymbolsHelper.initializeJAttributeSymbol(javaFieldSymbol, astType, additionalDimensions,
-        currentScope().get(), typeRefFactory);
+            currentScope().get(), typeRefFactory);
   }
-  
+
   @Override
   public void visit(final ASTMethodDeclaration astMethodDeclaration) {
     ASTMethodSignature methodSignature = astMethodDeclaration.getMethodSignature();
     JavaMethodSymbol javaMethodSymbol = new JavaMethodSymbol(methodSignature.getName(),
-        JavaMethodSymbol.KIND);
-    
+            JavaMethodSymbol.KIND);
+
     Pair<List<JavaTypeSymbol>, List<JavaFieldSymbol>> addMethodSignatureToMethod = addMethodSignatureToMethod(
-        javaMethodSymbol, methodSignature);
-    
+            javaMethodSymbol, methodSignature);
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaMethodSymbol, astMethodDeclaration);
     for (JavaTypeSymbol javaTypeParameterSymbol : addMethodSignatureToMethod.l) {
@@ -423,36 +438,36 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
 
     blockNodesStack.add(astMethodDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTMethodDeclaration astMethodDeclaration) {
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTConstructorDeclaration astConstructorDeclaration) {
     JavaMethodSymbol javaConstructorSymbol = symbolFactory
-        .createConstructor(astConstructorDeclaration.getName());
+            .createConstructor(astConstructorDeclaration.getName());
     javaConstructorSymbol.setConstructor(true);
-    
+
     // ConstructorDeclaration implements ClassMemberDeclaration = Modifier* ...
-    addModifiersToMethod(javaConstructorSymbol, astConstructorDeclaration.getModifiers());
-    
+    addModifiersToMethod(javaConstructorSymbol, astConstructorDeclaration.getModifierList());
+
     // ... TypeParameters? ...
     List<JavaTypeSymbol> javaTypeParameters = addTypeParametersToMethod(javaConstructorSymbol,
-        astConstructorDeclaration.getTypeParameters());
-    
+            astConstructorDeclaration.getTypeParametersOpt());
+
     // ... FormalParameters ...
     addFormalParametersToMethod(
-        javaConstructorSymbol, astConstructorDeclaration.getFormalParameters()
-            .getFormalParameterListing());
-    
+            javaConstructorSymbol, astConstructorDeclaration.getFormalParameters()
+                    .getFormalParameterListingOpt());
+
     // ... ("throws" Throws)? ...
-    addThrowsToMethod(javaConstructorSymbol, astConstructorDeclaration.getThrows());
-    
+    addThrowsToMethod(javaConstructorSymbol, astConstructorDeclaration.getThrowsOpt());
+
     // ... ConstructorBody (handled by other visit methods)
-    
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaConstructorSymbol, astConstructorDeclaration);
     for (JavaTypeSymbol javaTypeParameterSymbol : javaTypeParameters) {
@@ -461,47 +476,47 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
 
     blockNodesStack.add(astConstructorDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTConstructorDeclaration astConstructorDeclaration) {
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTInterfaceMethodDeclaration astInterfaceMethodDeclaration) {
     ASTMethodSignature methodSignature = astInterfaceMethodDeclaration.getMethodSignature();
     JavaMethodSymbol javaMethodSymbol = new JavaMethodSymbol(methodSignature.getName(),
-        JavaMethodSymbol.KIND);
-    
+            JavaMethodSymbol.KIND);
+
     addMethodSignatureToMethod(javaMethodSymbol, methodSignature);
-    
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaMethodSymbol, astInterfaceMethodDeclaration);
   }
-  
+
   @Override
   public void endVisit(final ASTInterfaceMethodDeclaration astInterfaceMethodDeclaration) {
     removeCurrentScope();
   }
-  
+
   @Override
   public void visit(final ASTLocalVariableDeclaration astLocalVariableDeclaration) {
     for (ASTVariableDeclarator variableDeclarator : astLocalVariableDeclaration
-        .getVariableDeclarators()) {
+            .getVariableDeclaratorList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
-          variableDeclarator.getDeclaratorId().getName(), null);
-      
+              variableDeclarator.getDeclaratorId().getName(), null);
+
       // FieldDeclaration = Modifier* ...
-      addModifiersToField(javaFieldSymbol, astLocalVariableDeclaration.getPrimitiveModifiers());
-      
+      addModifiersToField(javaFieldSymbol, astLocalVariableDeclaration.getPrimitiveModifierList());
+
       // ... Type ...
       initializeJavaAttributeSymbol(javaFieldSymbol, astLocalVariableDeclaration.getType(),
-          variableDeclarator.getDeclaratorId().getDim().size());
-      
+              variableDeclarator.getDeclaratorId().getDimList().size());
+
       // ... (VariableDeclarator || ",")+
       // VariableDeclarator is handled by the for loop
-      
+
       // no more nonterminals to process from here
       addToScopeAndLinkWithNode(javaFieldSymbol, astLocalVariableDeclaration);
     }
@@ -541,63 +556,63 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTTryStatementWithResources astTryClause) {
     CommonScope commonScope = new CommonScope(false);
     putOnStack(commonScope);
     setLinkBetweenSpannedScopeAndNode(commonScope, astTryClause);
-    for (ASTResource astResource : astTryClause.getResources()) {
+    for (ASTResource astResource : astTryClause.getResourceList()) {
       JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
-          astResource.getDeclaratorId().getName(), null);
-      
+              astResource.getDeclaratorId().getName(), null);
+
       // Resource = VariableModifier* ...
-      addModifiersToField(javaFieldSymbol, astResource.getPrimitiveModifiers());
-      
+      addModifiersToField(javaFieldSymbol, astResource.getPrimitiveModifierList());
+
       // ... ClassOrInterfaceType ...
-      JTypeSymbolsHelper.initializeJAttributeSymbol(javaFieldSymbol, astResource.getType(), astResource.getDeclaratorId().getDim().size(),
-          currentScope().get(), typeRefFactory);
-      
+      JTypeSymbolsHelper.initializeJAttributeSymbol(javaFieldSymbol, astResource.getType(), astResource.getDeclaratorId().getDimList().size(),
+              currentScope().get(), typeRefFactory);
+
       // no more nonterminals to process from here
       addToScopeAndLinkWithNode(javaFieldSymbol, astTryClause);
     }
     blockNodesStack.add(astTryClause);
   }
-  
+
   @Override
   public void endVisit(final ASTTryStatementWithResources astTryClause) {
     astTryClause.getJavaBlock().setEnclosingScope(currentScope().get());
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTCatchClause astCatchClause) {
     CommonScope commonScope = new CommonScope(false);
     putOnStack(commonScope);
     setLinkBetweenSpannedScopeAndNode(commonScope, astCatchClause);
-    List<ASTQualifiedName> qualifiedNames = astCatchClause.getCatchType().getQualifiedNames();
-    
+    List<ASTQualifiedName> qualifiedNames = astCatchClause.getCatchType().getQualifiedNameList();
+
     String qualifiedName = null;
     // if there is only one type use that type ...
     if (qualifiedNames.size() == 1) {
-      qualifiedName = Names.getQualifiedName(qualifiedNames.get(0).getParts());
+      qualifiedName = Names.getQualifiedName(qualifiedNames.get(0).getPartList());
     }
     else // ... otherwise its a multicatch so use Throwable the super class of
     {    // all exception
       qualifiedName = THROWABLE;
     }
     JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(qualifiedName,
-        currentScope().get(), 0);
+            currentScope().get(), 0);
     JavaFieldSymbol javaFieldSymbol = symbolFactory.createLocalVariableSymbol(
-        astCatchClause.getName(),
-        javaTypeSymbolReference);
-    
+            astCatchClause.getName(),
+            javaTypeSymbolReference);
+
     // no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaFieldSymbol, astCatchClause);
     blockNodesStack.add(astCatchClause);
   }
-  
+
   @Override
   public void endVisit(final ASTCatchClause astCatchClause) {
     astCatchClause.getJavaBlock().setEnclosingScope(currentScope().get());
@@ -620,18 +635,18 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       removeCurrentScope();
       blockNodesStack.removeLast();
     }
-    if (astIfStatement.getElseStatement().isPresent()) {
+    if (astIfStatement.isPresentElseStatement()) {
       CommonScope commonScope = new CommonScope(false);
       putOnStack(commonScope);
       blockNodesStack.add(astIfStatement);
       setLinkBetweenSpannedScopeAndNode(commonScope, astIfStatement);
-      astIfStatement.getElseStatement().get().accept(getRealThis());
-      astIfStatement.getElseStatement().get().setEnclosingScope(currentScope().get());
+      astIfStatement.getElseStatement().accept(getRealThis());
+      astIfStatement.getElseStatement().setEnclosingScope(currentScope().get());
       removeCurrentScope();
       blockNodesStack.removeLast();
     }
   }
-  
+
   @Override
   public void visit(final ASTForStatement astForStatement) {
     CommonScope commonScope = new CommonScope(false);
@@ -655,11 +670,11 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
             astFormalParameter.getDeclaratorId().getName(), null);
 
     // FormalParameter = PrimitiveModifier* ...
-    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifiers());
+    addModifiersToField(javaFieldSymbol, astFormalParameter.getPrimitiveModifierList());
 
     // ... Type ...
     initializeJavaAttributeSymbol(javaFieldSymbol, astFormalParameter.getType(),
-            astFormalParameter.getDeclaratorId().getDim().size());
+            astFormalParameter.getDeclaratorId().getDimList().size());
 
     //no more nonterminals to process from here
     addToScopeAndLinkWithNode(javaFieldSymbol, astFormalParameter);
@@ -672,7 +687,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     setLinkBetweenSpannedScopeAndNode(commonScope, astWhileStatement);
     blockNodesStack.add(astWhileStatement);
   }
-  
+
   @Override
   public void endVisit(final ASTWhileStatement astWhileStatement) {
     astWhileStatement.getCondition().setEnclosingScope(currentScope().get());
@@ -680,7 +695,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTDoWhileStatement astDoWhileStatement) {
     CommonScope commonScope = new CommonScope(false);
@@ -688,7 +703,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     setLinkBetweenSpannedScopeAndNode(commonScope, astDoWhileStatement);
     blockNodesStack.add(astDoWhileStatement);
   }
-  
+
   @Override
   public void endVisit(final ASTDoWhileStatement astDoWhileStatement) {
     astDoWhileStatement.getCondition().setEnclosingScope(currentScope().get());
@@ -696,7 +711,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   @Override
   public void visit(final ASTSwitchStatement astSwitchStatement) {
     CommonScope commonScope = new CommonScope(false);
@@ -704,20 +719,20 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     setLinkBetweenSpannedScopeAndNode(commonScope, astSwitchStatement);
     blockNodesStack.add(astSwitchStatement);
   }
-  
+
   @Override
   public void endVisit(final ASTSwitchStatement astSwitchStatement) {
-    for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroups()) {
+    for(ASTSwitchBlockStatementGroup astSwitchBlock : astSwitchStatement.getSwitchBlockStatementGroupList()) {
       astSwitchBlock.setEnclosingScope(currentScope().get());
     }
     removeCurrentScope();
     blockNodesStack.removeLast();
   }
-  
+
   protected boolean isCurrentNodeAStatementOrMethodOrConstructor() {
     if (!blockNodesStack.isEmpty()) {
       ASTNode currentNode = blockNodesStack.getLast();
-      
+
       return (currentNode instanceof ASTIfStatement)
               || (currentNode instanceof ASTForStatement)
               || (currentNode instanceof ASTWhileStatement)
@@ -729,7 +744,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
               || (currentNode instanceof ASTMethodDeclaration)
               || (currentNode instanceof ASTConstructorDeclaration);
     }
-    
+
     return false;
   }
 
@@ -743,9 +758,9 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     }
     return false;
   }
-  
+
   protected void addModifiersToField(JavaFieldSymbol javaFieldSymbol,
-      Iterable<? extends ASTModifier> astModifierList) {
+                                     Iterable<? extends ASTModifier> astModifierList) {
     for (ASTModifier modifier : astModifierList) {
       if (modifier instanceof ASTPrimitiveModifier) {
         addPrimitiveModifierToField(javaFieldSymbol, (ASTPrimitiveModifier) modifier);
@@ -753,15 +768,15 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
         JavaTypeSymbolReference javaAnnotationTypeSymbolReference = new JavaTypeSymbolReference(
-            Names.getQualifiedName(astAnnotation.getAnnotationName().getParts()),
-            currentScope().get(), 0);
+                Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList()),
+                currentScope().get(), 0);
         javaFieldSymbol.addAnnotation(javaAnnotationTypeSymbolReference);
       }
     }
   }
-  
+
   protected void addPrimitiveModifierToField(JavaFieldSymbol javaFieldSymbol,
-      ASTPrimitiveModifier modifier) {
+                                             ASTPrimitiveModifier modifier) {
     // visibility
     switch (modifier.getModifier()) {
       case PUBLIC:
@@ -790,81 +805,81 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         break;
     }
   }
-  
+
   protected Pair<List<JavaTypeSymbol>, List<JavaFieldSymbol>> addMethodSignatureToMethod(
-      JavaMethodSymbol javaMethodSymbol, ASTMethodSignature methodSignature) {
+          JavaMethodSymbol javaMethodSymbol, ASTMethodSignature methodSignature) {
     // MethodSignature = Modifier* ...
-    addModifiersToMethod(javaMethodSymbol, methodSignature.getModifiers());
-    
+    addModifiersToMethod(javaMethodSymbol, methodSignature.getModifierList());
+
     // ... TypeParameters? ...
     List<JavaTypeSymbol> javaTypeParameters = addTypeParametersToMethod(javaMethodSymbol,
-        methodSignature.getTypeParameters());
-    
+            methodSignature.getTypeParametersOpt());
+
     // ... ReturnType ...
     // ASTReturnType is either ASTVoidType or ASTType
     JavaTypeSymbolReference javaTypeSymbolReference = null;
-    
+
     if (methodSignature.getReturnType() instanceof ASTType) {
       ASTType nonVoidReturnType = (ASTType) methodSignature.getReturnType();
       final String returnTypeName = TypesPrinter
-          .printTypeWithoutTypeArgumentsAndDimension(nonVoidReturnType);
-      final int additionalDimensions = methodSignature.getDim().size();
+              .printTypeWithoutTypeArgumentsAndDimension(nonVoidReturnType);
+      final int additionalDimensions = methodSignature.getDimList().size();
       javaTypeSymbolReference = new JavaTypeSymbolReference(returnTypeName, currentScope().get(),
-          TypesHelper.getArrayDimensionIfArrayOrZero(nonVoidReturnType) + additionalDimensions);
+              TypesHelper.getArrayDimensionIfArrayOrZero(nonVoidReturnType) + additionalDimensions);
       addTypeArgumentsToTypeSymbol(javaTypeSymbolReference, nonVoidReturnType);
     }
     else {
       // The return type is ASTVoidType here
-      int additionalDimensions = methodSignature.getDim().size();
+      int additionalDimensions = methodSignature.getDimList().size();
       javaTypeSymbolReference = new JavaTypeSymbolReference(VOID,
-          currentScope().get(), additionalDimensions);
+              currentScope().get(), additionalDimensions);
       // Grammar allows "void method()[][] ;" so we process the trailing
       // brackets even though we know its an invalid model. Validity check is
       // task of a coco.
     }
-    
+
     javaMethodSymbol.setReturnType(javaTypeSymbolReference);
-    
+
     // ... Name ...
     // processed at the beginning of this method
-    
+
     // ... FormalParameters ...
     Optional<ASTFormalParameterListing> optionalFormalParameterListing = methodSignature
-        .getFormalParameters().getFormalParameterListing();
+            .getFormalParameters().getFormalParameterListingOpt();
     List<JavaFieldSymbol> javaFormalParameterSymbols = addFormalParametersToMethod(
-        javaMethodSymbol, optionalFormalParameterListing);
-    
+            javaMethodSymbol, optionalFormalParameterListing);
+
     // ... Ellipsis
     if (optionalFormalParameterListing.isPresent()) {
       javaMethodSymbol.setEllipsisParameterMethod(
-          optionalFormalParameterListing.get().getLastFormalParameter().isPresent());
+              optionalFormalParameterListing.get().isPresentLastFormalParameter());
     }
-    
+
     // ... ("throws" Throws)?
-    addThrowsToMethod(javaMethodSymbol, methodSignature.getThrows());
-    
+    addThrowsToMethod(javaMethodSymbol, methodSignature.getThrowsOpt());
+
     // no more nonterminals to process from here
     return new Pair<>(javaTypeParameters, javaFormalParameterSymbols);
   }
-  
+
   protected void addModifiersToMethod(JavaMethodSymbol javaMethodSymbol,
-      Iterable<? extends ASTModifier> astModifierList) {
+                                      Iterable<? extends ASTModifier> astModifierList) {
     for (ASTModifier modifier : astModifierList) {
       if (modifier instanceof ASTPrimitiveModifier) {
         addPrimitiveModifierToMethod(javaMethodSymbol, (ASTPrimitiveModifier) modifier);
       }
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(
-            qualifiedName, currentScope().get(), 0);
+                qualifiedName, currentScope().get(), 0);
         javaMethodSymbol.addAnnotation(javaTypeSymbolReference);
       }
     }
   }
-  
+
   protected void addPrimitiveModifierToMethod(JavaMethodSymbol javaMethodSymbol,
-      ASTPrimitiveModifier modifier) {
+                                              ASTPrimitiveModifier modifier) {
     // visibility
     switch (modifier.getModifier()) {
       case PUBLIC:
@@ -899,39 +914,39 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         break;
     }
   }
-  
+
   protected List<JavaFieldSymbol> addFormalParametersToMethod(JavaMethodSymbol javaMethodSymbol,
-      Optional<ASTFormalParameterListing> optionalFormalParameterListing) {
+                                                              Optional<ASTFormalParameterListing> optionalFormalParameterListing) {
     List<JavaFieldSymbol> javaFormalParameterSymbols = new ArrayList<>();
     if (optionalFormalParameterListing.isPresent()) {
       // add the leading formal parameters, so no varargs here
       ASTFormalParameterListing astFormalParameterListing = optionalFormalParameterListing.get();
       for (ASTFormalParameter astFormalParameter : astFormalParameterListing
-          .getFormalParameters()) {
+              .getFormalParameterList()) {
         JavaFieldSymbol javaFormalParameterSymbol = addOneFormalParameterToMethod(
-            javaMethodSymbol, astFormalParameter.getPrimitiveModifiers(),
-            astFormalParameter.getType(), astFormalParameter.getDeclaratorId());
-        
+                javaMethodSymbol, astFormalParameter.getPrimitiveModifierList(),
+                astFormalParameter.getType(), astFormalParameter.getDeclaratorId());
+
         javaFormalParameterSymbols.add(javaFormalParameterSymbol);
         setLinkBetweenSymbolAndNode(javaFormalParameterSymbol, astFormalParameter);
       }
       // add ASTLastFormalParameter (varargs)
       Optional<ASTLastFormalParameter> optionalLastFormalParameter = astFormalParameterListing
-          .getLastFormalParameter();
+              .getLastFormalParameterOpt();
       if (optionalLastFormalParameter.isPresent()) {
         ASTLastFormalParameter astLastFormalParameter = optionalLastFormalParameter.get();
-        
+
         // A vararg is an array, so convert type to an appropriate array
         ASTArrayType arrayType;
         ASTType type = astLastFormalParameter.getType();
         if (type instanceof ASTPrimitiveType) {
-          arrayType = ASTPrimitiveArrayType.getBuilder()
-              .componentType(type).dimensions(1).build();
+          arrayType = TypesMill.primitiveArrayTypeBuilder()
+                  .setComponentType(type).setDimensions(1).build();
         }
         else if ((type instanceof ASTComplexReferenceType)
-            || (type instanceof ASTSimpleReferenceType)) {
-          arrayType = ASTComplexArrayType.getBuilder()
-              .componentType(type).dimensions(1).build();
+                || (type instanceof ASTSimpleReferenceType)) {
+          arrayType = TypesMill.complexArrayTypeBuilder()
+                  .setComponentType(type).setDimensions(1).build();
         }
         else if (type instanceof ASTArrayType) {
           arrayType = (ASTArrayType) type;
@@ -941,32 +956,32 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
           // In this case check the implementation of ASTType
           throw new IllegalArgumentException();
         }
-        
+
         JavaFieldSymbol javaFormalParameterSymbol = addOneFormalParameterToMethod(
-            javaMethodSymbol,
-            astLastFormalParameter.getPrimitiveModifiers(),
-            arrayType, astLastFormalParameter.getDeclaratorId());
-        
+                javaMethodSymbol,
+                astLastFormalParameter.getPrimitiveModifierList(),
+                arrayType, astLastFormalParameter.getDeclaratorId());
+
         javaFormalParameterSymbols.add(javaFormalParameterSymbol);
         setLinkBetweenSymbolAndNode(javaFormalParameterSymbol, astLastFormalParameter);
       }
     }
     return javaFormalParameterSymbols;
   }
-  
+
   protected JavaFieldSymbol addOneFormalParameterToMethod(JavaMethodSymbol javaMethodSymbol,
-      Iterable<? extends ASTModifier> modifiers, ASTType astType, ASTDeclaratorId astDeclaratorId) {
+                                                          Iterable<? extends ASTModifier> modifiers, ASTType astType, ASTDeclaratorId astDeclaratorId) {
     // new JavaFieldSymbol
     final String typeName = TypesPrinter.printTypeWithoutTypeArgumentsAndDimension(astType);
-    final int additionalDimensions = astDeclaratorId.getDim().size();
+    final int additionalDimensions = astDeclaratorId.getDimList().size();
     JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(typeName,
-        currentScope().get(), TypesHelper.getArrayDimensionIfArrayOrZero(astType)
+            currentScope().get(), TypesHelper.getArrayDimensionIfArrayOrZero(astType)
             + additionalDimensions);
     addTypeArgumentsToTypeSymbol(javaTypeSymbolReference, astType);
-    
+
     JavaFieldSymbol javaFormalParameterSymbol = symbolFactory
-        .createFormalParameterSymbol(astDeclaratorId.getName(), javaTypeSymbolReference);
-    
+            .createFormalParameterSymbol(astDeclaratorId.getName(), javaTypeSymbolReference);
+
     // init JavaFieldSymbol
     for (ASTModifier modifier : modifiers) {
       if (modifier instanceof ASTPrimitiveModifier) {
@@ -978,48 +993,48 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
         String annotationName = Names
-            .getQualifiedName(astAnnotation.getAnnotationName().getParts());
+                .getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         javaFormalParameterSymbol.addAnnotation(new JavaTypeSymbolReference(
-            annotationName, currentScope().get(), 0));
+                annotationName, currentScope().get(), 0));
       }
     }
-    
+
     // add JavaFieldSymbol
     javaMethodSymbol.addParameter(javaFormalParameterSymbol);
     return javaFormalParameterSymbol;
   }
-  
+
   protected void addThrowsToMethod(JavaMethodSymbol javaMethodSymbol, Optional<ASTThrows> throws1) {
     if (throws1.isPresent()) {
       ASTThrows astThrows = throws1.get();
-      for (ASTQualifiedName astQualifiedName : astThrows.getQualifiedNames()) {
-        String qualifiedName = Names.getQualifiedName(astQualifiedName.getParts());
-        
+      for (ASTQualifiedName astQualifiedName : astThrows.getQualifiedNameList()) {
+        String qualifiedName = Names.getQualifiedName(astQualifiedName.getPartList());
+
         // Grammar has no trailingArrayBrackets here, so dimension=0
         javaMethodSymbol.addException(new JavaTypeSymbolReference(qualifiedName, currentScope()
-            .get(), 0));
+                .get(), 0));
       }
     }
   }
-  
+
   protected void addModifiersToType(JavaTypeSymbol javaTypeSymbol,
-      Iterable<? extends ASTModifier> astModifierList) {
+                                    Iterable<? extends ASTModifier> astModifierList) {
     for (ASTModifier modifier : astModifierList) {
       if (modifier instanceof ASTPrimitiveModifier) {
         addPrimitiveModifierToType(javaTypeSymbol, (ASTPrimitiveModifier) modifier);
       }
       else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getParts());
+        String qualifiedName = Names.getQualifiedName(astAnnotation.getAnnotationName().getPartList());
         JavaTypeSymbolReference javaAnnotationTypeSymbolReference = new JavaTypeSymbolReference(
-            qualifiedName, currentScope().get(), 0);
+                qualifiedName, currentScope().get(), 0);
         javaTypeSymbol.addAnnotation(javaAnnotationTypeSymbolReference);
       }
     }
   }
-  
+
   protected void addPrimitiveModifierToType(JavaTypeSymbol javaTypeSymbol,
-      ASTPrimitiveModifier modifier) {
+                                            ASTPrimitiveModifier modifier) {
     // visibility
     switch (modifier.getModifier()) {
       case PUBLIC:
@@ -1048,13 +1063,13 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
         break;
     }
   }
-  
+
   protected List<JavaTypeSymbol> addTypeParametersToMethod(JavaMethodSymbol javaMethodSymbol,
-      Optional<ASTTypeParameters> typeParameters) {
+                                                           Optional<ASTTypeParameters> typeParameters) {
     return JTypeSymbolsHelper.addTypeParametersToMethod(javaMethodSymbol, typeParameters,
-        currentScope().get(), symbolFactory, typeRefFactory);
+            currentScope().get(), symbolFactory, typeRefFactory);
   }
-  
+
   /**
    * Adds the TypeParameters to the JavaTypeSymbol if the class or interface
    * declares TypeVariables. Example:
@@ -1068,11 +1083,11 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
    * @return JavaTypeSymbol list to be added to the scope
    */
   protected List<JavaTypeSymbol> addTypeParametersToType(JavaTypeSymbol javaTypeSymbol,
-      Optional<ASTTypeParameters> optionalTypeParameters) {
+                                                         Optional<ASTTypeParameters> optionalTypeParameters) {
     return JTypeSymbolsHelper.addTypeParametersToType(javaTypeSymbol, optionalTypeParameters,
-        currentScope().get(), symbolFactory, typeRefFactory);
+            currentScope().get(), symbolFactory, typeRefFactory);
   }
-  
+
   /**
    * Adds the given ASTTypes as interfaces to the JavaTypeSymbol. The
    * JavaTypeSymbol can be a type variable. Interfaces may follow after the
@@ -1087,12 +1102,12 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
    * @param astInterfaceTypeList
    */
   protected void addInterfacesToType(JavaTypeSymbol javaTypeSymbol,
-      List<ASTType> astInterfaceTypeList) {
+                                     List<ASTType> astInterfaceTypeList) {
     JTypeSymbolsHelper.addInterfacesToType(javaTypeSymbol, astInterfaceTypeList,
-        currentScope().get(),
-        typeRefFactory);
+            currentScope().get(),
+            typeRefFactory);
   }
-  
+
   /**
    * Adds the ASTTypeArguments to the JavaTypeSymbol.
    *
@@ -1100,22 +1115,22 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
    * @param astType
    */
   protected void addTypeArgumentsToTypeSymbol(JavaTypeSymbolReference javaTypeSymbolReference,
-      ASTReturnType astType) {
+                                              ASTReturnType astType) {
     JTypeSymbolsHelper.addTypeArgumentsToTypeSymbol(javaTypeSymbolReference, astType,
-        currentScope().get(), typeRefFactory);
+            currentScope().get(), typeRefFactory);
   }
-  
+
   private JavaDSLVisitor realThis = this;
-  
+
   public JavaDSLVisitor getRealThis() {
     return realThis;
   }
-  
+
   @Override
   public void setRealThis(JavaDSLVisitor realThis) {
     if (!this.realThis.equals(realThis)) {
       this.realThis = realThis;
     }
   }
-  
+
 }

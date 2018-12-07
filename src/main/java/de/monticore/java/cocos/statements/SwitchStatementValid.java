@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.statements;
 
 import de.monticore.java.javadsl._ast.ASTConstantExpressionSwitchLabel;
@@ -61,8 +45,8 @@ public class SwitchStatementValid implements JavaDSLASTSwitchStatementCoCo {
         }
         int defaultNum = 0;
         for (ASTSwitchBlockStatementGroup switchBlockStatementGroup : node
-            .getSwitchBlockStatementGroups()) {
-          for (ASTSwitchLabel switchLabel : switchBlockStatementGroup.getSwitchLabels()) {
+            .getSwitchBlockStatementGroupList()) {
+          for (ASTSwitchLabel switchLabel : switchBlockStatementGroup.getSwitchLabelList()) {
             //JLS3 14.11-2
             if (switchLabel == null) {
               Log.error("0xA0914 switch-label must be not null", node.get_SourcePositionStart());

@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.classes;
 
 import java.util.ArrayList;
@@ -45,16 +29,16 @@ public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclar
   
   @Override
   public void check(ASTClassDeclaration node) {
-    if (node.symbolIsPresent()) {
-      JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol().get();
-      for (ASTType type : node.getImplementedInterfaces()) {
+    if (node.isPresentSymbol()) {
+      JavaTypeSymbol classTypeSymbol = (JavaTypeSymbol) node.getSymbol();
+      for (ASTType type : node.getImplementedInterfaceList()) {
         type.accept(typeResolver);
         JavaTypeSymbolReference interfaceType = typeResolver
             .getResult().get();
-        if (node.getEnclosingScope().isPresent()) {
-          if (node.getEnclosingScope().get()
+        if (node.isPresentEnclosingScope()) {
+          if (node.getEnclosingScope()
               .resolve(interfaceType.getName(), JavaTypeSymbol.KIND).isPresent()) {
-            JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+            JavaTypeSymbol interfaceSymbol = (JavaTypeSymbol) node.getEnclosingScope()
                 .resolve(interfaceType.getName(), JavaTypeSymbol.KIND).get();
             for (JavaMethodSymbol interfaceMethod : interfaceSymbol.getMethods()) {
               List<JavaTypeSymbolReference> list = JavaDSLHelper
@@ -63,9 +47,9 @@ public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclar
               List<JavaMethodSymbol> classMethods = new ArrayList<>(classTypeSymbol.getMethods());
               if (classTypeSymbol.getSuperClass().isPresent()) {
                 JavaTypeSymbolReference superClass = classTypeSymbol.getSuperClass().get();
-                if (node.getEnclosingScope().get()
+                if (node.getEnclosingScope()
                     .resolve(superClass.getName(), JavaTypeSymbol.KIND).isPresent()) {
-                  JavaTypeSymbol superSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+                  JavaTypeSymbol superSymbol = (JavaTypeSymbol) node.getEnclosingScope()
                       .resolve(superClass.getName(),
                           JavaTypeSymbol.KIND)
                       .get();

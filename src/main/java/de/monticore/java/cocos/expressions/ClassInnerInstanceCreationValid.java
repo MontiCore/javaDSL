@@ -1,21 +1,5 @@
-/*
- * ******************************************************************************
- * MontiCore Language Workbench, www.monticore.de
- * Copyright (c) 2017, MontiCore, All rights reserved.
- *
- * This project is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this project. If not, see <http://www.gnu.org/licenses/>.
- * ******************************************************************************
- */
+/* (c) https://github.com/MontiCore/monticore */
+
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.javadsl._ast.ASTInnerCreatorExpression;
@@ -48,9 +32,9 @@ public class ClassInnerInstanceCreationValid implements JavaDSLASTInnerCreatorEx
         Log.error("0xA0520 Inner class must have a simple name.");
       }
       JavaTypeSymbolReference primaryType = typeResolver.getResult().get();
-      if (node.getEnclosingScope().get().resolve(primaryType.getName(), JavaTypeSymbol.KIND)
+      if (node.getEnclosingScope().resolve(primaryType.getName(), JavaTypeSymbol.KIND)
           .isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope().get()
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) node.getEnclosingScope()
             .resolve(primaryType.getName(), JavaTypeSymbol.KIND).get();
         if (typeSymbol.getSpannedScope()
             .resolveMany(node.getInnerCreator().getName(), JavaTypeSymbol.KIND).size() > 1) {
@@ -68,7 +52,7 @@ public class ClassInnerInstanceCreationValid implements JavaDSLASTInnerCreatorEx
           JavaTypeSymbol innerType = (JavaTypeSymbol) typeSymbol.getSpannedScope()
               .resolve(node.getInnerCreator().getName(), JavaTypeSymbol.KIND).get();
           // JLS3 15.9.1-2
-          if (node.getInnerCreator().getClassCreatorRest().classBodyIsPresent()) {
+          if (node.getInnerCreator().getClassCreatorRest().isPresentClassBody()) {
             if (innerType.isFinal()) {
               Log.error("0xA0523 cannot create an instance of final inner class.",
                   node.get_SourcePositionStart());
