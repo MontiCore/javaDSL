@@ -23,7 +23,7 @@ import de.monticore.expressions.prettyprint.CommonExpressionsPrettyPrinter;
 import de.monticore.expressions.prettyprint.JavaClassExpressionsPrettyPrinter;
 import de.monticore.expressions.prettyprint.ShiftExpressionsPrettyPrinter;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
-import de.monticore.java.javadsl._visitor.CommonJavaDSLDelegatorVisitor;
+import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.literals.prettyprint.LiteralsPrettyPrinterConcreteVisitor;
 import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
@@ -31,22 +31,22 @@ import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
 /**
  * @author npichler
  */
-public class JavaDSLPrettyPrinterNew extends CommonJavaDSLDelegatorVisitor{
+public class JavaDSLPrettyPrinterNew extends JavaDSLDelegatorVisitor {
   
-  protected CommonJavaDSLDelegatorVisitor realThis;
+  protected JavaDSLDelegatorVisitor realThis;
   
   protected IndentPrinter printer = null;
   
   public JavaDSLPrettyPrinterNew(IndentPrinter printer) {
     this.realThis = this;
     this.printer = printer;
-    set_de_monticore_commonexpressions__visitor_CommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
-    set_de_monticore_assignmentexpressions__visitor_AssignmentExpressionsVisitor(new AssignmentExpressionsPrettyPrinter(printer));
-    set_de_monticore_javaclassexpressions__visitor_JavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
-    set_de_monticore_shiftexpressions__visitor_ShiftExpressionsVisitor(new ShiftExpressionsPrettyPrinter(printer));
-    set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
-    set_de_monticore_literals_literals__visitor_LiteralsVisitor(new LiteralsPrettyPrinterConcreteVisitor(printer));
-    set_de_monticore_types_types__visitor_TypesVisitor(new TypesPrettyPrinterConcreteVisitor(printer));
+    setCommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
+    setAssignmentExpressionsVisitor(new AssignmentExpressionsPrettyPrinter(printer));
+    setJavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
+    setShiftExpressionsVisitor(new ShiftExpressionsPrettyPrinter(printer));
+    setJavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
+    setLiteralsVisitor(new LiteralsPrettyPrinterConcreteVisitor(printer));
+    setTypesVisitor(new TypesPrettyPrinterConcreteVisitor(printer));
   }
   
   protected IndentPrinter getPrinter() {
@@ -60,7 +60,7 @@ public class JavaDSLPrettyPrinterNew extends CommonJavaDSLDelegatorVisitor{
   }
   
   @Override
-  public CommonJavaDSLDelegatorVisitor getRealThis() {
+  public JavaDSLDelegatorVisitor getRealThis() {
     return realThis;
   }
 

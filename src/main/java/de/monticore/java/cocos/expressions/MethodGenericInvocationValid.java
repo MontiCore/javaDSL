@@ -22,12 +22,12 @@ import de.se_rwth.commons.logging.Log;
  * @author npichler
  */
 public class MethodGenericInvocationValid implements JavaClassExpressionsASTGenericInvocationExpressionCoCo{
-HCJavaDSLTypeResolver typeResolver;
-  
+  HCJavaDSLTypeResolver typeResolver;
+
   public MethodGenericInvocationValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-  
+
   // //JLS3 15.12.1-1, JLS3 15.12.1-2, JLS3 15.12.1-3, JLS3 15.12.1-4, JLS3 15.12.1-5
   @Override
   public void check(ASTGenericInvocationExpression node) {
@@ -35,18 +35,16 @@ HCJavaDSLTypeResolver typeResolver;
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
-        .getTypeArgumentList()) {
-      typeArgument.accept(typeResolver);
-      if (typeResolver.getResult().isPresent()) {
-        typeArguments.add(typeResolver.getResult().get());
-      }
-      else {
-        Log.error("0xA0554 type argument", node.get_SourcePositionStart());
-      }
+    genericInvocation.getETypeArguments().accept(typeResolver);
+    if (typeResolver.getResult().isPresent()) {
+      typeArguments.add(typeResolver.getResult().get());
+    }
+    else {
+      Log.error("0xA0554 type argument", node.get_SourcePositionStart());
+    }
 
     for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
-        .getArguments().getExpressionList()) {
+            .getArguments().getExpressionList()) {
       expression.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         actualArguments.add(typeResolver.getResult().get());
@@ -64,60 +62,60 @@ HCJavaDSLTypeResolver typeResolver;
       typeResolver.handle(primaryExpression);
       JavaTypeSymbolReference type = typeResolver.getResult().get();
       if (node.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND)
-          .isPresent()) {
+              .isPresent()) {
         // for class method
         JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
-            .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+                .resolve(type.getName(), JavaTypeSymbol.KIND).get();
         if (type.getName().endsWith(symbolName) || type.getName().equals(symbolName)) {
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-              .resolveManyInSuperType(methodName, true, null, expSymbol,
-                  typeArguments, actualArguments);
+                  .resolveManyInSuperType(methodName, true, null, expSymbol,
+                          typeArguments, actualArguments);
           if (methodSymbols.isEmpty()) {
             Log.error("0xA0556 method '" + methodName + "' is not found.",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
           if (methodSymbols.size() > 1) {
             Log.error("0xA0557 the invocation of method '" + methodName + "' is ambiguous.",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
         }
         else {
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-              .resolveManyInSuperType(methodName, false, type, expSymbol,
-                  typeArguments, actualArguments);
+                  .resolveManyInSuperType(methodName, false, type, expSymbol,
+                          typeArguments, actualArguments);
           if (methodSymbols.isEmpty()) {
             Log.error("0xA0558 method '" + methodName + "' is not found.",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
           if (methodSymbols.size() > 1) {
             Log.error("0xA0559 the invocation of method '" + methodName + "' is ambiguous",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
-        }       
+        }
       }
       else {
         Log.error("the symbol '" + primaryExpression.getName() + "' "
-            + "is not found.", node.get_SourcePositionStart());
-      }    
+                + "is not found.", node.get_SourcePositionStart());
+      }
     }
     else {
       typeResolver.handle(node.getExpression());
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference expType = typeResolver.getResult().get();
         if (node.getEnclosingScope().resolve(expType.getName(), JavaTypeSymbol.KIND)
-            .isPresent()) {
+                .isPresent()) {
           JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
-              .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
+                  .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
           HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-              .resolveManyInSuperType(methodName, false, expType, expSymbol,
-                  typeArguments, actualArguments);
+                  .resolveManyInSuperType(methodName, false, expType, expSymbol,
+                          typeArguments, actualArguments);
           if (methodSymbols.isEmpty()) {
             Log.error("0xA0560 method '" + methodName + "' is not found.",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
           if (methodSymbols.size() > 1) {
             Log.error("0xA0561 the invocation of method '" + methodName + "' is ambiguous",
-                node.get_SourcePositionStart());
+                    node.get_SourcePositionStart());
           }
         }
       }

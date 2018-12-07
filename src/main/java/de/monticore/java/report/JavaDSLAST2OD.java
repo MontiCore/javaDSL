@@ -28,15 +28,15 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
     visitor = new JavaDSLDelegatorVisitor();
     visitor.setLiteralsVisitor(
         new Literals2OD(printer, reporting));
-    visitor.set_de_monticore_types_types__visitor_TypesVisitor(new Types2OD(printer, reporting));
-    visitor.set_de_monticore_expressionsbasis__visitor_ExpressionsBasisVisitor(new ExpressionsBasis2OD(printer, reporting));
-    visitor.set_de_monticore_java_javadsl__visitor_JavaDSLVisitor(new JavaDSL2OD(printer, reporting));
-    visitor.set_de_monticore_assignmentexpressions__visitor_AssignmentExpressionsVisitor(new AssignmentExpressions2OD(printer, reporting));
-    visitor.set_de_monticore_commonexpressions__visitor_CommonExpressionsVisitor(new CommonExpressions2OD(printer, reporting));
-    visitor.set_de_monticore_javaclassexpressions__visitor_JavaClassExpressionsVisitor(new JavaClassExpressions2OD(printer, reporting));
-    visitor.set_de_monticore_shiftexpressions__visitor_ShiftExpressionsVisitor(new ShiftExpressions2OD(printer, reporting));
-    visitor.set_de_monticore_mcbasics__visitor_MCBasicsVisitor(new MCBasics2OD(printer, reporting));
-    visitor.set_de_monticore_lexicals_lexicals__visitor_LexicalsVisitor(new Lexicals2OD(printer, reporting));
+    visitor.setTypesVisitor(new Types2OD(printer, reporting));
+    visitor.setExpressionsBasisVisitor(new ExpressionsBasis2OD(printer, reporting));
+    visitor.setJavaDSLVisitor(new JavaDSL2OD(printer, reporting));
+    visitor.setAssignmentExpressionsVisitor(new AssignmentExpressions2OD(printer, reporting));
+    visitor.setCommonExpressionsVisitor(new CommonExpressions2OD(printer, reporting));
+    visitor.setJavaClassExpressionsVisitor(new JavaClassExpressions2OD(printer, reporting));
+    visitor.setShiftExpressionsVisitor(new ShiftExpressions2OD(printer, reporting));
+    visitor.setMCBasicsVisitor(new MCBasics2OD(printer, reporting));
+    visitor.setLexicalsVisitor(new Lexicals2OD(printer, reporting));
     setPrintEmptyList(true);
     setPrintEmptyOptional(true);
   }

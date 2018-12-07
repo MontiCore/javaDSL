@@ -394,7 +394,6 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
             JavaDSLHelper.resolveTypeForExpressions(leftType, rightType, "multiplicativeOp")
-                .resolveTypeForExpressions(leftType, rightType, node.getAdditiveOp())
                 .orElse(null));
       }
     }
@@ -663,62 +662,60 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       }
     }
   }
-  
+
   public void handle(ASTGenericInvocationExpression node) {
     List<JavaTypeSymbolReference> actualArguments = new ArrayList<>();
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
-    ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    for (ASTTypeArgument typeArgument : genericInvocation.getTypeArguments()
-        .getTypeArgumentList()) {
-      typeArgument.accept(this);
+    ASTPrimaryGenericInvocationExpression genericInvocation = node
+            .getPrimaryGenericInvocationExpression();
+    genericInvocation.getETypeArguments().accept(this);
+    if (this.getResult().isPresent()) {
+      typeArguments.add(this.getResult().get());
+    }
+    else {
+      this.setResult(null);
+    }
+
+    for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
+            .getArguments().getExpressionList()) {
+      expression.accept(this);
       if (this.getResult().isPresent()) {
-        typeArguments.add(this.getResult().get());
+        actualArguments.add(this.getResult().get());
       }
       else {
         this.setResult(null);
       }
     }
-    if (genericInvocation.getTypeArguments().getTypeArgumentList().size() == typeArguments.size()) {
-      for (ASTExpression expression : genericInvocation.getGenericInvocationSuffix()
-          .getArguments().getExpressionList()) {
-        expression.accept(this);
-        if (this.getResult().isPresent()) {
-          actualArguments.add(this.getResult().get());
-        }
-        else {
-          this.setResult(null);
-        }
+    if (genericInvocation.getGenericInvocationSuffix().getArguments()
+            .getExpressionList().size() == actualArguments.size()) {
+      if (genericInvocation.getGenericInvocationSuffix().isPresentName()) {
+        methodName = genericInvocation.getGenericInvocationSuffix().getName();
       }
-      if (genericInvocation.getGenericInvocationSuffix().getArguments()
-          .getExpressionList().size() == actualArguments.size()) {
-        if (genericInvocation.getGenericInvocationSuffix().getNameOpt().isPresent()) {
-          methodName = genericInvocation.getGenericInvocationSuffix().getName();
-        }
-        
-        this.handle(node.getExpression());
-        if (this.getResult().isPresent()) {
-          JavaTypeSymbolReference expType = this.getResult().get();
-          // String completeName = JavaDSLHelper.getCompleteName(expType);
-          if (node.getEnclosingScope().resolve(expType.getName(), JavaTypeSymbol.KIND)
-              .isPresent()) {
-            JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
-                .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
-            HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
-                .resolveManyInSuperType(methodName, false, expType, expSymbol,
-                    typeArguments, actualArguments);
-            if (methodSymbols.size() == 1) {
-              this.setResult(methodSymbols.values().iterator().next());
-            }
-            else {
-              this.setResult(null);
-            }
+
+      this.handle(node.getExpression());
+      if (this.getResult().isPresent()) {
+        JavaTypeSymbolReference expType = this.getResult().get();
+        // String completeName = JavaDSLHelper.getCompleteName(expType);
+        if (node.getEnclosingScope().resolve(expType.getName(), JavaTypeSymbol.KIND)
+                .isPresent()) {
+          JavaTypeSymbol expSymbol = (JavaTypeSymbol) node.getEnclosingScope()
+                  .resolve(expType.getName(), JavaTypeSymbol.KIND).get();
+          HashMap<JavaMethodSymbol, JavaTypeSymbolReference> methodSymbols = JavaDSLHelper
+                  .resolveManyInSuperType(methodName, false, expType, expSymbol,
+                          typeArguments, actualArguments);
+          if (methodSymbols.size() == 1) {
+            this.setResult(methodSymbols.values().iterator().next());
           }
           else {
             this.setResult(null);
           }
         }
+        else {
+          this.setResult(null);
+        }
       }
+    }
   }
   
   public void handle(ASTCallExpression node) {

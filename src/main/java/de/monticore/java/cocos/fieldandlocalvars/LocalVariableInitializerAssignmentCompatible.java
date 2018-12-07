@@ -1,5 +1,21 @@
-/* (c) https://github.com/MontiCore/monticore */
-
+/*
+ * ******************************************************************************
+ * MontiCore Language Workbench, www.monticore.de
+ * Copyright (c) 2017, MontiCore, All rights reserved.
+ *
+ * This project is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this project. If not, see <http://www.gnu.org/licenses/>.
+ * ******************************************************************************
+ */
 package de.monticore.java.cocos.fieldandlocalvars;
 
 import java.util.List;
@@ -26,14 +42,14 @@ import de.se_rwth.commons.logging.Log;
  * @since TODO * TODO
  */
 public class LocalVariableInitializerAssignmentCompatible implements
-JavaDSLASTLocalVariableDeclarationCoCo {
-  
+        JavaDSLASTLocalVariableDeclarationCoCo {
+
   HCJavaDSLTypeResolver typeResolver;
-  
+
   public LocalVariableInitializerAssignmentCompatible(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
-  
+
   @Override
   public void check(ASTLocalVariableDeclaration node) {
 //    node.getType().accept(typeResolver);
@@ -51,14 +67,14 @@ JavaDSLASTLocalVariableDeclarationCoCo {
       else
         for (ASTVariableDeclarator variableDeclarator : node.getVariableDeclaratorList()) {
           if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
-              || JavaDSLHelper.isShortType(localVarType)) {
+                  || JavaDSLHelper.isShortType(localVarType)) {
             if (variableDeclarator.isPresentVariableInititializerOrExpression()) {
               if (variableDeclarator.getVariableInititializerOrExpression().isPresentExpression()) {
                 ASTExpression astExpression =  variableDeclarator
-                    .getVariableInititializerOrExpression().getExpression();
-                if (astExpression instanceof ASTLiteralExpression) {
-                  ASTLiteralExpression primaryExpression = (ASTLiteralExpression) astExpression;
-                  ASTLiteral literal = primaryExpression.getLiteral();
+                        .getVariableInititializerOrExpression().getExpression();
+                if (astExpression instanceof ASTLiteral) {
+                  ASTLiteral primaryExpression = (ASTLiteral) astExpression;
+                  ASTLiteral literal = primaryExpression;
                   if (literal instanceof ASTIntLiteral) {
                     return;
                   }
@@ -73,12 +89,12 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               List<ASTArrayInitializer> arrList = arrayInitializerCollector.getArrayInitializerList();
               if (localVarType.getDimension() == 0 && !arrList.isEmpty()) {
                 Log.error("0xA0609 type mismatch, cannot convert from array to type '" + localVarType
-                    .getName() + "'.", node.get_SourcePositionStart());
+                        .getName() + "'.", node.get_SourcePositionStart());
                 return;
               }
               if (localVarType.getDimension() > 0 && arrList.size() == 0) {
                 Log.error("0xA0609 type mismatch, array is expected.",
-                    node.get_SourcePositionStart());
+                        node.get_SourcePositionStart());
                 return;
               }
               if (localVarType.getDimension() > 0 && localVarType.getDimension() == arrList.size()) {
@@ -89,29 +105,29 @@ JavaDSLASTLocalVariableDeclarationCoCo {
                       JavaTypeSymbolReference arrType = typeResolver.getResult().get();
                       if (!JavaDSLHelper.isReifiableType(arrType)) {
                         Log.error("Array component must be a reifiable type.",
-                            node.get_SourcePositionStart());
+                                node.get_SourcePositionStart());
                         return;
                       }
                       else {
                         JavaTypeSymbolReference componentType = JavaDSLHelper
-                            .getComponentType(localVarType);
+                                .getComponentType(localVarType);
                         if (JavaDSLHelper.safeAssignmentConversionAvailable(arrType, componentType)) {
                           return;
                         }
                         else if (JavaDSLHelper
-                            .unsafeAssignmentConversionAvailable(arrType, componentType)) {
+                                .unsafeAssignmentConversionAvailable(arrType, componentType)) {
                           Log.warn(
-                              "0xA0610 Possible unchecked conversion from type '" + componentType
-                              .getName()
-                              + "' to '"
-                              + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                                  "0xA0610 Possible unchecked conversion from type '" + componentType
+                                          .getName()
+                                          + "' to '"
+                                          + localVarType.getName() + "'.", node.get_SourcePositionStart());
                           break;
                         }
                         else {
                           Log.error(
-                              "0xA0611 cannot assign a value of type '" + arrType.getName() + "' to '"
-                                  + componentType
-                                  .getName() + "'.", node.get_SourcePositionStart());
+                                  "0xA0611 cannot assign a value of type '" + arrType.getName() + "' to '"
+                                          + componentType
+                                          .getName() + "'.", node.get_SourcePositionStart());
                           break;
                         }
                       }
@@ -125,10 +141,10 @@ JavaDSLASTLocalVariableDeclarationCoCo {
               //  typeResolver.handle();
               if (typeResolver.getResult().isPresent()) {
                 JavaTypeSymbolReference expType = typeResolver.getResult()
-                    .get();
+                        .get();
                 //JLS3 5.2-1
                 if (JavaDSLHelper.isByteType(localVarType) || JavaDSLHelper.isCharType(localVarType)
-                    || JavaDSLHelper.isShortType(localVarType)) {
+                        || JavaDSLHelper.isShortType(localVarType)) {
                   if (JavaDSLHelper.isIntType(expType)) {
                     return;
                   }
@@ -139,15 +155,15 @@ JavaDSLASTLocalVariableDeclarationCoCo {
                 //JLS3 4.4-2
                 else if (JavaDSLHelper.unsafeAssignmentConversionAvailable(expType, localVarType)) {
                   Log.warn(
-                      "0xA0610 Possible unchecked conversion from type '" + expType.getName()
-                      + "' to '"
-                      + localVarType.getName() + "'.", node.get_SourcePositionStart());
+                          "0xA0610 Possible unchecked conversion from type '" + expType.getName()
+                                  + "' to '"
+                                  + localVarType.getName() + "'.", node.get_SourcePositionStart());
                 }
                 else {
                   Log.error(
-                      "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
-                          + localVarType
-                          .getName() + "'.", node.get_SourcePositionStart());
+                          "0xA0611 cannot assign a value of type '" + expType.getName() + "' to '"
+                                  + localVarType
+                                  .getName() + "'.", node.get_SourcePositionStart());
                 }
               }
             }

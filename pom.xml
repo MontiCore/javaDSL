@@ -6,7 +6,7 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.13-SNAPSHOT</version>
+  <version>4.3.13-feature_newTypes-SNAPSHOT</version>
   <properties>
 
     <monticore.version>5.0.2-SNAPSHOT</monticore.version>

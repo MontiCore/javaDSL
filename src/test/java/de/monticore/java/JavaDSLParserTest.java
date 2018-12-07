@@ -1,8 +1,14 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTJavaBlock;
+import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.se_rwth.commons.logging.LogStub;
+import org.antlr.v4.runtime.RecognitionException;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -10,15 +16,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import org.antlr.v4.runtime.RecognitionException;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import de.monticore.expressionsbasis._ast.ASTExpression;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
-import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.se_rwth.commons.logging.LogStub;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class JavaDSLParserTest {
   
@@ -91,7 +90,7 @@ public class JavaDSLParserTest {
   @Test
   public void testCondition() throws IOException {
     JavaDSLParser parser = new JavaDSLParser();
-    Optional<ASTExpression> ast = parser.parseString_Expression("ch = str.charAt(i) < 0x20");
+    Optional<ASTExpression> ast = parser.parse_StringExpression("ch = str.charAt(i) < 0x20");
     assertTrue(ast.isPresent());
   }
 
