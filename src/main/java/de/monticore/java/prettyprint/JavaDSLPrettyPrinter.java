@@ -155,6 +155,7 @@ public class JavaDSLPrettyPrinter extends MCExpressionsPrettyPrinter implements
       getPrinter().print(" extends ");
       printList(a.getExtendedInterfaceList().iterator(), ", ");
     }
+    a.getInterfaceBody().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
