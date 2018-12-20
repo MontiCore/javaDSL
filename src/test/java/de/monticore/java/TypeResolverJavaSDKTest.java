@@ -420,7 +420,6 @@ public class TypeResolverJavaSDKTest extends AbstractCoCoTestClass {
 
 
   @Test
-  @Ignore
   public void TestRandom() {
     testModelNoErrors("src/test/resources",
         "java/util/Random", checker.getAllTypeChecker());
