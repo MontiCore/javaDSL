@@ -18,26 +18,28 @@
  */
 package de.monticore.java.prettyprint;
 
-import de.monticore.expressions.prettyprint.AssignmentExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint.CommonExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint.JavaClassExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint.ShiftExpressionsPrettyPrinter;
+import de.monticore.MCBasicLiteralsPrettyPrinter;
+import de.monticore.MCJavaLiteralsPrettyPrinter;
+import de.monticore.expressions.prettyprint2.AssignmentExpressionsPrettyPrinter;
+import de.monticore.expressions.prettyprint2.CommonExpressionsPrettyPrinter;
+import de.monticore.expressions.prettyprint2.JavaClassExpressionsPrettyPrinter;
+import de.monticore.expressions.prettyprint2.ShiftExpressionsPrettyPrinter;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
-import de.monticore.literals.prettyprint.LiteralsPrettyPrinterConcreteVisitor;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
+import de.monticore.prettyprint.MCBasicsPrettyPrinter;
+import de.monticore.types.prettyprint.*;
 
 /**
  * @author npichler
  */
-public class JavaDSLPrettyPrinterNew extends JavaDSLDelegatorVisitor {
+public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
   
   protected JavaDSLDelegatorVisitor realThis;
   
   protected IndentPrinter printer = null;
   
-  public JavaDSLPrettyPrinterNew(IndentPrinter printer) {
+  public JavaDSLPrettyPrinterDelegator(IndentPrinter printer) {
     this.realThis = this;
     this.printer = printer;
     setCommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
@@ -45,8 +47,13 @@ public class JavaDSLPrettyPrinterNew extends JavaDSLDelegatorVisitor {
     setJavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
     setShiftExpressionsVisitor(new ShiftExpressionsPrettyPrinter(printer));
     setJavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
-    setLiteralsVisitor(new LiteralsPrettyPrinterConcreteVisitor(printer));
-    setTypesVisitor(new TypesPrettyPrinterConcreteVisitor(printer));
+    setMCBasicLiteralsVisitor(new MCBasicLiteralsPrettyPrinter(printer));
+    setMCBasicsVisitor(new MCBasicsPrettyPrinter(printer));
+    setMCBasicTypesVisitor(new MCBasicTypesPrettyPrinter(printer));
+    setMCCollectionTypesVisitor(new MCCollectionTypesPrettyPrinter(printer));
+    setMCFullGenericTypesVisitor(new MCFullGenericTypesPrettyPrinter(printer));
+    setMCJavaLiteralsVisitor(new MCJavaLiteralsPrettyPrinter(printer));
+    setMCSimpleGenericTypesVisitor(new MCSimpleGenericTypesPrettyPrinter(printer));
   }
   
   protected IndentPrinter getPrinter() {

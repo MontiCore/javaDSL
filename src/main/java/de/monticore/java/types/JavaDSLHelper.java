@@ -2,31 +2,24 @@
 
 package de.monticore.java.types;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import de.monticore.commonexpressions._ast.ASTCallExpression;
-import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.Symbol;
 import de.monticore.symboltable.types.TypeSymbol;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.symboltable.types.references.TypeReference;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.types.types._ast.ASTType;
+
+import java.util.*;
 
 /**
  * TODO
@@ -2256,7 +2249,7 @@ public class JavaDSLHelper {
         else {
           result.add(getObjectType(typeSymbol.getEnclosingScope()));
         }
-        for (ASTType astType : classAST.getImplementedInterfaceList()) {
+        for (ASTMCType astType : classAST.getImplementedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }
@@ -2264,7 +2257,7 @@ public class JavaDSLHelper {
       if (typeSymbol.isInterface()) {
         ASTInterfaceDeclaration interfaceAST = (ASTInterfaceDeclaration) typeSymbol.getAstNode()
             .get();
-        for (ASTType astType : interfaceAST.getExtendedInterfaceList()) {
+        for (ASTMCType astType : interfaceAST.getExtendedInterfaceList()) {
           astType.accept(typeResolver);
           result.add(typeResolver.getResult().get());
         }

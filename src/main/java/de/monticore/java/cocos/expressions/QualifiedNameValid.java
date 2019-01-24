@@ -6,8 +6,8 @@ import java.util.Collection;
 
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.expressions.shiftexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.symboltable.Scope;
 import de.se_rwth.commons.logging.Log;
 

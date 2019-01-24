@@ -25,7 +25,7 @@ public class AnnotationMethodReturnTypes implements JavaDSLASTAnnotationMethodCo
   
   @Override
   public void check(ASTAnnotationMethod node) {
-    node.getType().accept(typeResolver);
+    node.getMCType().accept(typeResolver);
     JavaTypeSymbolReference type = typeResolver.getResult().get();
     if ("String".equals(type.getName()) || "Class".equals(type.getName())
         || "java.lang.String".equals(type.getName())

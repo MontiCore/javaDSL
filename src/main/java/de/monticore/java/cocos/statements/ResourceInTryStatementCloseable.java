@@ -26,7 +26,7 @@ public class ResourceInTryStatementCloseable implements JavaDSLASTTryStatementWi
   public void check(ASTTryStatementWithResources node) {
     if (!node.getResourceList().isEmpty())
       for (ASTResource astResource : node.getResourceList()) {
-        astResource.getType().accept(typeResolver);
+        astResource.getMCType().accept(typeResolver);
         if (typeResolver.getResult().isPresent()) {
           JavaTypeSymbolReference typeOfResource = typeResolver.getResult().get();
           boolean isCloseable = false;

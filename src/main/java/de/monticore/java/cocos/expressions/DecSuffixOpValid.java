@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTDecSuffixExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTDecSuffixExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTDecSuffixExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTDecSuffixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;

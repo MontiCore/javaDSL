@@ -4,8 +4,8 @@ package de.monticore.java.cocos.expressions;
 
 import java.util.Optional;
 
-import de.monticore.javaclassexpressions._ast.ASTTypeCastExpression;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTTypeCastExpressionCoCo;
+import de.monticore.expressions.javaclassexpressions._ast.ASTTypeCastExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTTypeCastExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
@@ -23,7 +23,7 @@ public class CastConversionValid implements JavaClassExpressionsASTTypeCastExpre
   @Override
   public void check(ASTTypeCastExpression node) {
     
-    node.getEType().accept(typeResolver);
+    node.getExtType().accept(typeResolver);
     Optional<JavaTypeSymbolReference> typeCast = typeResolver.getResult();
     typeResolver.handle(node.getExpression());
     Optional<JavaTypeSymbolReference> typeExp = typeResolver.getResult();

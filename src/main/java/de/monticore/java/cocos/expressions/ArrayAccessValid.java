@@ -5,8 +5,8 @@ package de.monticore.java.cocos.expressions;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.shiftexpressions._ast.ASTArrayExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTArrayExpressionCoCo;
+import de.monticore.expressions.shiftexpressions._ast.ASTArrayExpression;
+import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTArrayExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 public class ArrayAccessValid implements ShiftExpressionsASTArrayExpressionCoCo {

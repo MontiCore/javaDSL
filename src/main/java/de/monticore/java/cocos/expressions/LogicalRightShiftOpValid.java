@@ -19,8 +19,8 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.shiftexpressions._ast.ASTLogicalRightShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTLogicalRightShiftExpressionCoCo;
+import de.monticore.expressions.shiftexpressions._ast.ASTLogicalRightShiftExpression;
+import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTLogicalRightShiftExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**

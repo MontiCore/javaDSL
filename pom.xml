@@ -9,7 +9,7 @@
   <version>4.3.14-SNAPSHOT</version>
   <properties>
 
-    <monticore.version>5.0.3-SNAPSHOT</monticore.version>
+    <monticore.version>5.0.4-SNAPSHOT</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 

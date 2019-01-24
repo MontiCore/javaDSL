@@ -1,8 +1,15 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
+import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.prettyprint.JavaDSLPrettyPrinterDelegator;
+import de.monticore.prettyprint.IndentPrinter;
+import de.se_rwth.commons.logging.Log;
+import org.antlr.v4.runtime.RecognitionException;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -10,16 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import org.antlr.v4.runtime.RecognitionException;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
-import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.monticore.java.prettyprint.JavaDSLPrettyPrinterNew;
-import de.monticore.prettyprint.IndentPrinter;
-import de.se_rwth.commons.logging.LogStub;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TODO: Write me!
@@ -31,8 +30,8 @@ public class JavaDSLPrettyPrinterTest {
   
   @BeforeClass
   public static void setup() {
-    LogStub.init();
-    LogStub.enableFailQuick(false);
+    Log.init();
+    Log.enableFailQuick(false);
   }
   
   protected ASTJavaDSLNode parse(String modelName) throws RecognitionException, IOException {
@@ -59,7 +58,7 @@ public class JavaDSLPrettyPrinterTest {
         "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -73,7 +72,7 @@ public class JavaDSLPrettyPrinterTest {
     ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/ParseException.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -87,7 +86,7 @@ public class JavaDSLPrettyPrinterTest {
     ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -102,7 +101,7 @@ public class JavaDSLPrettyPrinterTest {
         "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     System.out.println(output);
     

@@ -10,6 +10,7 @@ import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.types.types._ast.ASTType;
 import de.se_rwth.commons.logging.Log;
 
@@ -26,7 +27,7 @@ public class InterfaceValidSuperTypes implements JavaDSLASTInterfaceDeclarationC
   
   @Override
   public void check(ASTInterfaceDeclaration node) {
-    for (ASTType extendedInterface : node.getExtendedInterfaceList()) {
+    for (ASTMCType extendedInterface : node.getExtendedInterfaceList()) {
       extendedInterface.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference extendedType = typeResolver.getResult().get();

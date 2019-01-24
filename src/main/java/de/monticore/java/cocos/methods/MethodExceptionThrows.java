@@ -8,7 +8,7 @@ import de.monticore.java.javadsl._cocos.JavaDSLASTMethodDeclarationCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.types.types._ast.ASTQualifiedName;
+import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
 import de.se_rwth.commons.logging.Log;
 
 /**
@@ -25,7 +25,7 @@ public class MethodExceptionThrows implements JavaDSLASTMethodDeclarationCoCo {
   @Override public void check(ASTMethodDeclaration node) {
     if (node.getMethodSignature().isPresentThrows()) {
       ASTThrows astThrows = node.getMethodSignature().getThrows();
-      for (ASTQualifiedName name : astThrows.getQualifiedNameList()) {
+      for (ASTMCQualifiedName name : astThrows.getMCQualifiedNameList()) {
         typeResolver.handle(name);
         if (typeResolver.getResult().isPresent()) {
           JavaTypeSymbolReference type = typeResolver.getResult().get();

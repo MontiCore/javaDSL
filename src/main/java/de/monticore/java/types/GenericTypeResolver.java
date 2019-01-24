@@ -4,12 +4,6 @@ package de.monticore.java.types;
 
 import java.util.Optional;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author$$
- * @since TODO
- */
 public class GenericTypeResolver<T> {
   Optional<T> result = Optional.empty();
 
