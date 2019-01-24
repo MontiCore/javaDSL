@@ -17,7 +17,7 @@ import org.junit.Test;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.monticore.java.prettyprint.JavaDSLPrettyPrinterNew;
+import de.monticore.java.prettyprint.JavaDSLPrettyPrinterDelegator;
 import de.monticore.prettyprint.IndentPrinter;
 import de.se_rwth.commons.logging.LogStub;
 
@@ -59,7 +59,7 @@ public class JavaDSLPrettyPrinterTest {
         "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -73,7 +73,7 @@ public class JavaDSLPrettyPrinterTest {
     ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/ParseException.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -87,7 +87,7 @@ public class JavaDSLPrettyPrinterTest {
     ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     
     // Parsing printed input
@@ -102,7 +102,7 @@ public class JavaDSLPrettyPrinterTest {
         "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
     
     // Prettyprinting input
-    JavaDSLPrettyPrinterNew prettyPrinter = new JavaDSLPrettyPrinterNew(new IndentPrinter());
+    JavaDSLPrettyPrinterDelegator prettyPrinter = new JavaDSLPrettyPrinterDelegator(new IndentPrinter());
     String output = prettyPrinter.prettyprint(ast);
     System.out.println(output);
     

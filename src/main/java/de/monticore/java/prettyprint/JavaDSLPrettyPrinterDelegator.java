@@ -31,13 +31,13 @@ import de.monticore.types.prettyprint.TypesPrettyPrinterConcreteVisitor;
 /**
  * @author npichler
  */
-public class JavaDSLPrettyPrinterNew extends JavaDSLDelegatorVisitor {
+public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
   
   protected JavaDSLDelegatorVisitor realThis;
   
   protected IndentPrinter printer = null;
   
-  public JavaDSLPrettyPrinterNew(IndentPrinter printer) {
+  public JavaDSLPrettyPrinterDelegator(IndentPrinter printer) {
     this.realThis = this;
     this.printer = printer;
     setCommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
