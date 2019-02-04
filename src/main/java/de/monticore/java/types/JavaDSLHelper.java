@@ -12,23 +12,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import de.monticore.commonexpressions._ast.ASTCallExpression;
+import de.monticore.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.mcexpressions._ast.ASTCallExpression;
-import de.monticore.mcexpressions._ast.ASTExpression;
-import de.monticore.mcexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.mcexpressions._ast.ASTTypeCastExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
+import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.Symbol;
 import de.monticore.symboltable.types.TypeSymbol;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.symboltable.types.references.TypeReference;
 import de.monticore.types.types._ast.ASTType;
-import de.monticore.types.types._ast.ASTWildcardType;
 
 /**
  * TODO

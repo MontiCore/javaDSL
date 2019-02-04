@@ -2,7 +2,12 @@
 
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.MCExpressions {
+grammar JavaDSL extends de.monticore.ExpressionsBasis, 
+	de.monticore.CommonExpressions, 
+	de.monticore.AssignmentExpressions,
+	de.monticore.JavaClassExpressions,
+	de.monticore.ShiftExpressions,
+	de.monticore.types.Types {
 
 // starting point for parsing a java file
 CompilationUnit
@@ -284,7 +289,7 @@ Resource
     ;
 
 IdentifierAndTypeArgument
-    =   Name& TypeArguments?
+    =   Name TypeArguments?
     ;
 
 CatchClause
@@ -390,13 +395,20 @@ CreatedName
     ;
 
 InnerCreator
-    =   firstTypeArguments:TypeArguments? Name& secondTypeArguments:TypeArguments? ClassCreatorRest
+    =   firstTypeArguments:TypeArguments? Name secondTypeArguments:TypeArguments? ClassCreatorRest
     ;
     
 ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
+EType = Type;
+
+ELiteral = Literal;
+
+EReturnType = ReturnType;
+
+ETypeArguments = TypeArguments;
 
 
 }

@@ -2,19 +2,19 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTMultExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTMultExpressionCoCo;
+import de.monticore.commonexpressions._ast.ASTMultExpression;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTMultExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
- *  on 08.06.2016.
+ * on 08.06.2016.
  */
-public class MultiplicativeOpsValid implements MCExpressionsASTMultExpressionCoCo {
+public class MultOpValid implements CommonExpressionsASTMultExpressionCoCo    {
   
   HCJavaDSLTypeResolver typeResolver;
   
-  public MultiplicativeOpsValid(HCJavaDSLTypeResolver typeResolver) {
+  public MultOpValid(HCJavaDSLTypeResolver typeResolver) {
     this.typeResolver = typeResolver;
   }
   
@@ -28,5 +28,8 @@ public class MultiplicativeOpsValid implements MCExpressionsASTMultExpressionCoC
           node.get_SourcePositionStart());
     }
   }
+  
+ 
+  
   
 }

@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTPrimarySuperExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTPrimarySuperExpressionCoCo;
+import de.monticore.javaclassexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTPrimarySuperExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
@@ -11,7 +11,7 @@ import de.se_rwth.commons.logging.Log;
 /**
  *  on 07.08.2016.
  */
-public class PrimarySuperValid implements MCExpressionsASTPrimarySuperExpressionCoCo {
+public class PrimarySuperValid implements JavaClassExpressionsASTPrimarySuperExpressionCoCo {
   
   @Override
   public void check(ASTPrimarySuperExpression node) {

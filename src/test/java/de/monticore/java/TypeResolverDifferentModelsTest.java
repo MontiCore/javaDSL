@@ -1,13 +1,12 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import de.se_rwth.commons.logging.LogStub;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import de.monticore.java.types.JavaDSLTypeChecker;
-import de.se_rwth.commons.logging.Log;
+import de.se_rwth.commons.logging.LogStub;
 
 /**
  *  on 19.08.2016.

@@ -223,7 +223,7 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
     assertEquals(1, classScope.getLocalSymbols().size());
     
     Optional<JavaMethodSymbol> methodSymbol = classScope.resolve("m",
-        JavaMethodSymbol.JavaMethodSymbolKind.KIND);
+        JavaMethodSymbol.KIND);
     assertTrue(methodSymbol.isPresent());
     assertEquals(1, methodSymbol.get().getParameters().size());
     assertTrue(methodSymbol.get().isEllipsisParameterMethod());
@@ -804,6 +804,6 @@ public class JavaDSLSymbolTableTest extends AbstractTestClass {
     JavaMethodSymbol method = typeSymbol.getMethod("testMethod").orElse(null);
     assertNotNull(method);
     
-    assertEquals(3, method.getSpannedScope().resolveLocally(SymbolKind.KIND).size());
+    assertEquals(3, method.getSpannedScope().getSymbolsSize());
   }
 }

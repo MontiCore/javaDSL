@@ -2,15 +2,15 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTBooleanNotExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTBooleanNotExpressionCoCo;
+import de.monticore.commonexpressions._ast.ASTBooleanNotExpression;
+import de.monticore.commonexpressions._cocos.CommonExpressionsASTBooleanNotExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  *  on 08.06.2016.
  */
-public class BooleanNotValid implements MCExpressionsASTBooleanNotExpressionCoCo {
+public class BooleanNotValid implements CommonExpressionsASTBooleanNotExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

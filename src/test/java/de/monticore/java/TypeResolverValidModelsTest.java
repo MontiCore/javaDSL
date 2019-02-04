@@ -1,7 +1,6 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import de.se_rwth.commons.logging.LogStub;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -36,7 +35,6 @@ import de.monticore.java.cocos.enums.EnumMayNotBeAbstract;
 import de.monticore.java.cocos.enums.EnumMethodModifiersValid;
 import de.monticore.java.cocos.enums.EnumModifiersValid;
 import de.monticore.java.cocos.enums.EnumNoFinalizerMethod;
-import de.monticore.java.cocos.expressions.AdditiveOpsValid;
 import de.monticore.java.cocos.expressions.ArrayAccessValid;
 import de.monticore.java.cocos.expressions.ArrayCreatorValid;
 import de.monticore.java.cocos.expressions.ArrayDimensionByExpressionValid;
@@ -48,20 +46,34 @@ import de.monticore.java.cocos.expressions.BooleanNotValid;
 import de.monticore.java.cocos.expressions.CastConversionValid;
 import de.monticore.java.cocos.expressions.ClassInnerInstanceCreationValid;
 import de.monticore.java.cocos.expressions.ClassInstanceCreationValid;
-import de.monticore.java.cocos.expressions.ComparisonValid;
 import de.monticore.java.cocos.expressions.ConditionValid;
-import de.monticore.java.cocos.expressions.QualifiedNameValid;
-import de.monticore.java.cocos.expressions.IdentityTestValid;
+import de.monticore.java.cocos.expressions.DecPrefixOpValid;
+import de.monticore.java.cocos.expressions.DecSuffixOpValid;
+import de.monticore.java.cocos.expressions.DivideOpValid;
+import de.monticore.java.cocos.expressions.EqualsTestValid;
+import de.monticore.java.cocos.expressions.GreaterEqualOpValid;
+import de.monticore.java.cocos.expressions.GreaterThanOpValid;
+import de.monticore.java.cocos.expressions.IncPrefixOpValid;
+import de.monticore.java.cocos.expressions.IncSuffixOpValid;
 import de.monticore.java.cocos.expressions.InstanceOfValid;
+import de.monticore.java.cocos.expressions.LeftShiftOpValid;
+import de.monticore.java.cocos.expressions.LessEqualOpValid;
+import de.monticore.java.cocos.expressions.LessThanOpValid;
+import de.monticore.java.cocos.expressions.LogicalRightShiftOpValid;
 import de.monticore.java.cocos.expressions.LogicalNotValid;
 import de.monticore.java.cocos.expressions.MethodGenericInvocationValid;
 import de.monticore.java.cocos.expressions.MethodInvocationValid;
-import de.monticore.java.cocos.expressions.MultiplicativeOpsValid;
-import de.monticore.java.cocos.expressions.PrefixOpValid;
+import de.monticore.java.cocos.expressions.MinusOpValid;
+import de.monticore.java.cocos.expressions.MinusPrefixOpValid;
+import de.monticore.java.cocos.expressions.ModuloOpValid;
+import de.monticore.java.cocos.expressions.MultOpValid;
+import de.monticore.java.cocos.expressions.NotEqualsTestValid;
+import de.monticore.java.cocos.expressions.PlusOpValid;
+import de.monticore.java.cocos.expressions.PlusPrefixOpValid;
 import de.monticore.java.cocos.expressions.PrimarySuperValid;
 import de.monticore.java.cocos.expressions.PrimaryThisValid;
-import de.monticore.java.cocos.expressions.ShiftOpValid;
-import de.monticore.java.cocos.expressions.SuffixOpValid;
+import de.monticore.java.cocos.expressions.QualifiedNameValid;
+import de.monticore.java.cocos.expressions.RightShiftOpValid;
 import de.monticore.java.cocos.fieldandlocalvars.FieldInitializerAssignmentCompatible;
 import de.monticore.java.cocos.fieldandlocalvars.FieldModifierAccessCombinations;
 import de.monticore.java.cocos.fieldandlocalvars.FieldNoDuplicateModifier;
@@ -103,7 +115,7 @@ import de.monticore.java.cocos.statements.ThrowIsValid;
 import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.se_rwth.commons.logging.Log;
+import de.se_rwth.commons.logging.LogStub;
 
 /**
  * TODO
@@ -372,7 +384,8 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestAdditiveOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new AdditiveOpsValid(typeResolver));
+    checker.addCoCo(new PlusOpValid(typeResolver));
+    checker.addCoCo(new MinusOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/AdditiveOps", checker);
   }
@@ -453,7 +466,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/LogicalNot", checker);
   }
-
+  
   @Test
   public void TestCastConversionValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
@@ -482,7 +495,10 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestComparison() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new ComparisonValid(typeResolver));
+    checker.addCoCo(new LessEqualOpValid(typeResolver));
+    checker.addCoCo(new GreaterEqualOpValid(typeResolver));
+    checker.addCoCo(new LessThanOpValid(typeResolver));
+    checker.addCoCo(new GreaterThanOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/Comparison", checker);
   }
@@ -506,9 +522,17 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   }
   
   @Test
-  public void TestIdentityTestValid() {
+  public void TestEqualsTestValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new IdentityTestValid(typeResolver));
+    checker.addCoCo(new EqualsTestValid(typeResolver));
+    testModelNoErrors("src/test/resources",
+        "typeSystemTestModels/valid/expressions/IdentityTest", checker);
+  }
+  
+  @Test
+  public void TestNotEqualsTestValid() {
+    JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
+    checker.addCoCo(new NotEqualsTestValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/IdentityTest", checker);
   }
@@ -535,8 +559,11 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestMultiplicativeOpsValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new MultiplicativeOpsValid(typeResolver));
-    checker.addCoCo(new AdditiveOpsValid(typeResolver));
+    checker.addCoCo(new MultOpValid(typeResolver));
+    checker.addCoCo(new DivideOpValid(typeResolver));
+    checker.addCoCo(new ModuloOpValid(typeResolver));
+    checker.addCoCo(new PlusOpValid(typeResolver));
+    checker.addCoCo(new MinusOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/MultiplicativeOps", checker);
   }
@@ -544,7 +571,10 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestPrefixOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new PrefixOpValid(typeResolver));
+    checker.addCoCo(new PlusPrefixOpValid(typeResolver));
+    checker.addCoCo(new MinusPrefixOpValid(typeResolver));
+    checker.addCoCo(new IncPrefixOpValid(typeResolver));
+    checker.addCoCo(new DecPrefixOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/PrefixOp", checker);
   }
@@ -568,7 +598,9 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestShiftOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new ShiftOpValid(typeResolver));
+    checker.addCoCo(new LeftShiftOpValid(typeResolver));
+    checker.addCoCo(new RightShiftOpValid(typeResolver));
+    checker.addCoCo(new LogicalRightShiftOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/ShiftOp", checker);
   }
@@ -576,7 +608,8 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   @Test
   public void TestSuffixOpValid() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo(new SuffixOpValid(typeResolver));
+    checker.addCoCo(new IncSuffixOpValid(typeResolver));
+    checker.addCoCo(new DecSuffixOpValid(typeResolver));
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/expressions/SuffixOp", checker);
   }
@@ -787,7 +820,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   public void TestMethodOverride() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new MethodOverride());
-    testModelNoErrors("src/test/resources", 
+    testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/methods/MethodOverride", checker);
   }
   
@@ -863,7 +896,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   public void TestResourceInTryStatementCloseable() {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo(new ResourceInTryStatementCloseable(typeResolver));
-    testModelNoErrors("src/test/resources", 
+    testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/statements/ResourceInTryStatementCloseable", checker);
   }
   
@@ -906,7 +939,7 @@ public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
     testModelNoErrors("src/test/resources",
         "typeSystemTestModels/valid/statements/WhileConditionHasBooleanType", checker);
   }
-
+  
   // TODO: Test for FieldNamesMustBePairWiseDifferent &
   // NestedTypeMayNotHaveSameNameAsEnclosingType
   

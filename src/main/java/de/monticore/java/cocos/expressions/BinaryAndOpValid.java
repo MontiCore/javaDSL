@@ -2,15 +2,15 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTBinaryAndOpExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTBinaryAndOpExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTBinaryAndExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTBinaryAndExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BinaryAndOpValid implements MCExpressionsASTBinaryAndOpExpressionCoCo {
+public class BinaryAndOpValid implements AssignmentExpressionsASTBinaryAndExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
@@ -20,7 +20,7 @@ public class BinaryAndOpValid implements MCExpressionsASTBinaryAndOpExpressionCo
   
   // JLS3 15.22-1
   @Override
-  public void check(ASTBinaryAndOpExpression node) {  
+  public void check(ASTBinaryAndExpression node) {  
     typeResolver.handle(node);
     if (!typeResolver.getResult().isPresent()) {
       Log.error(

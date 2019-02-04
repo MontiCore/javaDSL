@@ -2,14 +2,14 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTAssignmentExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTAssignmentExpressionCoCo;
+import de.monticore.assignmentexpressions._ast.ASTAssignmentExpression;
+import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
-public class AssignmentCompatible implements MCExpressionsASTAssignmentExpressionCoCo {
+public class AssignmentCompatible implements AssignmentExpressionsASTAssignmentExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

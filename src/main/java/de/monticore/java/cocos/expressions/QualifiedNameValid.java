@@ -2,17 +2,16 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.mcexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.mcexpressions._cocos.MCExpressionsASTQualifiedNameExpressionCoCo;
+import java.util.Collection;
+
 import de.monticore.java.symboltable.JavaTypeSymbol;
-import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
+import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTQualifiedNameExpressionCoCo;
 import de.monticore.symboltable.Scope;
 import de.se_rwth.commons.logging.Log;
 
-import java.util.Collection;
-
-public class QualifiedNameValid implements MCExpressionsASTQualifiedNameExpressionCoCo {
+public class QualifiedNameValid implements ShiftExpressionsASTQualifiedNameExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 
