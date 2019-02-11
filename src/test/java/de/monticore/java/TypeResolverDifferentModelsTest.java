@@ -1,6 +1,7 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
+import de.se_rwth.commons.logging.Log;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,8 +18,8 @@ public class TypeResolverDifferentModelsTest extends AbstractCoCoTestClass {
 
   @BeforeClass
   public static void init() {
-    LogStub.init();
-    LogStub.enableFailQuick(false);
+    Log.init();
+    Log.enableFailQuick(false);
   }
 
   @Before
