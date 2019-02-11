@@ -16,10 +16,7 @@ import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.literals.literals._ast.*;
 import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
-import de.monticore.types.mcbasictypes._ast.ASTMCPrimitiveType;
-import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
-import de.monticore.types.mcbasictypes._ast.ASTMCType;
-import de.monticore.types.mcbasictypes._ast.ASTMCVoidType;
+import de.monticore.types.mcbasictypes._ast.*;
 import de.monticore.types.mccollectiontypes._ast.ASTMCTypeArgument;
 import de.monticore.types.mcfullgenerictypes._ast.ASTMCArrayType;
 import de.monticore.types.mcfullgenerictypes._ast.ASTMCMultipleGenericType;
@@ -66,22 +63,12 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTMCBasicGenericType type) {
+  public void handle(ASTMCQualifiedType type) {
     JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
         String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
     String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
     JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
         completeName, type.getEnclosingScope(), 0);
-    if (!type.isEmptyMCTypeArguments()) {
-      List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
-      for (ASTMCTypeArgument typeArgument : type.getMCTypeArgumentList()) {
-        typeArgument.accept(this);
-        ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false,
-            this.getResult().get());
-        actualTypeArgumentList.add(actualTypeArgument);
-      }
-      finalType.setActualTypeArguments(actualTypeArgumentList);
-    }
     this.setResult(finalType);
   }
 
