@@ -17,7 +17,6 @@ import de.monticore.symboltable.types.TypeSymbol;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.symboltable.types.references.TypeReference;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
-import de.monticore.types.types._ast.ASTType;
 
 import java.util.*;
 
@@ -2233,41 +2232,20 @@ public class JavaDSLHelper {
   }
 
   public  static List<JavaTypeSymbolReference> getReferencedSuperTypes(JavaTypeSymbol typeSymbol) {
-    HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
     List<JavaTypeSymbolReference> result = new ArrayList<>();
     if (typeSymbol.getName().equals("Object") || typeSymbol.getName().equals("java.lang.Object")) {
       return result;
     }
-    if (typeSymbol.getAstNode().isPresent()) {
-      if (typeSymbol.isClass()) {
-        ASTClassDeclaration classAST = (ASTClassDeclaration) typeSymbol.getAstNode().get();
-        if (classAST.isPresentSuperClass()) {
-          classAST.getSuperClass().accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-          result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));
-        }
-        else {
-          result.add(getObjectType(typeSymbol.getEnclosingScope()));
-        }
-        for (ASTMCType astType : classAST.getImplementedInterfaceList()) {
-          astType.accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-        }
-      }
-      if (typeSymbol.isInterface()) {
-        ASTInterfaceDeclaration interfaceAST = (ASTInterfaceDeclaration) typeSymbol.getAstNode()
-            .get();
-        for (ASTMCType astType : interfaceAST.getExtendedInterfaceList()) {
-          astType.accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-        }
-        if (interfaceAST.getExtendedInterfaceList().isEmpty()) {
-          result.add(getObjectType(typeSymbol.getEnclosingScope()));
-        }
-      }
-      if(typeSymbol.isEnum()) {
-        result.addAll(typeSymbol.getSuperTypes());
-      }
+    if (typeSymbol.getSuperClass().isPresent()) {
+      result.add(typeSymbol.getSuperClass().get());
+      result.addAll(getReferencedSuperTypes(typeSymbol.getSuperClass().get()));
+    }
+    else {
+      result.add(getObjectType(typeSymbol.getEnclosingScope()));
+    }
+    for (JavaTypeSymbolReference superInterface: typeSymbol.getInterfaces()) {
+      result.add(superInterface);
+      result.addAll(getReferencedSuperTypes(superInterface));
     }
     return result;
   }
