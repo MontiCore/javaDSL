@@ -2,21 +2,21 @@
 
 package de.monticore.java.cocos.fieldandlocalvars;
 
-import java.util.List;
-
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTArrayInitializer;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
-import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
-import de.monticore.literals.literals._ast.ASTLiteral;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.literals.literals._ast.ASTIntLiteral;
+import de.monticore.mcbasicliterals._ast.ASTLiteral;
+import de.monticore.mcjavaliterals._ast.ASTIntLiteral;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.List;
 
 /**
  * TODO

@@ -14,7 +14,7 @@ public class MethodReturnVoid implements JavaDSLASTMethodDeclarationCoCo {
       
   @Override
   public void check(ASTMethodDeclaration node) {
-    if (node.getMethodSignature().getMCReturnType().isPresentMCType()
+    if (node.getMethodSignature().getMCReturnType().isPresentMCVoidType()
         && node.getMethodSignature().getDimList().size() > 0) {
       Log.error("0xA1208 Invalid return type for '" + node.getMethodSignature().getName()
           + "'. The void type must have dimension 0.",
