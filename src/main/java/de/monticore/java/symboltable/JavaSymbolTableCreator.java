@@ -78,6 +78,7 @@ import de.monticore.types.mcfullgenerictypes._ast.ASTMCArrayType;
 import de.monticore.types.mcfullgenerictypes._ast.ASTMCTypeParameters;
 import de.monticore.types.mcfullgenerictypes._ast.MCFullGenericTypesMill;
 import de.monticore.types.types._ast.ASTComplexReferenceType;
+import de.se_rwth.commons.Joiners;
 import de.se_rwth.commons.Names;
 
 public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements JavaDSLVisitor,
@@ -184,8 +185,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // ... ("extends" superClass:Type)? ...
     if (astClassDeclaration.isPresentSuperClass()) {
       JavaTypeSymbolReference superClassReference = new JavaTypeSymbolReference(
-              astClassDeclaration
-                      .getSuperClass().getBaseName(),
+              Joiners.DOT.join(astClassDeclaration.getSuperClass().getNameList()),
               currentScope().get(), 0);
       javaClassTypeSymbol.setSuperClass(superClassReference);
       MCTypesJTypeSymbolsHelper.addTypeArgumentsToTypeSymbol(superClassReference, astClassDeclaration.getSuperClass(),
@@ -345,8 +345,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
     // ... Type ...
     JavaTypeSymbolReference javaTypeSymbolReference = null;
 
-    final String returnTypeName = astAnnotationMethod
-                    .getMCType().getBaseName();
+    final String returnTypeName = Joiners.DOT.join(astAnnotationMethod.getMCType().getNameList());
     javaTypeSymbolReference = new JavaTypeSymbolReference(returnTypeName, currentScope().get(),
             MCTypesHelper.getArrayDimensionIfArrayOrZero(astAnnotationMethod.getMCType()));
 
@@ -816,7 +815,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
 
     if (methodSignature.getMCReturnType().isPresentMCType()) {
       ASTMCType nonVoidReturnType = methodSignature.getMCReturnType().getMCType();
-      final String returnTypeName = nonVoidReturnType.getBaseName();
+      final String returnTypeName = Joiners.DOT.join(nonVoidReturnType.getNameList());
       final int additionalDimensions = methodSignature.getDimList().size();
       javaTypeSymbolReference = new JavaTypeSymbolReference(returnTypeName, currentScope().get(),
               MCTypesHelper.getArrayDimensionIfArrayOrZero(nonVoidReturnType) + additionalDimensions);
@@ -957,7 +956,7 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
   protected JavaFieldSymbol addOneFormalParameterToMethod(JavaMethodSymbol javaMethodSymbol,
                                                           Iterable<? extends ASTModifier> modifiers, ASTMCType astType, ASTDeclaratorId astDeclaratorId) {
     // new JavaFieldSymbol
-    final String typeName = astType.getBaseName();
+    final String typeName = Joiners.DOT.join(astType.getNameList());
     final int additionalDimensions = astDeclaratorId.getDimList().size();
     JavaTypeSymbolReference javaTypeSymbolReference = new JavaTypeSymbolReference(typeName,
             currentScope().get(), MCTypesHelper.getArrayDimensionIfArrayOrZero(astType)
