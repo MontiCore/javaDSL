@@ -910,6 +910,34 @@ public class JavaDSLPrettyPrinter implements
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
+  @Override
+  public void handle(ASTExtType node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getMCType().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtLiteral node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getLiteral().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtReturnType node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getMCReturnType().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtTypeArguments node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getTypeArguments().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
   protected void printSeparated(Iterator<? extends ASTJavaDSLNode> iter, String separator) {
     // print by iterate through all items
     String sep = "";

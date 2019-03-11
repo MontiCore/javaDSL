@@ -858,11 +858,6 @@ public class JavaDSLHelper {
           }
         }
       }
-      for (JavaTypeSymbolReference supType : superSymbol.getSuperTypes()) {
-        if (overriddenMethodFoundInSuperTypes(methodSymbol, supType).isPresent()) {
-          return overriddenMethodFoundInSuperTypes(methodSymbol, supType);
-        }
-      }
     }
     return Optional.empty();
   }

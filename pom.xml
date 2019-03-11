@@ -6,7 +6,7 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.14-SNAPSHOT</version>
+  <version>4.3.15-SNAPSHOT</version>
   <properties>
 
     <monticore.version>5.0.4-SNAPSHOT</monticore.version>
@@ -25,7 +25,7 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>5.0.2</mc4.maven.version>
+    <mc4.maven.version>5.0.3</mc4.maven.version>
 
     <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
 
