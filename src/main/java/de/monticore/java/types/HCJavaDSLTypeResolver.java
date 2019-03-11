@@ -1162,7 +1162,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
         handle(typeVariableDeclaration);
         JavaTypeSymbolReference varType = this.getResult().get();
         for (ASTMCType type : typeVariableDeclaration.getUpperBoundList()) {
-          handle(type);
+          type.accept(getRealThis());
           ActualTypeArgument typeArgument = new ActualTypeArgument(false, true,
               this.getResult().get());
           argList.add(typeArgument);
