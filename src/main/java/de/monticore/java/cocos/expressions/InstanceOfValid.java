@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.javaclassexpressions._ast.ASTInstanceofExpression;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTInstanceofExpressionCoCo;
+import de.monticore.expressions.javaclassexpressions._ast.ASTInstanceofExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTInstanceofExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
@@ -29,7 +29,7 @@ public class InstanceOfValid implements JavaClassExpressionsASTInstanceofExpress
             "0xA0550 the relational expression operand of the 'instanceof' operator must be a reference type or the null type.",
             node.get_SourcePositionStart());
       }
-      node.getEType().accept(typeResolver);
+      node.getExtType().accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference typeIns = typeResolver.getResult()
             .get();

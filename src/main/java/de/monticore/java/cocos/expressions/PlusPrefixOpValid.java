@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTPlusPrefixExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTPlusPrefixExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTPlusPrefixExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTPlusPrefixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

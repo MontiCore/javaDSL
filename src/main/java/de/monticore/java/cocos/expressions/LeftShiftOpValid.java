@@ -3,8 +3,8 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.shiftexpressions._ast.ASTLeftShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTLeftShiftExpressionCoCo;
+import de.monticore.expressions.shiftexpressions._ast.ASTLeftShiftExpression;
+import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTLeftShiftExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**

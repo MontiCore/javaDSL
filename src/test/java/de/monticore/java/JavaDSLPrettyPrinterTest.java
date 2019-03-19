@@ -1,8 +1,15 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
+import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.prettyprint.JavaDSLPrettyPrinterDelegator;
+import de.monticore.prettyprint.IndentPrinter;
+import de.se_rwth.commons.logging.Log;
+import org.antlr.v4.runtime.RecognitionException;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -20,6 +27,8 @@ import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.java.prettyprint.JavaDSLPrettyPrinterDelegator;
 import de.monticore.prettyprint.IndentPrinter;
 import de.se_rwth.commons.logging.LogStub;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TODO: Write me!
@@ -31,8 +40,8 @@ public class JavaDSLPrettyPrinterTest {
   
   @BeforeClass
   public static void setup() {
-    LogStub.init();
-    LogStub.enableFailQuick(false);
+    Log.init();
+    Log.enableFailQuick(false);
   }
   
   protected ASTJavaDSLNode parse(String modelName) throws RecognitionException, IOException {

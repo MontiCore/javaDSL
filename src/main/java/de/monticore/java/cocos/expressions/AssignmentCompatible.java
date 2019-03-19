@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTAssignmentExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTAssignmentExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

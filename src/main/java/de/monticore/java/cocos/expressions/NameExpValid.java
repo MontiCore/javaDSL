@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.javaclassexpressions._ast.ASTNameExpression;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTNameExpressionCoCo;
+import de.monticore.expressions.javaclassexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTNameExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

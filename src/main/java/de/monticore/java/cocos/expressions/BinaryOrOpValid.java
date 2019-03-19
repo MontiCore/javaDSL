@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTBinaryOrOpExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTBinaryOrOpExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTBinaryOrOpExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

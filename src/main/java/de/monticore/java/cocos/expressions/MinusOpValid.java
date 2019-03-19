@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.commonexpressions._ast.ASTMinusExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTMinusExpressionCoCo;
+import de.monticore.expressions.commonexpressions._ast.ASTMinusExpression;
+import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTMinusExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

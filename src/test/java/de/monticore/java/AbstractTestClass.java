@@ -69,7 +69,7 @@ public abstract class AbstractTestClass {
   
   @Before
   public void setup() {
-    LogStub.init();
+    Log.init();
     Log.enableFailQuick(false);
     parser = new JavaDSLParser();
   }

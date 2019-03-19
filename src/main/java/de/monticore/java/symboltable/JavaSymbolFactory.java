@@ -2,7 +2,8 @@
 
 package de.monticore.java.symboltable;
 
-import de.monticore.types.JTypeSymbolsHelper.JTypeFactory;
+
+import de.monticore.types.MCTypesJTypeSymbolsHelper;
 
 /**
  * TODO: Write me!
@@ -10,7 +11,7 @@ import de.monticore.types.JTypeSymbolsHelper.JTypeFactory;
  * @author (last commit) $Author$
  * @since TODO: add version number
  */
-public class JavaSymbolFactory implements JTypeFactory<JavaTypeSymbol> {
+public class JavaSymbolFactory implements MCTypesJTypeSymbolsHelper.JTypeFactory<JavaTypeSymbol> {
   
   // ----------------------
   // attributes

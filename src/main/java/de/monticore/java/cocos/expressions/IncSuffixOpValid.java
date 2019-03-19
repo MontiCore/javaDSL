@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTIncSuffixExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTIncSuffixExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTIncSuffixExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTIncSuffixExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;

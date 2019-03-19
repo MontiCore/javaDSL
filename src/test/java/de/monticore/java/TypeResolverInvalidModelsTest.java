@@ -333,9 +333,9 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     checker.addCoCo(new ClassNoDuplicateDirectSuperInterface(typeResolver));
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error(
-            "0xA0214 super interface 'java.util.List' cannot be implemented more than once with different arguments in class 'ClassNoSuperInterfaceDuplicate'."),
+            "0xA0214 super interface 'List' cannot be implemented more than once with different arguments in class 'ClassNoSuperInterfaceDuplicate'."),
         Finding.error(
-            "0xA0214 super interface 'java.util.List' cannot be implemented more than once with different arguments in class 'InnerClass'.")
+            "0xA0214 super interface 'List' cannot be implemented more than once with different arguments in class 'InnerClass'.")
 
     );
     testModelForErrors("src/test/resources",
@@ -1385,8 +1385,6 @@ public class TypeResolverInvalidModelsTest extends AbstractCoCoTestClass {
     Collection<Finding> expectedErrors = Arrays.asList(
         Finding.error("0xA0820 the return type is not compatible with 'Methods.getList'."),
         Finding.error("0xA0820 the return type is not compatible with 'ArrayList.size'."),
-        Finding.error("0xA0820 the return type is not compatible with 'ArrayList.size'."),
-        Finding.error("0xA0820 the return type is not compatible with 'AbstractCollection.size'."),
         Finding.error("0xA0820 the return type is not compatible with 'AbstractCollection.size'."),
         Finding.error("0xA0820 the return type is not compatible with 'Collection.size'."),
         Finding.error("0xA0820 the return type is not compatible with 'Collection.size'."),

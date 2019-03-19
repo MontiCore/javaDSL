@@ -2,31 +2,23 @@
 
 package de.monticore.java.types;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import de.monticore.commonexpressions._ast.ASTCallExpression;
-import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.Symbol;
 import de.monticore.symboltable.types.TypeSymbol;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
 import de.monticore.symboltable.types.references.TypeReference;
-import de.monticore.types.types._ast.ASTType;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
+
+import java.util.*;
 
 /**
  * TODO
@@ -864,11 +856,6 @@ public class JavaDSLHelper {
             list.add(superMethod);
             return Optional.of(list);
           }
-        }
-      }
-      for (JavaTypeSymbolReference supType : superSymbol.getSuperTypes()) {
-        if (overriddenMethodFoundInSuperTypes(methodSymbol, supType).isPresent()) {
-          return overriddenMethodFoundInSuperTypes(methodSymbol, supType);
         }
       }
     }
@@ -2240,41 +2227,20 @@ public class JavaDSLHelper {
   }
 
   public  static List<JavaTypeSymbolReference> getReferencedSuperTypes(JavaTypeSymbol typeSymbol) {
-    HCJavaDSLTypeResolver typeResolver = new HCJavaDSLTypeResolver();
     List<JavaTypeSymbolReference> result = new ArrayList<>();
     if (typeSymbol.getName().equals("Object") || typeSymbol.getName().equals("java.lang.Object")) {
       return result;
     }
-    if (typeSymbol.getAstNode().isPresent()) {
-      if (typeSymbol.isClass()) {
-        ASTClassDeclaration classAST = (ASTClassDeclaration) typeSymbol.getAstNode().get();
-        if (classAST.isPresentSuperClass()) {
-          classAST.getSuperClass().accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-          result.addAll(getReferencedSuperTypes(typeResolver.getResult().get()));
-        }
-        else {
-          result.add(getObjectType(typeSymbol.getEnclosingScope()));
-        }
-        for (ASTType astType : classAST.getImplementedInterfaceList()) {
-          astType.accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-        }
-      }
-      if (typeSymbol.isInterface()) {
-        ASTInterfaceDeclaration interfaceAST = (ASTInterfaceDeclaration) typeSymbol.getAstNode()
-            .get();
-        for (ASTType astType : interfaceAST.getExtendedInterfaceList()) {
-          astType.accept(typeResolver);
-          result.add(typeResolver.getResult().get());
-        }
-        if (interfaceAST.getExtendedInterfaceList().isEmpty()) {
-          result.add(getObjectType(typeSymbol.getEnclosingScope()));
-        }
-      }
-      if(typeSymbol.isEnum()) {
-        result.addAll(typeSymbol.getSuperTypes());
-      }
+    if (typeSymbol.getSuperClass().isPresent()) {
+      result.add(typeSymbol.getSuperClass().get());
+      result.addAll(getReferencedSuperTypes(typeSymbol.getSuperClass().get()));
+    }
+    else {
+      result.add(getObjectType(typeSymbol.getEnclosingScope()));
+    }
+    for (JavaTypeSymbolReference superInterface: typeSymbol.getInterfaces()) {
+      result.add(superInterface);
+      result.addAll(getReferencedSuperTypes(superInterface));
     }
     return result;
   }

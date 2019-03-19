@@ -2,11 +2,11 @@
 
 package de.monticore.java.types;
 
-import de.monticore.assignmentexpressions._ast.*;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsCoCoChecker;
-import de.monticore.commonexpressions._ast.*;
-import de.monticore.commonexpressions._ast.ASTArguments;
-import de.monticore.commonexpressions._cocos.CommonExpressionsCoCoChecker;
+import de.monticore.expressions.assignmentexpressions._ast.*;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsCoCoChecker;
+import de.monticore.expressions.commonexpressions._ast.*;
+import de.monticore.expressions.commonexpressions._ast.ASTArguments;
+import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsCoCoChecker;
 import de.monticore.java.cocos.annotations.AnnotationMethodModifiers;
 import de.monticore.java.cocos.annotations.AnnotationMethodReturnTypes;
 import de.monticore.java.cocos.annotations.AnnotationNameNotAsEnclosingType;
@@ -35,11 +35,11 @@ import de.monticore.java.cocos.statements.ThrowIsValid;
 import de.monticore.java.cocos.statements.WhileConditionHasBooleanType;
 import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
-import de.monticore.javaclassexpressions._ast.*;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsCoCoChecker;
-import de.monticore.shiftexpressions._ast.*;
-import de.monticore.shiftexpressions._ast.ASTLogicalRightShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsCoCoChecker;
+import de.monticore.expressions.javaclassexpressions._ast.*;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsCoCoChecker;
+import de.monticore.expressions.shiftexpressions._ast.*;
+import de.monticore.expressions.shiftexpressions._ast.ASTLogicalRightShiftExpression;
+import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsCoCoChecker;
 
 /**
  *  on 23.10.2016.
