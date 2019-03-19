@@ -62,14 +62,6 @@ public class JavaDSLPrettyPrinter implements
     }
   }
 
-  /**
-   * @see de.monticore.java.javadsl._visitor.JavaDSLVisitor#handle(de.monticore.java.javadsl._ast.ASTASTStatement)
-   */
-  @Override
-  public void handle(ASTASTStatement node) {
-    getPrinter().println("de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
-  }
-
   @Override
   public void handle(ASTCompilationUnit a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
