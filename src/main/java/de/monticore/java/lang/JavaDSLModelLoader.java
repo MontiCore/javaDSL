@@ -6,7 +6,6 @@ import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.symboltable.JavaSymbolTableCreator;
 import de.monticore.modelloader.ModelingLanguageModelLoader;
 import de.monticore.symboltable.ArtifactScope;
-import de.monticore.symboltable.MutableScope;
 import de.monticore.symboltable.ResolvingConfiguration;
 import de.monticore.symboltable.Scope;
 import de.se_rwth.commons.logging.Log;
@@ -19,7 +18,7 @@ public class JavaDSLModelLoader extends ModelingLanguageModelLoader<ASTCompilati
 
   @Override
   protected void createSymbolTableFromAST(final ASTCompilationUnit ast, final String modelName,
-      final MutableScope enclosingScope, final ResolvingConfiguration resolvingConfiguration) {
+      final Scope enclosingScope, final ResolvingConfiguration resolvingConfiguration) {
     final JavaSymbolTableCreator symbolTableCreator = getModelingLanguage()
         .getSymbolTableCreator(resolvingConfiguration, enclosingScope).orElse(null);
 

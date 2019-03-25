@@ -2,84 +2,25 @@
 
 package de.monticore.java.symboltable;
 
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.ABSTRACT;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.FINAL;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.NATIVE;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.PRIVATE;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.PROTECTED;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.PUBLIC;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.STATIC;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.STRICTFP;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.SYNCHRONIZED;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.TRANSIENT;
-import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.VOLATILE;
-import static java.util.Objects.requireNonNull;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
-
 import de.monticore.ast.ASTNode;
-import de.monticore.java.javadsl._ast.ASTAnnotation;
-import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
-import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
-import de.monticore.java.javadsl._ast.ASTCatchClause;
-import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTConstDeclaration;
-import de.monticore.java.javadsl._ast.ASTConstantDeclarator;
-import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
-import de.monticore.java.javadsl._ast.ASTDeclaratorId;
-import de.monticore.java.javadsl._ast.ASTDoWhileStatement;
-import de.monticore.java.javadsl._ast.ASTEnhancedForControl;
-import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
-import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._ast.ASTForStatement;
-import de.monticore.java.javadsl._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTFormalParameterListing;
-import de.monticore.java.javadsl._ast.ASTIfStatement;
-import de.monticore.java.javadsl._ast.ASTImportDeclaration;
-import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTInterfaceMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
-import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
-import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodSignature;
-import de.monticore.java.javadsl._ast.ASTModifier;
-import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
-import de.monticore.java.javadsl._ast.ASTResource;
-import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
-import de.monticore.java.javadsl._ast.ASTSwitchStatement;
-import de.monticore.java.javadsl._ast.ASTThrows;
-import de.monticore.java.javadsl._ast.ASTTryStatement;
-import de.monticore.java.javadsl._ast.ASTTryStatementWithResources;
-import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.javadsl._ast.ASTWhileStatement;
+import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
-import de.monticore.symboltable.ArtifactScope;
-import de.monticore.symboltable.CommonScope;
-import de.monticore.symboltable.CommonSymbolTableCreator;
-import de.monticore.symboltable.ImportStatement;
-import de.monticore.symboltable.MutableScope;
-import de.monticore.symboltable.ResolvingConfiguration;
-import de.monticore.symboltable.Scope;
-import de.monticore.symboltable.SymbolTableCreator;
+import de.monticore.symboltable.*;
 import de.monticore.types.MCTypesHelper;
 import de.monticore.types.MCTypesJTypeSymbolsHelper;
 import de.monticore.types.MCTypesJTypeSymbolsHelper.JTypeReferenceFactory;
-
-import de.monticore.types.mcbasictypes._ast.*;
+import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.types.mcfullgenerictypes._ast.ASTMCArrayType;
 import de.monticore.types.mcfullgenerictypes._ast.ASTMCTypeParameters;
 import de.monticore.types.mcfullgenerictypes._ast.MCFullGenericTypesMill;
-import de.monticore.types.types._ast.ASTComplexReferenceType;
 import de.se_rwth.commons.Joiners;
 import de.se_rwth.commons.Names;
+
+import java.util.*;
+
+import static de.monticore.java.javadsl._ast.ASTConstantsJavaDSL.*;
+import static java.util.Objects.requireNonNull;
 
 public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements JavaDSLVisitor,
         SymbolTableCreator {
@@ -105,13 +46,13 @@ public class JavaSymbolTableCreator extends CommonSymbolTableCreator implements 
 
   public JavaSymbolTableCreator(
           final ResolvingConfiguration resolvingConfig,
-          final MutableScope enclosingScope) {
+          final Scope enclosingScope) {
     super(resolvingConfig, enclosingScope);
   }
 
   public JavaSymbolTableCreator(
           final ResolvingConfiguration resolvingConfig,
-          final Deque<MutableScope> scopeStack) {
+          final Deque<Scope> scopeStack) {
     super(resolvingConfig, scopeStack);
   }
 
