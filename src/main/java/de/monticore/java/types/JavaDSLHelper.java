@@ -2,6 +2,7 @@
 
 package de.monticore.java.types;
 
+import com.google.common.collect.Lists;
 import de.monticore.expressions.commonexpressions._ast.ASTCallExpression;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.expressions.javaclassexpressions._ast.ASTGenericInvocationExpression;
@@ -336,8 +337,9 @@ public class JavaDSLHelper {
    */
   public static String getCompleteName(JavaTypeSymbolReference type) {
     if(!isPrimitiveType(type) && !"?".equals(type.getName())) {
-      if(type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-        JavaTypeSymbol symbol = (JavaTypeSymbol)type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+      if(optSymbol.isPresent()) {
+        JavaTypeSymbol symbol = (JavaTypeSymbol)optSymbol.get();
         if(symbol.isTypeVariable()) {
           return type.getName();
         }
@@ -358,8 +360,9 @@ public class JavaDSLHelper {
               outerTypeName = outerTypeName + "."+splitted[i];
             }
           }
-          if(type.getEnclosingScope().resolve(outerTypeName, JavaTypeSymbol.KIND).isPresent()) {
-            JavaTypeSymbol outerSymbol = (JavaTypeSymbol) type.getEnclosingScope().resolve(outerTypeName, JavaTypeSymbol.KIND).get();
+          optSymbol = type.getEnclosingScope().resolve(outerTypeName, JavaTypeSymbol.KIND);
+          if(optSymbol.isPresent()) {
+            JavaTypeSymbol outerSymbol = (JavaTypeSymbol) optSymbol.get();
             if(outerTypeName.equals(outerSymbol.getFullName())) {
               return outerTypeName;
             }
@@ -456,9 +459,9 @@ public class JavaDSLHelper {
    * @return true if the given type is an enum
    */
   public  static boolean isEnum(JavaTypeSymbolReference type) {
-    if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-          .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       return typeSymbol.isEnum();
     }
     return false;
@@ -470,9 +473,9 @@ public class JavaDSLHelper {
    * @return true if the given type is an annotation
    */
   public  static boolean isAnnotation(JavaTypeSymbolReference type) {
-    if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-          .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       return typeSymbol.isAnnotation();
     }
     return false;
@@ -797,12 +800,11 @@ public class JavaDSLHelper {
    * the found method is returned with the supertype, in which it was found.
    * The reason for returning the supertype is to improve the error message.
    */
-  public  static Optional<List<Symbol>> methodDifferentSignatureAndSameErasure(JavaMethodSymbol classMethod,
+  public  static List<Symbol> methodDifferentSignatureAndSameErasure(JavaMethodSymbol classMethod,
       JavaTypeSymbolReference superType) {
-    if (superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
-        .isPresent()) {
-      JavaTypeSymbol superSymbol = (JavaTypeSymbol) superType.getEnclosingScope()
-          .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol superSymbol = (JavaTypeSymbol) optSymbol.get();
       for (JavaMethodSymbol superMethod : superSymbol.getMethods()) {
         if (classMethod.getName().equals(superMethod.getName())) {
           List<JavaTypeSymbolReference> classList = getSubstitutedFormalParameterTypes(classMethod);
@@ -814,19 +816,20 @@ public class JavaDSLHelper {
               List<Symbol> result = new ArrayList<>();
               result.add(superSymbol);
               result.add(superMethod);
-              return Optional.of(result);
+              return result;
             }
           }
         }
       }
       List<JavaTypeSymbolReference> references = getReferencedSuperTypes(superSymbol);
       for (JavaTypeSymbolReference supType : references) {
-        if (methodDifferentSignatureAndSameErasure(classMethod, supType).isPresent()) {
-          return methodDifferentSignatureAndSameErasure(classMethod, supType);
+        List<Symbol> l = methodDifferentSignatureAndSameErasure(classMethod, supType);
+        if (!l.isEmpty()) {
+          return l;
         }
       }
     }
-    return Optional.empty();
+    return Lists.newArrayList();
   }
 
 
@@ -839,12 +842,11 @@ public class JavaDSLHelper {
    * the method is returned with the supertype, in which the method was found. The reason for
    * returning the supertype is to improve the error message.
    */
-  public  static Optional<List<Symbol>> overriddenMethodFoundInSuperTypes(JavaMethodSymbol methodSymbol,
+  public  static List<Symbol> overriddenMethodFoundInSuperTypes(JavaMethodSymbol methodSymbol,
       JavaTypeSymbolReference superType) {
-    if (superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
-        .isPresent()) {
-      JavaTypeSymbol superSymbol = (JavaTypeSymbol) superType.getEnclosingScope()
-          .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol superSymbol = (JavaTypeSymbol) optSymbol.get();
       for (JavaMethodSymbol superMethod : superSymbol.getMethods()) {
         List<JavaTypeSymbolReference> formalParameters = getParameterTypes(superMethod);
         if (methodSymbol.getName().equals(superMethod.getName())) {
@@ -854,12 +856,12 @@ public class JavaDSLHelper {
             List<Symbol> list = new ArrayList<>();
             list.add(superSymbol);
             list.add(superMethod);
-            return Optional.of(list);
+            return list;
           }
         }
       }
     }
-    return Optional.empty();
+    return Lists.newArrayList();
   }
 
 
@@ -894,10 +896,9 @@ public class JavaDSLHelper {
       JavaTypeSymbolReference returnType) {
     if(superType != null) {
       if (!superType.getActualTypeArguments().isEmpty()) {
-        if (superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
-            .isPresent()) {
-          JavaTypeSymbol superSymbol = (JavaTypeSymbol) superType.getEnclosingScope()
-              .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+        Optional<Symbol> optSymbol = superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND);
+        if (optSymbol.isPresent()) {
+          JavaTypeSymbol superSymbol = (JavaTypeSymbol) optSymbol.get();
           HashMap<String, JavaTypeSymbolReference> substituted = getSubstitutedTypes(superSymbol,
               superType);
           return applyTypeSubstitution(substituted, returnType);
@@ -1210,9 +1211,9 @@ public class JavaDSLHelper {
    */
   public  static JavaTypeSymbolReference getRawType(JavaTypeSymbolReference type) {
     if (!isPrimitiveType(type) && !type.getActualTypeArguments().isEmpty()) {
-      if(type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()){
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-            .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+      if(optSymbol.isPresent()){
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
         if (!typeSymbol.getFormalTypeParameters().isEmpty() && !type.getActualTypeArguments()
             .isEmpty()) {
           return applyTypeErasure(type);
@@ -1233,9 +1234,9 @@ public class JavaDSLHelper {
       applyTypeErasure(new JavaTypeSymbolReference(type.getName(), type.getEnclosingScope(), 0));
     }
     if(!isPrimitiveType((JavaTypeSymbolReference) type)) {
-      if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-            .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+      if (optSymbol.isPresent()) {
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
         //The erasure of a type variable (§4.4) is the erasure of its leftmost bound.
         if (typeSymbol.isTypeVariable() && type.getActualTypeArguments().isEmpty()) {
           return new JavaTypeSymbolReference("Object", typeSymbol.getEnclosingScope(), 0);
@@ -1393,9 +1394,9 @@ public class JavaDSLHelper {
 
     //for class and interfaces
     //raw type
-    if (subType.getEnclosingScope().resolve(subType.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) subType.getEnclosingScope()
-          .resolve(subType.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = subType.getEnclosingScope().resolve(subType.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       if (substitutedTypes == null && isRawType(subType)) {
         substitutedTypes = new HashMap<>();
       }
@@ -1498,10 +1499,9 @@ public class JavaDSLHelper {
   public  static List<JavaMethodSymbol> getAccessibleMethods(String methodName,
       JavaTypeSymbol currentSymbol, JavaTypeSymbolReference superType, boolean isClassMethod) {
     List<JavaMethodSymbol> pMethods = new ArrayList<>();
-    if (superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
-        .isPresent()) {
-      JavaTypeSymbol superSymbol = (JavaTypeSymbol) superType.getEnclosingScope()
-          .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol superSymbol = (JavaTypeSymbol) optSymbol.get();
       if (!superSymbol.getSpannedScope().resolveMany(methodName, JavaMethodSymbol.KIND).isEmpty()) {
         Collection<JavaMethodSymbol> methods = superSymbol.getSpannedScope()
             .resolveMany(methodName, JavaMethodSymbol.KIND);
@@ -2053,9 +2053,9 @@ public class JavaDSLHelper {
 
   public static JavaTypeSymbolReference substituteByObject(TypeReference<? extends TypeSymbol> type) {
     if(!isPrimitiveType((JavaTypeSymbolReference) type)) {
-      if(type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope().resolve(type.getName(),
-            JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+      if(optSymbol.isPresent()) {
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
         if(typeSymbol.isTypeVariable()) {
           return new JavaTypeSymbolReference("java.lang.Object", type.getEnclosingScope(), 0);
         }
@@ -2196,9 +2196,9 @@ public class JavaDSLHelper {
    */
   public  static List<JavaTypeSymbolReference> getAllReferencedSuperTypes(JavaTypeSymbolReference type) {
     List<JavaTypeSymbolReference> list = new ArrayList<>(getReferencedSuperTypes(type));
-    if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-          .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       for (JavaTypeSymbolReference superType : typeSymbol.getSuperTypes()) {
         list.addAll(getAllReferencedSuperTypes(superType));
       }
@@ -2217,9 +2217,9 @@ public class JavaDSLHelper {
     List<JavaTypeSymbolReference> result = new ArrayList<>();
     String completeName = getCompleteName(type);
     if (!isPrimitiveType(type) && !isObjectType(type) && type.getDimension() == 0) {
-      if(type.getEnclosingScope().resolve(completeName, JavaTypeSymbol.KIND).isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-            .resolve(completeName, JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(completeName, JavaTypeSymbol.KIND);
+      if(optSymbol.isPresent()) {
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
         return getReferencedSuperTypes(typeSymbol);
       }
     }
@@ -2253,9 +2253,9 @@ public class JavaDSLHelper {
    */
   public  static boolean classCircularityExist(JavaTypeSymbolReference type,
       List<JavaTypeSymbolReference> superClasses) {
-    if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-          .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       if (typeSymbol.getSuperClass().isPresent()) {
         for (JavaTypeSymbolReference superClass : superClasses) {
           if (superClass.getName().equals(typeSymbol.getSuperClass().get().getName())) {
@@ -2281,10 +2281,9 @@ public class JavaDSLHelper {
     List<JavaTypeSymbolReference> interfaces = new ArrayList<>(getAllReferencedSuperTypes(type));
     List<JavaTypeSymbolReference> result = new ArrayList<>();
     for (JavaTypeSymbolReference superType : interfaces) {
-      if (superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND)
-          .isPresent()) {
-        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) superType.getEnclosingScope()
-            .resolve(superType.getName(), JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = superType.getEnclosingScope().resolve(superType.getName(), JavaTypeSymbol.KIND);
+      if (optSymbol.isPresent()) {
+        JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
         if (typeSymbol.isInterface() && !superType.getActualTypeArguments().isEmpty()) {
           result.add(superType);
         }
@@ -2462,12 +2461,12 @@ public class JavaDSLHelper {
     if (isProperSuperType(from, to) || isObjectType(to)) {
       return true;
     }
-    if (from.getEnclosingScope().resolve(from.getName(), JavaTypeSymbol.KIND).isPresent()
-        && to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol fromSymbol = (JavaTypeSymbol) from.getEnclosingScope()
-          .resolve(from.getName(), JavaTypeSymbol.KIND).get();
-      JavaTypeSymbol toSymbol = (JavaTypeSymbol) to.getEnclosingScope()
-          .resolve(to.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optFrom = from.getEnclosingScope().resolve(from.getName(), JavaTypeSymbol.KIND);
+    Optional<Symbol> optTo = to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND);
+    if (optFrom.isPresent()
+        && optTo.isPresent()) {
+      JavaTypeSymbol fromSymbol = (JavaTypeSymbol) optFrom.get();
+      JavaTypeSymbol toSymbol = (JavaTypeSymbol) optTo.get();
       // From any class type C to any non-parameterized interface type K, provided that C is not final and does not implement K.
       if ((fromSymbol.isClass() && !fromSymbol.isFinal())
           && (toSymbol.isInterface() && toSymbol.getFormalTypeParameters().isEmpty()
@@ -2525,12 +2524,13 @@ public class JavaDSLHelper {
       fromSymbol = from.getReferencedSymbol();
       toSymbol = to.getReferencedSymbol();
     }
-    else if (from.getEnclosingScope().resolve(from.getName(), JavaTypeSymbol.KIND).isPresent() && to
-        .getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      fromSymbol = (JavaTypeSymbol) from.getEnclosingScope()
-          .resolve(from.getName(), JavaTypeSymbol.KIND).get();
-      toSymbol = (JavaTypeSymbol) to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND)
-          .get();
+    else {
+      Optional<Symbol> optfrom = from.getEnclosingScope().resolve(from.getName(), JavaTypeSymbol.KIND);
+      Optional<Symbol> optTo = to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND);
+      if (optfrom.isPresent() && optTo.isPresent()) {
+        fromSymbol = (JavaTypeSymbol) optfrom.get();
+        toSymbol = (JavaTypeSymbol) optTo.get();
+      }
     }
     if (fromSymbol == null || toSymbol == null) {
       return false;
@@ -2659,9 +2659,9 @@ public class JavaDSLHelper {
   public  static  boolean unsafeCastTypeConversionAvailable(JavaTypeSymbolReference from,
       JavaTypeSymbolReference to) {
     //A cast to a type variable (§4.4) is always unchecked.
-    if (to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) to.getEnclosingScope()
-          .resolve(to.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = to.getEnclosingScope().resolve(to.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       if (typeSymbol.isTypeVariable()) {
         return true;
       }
@@ -2769,9 +2769,9 @@ public class JavaDSLHelper {
    * JLS3_5.1-10
    */
   public  static JavaTypeSymbolReference capture(JavaTypeSymbolReference type) {
-    if (type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND).isPresent()) {
-      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) type.getEnclosingScope()
-          .resolve(type.getName(), JavaTypeSymbol.KIND).get();
+    Optional<Symbol> optSymbol = type.getEnclosingScope().resolve(type.getName(), JavaTypeSymbol.KIND);
+    if (optSymbol.isPresent()) {
+      JavaTypeSymbol typeSymbol = (JavaTypeSymbol) optSymbol.get();
       JavaTypeSymbolReference resulType = new JavaTypeSymbolReference(type.getName(), type.getEnclosingScope(), type.getDimension());
       if (type.getActualTypeArguments().size() == typeSymbol.getFormalTypeParameters().size()) {
         List<ActualTypeArgument> actualTypeArguments = new ArrayList<>();
@@ -3099,9 +3099,9 @@ public class JavaDSLHelper {
     JavaTypeSymbolReference resultType = capture(type);
     for (ActualTypeArgument actualTypeArgument : type.getActualTypeArguments()) {
       TypeReference<? extends TypeSymbol> argType = actualTypeArgument.getType();
-      if (argType.getEnclosingScope().resolve(argType.getName(), JavaTypeSymbol.KIND).isPresent()) {
-        JavaTypeSymbol argSymbol = (JavaTypeSymbol) argType.getEnclosingScope()
-            .resolve(argType.getName(), JavaTypeSymbol.KIND).get();
+      Optional<Symbol> optSymbol = argType.getEnclosingScope().resolve(argType.getName(), JavaTypeSymbol.KIND);
+      if (optSymbol.isPresent()) {
+        JavaTypeSymbol argSymbol = (JavaTypeSymbol) optSymbol.get();
         if (argSymbol.isTypeVariable() && substitutedTypes.containsKey(argSymbol.getName())) {
           JavaTypeSymbolReference subType = new JavaTypeSymbolReference(
               substitutedTypes.get(argSymbol.getName()).getName(),

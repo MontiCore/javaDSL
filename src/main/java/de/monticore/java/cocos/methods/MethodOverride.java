@@ -2,8 +2,6 @@
 
 package de.monticore.java.cocos.methods;
 
-import java.util.List;
-
 import de.monticore.java.javadsl._ast.ASTClassDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTClassDeclarationCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
@@ -12,6 +10,8 @@ import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.JavaDSLHelper;
 import de.monticore.symboltable.Symbol;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.List;
 
 /**
  * TODO
@@ -28,9 +28,8 @@ public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
       List<JavaTypeSymbolReference> superTypes = JavaDSLHelper.getReferencedSuperTypes(classSymbol);
       for (JavaMethodSymbol classMethod : classSymbol.getMethods()) {
         for (JavaTypeSymbolReference superType : superTypes) {
-          List<Symbol> overridden = JavaDSLHelper.overriddenMethodFoundInSuperTypes(classMethod, superType)
-                  .orElse(null);
-          if (overridden != null) {
+          List<Symbol> overridden = JavaDSLHelper.overriddenMethodFoundInSuperTypes(classMethod, superType);
+          if (!overridden.isEmpty()) {
             JavaTypeSymbol superSymbol = (JavaTypeSymbol) overridden.get(0);
             JavaMethodSymbol superMethod = (JavaMethodSymbol) overridden.get(1);
             JavaTypeSymbolReference retType = classMethod.getReturnType();
@@ -72,8 +71,8 @@ public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
           }
           else {
             List<Symbol> sameErasure = JavaDSLHelper
-                    .methodDifferentSignatureAndSameErasure(classMethod, superType).orElse(null);
-            if (sameErasure != null) {
+                    .methodDifferentSignatureAndSameErasure(classMethod, superType);
+            if (!sameErasure.isEmpty()) {
               JavaTypeSymbol superSymbol = (JavaTypeSymbol) sameErasure.get(0);
               JavaMethodSymbol methodSymbol = (JavaMethodSymbol) sameErasure.get(1);
               Log.error("0xA0825 the method '" + classMethod.getName() + " of type '" + classSymbol
