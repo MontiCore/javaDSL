@@ -307,10 +307,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTPlusExpression node) {
     JavaTypeSymbolReference leftType;
     JavaTypeSymbolReference rightType;
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         rightType = this.getResult().get();
         this.setResult(
@@ -323,10 +323,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTMinusExpression node) {
     JavaTypeSymbolReference leftType;
     JavaTypeSymbolReference rightType;
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         rightType = this.getResult().get();
         this.setResult(
@@ -337,10 +337,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTMultExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -351,10 +351,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTDivideExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -365,10 +365,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTModuloExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -379,10 +379,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTRightShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -394,10 +394,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTLeftShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -409,10 +409,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLogicalRightShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -424,10 +424,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLessEqualExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -438,10 +438,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTGreaterEqualExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -452,10 +452,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLessThanExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -466,10 +466,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTGreaterThanExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -480,10 +480,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTEqualsExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -494,10 +494,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTNotEqualsExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -508,10 +508,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTBinaryAndExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -522,10 +522,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBinaryOrOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -536,10 +536,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBinaryXorExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -550,10 +550,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBooleanAndOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -564,10 +564,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBooleanOrOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -598,10 +598,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTAssignmentExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         if (JavaDSLHelper.assignmentConversionAvailable(rightType, leftType)) {
