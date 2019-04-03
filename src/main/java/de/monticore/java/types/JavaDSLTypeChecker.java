@@ -127,7 +127,6 @@ public class JavaDSLTypeChecker {
   public ShiftExpressionsCoCoChecker getShiftExpressionChecker(){
     ShiftExpressionsCoCoChecker expressionChecker = new ShiftExpressionsCoCoChecker();
     expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
-    expressionChecker.addCoCo(new QualifiedNameValid(typeResolver));
     expressionChecker.addCoCo(new LogicalRightShiftOpValid(typeResolver));
     expressionChecker.addCoCo(new RightShiftOpValid(typeResolver));
     expressionChecker.addCoCo(new LeftShiftOpValid(typeResolver));
@@ -154,6 +153,8 @@ public class JavaDSLTypeChecker {
     expressionChecker.addCoCo(new LessThanOpValid(typeResolver));
     expressionChecker.addCoCo(new NotEqualsTestValid(typeResolver));
     expressionChecker.addCoCo(new EqualsTestValid(typeResolver));
+    expressionChecker.addCoCo(new NameExpValid(typeResolver));
+    expressionChecker.addCoCo(new QualifiedNameValid(typeResolver));
     return expressionChecker;
   }
   
@@ -177,7 +178,6 @@ public class JavaDSLTypeChecker {
     expressionChecker.addCoCo(new CastConversionValid(typeResolver));
     expressionChecker.addCoCo(new InstanceOfValid(typeResolver));
     expressionChecker.addCoCo(new MethodGenericInvocationValid(typeResolver));
-    expressionChecker.addCoCo(new NameExpValid(typeResolver));
     expressionChecker.addCoCo(new PrimarySuperValid());
     return expressionChecker;
   }

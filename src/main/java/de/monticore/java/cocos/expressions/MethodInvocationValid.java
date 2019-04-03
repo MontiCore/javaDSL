@@ -3,9 +3,9 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.expressions.commonexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTQualifiedNameExpression;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
-import de.monticore.expressions.javaclassexpressions._ast.ASTNameExpression;
-import de.monticore.expressions.shiftexpressions._ast.ASTQualifiedNameExpression;
 import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTCallExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
