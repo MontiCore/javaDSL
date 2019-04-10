@@ -3,18 +3,18 @@
 package de.monticore.java.report;
 
 import de.monticore.expressions.assignmentexpressions._od.AssignmentExpressions2OD;
+import de.monticore.expressions.bitexpressions._od.BitExpressions2OD;
 import de.monticore.expressions.commonexpressions._od.CommonExpressions2OD;
 import de.monticore.expressions.expressionsbasis._od.ExpressionsBasis2OD;
+import de.monticore.expressions.javaclassexpressions._od.JavaClassExpressions2OD;
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
 import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
-import de.monticore.expressions.javaclassexpressions._od.JavaClassExpressions2OD;
 import de.monticore.mcbasicliterals._od.MCBasicLiterals2OD;
 import de.monticore.mcbasics._od.MCBasics2OD;
 import de.monticore.mcjavaliterals._od.MCJavaLiterals2OD;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.expressions.shiftexpressions._od.ShiftExpressions2OD;
 import de.monticore.types.mcbasictypes._od.MCBasicTypes2OD;
 import de.monticore.types.mccollectiontypes._od.MCCollectionTypes2OD;
 import de.monticore.types.mcfullgenerictypes._od.MCFullGenericTypes2OD;
@@ -33,7 +33,7 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
     visitor.setAssignmentExpressionsVisitor(new AssignmentExpressions2OD(printer, reporting));
     visitor.setCommonExpressionsVisitor(new CommonExpressions2OD(printer, reporting));
     visitor.setJavaClassExpressionsVisitor(new JavaClassExpressions2OD(printer, reporting));
-    visitor.setShiftExpressionsVisitor(new ShiftExpressions2OD(printer, reporting));
+    visitor.setBitExpressionsVisitor(new BitExpressions2OD(printer, reporting));
     visitor.setMCBasicsVisitor(new MCBasics2OD(printer, reporting));
     visitor.setMCBasicLiteralsVisitor(new MCBasicLiterals2OD(printer, reporting));
     visitor.setMCBasicTypesVisitor(new MCBasicTypes2OD(printer, reporting));

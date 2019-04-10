@@ -6,7 +6,7 @@ grammar JavaDSL extends de.monticore.expressions.ExpressionsBasis,
 	de.monticore.expressions.CommonExpressions,
 	de.monticore.expressions.AssignmentExpressions,
 	de.monticore.expressions.JavaClassExpressions,
-	de.monticore.expressions.ShiftExpressions,
+	de.monticore.expressions.BitExpressions,
 	de.monticore.MCJavaLiterals,
 	de.monticore.types.MCBasicTypes,
 	de.monticore.types.MCFullGenericTypes {

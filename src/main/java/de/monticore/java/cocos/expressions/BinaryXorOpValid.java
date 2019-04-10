@@ -2,15 +2,15 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.assignmentexpressions._ast.ASTBinaryXorExpression;
-import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTBinaryXorExpressionCoCo;
+import de.monticore.expressions.bitexpressions._ast.ASTBinaryXorExpression;
+import de.monticore.expressions.bitexpressions._cocos.BitExpressionsASTBinaryXorExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * Created by Odgrlb on 08.06.2016.
  */
-public class BinaryXorOpValid implements AssignmentExpressionsASTBinaryXorExpressionCoCo {
+public class BinaryXorOpValid implements BitExpressionsASTBinaryXorExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

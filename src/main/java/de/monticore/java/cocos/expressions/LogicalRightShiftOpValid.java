@@ -18,16 +18,16 @@
  */
 package de.monticore.java.cocos.expressions;
 
+import de.monticore.expressions.bitexpressions._ast.ASTLogicalRightShiftExpression;
+import de.monticore.expressions.bitexpressions._cocos.BitExpressionsASTLogicalRightShiftExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.expressions.shiftexpressions._ast.ASTLogicalRightShiftExpression;
-import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTLogicalRightShiftExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * @author npichler
  */
 public class LogicalRightShiftOpValid
-    implements ShiftExpressionsASTLogicalRightShiftExpressionCoCo {
+    implements BitExpressionsASTLogicalRightShiftExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

@@ -6,7 +6,7 @@ import de.monticore.expressions.assignmentexpressions._ast.*;
 import de.monticore.expressions.commonexpressions._ast.*;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.expressions.javaclassexpressions._ast.*;
-import de.monticore.expressions.shiftexpressions._ast.*;
+import de.monticore.expressions.bitexpressions._ast.*;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.java.symboltable.JavaFieldSymbol;

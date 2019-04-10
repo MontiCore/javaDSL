@@ -4,6 +4,7 @@ package de.monticore.java.types;
 
 import de.monticore.expressions.assignmentexpressions._ast.*;
 import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsCoCoChecker;
+import de.monticore.expressions.bitexpressions._cocos.BitExpressionsCoCoChecker;
 import de.monticore.expressions.commonexpressions._ast.*;
 import de.monticore.expressions.commonexpressions._ast.ASTArguments;
 import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsCoCoChecker;
@@ -37,9 +38,7 @@ import de.monticore.java.javadsl._ast.ASTSwitchStatement;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.expressions.javaclassexpressions._ast.*;
 import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsCoCoChecker;
-import de.monticore.expressions.shiftexpressions._ast.*;
-import de.monticore.expressions.shiftexpressions._ast.ASTLogicalRightShiftExpression;
-import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsCoCoChecker;
+import de.monticore.expressions.bitexpressions._ast.*;
 
 /**
  *  on 23.10.2016.
@@ -55,7 +54,7 @@ public class JavaDSLTypeChecker {
     javaDSLTypeCheckers.addChecker(getConstructorChecker());
     javaDSLTypeCheckers.addChecker(getEnumChecker());
     javaDSLTypeCheckers.addChecker(getCommonExpressionChecker());
-    javaDSLTypeCheckers.addChecker(getShiftExpressionChecker());
+    javaDSLTypeCheckers.addChecker(getBitExpressionChecker());
     javaDSLTypeCheckers.addChecker(getJavaClassExpressionChecker());
     javaDSLTypeCheckers.addChecker(getAssignmentExpressionChecker());
     javaDSLTypeCheckers.addChecker(getJavaExpressionChecker());
@@ -124,13 +123,14 @@ public class JavaDSLTypeChecker {
     return enumChecker;
   }
 
-  public ShiftExpressionsCoCoChecker getShiftExpressionChecker(){
-    ShiftExpressionsCoCoChecker expressionChecker = new ShiftExpressionsCoCoChecker();
-    expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
+  public BitExpressionsCoCoChecker getBitExpressionChecker(){
+    BitExpressionsCoCoChecker expressionChecker = new BitExpressionsCoCoChecker();
     expressionChecker.addCoCo(new LogicalRightShiftOpValid(typeResolver));
     expressionChecker.addCoCo(new RightShiftOpValid(typeResolver));
     expressionChecker.addCoCo(new LeftShiftOpValid(typeResolver));
-    expressionChecker.addCoCo(new PrimaryThisValid());
+    expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryXorOpValid(typeResolver));
+    expressionChecker.addCoCo(new BinaryAndOpValid(typeResolver));
     return expressionChecker;
   }
   
@@ -161,9 +161,6 @@ public class JavaDSLTypeChecker {
   public AssignmentExpressionsCoCoChecker getAssignmentExpressionChecker(){
     AssignmentExpressionsCoCoChecker expressionChecker = new AssignmentExpressionsCoCoChecker();
     expressionChecker.addCoCo(new AssignmentCompatible(typeResolver));
-    expressionChecker.addCoCo(new BinaryOrOpValid(typeResolver));
-    expressionChecker.addCoCo(new BinaryXorOpValid(typeResolver));
-    expressionChecker.addCoCo(new BinaryAndOpValid(typeResolver));
     expressionChecker.addCoCo(new IncSuffixOpValid(typeResolver));
     expressionChecker.addCoCo(new DecSuffixOpValid(typeResolver));
     expressionChecker.addCoCo(new PlusPrefixOpValid(typeResolver));
@@ -179,6 +176,8 @@ public class JavaDSLTypeChecker {
     expressionChecker.addCoCo(new InstanceOfValid(typeResolver));
     expressionChecker.addCoCo(new MethodGenericInvocationValid(typeResolver));
     expressionChecker.addCoCo(new PrimarySuperValid());
+    expressionChecker.addCoCo(new ArrayAccessValid(typeResolver));
+    expressionChecker.addCoCo(new PrimaryThisValid());
     return expressionChecker;
   }
 

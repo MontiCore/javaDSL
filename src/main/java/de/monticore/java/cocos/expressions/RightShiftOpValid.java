@@ -18,15 +18,15 @@
  */
 package de.monticore.java.cocos.expressions;
 
+import de.monticore.expressions.bitexpressions._ast.ASTRightShiftExpression;
+import de.monticore.expressions.bitexpressions._cocos.BitExpressionsASTRightShiftExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.expressions.shiftexpressions._ast.ASTRightShiftExpression;
-import de.monticore.expressions.shiftexpressions._cocos.ShiftExpressionsASTRightShiftExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * @author npichler
  */
-public class RightShiftOpValid implements ShiftExpressionsASTRightShiftExpressionCoCo {
+public class RightShiftOpValid implements BitExpressionsASTRightShiftExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   
