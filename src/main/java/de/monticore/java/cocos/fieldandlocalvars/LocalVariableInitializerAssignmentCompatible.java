@@ -25,7 +25,7 @@ import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
 import de.monticore.java.javadsl._ast.ASTVariableInititializerOrExpression;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
-import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;

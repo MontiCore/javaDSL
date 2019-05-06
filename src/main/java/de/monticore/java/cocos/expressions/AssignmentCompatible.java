@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.assignmentexpressions._ast.ASTAssignmentExpression;
-import de.monticore.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionCoCo;
+import de.monticore.expressions.assignmentexpressions._ast.ASTAssignmentExpression;
+import de.monticore.expressions.assignmentexpressions._cocos.AssignmentExpressionsASTAssignmentExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
@@ -20,22 +20,22 @@ public class AssignmentCompatible implements AssignmentExpressionsASTAssignmentE
   // JLS3 15.26-1, JLS3 15.26-2
   @Override
   public void check(ASTAssignmentExpression node) {
-    if (!JavaDSLHelper.isVariable(node.getLeftExpression())) {
+    if (!JavaDSLHelper.isVariable(node.getLeft())) {
       Log.error("0xA0507 first operand of assignment expression must be a variable.",
           node.get_SourcePositionStart());
       return;
     }
-    typeResolver.handle(node.getLeftExpression());
+    typeResolver.handle(node.getLeft());
     if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0538 type of the left side is not defined", node.getLeftExpression().get_SourcePositionStart());
+      Log.error("0xA0538 type of the left side is not defined", node.getLeft().get_SourcePositionStart());
       return;
     }
     JavaTypeSymbolReference leftType = typeResolver.getResult()
         .get();
     
-    typeResolver.handle(node.getRightExpression());
+    typeResolver.handle(node.getRight());
     if (!typeResolver.getResult().isPresent()) {
-      Log.error("0xA0507 type of the right side is not defined", node.getRightExpression().get_SourcePositionStart());
+      Log.error("0xA0507 type of the right side is not defined", node.getRight().get_SourcePositionStart());
       return;
     }
     JavaTypeSymbolReference rightType = typeResolver.getResult()

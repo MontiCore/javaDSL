@@ -2,14 +2,14 @@
 
 package de.monticore.java.cocos.expressions;
 
+import de.monticore.expressions.javaclassexpressions._ast.ASTArrayExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTArrayExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.shiftexpressions._ast.ASTArrayExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTArrayExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
-public class ArrayAccessValid implements ShiftExpressionsASTArrayExpressionCoCo {
+public class ArrayAccessValid implements JavaClassExpressionsASTArrayExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

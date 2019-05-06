@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.javaclassexpressions._ast.ASTPrimarySuperExpression;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTPrimarySuperExpressionCoCo;
+import de.monticore.expressions.javaclassexpressions._ast.ASTPrimarySuperExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTPrimarySuperExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;

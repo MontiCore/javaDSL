@@ -10,6 +10,7 @@ import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.types.types._ast.ASTType;
 import de.se_rwth.commons.logging.Log;
 
@@ -69,7 +70,7 @@ public class ClassValidSuperTypes implements JavaDSLASTClassDeclarationCoCo {
             node.get_SourcePositionStart());
       }
     }
-    for (ASTType superInterface : node.getImplementedInterfaceList()) {
+    for (ASTMCType superInterface : node.getImplementedInterfaceList()) {
       superInterface.accept(typeResolver);
       if (typeResolver.getResult().isPresent()) {
         JavaTypeSymbolReference interfaceType = typeResolver.getResult().get();

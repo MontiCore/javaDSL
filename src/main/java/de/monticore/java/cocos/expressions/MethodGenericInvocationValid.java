@@ -2,21 +2,21 @@
 
 package de.monticore.java.cocos.expressions;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import de.monticore.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.javaclassexpressions._ast.ASTGenericInvocationExpression;
+import de.monticore.expressions.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpression;
+import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTGenericInvocationExpressionCoCo;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.javaclassexpressions._ast.ASTNameExpression;
-import de.monticore.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpression;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTGenericInvocationExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author npichler
@@ -35,7 +35,7 @@ public class MethodGenericInvocationValid implements JavaClassExpressionsASTGene
     List<JavaTypeSymbolReference> typeArguments = new ArrayList<>();
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node.getPrimaryGenericInvocationExpression();
-    genericInvocation.getETypeArguments().accept(typeResolver);
+    genericInvocation.getExtTypeArguments().accept(typeResolver);
     if (typeResolver.getResult().isPresent()) {
       typeArguments.add(typeResolver.getResult().get());
     }

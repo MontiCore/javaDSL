@@ -2,129 +2,38 @@
 
 package de.monticore.java.types;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Stack;
-
-import de.monticore.assignmentexpressions._ast.ASTAssignmentExpression;
-import de.monticore.assignmentexpressions._ast.ASTBinaryAndExpression;
-import de.monticore.assignmentexpressions._ast.ASTBinaryOrOpExpression;
-import de.monticore.assignmentexpressions._ast.ASTBinaryXorExpression;
-import de.monticore.assignmentexpressions._ast.ASTDecPrefixExpression;
-import de.monticore.assignmentexpressions._ast.ASTDecSuffixExpression;
-import de.monticore.assignmentexpressions._ast.ASTIncPrefixExpression;
-import de.monticore.assignmentexpressions._ast.ASTIncSuffixExpression;
-import de.monticore.assignmentexpressions._ast.ASTMinusPrefixExpression;
-import de.monticore.assignmentexpressions._ast.ASTPlusPrefixExpression;
-import de.monticore.commonexpressions._ast.ASTBooleanAndOpExpression;
-import de.monticore.commonexpressions._ast.ASTBooleanNotExpression;
-import de.monticore.commonexpressions._ast.ASTBooleanOrOpExpression;
-import de.monticore.commonexpressions._ast.ASTBracketExpression;
-import de.monticore.commonexpressions._ast.ASTCallExpression;
-import de.monticore.commonexpressions._ast.ASTConditionalExpression;
-import de.monticore.commonexpressions._ast.ASTDivideExpression;
-import de.monticore.commonexpressions._ast.ASTEqualsExpression;
-import de.monticore.commonexpressions._ast.ASTGreaterEqualExpression;
-import de.monticore.commonexpressions._ast.ASTGreaterThanExpression;
-import de.monticore.commonexpressions._ast.ASTLessEqualExpression;
-import de.monticore.commonexpressions._ast.ASTLessThanExpression;
-import de.monticore.commonexpressions._ast.ASTLogicalNotExpression;
-import de.monticore.commonexpressions._ast.ASTMinusExpression;
-import de.monticore.commonexpressions._ast.ASTModuloExpression;
-import de.monticore.commonexpressions._ast.ASTMultExpression;
-import de.monticore.commonexpressions._ast.ASTNotEqualsExpression;
-import de.monticore.commonexpressions._ast.ASTPlusExpression;
-import de.monticore.expressionsbasis._ast.ASTExpression;
-import de.monticore.java.javadsl._ast.ASTAnonymousClass;
-import de.monticore.java.javadsl._ast.ASTArrayCreator;
-import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
-import de.monticore.java.javadsl._ast.ASTArrayDimensionByInitializer;
-import de.monticore.java.javadsl._ast.ASTCatchType;
-import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTConstantExpressionSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTConstantsJavaDSL;
-import de.monticore.java.javadsl._ast.ASTCreatedName;
-import de.monticore.java.javadsl._ast.ASTDeclaratorId;
-import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
-import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTExpressionStatement;
-import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTIdentifierAndTypeArgument;
-import de.monticore.java.javadsl._ast.ASTIfStatement;
-import de.monticore.java.javadsl._ast.ASTInnerCreator;
-import de.monticore.java.javadsl._ast.ASTInnerCreatorExpression;
-import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
-import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclarationStatement;
-import de.monticore.java.javadsl._ast.ASTMethodBody;
-import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodSignature;
-import de.monticore.java.javadsl._ast.ASTModifier;
-import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
-import de.monticore.java.javadsl._ast.ASTReturnStatement;
-import de.monticore.java.javadsl._ast.ASTSwitchStatement;
-import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.javadsl._ast.ASTVariableInitializer;
+import de.monticore.expressions.assignmentexpressions._ast.*;
+import de.monticore.expressions.commonexpressions._ast.*;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.javaclassexpressions._ast.*;
+import de.monticore.expressions.bitexpressions._ast.*;
+import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.javaclassexpressions._ast.ASTClassExpression;
-import de.monticore.javaclassexpressions._ast.ASTGenericInvocationExpression;
-import de.monticore.javaclassexpressions._ast.ASTGenericInvocationSuffix;
-import de.monticore.javaclassexpressions._ast.ASTInstanceofExpression;
-import de.monticore.javaclassexpressions._ast.ASTLiteralExpression;
-import de.monticore.javaclassexpressions._ast.ASTNameExpression;
-import de.monticore.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpression;
-import de.monticore.javaclassexpressions._ast.ASTPrimarySuperExpression;
-import de.monticore.javaclassexpressions._ast.ASTSuperExpression;
-import de.monticore.javaclassexpressions._ast.ASTTypeCastExpression;
-import de.monticore.literals.literals._ast.ASTBooleanLiteral;
-import de.monticore.literals.literals._ast.ASTCharLiteral;
-import de.monticore.literals.literals._ast.ASTDoubleLiteral;
-import de.monticore.literals.literals._ast.ASTFloatLiteral;
-import de.monticore.literals.literals._ast.ASTIntLiteral;
-import de.monticore.literals.literals._ast.ASTLongLiteral;
-import de.monticore.literals.literals._ast.ASTNullLiteral;
-import de.monticore.literals.literals._ast.ASTSignedDoubleLiteral;
-import de.monticore.literals.literals._ast.ASTSignedFloatLiteral;
-import de.monticore.literals.literals._ast.ASTSignedIntLiteral;
-import de.monticore.literals.literals._ast.ASTSignedLongLiteral;
-import de.monticore.literals.literals._ast.ASTStringLiteral;
-import de.monticore.shiftexpressions._ast.ASTArrayExpression;
-import de.monticore.shiftexpressions._ast.ASTLeftShiftExpression;
-import de.monticore.shiftexpressions._ast.ASTLogicalRightShiftExpression;
-import de.monticore.shiftexpressions._ast.ASTPrimaryThisExpression;
-import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.shiftexpressions._ast.ASTRightShiftExpression;
+import de.monticore.mcbasicliterals._ast.ASTBooleanLiteral;
+import de.monticore.mcbasicliterals._ast.ASTCharLiteral;
+import de.monticore.mcbasicliterals._ast.ASTNullLiteral;
+import de.monticore.mcbasicliterals._ast.ASTStringLiteral;
+import de.monticore.mcjavaliterals._ast.ASTDoubleLiteral;
+import de.monticore.mcjavaliterals._ast.ASTFloatLiteral;
+import de.monticore.mcjavaliterals._ast.ASTIntLiteral;
+import de.monticore.mcjavaliterals._ast.ASTLongLiteral;
 import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.types.references.ActualTypeArgument;
-import de.monticore.types.types._ast.ASTComplexArrayType;
-import de.monticore.types.types._ast.ASTComplexReferenceType;
-import de.monticore.types.types._ast.ASTPrimitiveArrayType;
-import de.monticore.types.types._ast.ASTPrimitiveType;
-import de.monticore.types.types._ast.ASTQualifiedName;
-import de.monticore.types.types._ast.ASTSimpleReferenceType;
-import de.monticore.types.types._ast.ASTTypeArgument;
-import de.monticore.types.types._ast.ASTTypeVariableDeclaration;
-import de.monticore.types.types._ast.ASTVoidType;
-import de.monticore.types.types._ast.ASTWildcardType;
+import de.monticore.types.mcbasictypes._ast.*;
+import de.monticore.types.mccollectiontypes._ast.*;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCArrayType;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCMultipleGenericType;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCTypeVariableDeclaration;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCWildcardType;
+import de.monticore.types.mcsimplegenerictypes._ast.ASTMCBasicGenericType;
 
-/**
- * TODO
- *
- * @author (last commit) $$Author$$
- * @since TODO
- */
+import java.util.*;
+import java.util.Map.Entry;
+
 
 public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolReference>
     implements JavaDSLVisitor {
@@ -140,19 +49,80 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTFieldDeclaration node) {
-    node.getType().accept(this);
+    node.getMCType().accept(this);
   }
   
   public void handle(ASTLocalVariableDeclaration node) {
-    node.getType().accept(this);
+    node.getMCType().accept(this);
   }
   
-  public void handle(ASTComplexReferenceType type) {
-    handle(type.getSimpleReferenceTypeList().get(0));
+  public void handle(ASTMCMultipleGenericType type) {
+    // TODO MB : new Types !!!
+    // handle(type.getSimpleReferenceTypeList().get(0));
   }
-  
-  public void handle(ASTComplexArrayType type) {
-    type.getComponentType().accept(this);
+
+  protected void addTypeArguments(JavaTypeSymbolReference typeRef, List<ASTMCTypeArgument> typeArguments) {
+    List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
+    for (ASTMCTypeArgument typeArgument : typeArguments) {
+      typeArgument.accept(this);
+      ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false,
+              this.getResult().get());
+      actualTypeArgumentList.add(actualTypeArgument);
+    }
+    typeRef.setActualTypeArguments(actualTypeArgumentList);
+  }
+  public void handle(ASTMCBasicGenericType type) {
+    JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
+            String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
+    String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
+    JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+            completeName, type.getEnclosingScope(), 0);
+    addTypeArguments(finalType, type.getMCTypeArgumentList());
+    this.setResult(finalType);
+  }
+
+  public void handle(ASTMCListType type) {
+    JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
+            String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
+    String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
+    JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+            completeName, type.getEnclosingScope(), 0);
+    addTypeArguments(finalType, type.getMCTypeArgumentList());
+    this.setResult(finalType);
+  }
+
+  public void handle(ASTMCOptionalType type) {
+    JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
+            String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
+    String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
+    JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+            completeName, type.getEnclosingScope(), 0);
+    addTypeArguments(finalType, type.getMCTypeArgumentList());
+    this.setResult(finalType);
+  }
+
+  public void handle(ASTMCMapType type) {
+    JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
+            String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
+    String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
+    JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+            completeName, type.getEnclosingScope(), 0);
+    addTypeArguments(finalType, type.getMCTypeArgumentList());
+    this.setResult(finalType);
+  }
+
+  public void handle(ASTMCSetType type) {
+    JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
+            String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
+    String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
+    JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
+            completeName, type.getEnclosingScope(), 0);
+    addTypeArguments(finalType, type.getMCTypeArgumentList());
+    this.setResult(finalType);
+  }
+
+  public void handle(ASTMCArrayType type) {
+    type.getMCType().accept(this);
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference typeSymbolReference = this.getResult().get();
       typeSymbolReference.setDimension(type.getDimensions());
@@ -160,35 +130,16 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTSimpleReferenceType type) {
+  public void handle(ASTMCQualifiedType type) {
     JavaTypeSymbolReference typeSymbolReference = new JavaTypeSymbolReference(
         String.join(".", type.getNameList()), type.getEnclosingScope(), 0);
     String completeName = JavaDSLHelper.getCompleteName(typeSymbolReference);
     JavaTypeSymbolReference finalType = new JavaTypeSymbolReference(
         completeName, type.getEnclosingScope(), 0);
-    if (type.isPresentTypeArguments()) {
-      List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
-      for (ASTTypeArgument typeArgument : type.getTypeArguments().getTypeArgumentList()) {
-        typeArgument.accept(this);
-        ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false,
-            this.getResult().get());
-        actualTypeArgumentList.add(actualTypeArgument);
-      }
-      finalType.setActualTypeArguments(actualTypeArgumentList);
-    }
     this.setResult(finalType);
   }
-  
-  public void handle(ASTPrimitiveArrayType type) {
-    type.getComponentType().accept(this);
-    if (this.getResult().isPresent()) {
-      JavaTypeSymbolReference typeSymbolReference = this.getResult().get();
-      typeSymbolReference.setDimension(type.getDimensions());
-      this.setResult(typeSymbolReference);
-    }
-  }
-  
-  public void handle(ASTWildcardType type) {
+
+  public void handle(ASTMCWildcardType type) {
     JavaTypeSymbolReference wildType = new JavaTypeSymbolReference("ASTWildcardType",
         type.getEnclosingScope(), 0);
     List<ActualTypeArgument> typeArguments = new ArrayList<>();
@@ -212,11 +163,11 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     this.setResult(wildType);
   }
   
-  public void handle(ASTPrimitiveType type) {
+  public void handle(ASTMCPrimitiveType type) {
     this.setResult(new JavaTypeSymbolReference(type.toString(), type.getEnclosingScope(), 0));
   }
   
-  public void handle(ASTVoidType type) {
+  public void handle(ASTMCVoidType type) {
     this.setResult(new JavaTypeSymbolReference("void", type.getEnclosingScope(), 0));
   }
   
@@ -229,11 +180,11 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTMethodSignature node) {
-    node.getReturnType().accept(this);
+    node.getMCReturnType().accept(this);
   }
   
   public void handle(ASTFormalParameter node) {
-    node.getType().accept(this);
+    node.getMCType().accept(this);
   }
   
   public void handle(ASTVariableDeclarator node) {
@@ -356,10 +307,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTPlusExpression node) {
     JavaTypeSymbolReference leftType;
     JavaTypeSymbolReference rightType;
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         rightType = this.getResult().get();
         this.setResult(
@@ -372,10 +323,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTMinusExpression node) {
     JavaTypeSymbolReference leftType;
     JavaTypeSymbolReference rightType;
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         rightType = this.getResult().get();
         this.setResult(
@@ -386,10 +337,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTMultExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -400,10 +351,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTDivideExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -414,10 +365,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTModuloExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -428,10 +379,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTRightShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -443,10 +394,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLeftShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -458,10 +409,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLogicalRightShiftExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -473,10 +424,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLessEqualExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -487,10 +438,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTGreaterEqualExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -501,10 +452,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTLessThanExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -515,10 +466,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTGreaterThanExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -529,10 +480,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTEqualsExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -543,10 +494,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTNotEqualsExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -557,10 +508,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
 
   public void handle(ASTBinaryAndExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -571,10 +522,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBinaryOrOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -585,10 +536,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBinaryXorExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -599,10 +550,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBooleanAndOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -613,10 +564,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBooleanOrOpExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         this.setResult(
@@ -647,10 +598,10 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTAssignmentExpression node) {
-    handle(node.getLeftExpression());
+    handle(node.getLeft());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference leftType = this.getResult().get();
-      handle(node.getRightExpression());
+      handle(node.getRight());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference rightType = this.getResult().get();
         if (JavaDSLHelper.assignmentConversionAvailable(rightType, leftType)) {
@@ -669,7 +620,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     String methodName = "";
     ASTPrimaryGenericInvocationExpression genericInvocation = node
             .getPrimaryGenericInvocationExpression();
-    genericInvocation.getETypeArguments().accept(this);
+    genericInvocation.getExtTypeArguments().accept(this);
     if (this.getResult().isPresent()) {
       typeArguments.add(this.getResult().get());
     }
@@ -735,7 +686,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       parameterStack.pop();
     }
   }
-  
+
   public void handle(ASTQualifiedNameExpression node) {
     if (!isCallExpr) {
       // push dummy element, otherwise we would resolve a method while searching for a field
@@ -903,7 +854,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     handle(node.getExpression());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference expType = this.getResult().get();
-      handle(node.getEType());
+      handle(node.getExtType());
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference instanceType = this.getResult()
             .get();
@@ -921,7 +872,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       JavaTypeSymbolReference expressionType = new JavaTypeSymbolReference(
           JavaDSLHelper.getCompleteName(this.getResult().get()),
           this.getResult().get().getEnclosingScope(), this.getResult().get().getDimension());
-      node.getEType().accept(this);
+      node.getExtType().accept(this);
       if (this.getResult().isPresent()) {
         JavaTypeSymbolReference castType = this.getResult().get();
         if (!JavaDSLHelper.castTypeConversionAvailable(expressionType, castType)) {
@@ -932,7 +883,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTBooleanNotExpression node) {
-    handle(node.getExpression());
+    node.getExpression().accept(getRealThis());
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference expressionType = this.getResult()
           .get();
@@ -981,7 +932,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTLiteralExpression node) {
-    node.getELiteral().accept(this);
+    node.getExtLiteral().accept(this);
   }
   
   public void handle(ASTPrimaryThisExpression node) {
@@ -1021,7 +972,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference classType = new JavaTypeSymbolReference("java.lang.Class",
         node.getEnclosingScope(), 0);
     List<ActualTypeArgument> arg = new ArrayList<>();
-    node.getEReturnType().accept(getRealThis());
+    node.getExtReturnType().accept(getRealThis());
     if (getResult().isPresent()) {
       ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false,
           getResult().get());
@@ -1030,11 +981,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       this.setResult(classType);
     }
   }
-  
-  public void handle(ASTSignedIntLiteral node) {
-    this.setResult(new JavaTypeSymbolReference("int", node.getEnclosingScope(), 0));
-  }
-  
+
   public void handle(ASTIntLiteral node) {
     this.setResult(new JavaTypeSymbolReference("int", node.getEnclosingScope(), 0));
   }
@@ -1055,11 +1002,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTBooleanLiteral node) {
     this.setResult(new JavaTypeSymbolReference("boolean", node.getEnclosingScope(), 0));
   }
-  
-  public void handle(ASTSignedDoubleLiteral node) {
-    this.setResult(new JavaTypeSymbolReference("double", node.getEnclosingScope(), 0));
-  }
-  
+
   public void handle(ASTDoubleLiteral node) {
     this.setResult(new JavaTypeSymbolReference("double", node.getEnclosingScope(), 0));
   }
@@ -1067,19 +1010,11 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTFloatLiteral node) {
     this.setResult(new JavaTypeSymbolReference("float", node.getEnclosingScope(), 0));
   }
-  
-  public void handle(ASTSignedFloatLiteral node) {
-    this.setResult(new JavaTypeSymbolReference("float", node.getEnclosingScope(), 0));
-  }
-  
+
   public void handle(ASTLongLiteral node) {
     this.setResult(new JavaTypeSymbolReference("long", node.getEnclosingScope(), 0));
   }
-  
-  public void handle(ASTSignedLongLiteral node) {
-    this.setResult(new JavaTypeSymbolReference("long", node.getEnclosingScope(), 0));
-  }
-  
+
   public void handle(ASTAnonymousClass node) {
     handle(node.getCreatedName());
   }
@@ -1087,8 +1022,8 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   public void handle(ASTCreatedName node) {
     String finalName = "";
     List<ActualTypeArgument> list = new ArrayList<>();
-    if (node.isPresentPrimitiveType()) {
-      handle(node.getPrimitiveType());
+    if (node.isPresentMCPrimitiveType()) {
+      handle(node.getMCPrimitiveType());
       if (this.getResult().isPresent()) {
         finalName = this.getResult().get().getName();
       }
@@ -1126,8 +1061,8 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     String completeName = JavaDSLHelper.getCompleteName(tempType);
     List<ActualTypeArgument> actualTypeArguments = new ArrayList<>();
     if (node.isPresentTypeArguments()) {
-      if (!node.getTypeArguments().getTypeArgumentList().isEmpty()) {
-        for (ASTTypeArgument typeArgument : node.getTypeArguments().getTypeArgumentList()) {
+      if (!node.getTypeArguments().getMCTypeArgumentList().isEmpty()) {
+        for (ASTMCTypeArgument typeArgument: node.getTypeArguments().getMCTypeArgumentList()) {
           typeArgument.accept(this);
           JavaTypeSymbolReference argType = this.getResult().get();
           ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false, argType);
@@ -1208,7 +1143,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     }
   }
   
-  public void handle(ASTTypeVariableDeclaration node) {
+  public void handle(ASTMCTypeVariableDeclaration node) {
     this.setResult(new JavaTypeSymbolReference(
         node.getName(), node.getEnclosingScope(),
         0));
@@ -1220,14 +1155,14 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference classType = new JavaTypeSymbolReference(completeName,
         node.getEnclosingScope(), 0);
     List<ActualTypeArgument> classArgumentList = new ArrayList<>();
-    if (node.isPresentTypeParameters()) {
-      for (ASTTypeVariableDeclaration typeVariableDeclaration : node.getTypeParameters()
-          .getTypeVariableDeclarationList()) {
+    if (node.isPresentMCTypeParameters()) {
+      for (ASTMCTypeVariableDeclaration typeVariableDeclaration : node.getMCTypeParameters()
+          .getMCTypeVariableDeclarationList()) {
         List<ActualTypeArgument> argList = new ArrayList<>();
         handle(typeVariableDeclaration);
         JavaTypeSymbolReference varType = this.getResult().get();
-        for (ASTComplexReferenceType type : typeVariableDeclaration.getUpperBoundList()) {
-          handle(type);
+        for (ASTMCType type : typeVariableDeclaration.getUpperBoundList()) {
+          type.accept(getRealThis());
           ActualTypeArgument typeArgument = new ActualTypeArgument(false, true,
               this.getResult().get());
           argList.add(typeArgument);
@@ -1246,15 +1181,15 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     JavaTypeSymbolReference interfaceType = new JavaTypeSymbolReference(completeName,
         node.getEnclosingScope(), 0);
     List<ActualTypeArgument> classArgumentList = new ArrayList<>();
-    if (node.isPresentTypeParameters()) {
-      for (ASTTypeVariableDeclaration typeVariableDeclaration : node.getTypeParameters()
-          .getTypeVariableDeclarationList()) {
+    if (node.isPresentMCTypeParameters()) {
+      for (ASTMCTypeVariableDeclaration typeVariableDeclaration : node.getMCTypeParameters()
+          .getMCTypeVariableDeclarationList()) {
         List<ActualTypeArgument> actualTypeArgumentList = new ArrayList<>();
         JavaTypeSymbolReference argTypeSymbolReference = new JavaTypeSymbolReference(
             typeVariableDeclaration.getName(), typeVariableDeclaration.getEnclosingScope(),
             interfaceType.getDimension());
-        for (ASTComplexReferenceType type : typeVariableDeclaration.getUpperBoundList()) {
-          handle(type);
+        for (ASTMCType type : typeVariableDeclaration.getUpperBoundList()) {
+          type.accept(getRealThis());
           ActualTypeArgument typeArgument = new ActualTypeArgument(false, true,
               this.getResult().get());
           actualTypeArgumentList.add(typeArgument);
@@ -1269,7 +1204,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTSwitchStatement node) {
-    handle(node.getExpression());
+    node.getExpression().accept(getRealThis());
   }
   
   public void handle(ASTConstantExpressionSwitchLabel node) {
@@ -1325,7 +1260,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
     this.setResult(new JavaTypeSymbolReference(node.getName(), node.getEnclosingScope(), 0));
   }
   
-  public void handle(ASTQualifiedName node) {
+  public void handle(ASTMCQualifiedName node) {
     String finalName = String.join(".", node.getPartList());
     JavaTypeSymbolReference type = new JavaTypeSymbolReference(finalName,
         node.getEnclosingScope(), 0);
@@ -1336,7 +1271,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTLastFormalParameter node) {
-    node.getType().accept(this);
+    node.getMCType().accept(this);
     if (this.getResult().isPresent()) {
       JavaTypeSymbolReference type = this.getResult().get();
       type.setDimension(1);
@@ -1345,12 +1280,12 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTLocalVariableDeclarationStatement node) {
-    handle(node.getLocalVariableDeclaration());
+    node.getLocalVariableDeclaration().accept(getRealThis());
   }
   
   public void handle(ASTCatchType node) {
-    if (node.getQualifiedNameList().size() == 1) {
-      for (ASTQualifiedName qualifiedName : node.getQualifiedNameList()) {
+    if (node.getMCQualifiedNameList().size() == 1) {
+      for (ASTMCQualifiedName qualifiedName : node.getMCQualifiedNameList()) {
         String name = "";
         for (String s : qualifiedName.getPartList()) {
           name = name + s;
@@ -1365,7 +1300,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTExpressionStatement node) {
-    handle(node.getExpression());
+    node.getExpression().accept(getRealThis());
   }
   
   public void handle(ASTInnerCreator node) {
@@ -1374,7 +1309,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   
   public void handle(ASTPrimaryGenericInvocationExpression node) {
     //// TODO: 05.08.2016 node.getTypeArguments() <String, Integer>?
-    handle(node.getGenericInvocationSuffix());
+    node.getGenericInvocationSuffix().accept(getRealThis());
   }
   
   public void handle(ASTGenericInvocationSuffix node) {
@@ -1384,7 +1319,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
       if (node.isPresentArguments()) {
         List<ActualTypeArgument> argList = new ArrayList<>();
         for (ASTExpression astExpression : node.getArguments().getExpressionList()) {
-          handle(astExpression);
+          astExpression.accept(getRealThis());
           if (this.getResult().isPresent()) {
             ActualTypeArgument actualTypeArgument = new ActualTypeArgument(false, false,
                 this.getResult().get());

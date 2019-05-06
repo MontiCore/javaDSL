@@ -2,11 +2,11 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.commonexpressions._ast.ASTCallExpression;
-import de.monticore.expressionsbasis._ast.ASTExpression;
-import de.monticore.javaclassexpressions._ast.ASTNameExpression;
-import de.monticore.shiftexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTCallExpressionCoCo;
+import de.monticore.expressions.commonexpressions._ast.ASTCallExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.commonexpressions._ast.ASTQualifiedNameExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTCallExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
@@ -31,7 +31,7 @@ public class MethodInvocationValid implements CommonExpressionsASTCallExpression
         name = ((ASTQualifiedNameExpression) expr).getName();
       }
       Log.error("0xA0574 method '" + name + "' is not found.",
-          node.get_SourcePositionStart());
+              node.get_SourcePositionStart());
     }
   }
   

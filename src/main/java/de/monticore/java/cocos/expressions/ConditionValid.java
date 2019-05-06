@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.commonexpressions._ast.ASTConditionalExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTConditionalExpressionCoCo;
+import de.monticore.expressions.commonexpressions._ast.ASTConditionalExpression;
+import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTConditionalExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

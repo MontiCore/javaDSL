@@ -18,8 +18,8 @@
  */
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.commonexpressions._ast.ASTModuloExpression;
-import de.monticore.commonexpressions._cocos.CommonExpressionsASTModuloExpressionCoCo;
+import de.monticore.expressions.commonexpressions._ast.ASTModuloExpression;
+import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTModuloExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 

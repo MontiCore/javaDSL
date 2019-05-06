@@ -2,17 +2,17 @@
 
 package de.monticore.java.lang;
 
-import java.util.Optional;
-
 import de.monticore.CommonModelingLanguage;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaSymbolTableCreator;
 import de.monticore.java.symboltable.JavaTypeSymbol;
-import de.monticore.symboltable.MutableScope;
 import de.monticore.symboltable.ResolvingConfiguration;
+import de.monticore.symboltable.Scope;
 import de.monticore.symboltable.resolving.CommonResolvingFilter;
+
+import java.util.Optional;
 
 public class JavaDSLLanguage extends CommonModelingLanguage {
 
@@ -35,7 +35,7 @@ public class JavaDSLLanguage extends CommonModelingLanguage {
 
   @Override
   public Optional<JavaSymbolTableCreator> getSymbolTableCreator(
-      ResolvingConfiguration resolvingConfiguration, MutableScope enclosingScope) {
+      ResolvingConfiguration resolvingConfiguration, Scope enclosingScope) {
     return Optional
         .of(new JavaSymbolTableCreator(resolvingConfiguration, enclosingScope));
   }

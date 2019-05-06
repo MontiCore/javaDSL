@@ -3,14 +3,14 @@
 package de.monticore.java.cocos.expressions;
 
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.shiftexpressions._ast.ASTLeftShiftExpression;
-import de.monticore.shiftexpressions._cocos.ShiftExpressionsASTLeftShiftExpressionCoCo;
+import de.monticore.expressions.bitexpressions._ast.ASTLeftShiftExpression;
+import de.monticore.expressions.bitexpressions._cocos.BitExpressionsASTLeftShiftExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
  * on 08.06.2016.
  */
-public class LeftShiftOpValid implements ShiftExpressionsASTLeftShiftExpressionCoCo {
+public class LeftShiftOpValid implements BitExpressionsASTLeftShiftExpressionCoCo {
   
   HCJavaDSLTypeResolver typeResolver;
   

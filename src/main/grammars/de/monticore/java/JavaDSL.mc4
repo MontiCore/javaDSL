@@ -2,12 +2,14 @@
 
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.ExpressionsBasis, 
-	de.monticore.CommonExpressions, 
-	de.monticore.AssignmentExpressions,
-	de.monticore.JavaClassExpressions,
-	de.monticore.ShiftExpressions,
-	de.monticore.types.Types {
+grammar JavaDSL extends de.monticore.expressions.ExpressionsBasis,
+	de.monticore.expressions.CommonExpressions,
+	de.monticore.expressions.AssignmentExpressions,
+	de.monticore.expressions.JavaClassExpressions,
+	de.monticore.expressions.BitExpressions,
+	de.monticore.MCJavaLiterals,
+	de.monticore.types.MCBasicTypes,
+	de.monticore.types.MCFullGenericTypes {
 
 // starting point for parsing a java file
 CompilationUnit
@@ -15,11 +17,11 @@ CompilationUnit
     ;
 
 PackageDeclaration
-    =   Annotation* "package" QualifiedName ";"
+    =   Annotation* "package" MCQualifiedName ";"
     ;
 
 ImportDeclaration
-    =   "import" (["static"])? QualifiedName ("." ["*"])? ";"
+    =   "import" (["static"])? MCQualifiedName ("." ["*"])? ";"
     ;
 
 // Modifiers
@@ -40,9 +42,9 @@ EmptyDeclaration implements TypeDeclaration
     ;
 
 ClassDeclaration implements TypeDeclaration
-    =   Modifier* "class" Name TypeParameters?
-        ("extends" superClass:Type)?
-        ("implements" implementedInterface:(Type || ",")+)?
+    =   Modifier* "class" Name MCTypeParameters?
+        ("extends" superClass:MCType)?
+        ("implements" implementedInterface:(MCType || ",")+)?
         ClassBody
     ;
 
@@ -53,8 +55,8 @@ ClassBody
 interface ClassBodyDeclaration ;
 
 InterfaceDeclaration implements TypeDeclaration
-    =   Modifier* "interface" Name TypeParameters?
-        ("extends" extendedInterface:(Type || ",")+)?
+    =   Modifier* "interface" Name MCTypeParameters?
+        ("extends" extendedInterface:(MCType || ",")+)?
         InterfaceBody
     ;
 
@@ -66,7 +68,7 @@ interface InterfaceBodyDeclaration ;
 
 EnumDeclaration implements TypeDeclaration
     =   Modifier* "enum" Name
-        ("implements" implementedInterface:(Type || ",")+)?
+        ("implements" implementedInterface:(MCType || ",")+)?
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
@@ -91,20 +93,20 @@ MethodDeclaration implements ClassMemberDeclaration
 interface MethodBody ;
 
 ConstructorDeclaration implements ClassMemberDeclaration
-    =   Modifier* TypeParameters? Name FormalParameters ("throws" Throws)?
+    =   Modifier* MCTypeParameters? Name FormalParameters ("throws" Throws)?
         ConstructorBody
     ;
 
 interface ConstructorBody ;
 
 FieldDeclaration implements ClassMemberDeclaration
-    =   Modifier* Type (VariableDeclarator || ",")+ ";"
+    =   Modifier* MCType (VariableDeclarator || ",")+ ";"
     ;
 
 interface InterfaceMemberDeclaration extends InterfaceBodyDeclaration ;
 
 ConstDeclaration implements InterfaceMemberDeclaration
-    =   Modifier* Type (ConstantDeclarator || ",")+ ";"
+    =   Modifier* MCType (ConstantDeclarator || ",")+ ";"
     ;
 
 ConstantDeclarator
@@ -121,13 +123,13 @@ InterfaceMethodDeclaration implements InterfaceMemberDeclaration
    for invalid return type after parsing.
  */
 MethodSignature
-    =   Modifier* TypeParameters?
-        ReturnType Name FormalParameters (dim:"[" "]")*
+    =   Modifier* MCTypeParameters?
+        MCReturnType Name FormalParameters (dim:"[" "]")*
         ("throws" Throws)?
     ;
 
 Throws
-    =   (QualifiedName || ",")+
+    =   (MCQualifiedName || ",")+
     ;
 
 VariableDeclarator
@@ -157,18 +159,18 @@ FormalParameterListing
     ;
 
 FormalParameter
-    =   PrimitiveModifier* Type DeclaratorId
+    =   PrimitiveModifier* MCType DeclaratorId
     ;
 
 LastFormalParameter
-    =   PrimitiveModifier* Type "..." DeclaratorId
+    =   PrimitiveModifier* MCType "..." DeclaratorId
     ;
 
 // ANNOTATIONS
 
 // TODO: Check implementing Statement
 Annotation implements Modifier,  ElementValue, Statement
-    =   "@" annotationName:QualifiedName ( "(" AnnotationArguments? ")" )?
+    =   "@" annotationName:MCQualifiedName ( "(" AnnotationArguments? ")" )?
     ;
 
 interface AnnotationArguments ;
@@ -201,11 +203,11 @@ AnnotationTypeBody
 interface AnnotationTypeElementDeclaration ;
 
 AnnotationMethod implements AnnotationTypeElementDeclaration
-    =   Modifier* Type Name "(" ")" DefaultValue? ";"
+    =   Modifier* MCType Name "(" ")" DefaultValue? ";"
     ;
 
 AnnotationConstant implements AnnotationTypeElementDeclaration
-    =   Modifier* Type (VariableDeclarator || ",")+ ";"
+    =   Modifier* MCType (VariableDeclarator || ",")+ ";"
     ;
 
 DefaultValue
@@ -221,7 +223,7 @@ LocalVariableDeclarationStatement implements BlockStatement
     ;
 
 LocalVariableDeclaration implements ForInit
-    =   PrimitiveModifier* Type (VariableDeclarator || ",")+
+    =   PrimitiveModifier* MCType (VariableDeclarator || ",")+
     ;
 
 interface Statement extends BlockStatement ;
@@ -285,11 +287,15 @@ TryStatementWithResources implements Statement
     ;
 
 Resource
-    =   PrimitiveModifier* Type DeclaratorId "=" Expression
+    =   PrimitiveModifier* MCType DeclaratorId "=" Expression
     ;
 
 IdentifierAndTypeArgument
     =   Name TypeArguments?
+    ;
+
+TypeArguments
+    = "<" (MCTypeArgument || ",")* ">"
     ;
 
 CatchClause
@@ -297,7 +303,7 @@ CatchClause
     ;
 
 CatchType
-    =   (QualifiedName || "|")+
+    =   (MCQualifiedName || "|")+
     ;
 
 interface FinallyBlock ;
@@ -334,10 +340,6 @@ ExpressionStatement implements Statement
     =   Expression ";"
     ;
  
- /* Bugfix: TODO (MB): Delete after Bootstraping (4.5.4) */   
-ASTStatement implements Statement
-	= "de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());";
-
 LabeledStatement implements Statement
     =   label:Name ":" Statement
     ;
@@ -391,7 +393,7 @@ ArrayDimensionByExpression implements ArrayDimensionSpecifier
     
 CreatedName
     =   (IdentifierAndTypeArgument || ".")+
-    |   PrimitiveType
+    |   MCPrimitiveType
     ;
 
 InnerCreator
@@ -402,13 +404,13 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-EType = Type;
+ExtType = MCType;
 
-ELiteral = Literal;
+ExtLiteral = Literal;
 
-EReturnType = ReturnType;
+ExtReturnType = MCReturnType;
 
-ETypeArguments = TypeArguments;
+ExtTypeArguments = TypeArguments;
 
 
 }

@@ -2,13 +2,9 @@
 
 package de.monticore.java.cocos.statements;
 
-import de.monticore.java.javadsl._ast.ASTConstantExpressionSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTDefaultSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTSwitchBlockStatementGroup;
-import de.monticore.java.javadsl._ast.ASTSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTSwitchStatement;
+import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
+import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._cocos.JavaDSLASTSwitchStatementCoCo;
-import de.monticore.javaclassexpressions._ast.ASTNameExpression;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLHelper;

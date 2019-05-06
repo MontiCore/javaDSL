@@ -4,90 +4,16 @@ package de.monticore.java.prettyprint;
 
 import java.util.Iterator;
 
-import de.monticore.expressionsbasis._ast.ASTExpressionsBasisNode;
-import de.monticore.java.javadsl._ast.ASTASTStatement;
-import de.monticore.java.javadsl._ast.ASTAnnotation;
-import de.monticore.java.javadsl._ast.ASTAnnotationConstant;
-import de.monticore.java.javadsl._ast.ASTAnnotationMethod;
-import de.monticore.java.javadsl._ast.ASTAnnotationPairArguments;
-import de.monticore.java.javadsl._ast.ASTAnnotationTypeBody;
-import de.monticore.java.javadsl._ast.ASTAnnotationTypeDeclaration;
-import de.monticore.java.javadsl._ast.ASTAnonymousClass;
-import de.monticore.java.javadsl._ast.ASTArrayCreator;
-import de.monticore.java.javadsl._ast.ASTArrayDimensionByExpression;
-import de.monticore.java.javadsl._ast.ASTArrayDimensionByInitializer;
-import de.monticore.java.javadsl._ast.ASTArrayInitializer;
-import de.monticore.java.javadsl._ast.ASTAssertStatement;
-import de.monticore.java.javadsl._ast.ASTBreakStatement;
-import de.monticore.java.javadsl._ast.ASTCatchClause;
-import de.monticore.java.javadsl._ast.ASTCatchExceptionsHandler;
-import de.monticore.java.javadsl._ast.ASTCatchType;
-import de.monticore.java.javadsl._ast.ASTClassBlock;
-import de.monticore.java.javadsl._ast.ASTClassBody;
-import de.monticore.java.javadsl._ast.ASTClassDeclaration;
-import de.monticore.java.javadsl._ast.ASTCommonForControl;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTConstDeclaration;
-import de.monticore.java.javadsl._ast.ASTConstantDeclarator;
-import de.monticore.java.javadsl._ast.ASTConstantExpressionSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTConstantsJavaDSL;
-import de.monticore.java.javadsl._ast.ASTConstructorDeclaration;
-import de.monticore.java.javadsl._ast.ASTContinueStatement;
-import de.monticore.java.javadsl._ast.ASTCreatedName;
-import de.monticore.java.javadsl._ast.ASTDeclaratorId;
-import de.monticore.java.javadsl._ast.ASTDefaultSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTDefaultValue;
-import de.monticore.java.javadsl._ast.ASTDoWhileStatement;
-import de.monticore.java.javadsl._ast.ASTElementValuePair;
-import de.monticore.java.javadsl._ast.ASTEmptyDeclaration;
-import de.monticore.java.javadsl._ast.ASTEmptyStatement;
-import de.monticore.java.javadsl._ast.ASTEnhancedForControl;
-import de.monticore.java.javadsl._ast.ASTEnumBody;
-import de.monticore.java.javadsl._ast.ASTEnumConstantDeclaration;
-import de.monticore.java.javadsl._ast.ASTEnumConstantSwitchLabel;
-import de.monticore.java.javadsl._ast.ASTEnumDeclaration;
-import de.monticore.java.javadsl._ast.ASTExpressionStatement;
-import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._ast.ASTFinallyBlockOnlyHandler;
-import de.monticore.java.javadsl._ast.ASTForInitByExpressions;
-import de.monticore.java.javadsl._ast.ASTForStatement;
-import de.monticore.java.javadsl._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTFormalParameterListing;
-import de.monticore.java.javadsl._ast.ASTFormalParameters;
-import de.monticore.java.javadsl._ast.ASTIdentifierAndTypeArgument;
-import de.monticore.java.javadsl._ast.ASTIfStatement;
-import de.monticore.java.javadsl._ast.ASTImportDeclaration;
-import de.monticore.java.javadsl._ast.ASTInnerCreator;
-import de.monticore.java.javadsl._ast.ASTInterfaceBody;
-import de.monticore.java.javadsl._ast.ASTInterfaceDeclaration;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
-import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
-import de.monticore.java.javadsl._ast.ASTLabeledStatement;
-import de.monticore.java.javadsl._ast.ASTLastFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclarationStatement;
-import de.monticore.java.javadsl._ast.ASTMethodDeclaration;
-import de.monticore.java.javadsl._ast.ASTMethodSignature;
-import de.monticore.java.javadsl._ast.ASTPackageDeclaration;
-import de.monticore.java.javadsl._ast.ASTPrimitiveModifier;
-import de.monticore.java.javadsl._ast.ASTResource;
-import de.monticore.java.javadsl._ast.ASTReturnStatement;
-import de.monticore.java.javadsl._ast.ASTSwitchStatement;
-import de.monticore.java.javadsl._ast.ASTSynchronizedStatement;
-import de.monticore.java.javadsl._ast.ASTThrowStatement;
-import de.monticore.java.javadsl._ast.ASTThrows;
-import de.monticore.java.javadsl._ast.ASTTryStatement;
-import de.monticore.java.javadsl._ast.ASTTryStatementWithResources;
-import de.monticore.java.javadsl._ast.ASTVariableDeclarator;
-import de.monticore.java.javadsl._ast.ASTWhileStatement;
+import de.monticore.expressions.expressionsbasis._ast.ASTExpressionsBasisNode;
+import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 import de.monticore.prettyprint.CommentPrettyPrinter;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.types.types._ast.ASTArrayType;
-import de.monticore.types.types._ast.ASTTypeVariableDeclaration;
-import de.monticore.types.types._ast.ASTTypesNode;
-import de.monticore.types.types._ast.ASTVoidType;
-import de.monticore.types.types._ast.ASTWildcardType;
+
+import de.monticore.types.mcbasictypes._ast.ASTMCBasicTypesNode;
+import de.monticore.types.mccollectiontypes._ast.ASTMCTypeArgument;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCArrayType;
+import de.monticore.types.mcfullgenerictypes._ast.ASTMCFullGenericTypesNode;
 import de.se_rwth.commons.Names;
 
 /*
@@ -116,7 +42,7 @@ public class JavaDSLPrettyPrinter implements
     getPrinter().print(s);
   }
   
-  protected void printList(Iterator<? extends ASTTypesNode> iter, String seperator) {
+  protected void printList(Iterator<? extends ASTMCBasicTypesNode> iter, String seperator) {
     // print by iterate through all items
     String sep = "";
     while (iter.hasNext()) {
@@ -136,14 +62,6 @@ public class JavaDSLPrettyPrinter implements
     }
   }
 
-  /**
-   * @see de.monticore.java.javadsl._visitor.JavaDSLVisitor#handle(de.monticore.java.javadsl._ast.ASTASTStatement)
-   */
-  @Override
-  public void handle(ASTASTStatement node) {
-    getPrinter().println("de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
-  }
-
   @Override
   public void handle(ASTCompilationUnit a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
@@ -160,15 +78,15 @@ public class JavaDSLPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getAnnotationList().iterator(), "");
     getPrinter().print("package ");
-    getPrinter().print(Names.getQualifiedName(a.getQualifiedName().getPartList()));
+    getPrinter().print(Names.getQualifiedName(a.getMCQualifiedName().getPartList()));
     getPrinter().println(";");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
   @Override
-  public void handle(ASTArrayType a) {
+  public void handle(ASTMCArrayType a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
-    a.getComponentType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     printDimensions(a.getDimensions());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -179,8 +97,8 @@ public class JavaDSLPrettyPrinter implements
     printSeparated(a.getModifierList().iterator(), " ");
     getPrinter().print("interface ");
     printNode(a.getName());
-    if (a.isPresentTypeParameters()) {
-      a.getTypeParameters().accept(getRealThis());
+    if (a.isPresentMCTypeParameters()) {
+      a.getMCTypeParameters().accept(getRealThis());
     }
     if (!a.getExtendedInterfaceList().isEmpty()) {
       getPrinter().print(" extends ");
@@ -217,8 +135,8 @@ public class JavaDSLPrettyPrinter implements
     printSeparated(a.getModifierList().iterator(), " ");
     getPrinter().print("class ");
     printNode(a.getName());
-    if (a.isPresentTypeParameters()) {
-      a.getTypeParameters().accept(getRealThis());
+    if (a.isPresentMCTypeParameters()) {
+      a.getMCTypeParameters().accept(getRealThis());
     }
     if (a.isPresentSuperClass()) {
       getPrinter().print(" extends ");
@@ -262,18 +180,6 @@ public class JavaDSLPrettyPrinter implements
     printSeparated(a.getAnnotationTypeElementDeclarationList().iterator(), "");
     getPrinter().unindent();
     getPrinter().println("}");
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
-
-  @Override
-  public void handle(ASTTypeVariableDeclaration a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    printNode(a.getName());
-    if (!a.getUpperBoundList().isEmpty()) {
-      getPrinter().print(" extends ");
-      printList(a.getUpperBoundList().iterator(), ".");
-
-    }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -355,7 +261,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTAnnotationMethod a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     getPrinter().print(" ");
     printNode(a.getName());
     getPrinter().print("()");
@@ -370,7 +276,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTAnnotationConstant a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     printSeparated(a.getVariableDeclaratorList().iterator(), ", ");
     getPrinter().println("");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -397,7 +303,7 @@ public class JavaDSLPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getPrimitiveModifierList().iterator(), " ");
     getPrinter().print(" ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     getPrinter().print(" ");
     printSeparated(a.getVariableDeclaratorList().iterator(), ", ");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -431,10 +337,10 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTMethodSignature a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    if (a.isPresentTypeParameters()) {
-      a.getTypeParameters().accept(getRealThis());
+    if (a.isPresentMCTypeParameters()) {
+      a.getMCTypeParameters().accept(getRealThis());
     }
-    a.getReturnType().accept(getRealThis());
+    a.getMCReturnType().accept(getRealThis());
     getPrinter().print(" ");
     printNode(a.getName());
     a.getFormalParameters().accept(getRealThis());
@@ -450,7 +356,7 @@ public class JavaDSLPrettyPrinter implements
 
   @Override
   public void handle(ASTThrows a) {
-    printList(a.getQualifiedNameList().iterator(), ", ");
+    printList(a.getMCQualifiedNameList().iterator(), ", ");
   }
 
   @Override
@@ -567,7 +473,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTResource a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getPrimitiveModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     a.getDeclaratorId().accept(getRealThis());
     getPrinter().print(" = ");
     a.getExpression().accept(getRealThis());
@@ -581,6 +487,19 @@ public class JavaDSLPrettyPrinter implements
     if (a.isPresentTypeArguments()) {
       a.getTypeArguments().accept(getRealThis());
     }
+    CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTTypeArguments a) {
+    CommentPrettyPrinter.printPreComments(a, getPrinter());
+    getPrinter().print(("<"));
+    String sep = "";
+    for (ASTMCTypeArgument typeArg : a.getMCTypeArgumentList()) {
+      getPrinter().print(sep);
+      typeArg.accept(getRealThis());
+    }
+    getPrinter().print((">"));
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -621,8 +540,8 @@ public class JavaDSLPrettyPrinter implements
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     getPrinter().println();
     printSeparated(a.getModifierList().iterator(), " ");
-    if (a.isPresentTypeParameters()) {
-      a.getTypeParameters().accept(getRealThis());
+    if (a.isPresentMCTypeParameters()) {
+      a.getMCTypeParameters().accept(getRealThis());
     }
     printNode(a.getName());
     a.getFormalParameters().accept(getRealThis());
@@ -640,7 +559,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTFieldDeclaration a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     getPrinter().print(" ");
     printSeparated(a.getVariableDeclaratorList().iterator(), ", ");
     getPrinter().println(";");
@@ -651,7 +570,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTConstDeclaration a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     printSeparated(a.getConstantDeclaratorList().iterator(), ", ");
     getPrinter().println(";");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -697,7 +616,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTFormalParameter a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getPrimitiveModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     getPrinter().print(" ");
     a.getDeclaratorId().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -707,7 +626,7 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTLastFormalParameter a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getPrimitiveModifierList().iterator(), " ");
-    a.getType().accept(getRealThis());
+    a.getMCType().accept(getRealThis());
     getPrinter().print(" ... ");
     a.getDeclaratorId().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
@@ -731,11 +650,6 @@ public class JavaDSLPrettyPrinter implements
   }
 
   @Override
-  public void handle(ASTVoidType a) {
-    getPrinter().print("void");
-  }
-
-  @Override
   public void handle(ASTAnnotationPairArguments a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getElementValuePairList().iterator(), ", ");
@@ -751,23 +665,6 @@ public class JavaDSLPrettyPrinter implements
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
-  @Override
-  public void handle(ASTWildcardType a) {
-    CommentPrettyPrinter.printPreComments(a, getPrinter());
-    getPrinter().print("?");
-    if (a.isPresentLowerBound()) {
-      getPrinter().print(" super ");
-      a.getLowerBound().accept(getRealThis());
-      if (a.getUpperBound() != null) {
-        getPrinter().print(",");
-      }
-    }
-    if (a.isPresentUpperBound()) {
-      getPrinter().print(" extends ");
-      a.getUpperBound().accept(getRealThis());
-    }
-    CommentPrettyPrinter.printPostComments(a, getPrinter());
-  }
 
   @Override
   public void handle(ASTPrimitiveModifier a) {
@@ -783,7 +680,7 @@ public class JavaDSLPrettyPrinter implements
     if (a.isStatic()) {
       getPrinter().print("static ");
     }
-    a.getQualifiedName().accept(getRealThis());
+    a.getMCQualifiedName().accept(getRealThis());
     if (a.isSTAR()) {
       getPrinter().print(".*");
     }
@@ -932,7 +829,7 @@ public class JavaDSLPrettyPrinter implements
   @Override
   public void handle(ASTCatchType a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
-    printList(a.getQualifiedNameList().iterator(), "|");
+    printList(a.getMCQualifiedNameList().iterator(), "|");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
 
@@ -984,8 +881,8 @@ public class JavaDSLPrettyPrinter implements
   public void handle(ASTCreatedName a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     printSeparated(a.getIdentifierAndTypeArgumentList().iterator(), ".");
-    if (a.isPresentPrimitiveType()) {
-      a.getPrimitiveType().accept(getRealThis());
+    if (a.isPresentMCPrimitiveType()) {
+      a.getMCPrimitiveType().accept(getRealThis());
     }
     CommentPrettyPrinter.printPostComments(a, getPrinter());
   }
@@ -1003,6 +900,34 @@ public class JavaDSLPrettyPrinter implements
     }
     a.getClassCreatorRest().accept(getRealThis());
     CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtType node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getMCType().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtLiteral node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getLiteral().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtReturnType node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getMCReturnType().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTExtTypeArguments node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    node.getTypeArguments().accept(getRealThis());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
   protected void printSeparated(Iterator<? extends ASTJavaDSLNode> iter, String separator) {
