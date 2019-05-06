@@ -6,10 +6,10 @@
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL</artifactId>
   <name>MontiCore: Java DSL</name>
-  <version>4.3.16</version>
+  <version>4.3.17-SNAPSHOT</version>
   <properties>
 
-    <monticore.version>5.0.5</monticore.version>
+    <monticore.version>5.0.6-SNAPSHOT</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
@@ -25,9 +25,9 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>5.0.4.1</mc4.maven.version>
+    <mc4.maven.version>5.0.5</mc4.maven.version>
 
-    <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
+    <mc.grammars.assembly.version>0.0.11</mc.grammars.assembly.version>
 
     <maven.dependency.version>2.10</maven.dependency.version>
     <compiler.plugin>3.2</compiler.plugin>
