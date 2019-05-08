@@ -22,7 +22,7 @@
         <mirror>
             <!-- this sends everything to the specified nexus repository -->
             <id>se-nexus</id>
-            <mirrorOf>external:*</mirrorOf>
+            <mirrorOf>central,!se-nexus-p2</mirrorOf>
             <url>https://nexus.se.rwth-aachen.de/content/groups/public</url>
         </mirror>
     </mirrors>
