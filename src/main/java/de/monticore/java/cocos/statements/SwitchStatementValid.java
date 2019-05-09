@@ -2,7 +2,7 @@
 
 package de.monticore.java.cocos.statements;
 
-import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTNameExpression;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._cocos.JavaDSLASTSwitchStatementCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;

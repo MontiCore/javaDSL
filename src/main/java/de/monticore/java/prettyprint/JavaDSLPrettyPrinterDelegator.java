@@ -20,10 +20,7 @@ package de.monticore.java.prettyprint;
 
 import de.monticore.MCBasicLiteralsPrettyPrinter;
 import de.monticore.MCJavaLiteralsPrettyPrinter;
-import de.monticore.expressions.prettyprint2.AssignmentExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint2.BitExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint2.CommonExpressionsPrettyPrinter;
-import de.monticore.expressions.prettyprint2.JavaClassExpressionsPrettyPrinter;
+import de.monticore.expressions.prettyprint2.*;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.prettyprint.IndentPrinter;
@@ -45,6 +42,7 @@ public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
   public JavaDSLPrettyPrinterDelegator(IndentPrinter printer) {
     this.realThis = this;
     this.printer = printer;
+    setExpressionsBasisVisitor(new ExpressionsBasisPrettyPrinter(printer));
     setCommonExpressionsVisitor(new CommonExpressionsPrettyPrinter(printer));
     setAssignmentExpressionsVisitor(new AssignmentExpressionsPrettyPrinter(printer));
     setJavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));

@@ -2,13 +2,12 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
-import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTNameExpressionCoCo;
+import de.monticore.expressions.expressionsbasis._ast.ASTNameExpression;
+import de.monticore.expressions.expressionsbasis._cocos.ExpressionsBasisASTNameExpressionCoCo;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
-import de.monticore.javaclassexpressions._cocos.JavaClassExpressionsASTNameExpressionCoCo;
 import de.se_rwth.commons.logging.Log;
 
-public class NameExpValid implements CommonExpressionsASTNameExpressionCoCo {
+public class NameExpValid implements ExpressionsBasisASTNameExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 

@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.commonexpressions._ast.ASTNameExpression;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTNameExpression;
 import de.monticore.expressions.javaclassexpressions._ast.ASTGenericInvocationExpression;
 import de.monticore.expressions.javaclassexpressions._ast.ASTPrimaryGenericInvocationExpression;
 import de.monticore.expressions.javaclassexpressions._cocos.JavaClassExpressionsASTGenericInvocationExpressionCoCo;
