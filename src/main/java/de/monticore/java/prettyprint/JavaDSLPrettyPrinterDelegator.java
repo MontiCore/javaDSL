@@ -58,6 +58,7 @@ public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
   }
   
   protected IndentPrinter getPrinter() {
+
     return this.printer;
   }
   
