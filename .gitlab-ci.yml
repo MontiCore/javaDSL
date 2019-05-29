@@ -25,6 +25,6 @@ build_dev:
 build_branches:
   stage: build
   script:
-    - "mvn $MAVEN_CLI_OPTS $MAVEN_OPTS clean install"
+    - "mvn $MAVEN_CLI_OPTS $MAVEN_OPTS clean install -U"
   except:
     - dev

@@ -18,7 +18,7 @@
  */
 package de.monticore.java.prettyprint;
 
-import de.monticore.MCBasicLiteralsPrettyPrinter;
+import de.monticore.MCCommonLiteralsPrettyPrinter;
 import de.monticore.MCJavaLiteralsPrettyPrinter;
 import de.monticore.expressions.prettyprint2.*;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
@@ -48,7 +48,7 @@ public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
     setJavaClassExpressionsVisitor(new JavaClassExpressionsPrettyPrinter(printer));
     setBitExpressionsVisitor(new BitExpressionsPrettyPrinter(printer));
     setJavaDSLVisitor(new JavaDSLPrettyPrinter(printer));
-    setMCBasicLiteralsVisitor(new MCBasicLiteralsPrettyPrinter(printer));
+    setMCCommonLiteralsVisitor(new MCCommonLiteralsPrettyPrinter(printer));
     setMCBasicsVisitor(new MCBasicsPrettyPrinter(printer));
     setMCBasicTypesVisitor(new MCBasicTypesPrettyPrinter(printer));
     setMCCollectionTypesVisitor(new MCCollectionTypesPrettyPrinter(printer));
