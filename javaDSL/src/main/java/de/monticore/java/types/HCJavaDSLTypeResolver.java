@@ -5,6 +5,9 @@ package de.monticore.java.types;
 import de.monticore.expressions.assignmentexpressions._ast.*;
 import de.monticore.expressions.commonexpressions._ast.*;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTLiteralExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTNameExpression;
+import de.monticore.expressions.expressionsbasis._ast.ASTQualifiedNameExpression;
 import de.monticore.expressions.javaclassexpressions._ast.*;
 import de.monticore.expressions.bitexpressions._ast.*;
 import de.monticore.java.javadsl._ast.*;
@@ -13,10 +16,10 @@ import de.monticore.java.symboltable.JavaFieldSymbol;
 import de.monticore.java.symboltable.JavaMethodSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.symboltable.JavaTypeSymbolReference;
-import de.monticore.mcbasicliterals._ast.ASTBooleanLiteral;
-import de.monticore.mcbasicliterals._ast.ASTCharLiteral;
-import de.monticore.mcbasicliterals._ast.ASTNullLiteral;
-import de.monticore.mcbasicliterals._ast.ASTStringLiteral;
+import de.monticore.mccommonliterals._ast.ASTBooleanLiteral;
+import de.monticore.mccommonliterals._ast.ASTCharLiteral;
+import de.monticore.mccommonliterals._ast.ASTNullLiteral;
+import de.monticore.mccommonliterals._ast.ASTStringLiteral;
 import de.monticore.mcjavaliterals._ast.ASTDoubleLiteral;
 import de.monticore.mcjavaliterals._ast.ASTFloatLiteral;
 import de.monticore.mcjavaliterals._ast.ASTIntLiteral;
@@ -932,7 +935,7 @@ public class HCJavaDSLTypeResolver extends GenericTypeResolver<JavaTypeSymbolRef
   }
   
   public void handle(ASTLiteralExpression node) {
-    node.getExtLiteral().accept(this);
+    node.getLiteral().accept(this);
   }
   
   public void handle(ASTPrimaryThisExpression node) {

@@ -12,8 +12,8 @@ import de.monticore.java.symboltable.JavaTypeSymbolReference;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.java.types.JavaDSLArrayInitializerCollector;
 import de.monticore.java.types.JavaDSLHelper;
-import de.monticore.mcbasicliterals._ast.ASTLiteral;
 import de.monticore.mcjavaliterals._ast.ASTIntLiteral;
+import de.monticore.mcliteralsbasis._ast.ASTLiteral;
 import de.se_rwth.commons.logging.Log;
 
 import java.util.List;

@@ -2,8 +2,8 @@
 
 package de.monticore.java.cocos.expressions;
 
-import de.monticore.expressions.commonexpressions._ast.ASTQualifiedNameExpression;
-import de.monticore.expressions.commonexpressions._cocos.CommonExpressionsASTQualifiedNameExpressionCoCo;
+import de.monticore.expressions.expressionsbasis._ast.ASTQualifiedNameExpression;
+import de.monticore.expressions.expressionsbasis._cocos.ExpressionsBasisASTQualifiedNameExpressionCoCo;
 import de.monticore.java.symboltable.JavaTypeSymbol;
 import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.monticore.symboltable.Scope;
@@ -11,7 +11,7 @@ import de.se_rwth.commons.logging.Log;
 
 import java.util.Collection;
 
-public class QualifiedNameValid implements CommonExpressionsASTQualifiedNameExpressionCoCo {
+public class QualifiedNameValid implements ExpressionsBasisASTQualifiedNameExpressionCoCo {
 
   HCJavaDSLTypeResolver typeResolver;
 

@@ -4,12 +4,19 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>de.monticore</groupId>
-  <artifactId>javaDSL</artifactId>
-  <name>MontiCore: Java DSL</name>
-  <version>4.3.16</version>
+  <artifactId>javaDSL-parent</artifactId>
+  <version>4.3.17</version>
+  
+  <modules>
+    <module>javaDSL</module>
+    <module>javaDSL-emf</module>
+  </modules>
+  
+  <packaging>pom</packaging>
+  
   <properties>
 
-    <monticore.version>5.0.5</monticore.version>
+    <monticore.version>5.0.6</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
@@ -25,9 +32,9 @@
 
     <!-- .. Plugins ....................................................... -->
 
-    <mc4.maven.version>5.0.4.1</mc4.maven.version>
+    <mc4.maven.version>5.0.5</mc4.maven.version>
 
-    <mc.grammars.assembly.version>0.0.8</mc.grammars.assembly.version>
+    <mc.grammars.assembly.version>0.0.11</mc.grammars.assembly.version>
 
     <maven.dependency.version>2.10</maven.dependency.version>
     <compiler.plugin>3.2</compiler.plugin>
@@ -42,7 +49,6 @@
     <grammars.classifier>grammars</grammars.classifier>
     <symbols.classifier>symbols</symbols.classifier>
     <models.classifier>models</models.classifier>
-    <emf.classifier>emf</emf.classifier>
 
     <!-- .. Misc .......................................................... -->
 
@@ -53,408 +59,6 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
-
-  <!-- == DEFAULT BUILD SETTINGS =========================================== -->
-
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-webdav-jackrabbit</artifactId>
-        <version>${wagon.provider.version}</version>
-      </extension>
-    </extensions>
-
-    <plugins>
-      <!-- Other Configuration -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${compiler.plugin}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>${release.plugin}</version>
-        <configuration>
-          <tagNameFormat>monticore-@{project.version}</tagNameFormat>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>${source.plugin}</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-    </plugins>
-
-  </build>
-
-  <dependencies>
-
-    <!-- EMF dependencies -->
-    <dependency>
-      <groupId>org.eclipse.emf</groupId>
-      <artifactId>org.eclipse.emf.ecore</artifactId>
-      <version>${emf.ecore.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.emf</groupId>
-      <artifactId>org.eclipse.emf.ecore.xmi</artifactId>
-      <version>${emf.ecore.xmi.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.emf</groupId>
-      <artifactId>org.eclipse.emf.common</artifactId>
-      <version>${emf.common.version}</version>
-    </dependency>
-
-
-    <dependency>
-      <groupId>de.se_rwth.commons</groupId>
-      <artifactId>se-commons-logging</artifactId>
-      <version>${se-commons.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.antlr</groupId>
-      <artifactId>antlr4-runtime</artifactId>
-      <version>${antlr.version}</version>
-    </dependency>
-
-    <!-- MontiCore Dependencies -->
-    <dependency>
-      <groupId>de.monticore</groupId>
-      <artifactId>monticore-runtime</artifactId>
-      <version>${monticore.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>de.monticore</groupId>
-      <artifactId>monticore-emf-runtime</artifactId>
-      <version>${monticore.version}</version>
-    </dependency>
-
-    <!-- Grammar Dependencies -->
-    <dependency>
-      <groupId>de.monticore</groupId>
-      <artifactId>monticore-grammar</artifactId>
-      <version>${monticore.version}</version>
-      <classifier>${grammars.classifier}</classifier>
-    </dependency>
-
-    <!-- .. Test Libraries ............................................... -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>de.monticore</groupId>
-      <artifactId>monticore-runtime</artifactId>
-      <version>${monticore.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.groovy</groupId>
-      <artifactId>groovy</artifactId>
-      <version>${groovy.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-  </dependencies>
-
-  <profiles>
-    <profile>
-      <id>testJavaSource</id>
-      <dependencies>
-        <dependency>
-          <groupId>de.monticore</groupId>
-          <artifactId>monticore-grammar</artifactId>
-          <version>${monticore.version}</version>
-        </dependency>
-      </dependencies>
-
-      <build>
-
-        <plugins>
-          <!-- MontiCore AST generation -->
-          <plugin>
-            <groupId>de.monticore.mojo</groupId>
-            <artifactId>monticore-maven-plugin</artifactId>
-            <version>${mc4.maven.version}</version>
-            <configuration>
-              <skip>false</skip>
-              <script>de/monticore/monticore_noemf.groovy</script>
-            </configuration>
-            <executions>
-              <execution>
-                <id>generate-default</id>
-                <goals>
-                  <goal>generate</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- Create grammars jar -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>${maven.assembly.version}</version>
-            <dependencies>
-              <dependency>
-                <groupId>de.monticore</groupId>
-                <artifactId>mc-assemblies</artifactId>
-                <version>${mc.grammars.assembly.version}</version>
-              </dependency>
-            </dependencies>
-            <executions>
-              <execution>
-                <id>grammars</id>
-                <configuration>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <descriptorRefs>
-                    <descriptorRef>grammars-assembly</descriptorRef>
-                  </descriptorRefs>
-                  <formats>
-                    <format>jar</format>
-                  </formats>
-                </configuration>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>${antrun.version}</version>
-            <executions>
-              <execution>
-                <id>unpack</id>
-                <phase>generate-test-resources</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <tasks>
-                    <unzip src="src/test/resources/JDK.zip" dest="target/generated-test-resources"/>
-                  </tasks>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>${surefire.plugin}</version>
-            <configuration>
-              <includes>
-                <include>**/JavaSourceTest.java</include>
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>testAll</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>de.monticore</groupId>
-          <artifactId>monticore-grammar</artifactId>
-          <version>${monticore.version}</version>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-
-          <!-- MontiCore AST generation -->
-          <plugin>
-            <groupId>de.monticore.mojo</groupId>
-            <artifactId>monticore-maven-plugin</artifactId>
-            <version>${mc4.maven.version}</version>
-            <configuration>
-              <skip>false</skip>
-              <script>de/monticore/monticore_noemf.groovy</script>
-            </configuration>
-            <executions>
-              <execution>
-                <id>generate-default</id>
-                <goals>
-                  <goal>generate</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- Create grammars jar -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>${maven.assembly.version}</version>
-            <dependencies>
-              <dependency>
-                <groupId>de.monticore</groupId>
-                <artifactId>mc-assemblies</artifactId>
-                <version>${mc.grammars.assembly.version}</version>
-              </dependency>
-            </dependencies>
-            <executions>
-              <execution>
-                <id>grammars</id>
-                <configuration>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <descriptorRefs>
-                    <descriptorRef>grammars-assembly</descriptorRef>
-                  </descriptorRefs>
-                  <formats>
-                    <format>jar</format>
-                  </formats>
-                </configuration>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>${surefire.plugin}</version>
-            <configuration>
-              <excludes>
-                <exclude>**/JavaSourceTest.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>emf</id>
-      <dependencies>
-        <dependency>
-          <groupId>de.monticore</groupId>
-          <artifactId>monticore-grammar</artifactId>
-          <version>${monticore.version}</version>
-          <classifier>${emf.classifier}</classifier>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <!-- generate with emf -->
-          <plugin>
-            <groupId>de.monticore.mojo</groupId>
-            <artifactId>monticore-maven-plugin</artifactId>
-            <version>${mc4.maven.version}</version>
-            <configuration>
-              <skip>false</skip>
-              <script>de/monticore/monticore_emf.groovy</script>
-            </configuration>
-            <executions>
-              <execution>
-                <id>generate-emf</id>
-                <goals>
-                  <goal>generate</goal>
-                </goals>
-                <phase>generate-sources</phase>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- package with emf -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <version>2.6</version>
-            <executions>
-              <execution>
-                <id>default-jar</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <classifier>${emf.classifier}</classifier>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default</id>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <classifier>${emf.classifier}-sources</classifier>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>${surefire.plugin}</version>
-            <configuration>
-              <excludes>
-                <exclude>**/JavaSourceTest.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-  </profiles>
 
   <!-- == DISTRIBUTION ==================================================== -->
 
@@ -473,5 +77,18 @@
     </site>
   </distributionManagement>
 
+
+  <repositories>
+    <repository>
+      <id>se-public</id>
+      <url>https://nexus.se.rwth-aachen.de/content/groups/public</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>se-public</id>
+      <url>https://nexus.se.rwth-aachen.de/content/groups/public</url>
+    </pluginRepository>
+  </pluginRepositories>
 </project>
 

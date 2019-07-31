@@ -11,7 +11,7 @@ import de.monticore.generating.templateengine.reporting.commons.ReportingReposit
 import de.monticore.java.javadsl._od.JavaDSL2OD;
 import de.monticore.java.javadsl._visitor.JavaDSLDelegatorVisitor;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
-import de.monticore.mcbasicliterals._od.MCBasicLiterals2OD;
+import de.monticore.mccommonliterals._od.MCCommonLiterals2OD;
 import de.monticore.mcbasics._od.MCBasics2OD;
 import de.monticore.mcjavaliterals._od.MCJavaLiterals2OD;
 import de.monticore.prettyprint.IndentPrinter;
@@ -35,7 +35,7 @@ public class JavaDSLAST2OD extends JavaDSL2OD {
     visitor.setJavaClassExpressionsVisitor(new JavaClassExpressions2OD(printer, reporting));
     visitor.setBitExpressionsVisitor(new BitExpressions2OD(printer, reporting));
     visitor.setMCBasicsVisitor(new MCBasics2OD(printer, reporting));
-    visitor.setMCBasicLiteralsVisitor(new MCBasicLiterals2OD(printer, reporting));
+    visitor.setMCCommonLiteralsVisitor(new MCCommonLiterals2OD(printer, reporting));
     visitor.setMCBasicTypesVisitor(new MCBasicTypes2OD(printer, reporting));
     visitor.setMCCollectionTypesVisitor(new MCCollectionTypes2OD(printer, reporting));
     visitor.setMCFullGenericTypesVisitor(new MCFullGenericTypes2OD(printer, reporting));
