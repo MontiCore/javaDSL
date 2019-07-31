@@ -5,7 +5,7 @@
 
   <groupId>de.monticore</groupId>
   <artifactId>javaDSL-parent</artifactId>
-  <version>4.3.17-SNAPSHOT</version>
+  <version>4.3.17</version>
   
   <modules>
     <module>javaDSL</module>
@@ -16,7 +16,7 @@
   
   <properties>
 
-    <monticore.version>5.0.6-SNAPSHOT</monticore.version>
+    <monticore.version>5.0.6</monticore.version>
 
     <!-- .. Libraries ..................................................... -->
 
