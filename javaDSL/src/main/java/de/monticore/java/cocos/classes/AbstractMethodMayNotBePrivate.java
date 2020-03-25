@@ -4,7 +4,6 @@ package de.monticore.java.cocos.classes;
 
 /**
  *
- * @author (last commit) $Author: breuer $
  * $Date: 2017-01-23 13:05:13 +0100 (Mon, 23 Jan 2017) $
  */
 

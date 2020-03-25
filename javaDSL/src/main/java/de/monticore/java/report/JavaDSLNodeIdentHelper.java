@@ -34,7 +34,6 @@ import de.monticore.types.types._ast.ASTSimpleReferenceType;
 import de.monticore.types.types._ast.ASTTypeParameters;
 
 /**
- * @author Marita Breuer
  */
 public class JavaDSLNodeIdentHelper extends TypesNodeIdentHelper {
   

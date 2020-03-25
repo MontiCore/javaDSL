@@ -8,7 +8,6 @@ import de.monticore.java.types.JavaDSLHelper;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * @author npichler
  */
 public class DecSuffixOpValid implements AssignmentExpressionsASTDecSuffixExpressionCoCo {
   

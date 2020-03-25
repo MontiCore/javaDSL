@@ -14,7 +14,6 @@ import de.monticore.types.prettyprint.MCFullGenericTypesPrettyPrinter;
 import de.monticore.types.prettyprint.MCSimpleGenericTypesPrettyPrinter;
 
 /**
- * @author npichler
  */
 public class JavaDSLPrettyPrinterDelegator extends JavaDSLDelegatorVisitor {
   

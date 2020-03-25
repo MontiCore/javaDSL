@@ -11,7 +11,6 @@ import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.symboltable.Symbol;
 
 /** *
- * @author MB
  */
 public class JavaDSLSymbolTableReporter extends SymbolTableReporter {
   

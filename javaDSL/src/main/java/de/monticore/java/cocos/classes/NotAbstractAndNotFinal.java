@@ -12,8 +12,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  * TODO: Write me!
  *
- * @author (last commit) $Author: breuer $
- * @since TODO: add version number
  */
 public class NotAbstractAndNotFinal implements JavaDSLASTClassDeclarationCoCo {
 

@@ -25,7 +25,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  * A simple test for java tool.
  *
- * @author (last commit) $Author$
  */
 public class ParsableButInvalidModelsTest extends AbstractTestClass {
 

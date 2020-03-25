@@ -9,7 +9,6 @@ import org.junit.Test;
 /**
  * A simple test for java tool.
  *
- * @author (last commit) $Author$
  */
 public class UnparsableModelsTest extends AbstractTestClass {
 

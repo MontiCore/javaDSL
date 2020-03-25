@@ -14,8 +14,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  * TODO: Write me!
  *
- * @author (last commit) $Author$
- * @since TODO: add version number
  */
 public class NestedTypeMayNotHaveSameNameAsEnclosingType implements JavaDSLASTTypeDeclarationCoCo {
 

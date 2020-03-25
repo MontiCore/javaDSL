@@ -37,7 +37,6 @@ import de.se_rwth.commons.logging.Slf4jLog;
 /**
  * A simple test for MyDSL tool.
  *
- * @author (last commit) $Author$
  */
 public abstract class AbstractTestClass {
   

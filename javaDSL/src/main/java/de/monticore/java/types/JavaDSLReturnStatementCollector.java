@@ -11,8 +11,6 @@ import de.monticore.java.javadsl._visitor.JavaDSLVisitor;
 /**
  * TODO
  *
- * @author (last commit) $$Author$$
- * @since TODO
  */
 public class JavaDSLReturnStatementCollector implements JavaDSLVisitor {
 

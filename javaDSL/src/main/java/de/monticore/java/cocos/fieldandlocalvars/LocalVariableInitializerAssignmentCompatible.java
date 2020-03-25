@@ -21,8 +21,6 @@ import de.se_rwth.commons.logging.Log;
 /**
 
  *
- * @author (last commit) $$Author: breuer $$
- * @since TODO * TODO
  */
 public class LocalVariableInitializerAssignmentCompatible implements
         JavaDSLASTLocalVariableDeclarationCoCo {

@@ -33,8 +33,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * TODO: Write me!
  *
- * @author (last commit) $Author$
- * @since TODO: add version number
  */
 public class JavaDSLPrettyPrinterTest {
   

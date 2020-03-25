@@ -16,8 +16,6 @@ import java.util.List;
 /**
  * TODO
  *
- * @author (last commit) $$Author: breuer $$
- * @since TODO
  */
 public class MethodOverride implements JavaDSLASTClassDeclarationCoCo {
 

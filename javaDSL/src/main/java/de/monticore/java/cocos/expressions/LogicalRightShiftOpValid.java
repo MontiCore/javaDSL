@@ -7,7 +7,6 @@ import de.monticore.java.types.HCJavaDSLTypeResolver;
 import de.se_rwth.commons.logging.Log;
 
 /**
- * @author npichler
  */
 public class LogicalRightShiftOpValid
     implements BitExpressionsASTLogicalRightShiftExpressionCoCo {

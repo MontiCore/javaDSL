@@ -14,8 +14,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  * TODO: Write me!
  *
- * @author (last commit) $Author$
- * @since TODO: add version number
  */
 public class FieldNamesMustBePairWiseDifferent implements JavaDSLASTTypeDeclarationCoCo {
   public static final String ERROR_MESSAGE = "Field names must be pairwise different.";

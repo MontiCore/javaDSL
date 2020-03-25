@@ -22,7 +22,6 @@ import de.monticore.symboltable.Symbol;
 /**
  * Test for {@link ODPrinter}.
  *
- * @author Marita Breuer
  */
 public class ODReportingTest extends AbstractTestClass {
   

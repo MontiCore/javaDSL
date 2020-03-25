@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * @author npichler
  */
 public class MethodGenericInvocationValid implements JavaClassExpressionsASTGenericInvocationExpressionCoCo{
   HCJavaDSLTypeResolver typeResolver;

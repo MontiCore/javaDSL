@@ -8,8 +8,6 @@ import de.monticore.types.MCTypesJTypeSymbolsHelper;
 /**
  * TODO: Write me!
  *
- * @author (last commit) $Author$
- * @since TODO: add version number
  */
 public class JavaSymbolFactory implements MCTypesJTypeSymbolsHelper.JTypeFactory<JavaTypeSymbol> {
   

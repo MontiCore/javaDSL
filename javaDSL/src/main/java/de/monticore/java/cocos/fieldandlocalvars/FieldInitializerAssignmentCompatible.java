@@ -21,8 +21,6 @@ import java.util.List;
 /**
  * TODO
  *
- * @author (last commit) $$Author: breuer $$
- * @since TODO
  */
 public class FieldInitializerAssignmentCompatible implements JavaDSLASTFieldDeclarationCoCo {
   

@@ -13,8 +13,6 @@ import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 /**
  * TODO
  *
- * @author (last commit) $$Author$$
- * @since TODO
  */
 public class JavaDSLArrayInitializerCollector implements JavaDSLVisitor {
 

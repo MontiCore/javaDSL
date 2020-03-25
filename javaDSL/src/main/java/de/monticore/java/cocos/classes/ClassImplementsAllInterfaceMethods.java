@@ -17,7 +17,6 @@ import java.util.List;
 
 /**
  *
- * @author (last commit) $$Author: breuer $$
  */
 public class ClassImplementsAllInterfaceMethods implements JavaDSLASTClassDeclarationCoCo {
   

@@ -9,7 +9,6 @@ import de.se_rwth.commons.logging.Log;
 
 /**
  *
- * @author (last commit) $Author: breuer $
  */
 public class AbstractOrNativeMethodHasNoBody implements JavaDSLASTMethodDeclarationCoCo {
   public static final String ERROR_MESSAGE = "0xA1202 An abstract method may not implement a body.";

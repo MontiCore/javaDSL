@@ -11,8 +11,6 @@ import de.se_rwth.commons.logging.Log;
 /**
  * TODO
  *
- * @author (last commit) $$Author: breuer $$
- * @since TODO
  */
 public class ClassNoFinalSuperClass implements JavaDSLASTClassDeclarationCoCo {
 

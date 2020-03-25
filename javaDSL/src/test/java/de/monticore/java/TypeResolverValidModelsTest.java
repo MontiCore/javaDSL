@@ -120,8 +120,6 @@ import de.se_rwth.commons.logging.LogStub;
 /**
  * TODO
  *
- * @author (last commit) $$Author$$
- * @since TODO
  */
 public class TypeResolverValidModelsTest extends AbstractCoCoTestClass {
   
