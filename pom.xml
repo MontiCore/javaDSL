@@ -20,8 +20,8 @@
 
     <!-- .. Libraries ..................................................... -->
 
-    <guava.version>23.0</guava.version>
-    <junit.version>4.11</junit.version>
+    <guava.version>25.1-jre</guava.version>
+    <junit.version>4.13.1</junit.version>
     <se-commons.version>1.7.9</se-commons.version>
     <antlr.version>4.7.1</antlr.version>
     <emf.common.version>2.15.0</emf.common.version>
