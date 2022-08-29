@@ -2,18 +2,73 @@
 
 package de.monticore.java;
 
-grammar JavaDSL extends de.monticore.expressions.ExpressionsBasis,
-	de.monticore.expressions.CommonExpressions,
-	de.monticore.expressions.AssignmentExpressions,
-	de.monticore.expressions.JavaClassExpressions,
+/**
+ * The full grammar dependency tree as of 7.4
+ *
+ * JavaDSL
+ * |-> de.monticore.JavaLight
+ *     |-> de.monticore.expressions.AssignmentExpressions
+ *         |-> de.monticore.expressions.ExpressionsBasis
+ *             |-> de.monticore.MCBasics
+ *             |-> de.monticore.literals.MCLiteralsBasis
+ *     |-> de.monticore.expressions.JavaClassExpressions
+ *         |-> de.monticore.expressions.CommonExpressions
+ *             |-> de.monticore.expressions.ExpressionsBasis (*)
+ *     |-> de.monticore.statements.MCArrayStatements
+ *         |-> de.monticore.statements.MCVarDeclarationStatements
+ *             |-> de.monticore.expressions.ExpressionsBasis (*)
+ *             |-> de.monticore.statements.MCStatementsBasis
+ *             |-> de.monticore.symbols.OOSymbols
+ *                 |-> de.monticore.symbols.BasicSymbols
+ *                     |-> de.monticore.MCBasics (*)
+ *             |-> de.monticore.types.MCBasicTypes
+ *                 |-> de.monticore.MCBasics (*)
+ *     |-> de.monticore.statements.MCCommonStatements
+ *         |-> de.monticore.statements.MCVarDeclarationStatements (*)
+ *     |-> de.monticore.statements.MCReturnStatements
+ *         |-> de.monticore.expressions.ExpressionsBasis (*)
+ *         |-> de.monticore.statements.MCStatementsBasis (*)
+ * |-> de.monticore.expressions.BitExpressions
+ *     |-> de.monticore.expressions.ExpressionsBasis (*)
+ * |-> de.monticore.literals.MCJavaLiterals
+ *     |-> de.monticore.literals.MCCommonLiterals (*)
+ *         |-> de.monticore.MCBasics (*)
+ *         |-> de.monticore.literals.MCLiteralsBasis (*)
+ * |-> de.monticore.statements.MCFullJavaStatements
+ *     |-> de.monticore.statements.MCArrayStatements (*)
+ *     |-> de.monticore.statements.MCAssertStatements
+ *         |-> de.monticore.expressions.ExpressionsBasis (*)
+ *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *     |-> de.monticore.statements.MCExceptionStatements
+ *         |-> de.monticore.statements.MCCommonStatements (*)
+ *     |-> de.monticore.statements.MCLowLevelStatements
+ *         |-> de.monticore.MCBasics (*)
+ *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *     |-> de.monticore.statements.MCReturnStatements (*)
+ *     |-> de.monticore.statements.MCSynchronizedStatements
+ *         |-> de.monticore.statements.MCCommonStatements (*)
+ * |-> de.monticore.types.MCArrayTypes
+ *     |-> de.monticore.types.MCBasicTypes
+ *         |-> de.monticore.MCBasics (*)
+ * |-> de.monticore.types.MCFullGenericTypes
+ *     |-> de.monticore.types.MCSimpleGenericTypes
+ *         |-> de.monticore.types.MCCollectionTypes
+ *             |-> de.monticore.types.MCBasicTypes (*)
+ *
+ * (*) Dependencies are emitted because they have been listed previously.
+ */
+grammar JavaDSL extends de.monticore.JavaLight,
 	de.monticore.expressions.BitExpressions,
-	de.monticore.MCJavaLiterals,
-	de.monticore.types.MCBasicTypes,
+	de.monticore.literals.MCJavaLiterals,
+	de.monticore.statements.MCFullJavaStatements,
+	de.monticore.types.MCArrayTypes,
 	de.monticore.types.MCFullGenericTypes {
 
+start CompilationUnit;
+
 // starting point for parsing a java file
-CompilationUnit
-    =   PackageDeclaration? ImportDeclaration* TypeDeclaration* EOF
+scope CompilationUnit
+    =   PackageDeclaration? ImportDeclaration* TypeDeclaration*
     ;
 
 PackageDeclaration
@@ -24,38 +79,30 @@ ImportDeclaration
     =   "import" (["static"])? MCQualifiedName ("." ["*"])? ";"
     ;
 
-// Modifiers
-interface Modifier ;
-
-PrimitiveModifier implements Modifier =
-        Modifier:["private" | "public" | "protected" | "static" | "transient" 
-        | "final" | "abstract" | "native" | "threadsafe" | "synchronized" 
-        | "const" | "volatile" | "strictfp"]
-    ;
-
 // Type declarations
-interface TypeDeclaration extends ClassMemberDeclaration,
-        InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, BlockStatement;
+abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
 
-EmptyDeclaration implements TypeDeclaration
-    =   ";"
-    ;
+symbolrule TypeDeclaration =
+    isAnnotation: boolean ;
 
-ClassDeclaration implements TypeDeclaration
-    =   Modifier* "class" Name MCTypeParameters?
+symbol scope ClassDeclaration extends TypeDeclaration
+    =   JavaModifier* "class" Name TypeParameters?
         ("extends" superClass:MCType)?
         ("implements" implementedInterface:(MCType || ",")+)?
         ClassBody
     ;
 
+symbolrule ClassDeclaration =
+    superInterface:MCType*
+    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
+    methods: de.monticore.javalight._symboltable.JavaMethodSymbol* ;
+
 ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
     
-interface ClassBodyDeclaration ;
-
-InterfaceDeclaration implements TypeDeclaration
-    =   Modifier* "interface" Name MCTypeParameters?
+symbol scope InterfaceDeclaration extends TypeDeclaration
+    =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
         InterfaceBody
     ;
@@ -64,15 +111,17 @@ InterfaceBody
     =   "{" InterfaceBodyDeclaration* "}"
     ;
 
-interface InterfaceBodyDeclaration ;
-
-EnumDeclaration implements TypeDeclaration
-    =   Modifier* "enum" Name
+symbol scope EnumDeclaration extends TypeDeclaration
+    =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
-EnumConstantDeclaration
+symbolrule EnumDeclaration =
+    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
+    methods: de.monticore.javalight._symboltable.JavaMethodSymbol*;
+
+symbol EnumConstantDeclaration
     =   Annotation* Name Arguments? ClassBody?
     ;
 
@@ -80,64 +129,36 @@ EnumBody
     =   ";" ClassBodyDeclaration*
     ;
 
+TypeParameters
+    =   "<" (TypeParameter || ",")+ ">"
+    ;
+
+symbol TypeParameter
+    =   Name ("extends" TypeBound)?
+    ;
+
+TypeBound
+    =   (MCType || "&")+
+    ;
+
 ClassBlock implements ClassBodyDeclaration
-    = (["static"])? JavaBlock
+    =   (["static"])? JavaBlock
     ;
 
 interface ClassMemberDeclaration extends ClassBodyDeclaration ;
 
-MethodDeclaration implements ClassMemberDeclaration
-    =   MethodSignature (MethodBody | ";")
-    ;
-
 interface MethodBody ;
-
-ConstructorDeclaration implements ClassMemberDeclaration
-    =   Modifier* MCTypeParameters? Name FormalParameters ("throws" Throws)?
-        ConstructorBody
-    ;
 
 interface ConstructorBody ;
 
 FieldDeclaration implements ClassMemberDeclaration
-    =   Modifier* MCType (VariableDeclarator || ",")+ ";"
+    =   JavaModifier* MCType (VariableDeclarator || ",")+ ";"
     ;
 
 interface InterfaceMemberDeclaration extends InterfaceBodyDeclaration ;
 
-ConstDeclaration implements InterfaceMemberDeclaration
-    =   Modifier* MCType (ConstantDeclarator || ",")+ ";"
-    ;
-
 ConstantDeclarator
     =   Name (dim:"[" "]")* "=" VariableInititializerOrExpression
-    ;
-
-InterfaceMethodDeclaration implements InterfaceMemberDeclaration
-    =   MethodSignature ";"
-    ;
-
-/* We use rule this even for void methods which cannot have [] after parameters.
-   This simplifies grammar and we can consider void to be a type, which
-   renders the [] matching as a context-sensitive issue or a semantic check
-   for invalid return type after parsing.
- */
-MethodSignature
-    =   Modifier* MCTypeParameters?
-        MCReturnType Name FormalParameters (dim:"[" "]")*
-        ("throws" Throws)?
-    ;
-
-Throws
-    =   (MCQualifiedName || ",")+
-    ;
-
-VariableDeclarator
-    =   DeclaratorId ("=" VariableInititializerOrExpression)?
-    ;
-
-DeclaratorId
-    =   Name (dim:"[" "]")*
     ;
 
 interface VariableInitializer;
@@ -149,51 +170,10 @@ ArrayInitializer implements VariableInitializer
     =   "{" (VariableInititializerOrExpression || ",")* (",")? "}"
     ;
 
-FormalParameters
-    =   "(" FormalParameterListing? ")"
-    ;
-
-FormalParameterListing
-    =   (FormalParameter || ",")+ ("," LastFormalParameter)?
-    |   LastFormalParameter
-    ;
-
-FormalParameter
-    =   PrimitiveModifier* MCType DeclaratorId
-    ;
-
-LastFormalParameter
-    =   PrimitiveModifier* MCType "..." DeclaratorId
-    ;
-
 // ANNOTATIONS
 
-// TODO: Check implementing Statement
-Annotation implements Modifier,  ElementValue, Statement
-    =   "@" annotationName:MCQualifiedName ( "(" AnnotationArguments? ")" )?
-    ;
-
-interface AnnotationArguments ;
-
-AnnotationPairArguments implements AnnotationArguments
-   =   (ElementValuePair || ",")+
-   ;
-
-ElementValuePair
-    =   Name "=" ElementValueOrExpr
-    ;
-
-interface ElementValue;
-
-ElementValueOrExpr implements AnnotationArguments
-	= ElementValue | Expression;
-
-ElementValueArrayInitializer implements ElementValue
-    =   "{" (ElementValueOrExpr || ",")* (",")? "}"
-    ;
-
-AnnotationTypeDeclaration implements TypeDeclaration
-    =   Modifier* "@" "interface" Name AnnotationTypeBody
+symbol scope AnnotationTypeDeclaration extends TypeDeclaration
+    =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
 
 AnnotationTypeBody
@@ -202,12 +182,12 @@ AnnotationTypeBody
 
 interface AnnotationTypeElementDeclaration ;
 
-AnnotationMethod implements AnnotationTypeElementDeclaration
-    =   Modifier* MCType Name "(" ")" DefaultValue? ";"
+symbol scope AnnotationMethod implements AnnotationTypeElementDeclaration
+    =   JavaModifier* MCType Name "(" ")" DefaultValue? ";"
     ;
 
 AnnotationConstant implements AnnotationTypeElementDeclaration
-    =   Modifier* MCType (VariableDeclarator || ",")+ ";"
+    =   JavaModifier* MCType (VariableDeclarator || ",")+ ";"
     ;
 
 DefaultValue
@@ -216,59 +196,13 @@ DefaultValue
 
 // STATEMENTS / BLOCKS
 
-interface BlockStatement ;
+interface Statement extends MCBlockStatement ;
 
-LocalVariableDeclarationStatement implements BlockStatement
-    =    LocalVariableDeclaration ";"
+scope JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
+    =   "{" MCBlockStatement* "}"
     ;
 
-LocalVariableDeclaration implements ForInit
-    =   PrimitiveModifier* MCType (VariableDeclarator || ",")+
-    ;
-
-interface Statement extends BlockStatement ;
-
-JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
-    =   "{" BlockStatement* "}"
-    ;
-
-AssertStatement implements Statement
-    =   "assert" assertion:Expression (":" message:Expression)? ";"
-    ;
-
-IfStatement implements Statement
-    =   "if" "(" condition:Expression ")" thenStatement:Statement ("else" elseStatement:Statement)?
-    ;
-
-ForStatement implements Statement
-    =   "for" "(" ForControl ")" Statement
-    ;
-
-interface ForControl ;
-
-CommonForControl implements ForControl
-    =   ForInit? ";" condition:Expression? ";" (Expression || ",")*
-    ;
-
-interface ForInit ;
-
-ForInitByExpressions implements ForInit
-    =   (Expression || ",")+
-    ;
-
-EnhancedForControl implements ForControl
-    =   FormalParameter ":" Expression
-    ;
-
-WhileStatement implements Statement
-    =   "while" "(" condition:Expression ")" Statement
-    ;
-
-DoWhileStatement implements Statement
-    =   "do" Statement "while" "(" condition:Expression ")" ";"
-    ;
-
-TryStatement implements Statement
+scope TryStatement implements Statement
     =   "try" JavaBlock ExceptionHandler
     ;
 
@@ -287,7 +221,7 @@ TryStatementWithResources implements Statement
     ;
 
 Resource
-    =   PrimitiveModifier* MCType DeclaratorId "=" Expression
+    =   JavaModifier* MCType DeclaratorId "=" Expression
     ;
 
 IdentifierAndTypeArgument
@@ -295,102 +229,15 @@ IdentifierAndTypeArgument
     ;
 
 TypeArguments
-    = "<" (MCTypeArgument || ",")* ">"
-    ;
-
-CatchClause
-    =   "catch" "(" PrimitiveModifier* CatchType Name ")" JavaBlock
-    ;
-
-CatchType
-    =   (MCQualifiedName || "|")+
+    =   "<" (MCTypeArgument || ",")* ">"
     ;
 
 interface FinallyBlock ;
 
-SwitchStatement implements Statement
-    =   "switch" "(" Expression ")" "{" SwitchBlockStatementGroup* SwitchLabel* "}"
-    ;
-
-SynchronizedStatement implements Statement
-    =   "synchronized" "(" Expression ")" JavaBlock
-    ;
-
-ReturnStatement implements Statement
-    =   "return" Expression? ";"
-    ;
-
-ThrowStatement implements Statement
-    =   "throw" Expression ";"
-    ;
-
-BreakStatement implements Statement
-    =   "break" label:Name? ";"
-    ;
-
-ContinueStatement implements Statement
-    =   "continue" label:Name? ";"
-    ;
-
-EmptyStatement implements Statement
-    =   ";"
-    ;
-
-ExpressionStatement implements Statement
-    =   Expression ";"
-    ;
- 
 LabeledStatement implements Statement
     =   label:Name ":" Statement
     ;
 
-/** Matches cases then statements, both of which are mandatory.
- *  To handle empty cases at the end, we add switchLabel* to statement.
- */
-SwitchBlockStatementGroup
-    =   SwitchLabel+ BlockStatement+
-    ;
-
-interface SwitchLabel ;
-
-ConstantExpressionSwitchLabel implements SwitchLabel
-    =   "case" constantExpression:Expression ":"
-    ;
-
-EnumConstantSwitchLabel implements SwitchLabel
-    =   "case" enumConstantName:Name ":"
-    ;
-
-DefaultSwitchLabel implements SwitchLabel
-    =   "default" ":"
-    ;
-
-InnerCreatorExpression implements Expression <275> =
-	Expression "." "new" InnerCreator;
- 
-CreatorExpression implements Expression <235> =
-	"new" Creator;
-
-interface Creator ;
-
-AnonymousClass implements Creator
-    =   TypeArguments? CreatedName ClassCreatorRest
-    ;
-    
-ArrayCreator implements Creator
-    =   CreatedName ArrayDimensionSpecifier
-    ;
-
-interface ArrayDimensionSpecifier ;
-    
-ArrayDimensionByInitializer implements ArrayDimensionSpecifier
-    =   (dim:"[" "]")+ ArrayInitializer
-    ;
-    
-ArrayDimensionByExpression implements ArrayDimensionSpecifier
-    =   ("[" Expression "]")+ (dim:"[" "]")*
-    ;
-    
 CreatedName
     =   (IdentifierAndTypeArgument || ".")+
     |   MCPrimitiveType
@@ -404,13 +251,34 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-ExtType = MCType;
+@Override ExtType = MCType;
 
 ExtLiteral = Literal;
 
-ExtReturnType = MCReturnType;
+@Override ExtReturnType = MCReturnType;
 
-ExtTypeArguments = TypeArguments;
+@Override ExtTypeArgument = MCTypeArgument;
 
+ExtTypeParameter = TypeParameter;
+@Override ExtTypeParameters = TypeParameters;
+
+/*
+ * TODO Remove this
+ * This is a workaround to a questionable behavior in the core grammar JavaLight
+ * where the production "Annotation" does not extend "JavaModifier" whereas
+ * various productions use JavaModifier in places where annotations are allowed.
+ *
+ * We cannot override the Annotation production because we already extend
+ * JavaModifier either, so we'll have to live with a separate production for now.
+ */
+JavaAnnotation extends JavaModifier implements ElementValue
+    =   "@" annotationName:MCQualifiedName
+            ( "(" AnnotationArguments? ")" )?
+    ;
+
+@Override
+AnonymousClass implements Creator
+    =   ExtType Arguments ClassBody?
+    ;
 
 }

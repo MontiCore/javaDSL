@@ -1,8 +1,6 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -13,16 +11,18 @@ import java.util.List;
 
 import de.se_rwth.commons.logging.Log;
 import de.se_rwth.commons.logging.LogStub;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * A simple test for MyDSL Tool.
  *
  */
 public class JavaSourceTest {
-  
+
   /* All files that initially failed to parse in the java source code JDK 7
    * using original grammar. */
   // @formatter:off
@@ -34,27 +34,26 @@ public class JavaSourceTest {
 
   ParseJavaFileVisitor visitor = new ParseJavaFileVisitor(initialParsingFails);
   ParseJavaFileVisitor visitorFilesFailed = new ParseJavaFileVisitor();
-  
+
   private static final int NUMBER_TESTS = 59;
-  
+
   private static final int NUMBER_COCOS = 532;
 
-  @Before
+  @BeforeEach
   public void setup() {
     Log.init();
     Log.enableFailQuick(false);
   }
-  
-  @Before
+
+  @BeforeEach
   public void setUp() {
     Log.getFindings().clear();
   }
 
-
   @Test
   public void testAllJavaSourceFiles() {
     Path path = FileSystems.getDefault().getPath("target", "generated-test-resources", "JDK", "java", "lang");
-    
+
     try {
       Files.walkFileTree(path, visitor);
     }
@@ -63,23 +62,17 @@ public class JavaSourceTest {
     }
     assertEquals(visitor.getNumberOfTests(), visitor.getSuccessCount());
   }
- 
+
   @Test
   public void testJavaSourceFilesThatInitiallyFailed() {
-    
-    try {
-      FileSystem fs = FileSystems.getDefault();
-      for (String[] fail : initialParsingFails) {
-        visitorFilesFailed.visitFile(fs.getPath("", fail), null);
-      }
-    }
-    catch (IOException e) {
-      e.printStackTrace();
+    FileSystem fs = FileSystems.getDefault();
+    for (String[] fail : initialParsingFails) {
+      visitorFilesFailed.visitFile(fs.getPath("", fail), null);
     }
     assertEquals(visitorFilesFailed.getNumberOfTests(), visitorFilesFailed.getFailCount());
   }
-  
-  @After
+
+  @AfterEach
   public void printResult() {
     LogStub.info("Success rate: " + visitor.getSuccessRate(), JavaSourceTest.class.getName());
     LogStub.info("Fail rate: " + visitorFilesFailed.getFailRate(), JavaSourceTest.class.getName());
@@ -90,5 +83,5 @@ public class JavaSourceTest {
       LogStub.info(fileParsedWithErrors.toString(), JavaSourceTest.class.getName());
     }
   }
-  
+
 }
