@@ -1,0 +1,31 @@
+[versions]
+emf = "2.15.0"
+gradle-shadow-plugin = "7.1.2"
+junit = "5.9.0"
+monticore = "7.4.0-SNAPSHOT"
+
+
+[libraries]
+# de.monticore - MontiCore
+monticore-grammar = { module = "de.monticore:monticore-grammar", version.ref = "monticore" }
+monticore-grammar-emf = { module = "de.monticore:monticore-grammar-emf", version.ref = "monticore" }
+monticore-runtime = { module = "de.monticore:monticore-runtime", version.ref = "monticore" }
+monticore-runtime-emf = { module = "de.monticore:monticore-runtime-emf", version.ref = "monticore" }
+
+# org.eclipse.emf - EMF
+emf-common = { module = "org.eclipse.emf:org.eclipse.emf.common", version.ref = "emf" }
+emf-ecore = { module = "org.eclipse.emf:org.eclipse.emf.ecore", version.ref = "emf" }
+emf-ecore-xmi = { module = "org.eclipse.emf:org.eclipse.emf.ecore.xmi", version.ref = "emf" }
+
+# org.junit - JUnit
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+
+
+[plugins]
+# de.monticore - MontiCore
+monticore = { id = "monticore", version.ref = "monticore" }
+
+# com.github.johnrengelman.shadow - Shadow
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "gradle-shadow-plugin" }

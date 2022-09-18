@@ -1,0 +1,45 @@
+description = "MontiCore: Java DSL"
+
+def grammarsDir = "src/main/grammars"
+
+sourceSets {
+    main.java.srcDir("$buildDir/generated-sources/monticore/sourcecode")
+
+    grammars {
+        resources {
+            srcDir(grammarsDir)
+            include "**/*.mc4"
+        }
+    }
+}
+
+java {
+    registerFeature("grammars") {
+        usingSourceSet(sourceSets.grammars)
+    }
+}
+
+task generate(type: MCTask) {
+    grammar = file "$projectDir/$grammarsDir/de/monticore/java/JavaDSL.mc4"
+    outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
+    handcodedPath "$projectDir/src/main/java"
+
+    def upToDate = incCheck("de/monticore/java/JavaDSL.mc4")
+    outputs.upToDateWhen { upToDate }
+}
+
+dependencies {
+    implementation(platform(libs.junit.bom))
+
+    api(libs.monticore.grammar)
+    api(libs.monticore.runtime)
+
+    grammar(libs.monticore.grammar) {
+        capabilities {
+            requireCapability("de.monticore:monticore-grammar-grammars")
+        }
+    }
+
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
