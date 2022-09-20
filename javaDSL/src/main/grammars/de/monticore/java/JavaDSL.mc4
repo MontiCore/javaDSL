@@ -62,7 +62,8 @@ grammar JavaDSL extends de.monticore.JavaLight,
 	de.monticore.literals.MCJavaLiterals,
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
-	de.monticore.types.MCFullGenericTypes {
+	de.monticore.types.MCFullGenericTypes,
+  de.monticore.expressions.LambdaExpressions { // TODO: move to JavaLight?
 
 start CompilationUnit;
 
