@@ -30,6 +30,10 @@ package de.monticore.java;
  *         |-> de.monticore.statements.MCStatementsBasis (*)
  * |-> de.monticore.expressions.BitExpressions
  *     |-> de.monticore.expressions.ExpressionsBasis (*)
+ * |-> de.monticore.expressions.LambdaExpressions
+ *     |-> de.monticore.expressions.ExpressionsBasis (*)
+ *     |-> de.monticore.symbols.BasicSymbols (*)
+ *     |-> de.monticore.types.MCBasicTypes (*)
  * |-> de.monticore.literals.MCJavaLiterals
  *     |-> de.monticore.literals.MCCommonLiterals (*)
  *         |-> de.monticore.MCBasics (*)
@@ -59,11 +63,11 @@ package de.monticore.java;
  */
 grammar JavaDSL extends de.monticore.JavaLight,
 	de.monticore.expressions.BitExpressions,
+	de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
 	de.monticore.literals.MCJavaLiterals,
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
-	de.monticore.types.MCFullGenericTypes,
-  de.monticore.expressions.LambdaExpressions { // TODO: move to JavaLight?
+	de.monticore.types.MCFullGenericTypes {
 
 start CompilationUnit;
 
@@ -281,5 +285,10 @@ JavaAnnotation extends JavaModifier implements ElementValue
 AnonymousClass implements Creator
     =   ExtType Arguments ClassBody?
     ;
+
+
+// EXPRESSIONS
+
+LambdaBlockBody implements LambdaBody = MCJavaBlock;
 
 }
