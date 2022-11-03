@@ -83,4 +83,12 @@ public class JavaDSLParserTest extends AbstractTest {
     assertTrue(ast.isPresent());
   }
 
+  @Test
+  public void testLambdas() throws IOException {
+    JavaDSLParser parser = new JavaDSLParser();
+    assertTrue(parser.parse_StringExpression("foo -> foo").isPresent());
+    assertTrue(parser.parse_StringExpression("(foo, bar) -> foo").isPresent());
+    assertTrue(parser.parse_StringExpression("(foo, bar) -> { return foo; }").isPresent());
+  }
+
 }
