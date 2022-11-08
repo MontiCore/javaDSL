@@ -524,6 +524,33 @@ public class JavaDSLPrettyPrinter implements JavaDSLVisitor2, JavaDSLHandler {
     CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
+  @Override
+  public void handle(ASTMethodReferenceExpression node) {
+    if (node.isPresentExpression()) {
+      node.getExpression().accept(getTraverser());
+    } else if (node.isPresentMCType()) {
+      node.getMCType().accept(getTraverser());
+    }
+
+    getPrinter().print("::");
+
+    if (node.isPresentTypeArguments()) {
+      node.getTypeArguments().accept(getTraverser());
+    }
+
+    node.getMethodReferenceTarget().accept(getTraverser());
+  }
+
+  @Override
+  public void visit(ASTConstructorReferenceTarget node) {
+    getPrinter().print("new");
+  }
+
+  @Override
+  public void handle(ASTMethodNameReferenceTarget node) {
+    getPrinter().print(node.getName());
+  }
+
   protected void printSeparated(Iterator<? extends ASTNode> iter, String separator) {
     // print by iterate through all items
     String sep = "";
