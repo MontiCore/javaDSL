@@ -2,6 +2,12 @@ description = "MontiCore: Java DSL"
 
 def grammarsDir = "src/main/grammars"
 
+configurations {
+    corpus {
+        transitive = false
+    }
+}
+
 sourceSets {
     main.java.srcDir("$buildDir/generated-sources/monticore/sourcecode")
 
@@ -28,6 +34,20 @@ task generate(type: MCTask) {
     outputs.upToDateWhen { upToDate }
 }
 
+task extractCorpus(type: Copy) {
+    dependsOn(configurations.corpus)
+
+    destinationDir = file "$buildDir/corpus"
+    includeEmptyDirs = false
+
+    from(provider { configurations.corpus.collect { zipTree(it) } })
+    include("**/*java")
+}
+
+tasks.withType(Test) {
+    dependsOn(extractCorpus)
+}
+
 dependencies {
     implementation(platform(libs.junit.bom))
 
@@ -41,5 +61,10 @@ dependencies {
     }
 
     testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
+
+    corpus(libs.monticore.runtime) {
+        artifact { classifier = "sources" }
+    }
 }
