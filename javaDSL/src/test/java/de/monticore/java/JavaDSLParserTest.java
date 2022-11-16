@@ -91,4 +91,19 @@ public class JavaDSLParserTest extends AbstractTest {
     assertTrue(parser.parse_StringExpression("(foo, bar) -> { return foo; }").isPresent());
   }
 
+  @Test
+  public void testMethodReferences() throws IOException {
+    JavaDSLParser parser = new JavaDSLParser();
+    assertTrue(parser.parse_StringExpression("String::length").isPresent());
+    assertTrue(parser.parse_StringExpression("System::currentTimeMillis").isPresent());
+    assertTrue(parser.parse_StringExpression("List<String>::size").isPresent());
+    assertTrue(parser.parse_StringExpression("int[]::clone").isPresent());
+    assertTrue(parser.parse_StringExpression("System.out::println").isPresent());
+    assertTrue(parser.parse_StringExpression("\"abc\"::length").isPresent());
+    assertTrue(parser.parse_StringExpression("foo[x]::bar").isPresent());
+    assertTrue(parser.parse_StringExpression("(test ? list.replaceAll(String::trim) : list) :: iterator").isPresent());
+    assertTrue(parser.parse_StringExpression("super::toString").isPresent());
+    assertTrue(parser.parse_StringExpression("Arrays::<String>sort").isPresent());
+  }
+
 }

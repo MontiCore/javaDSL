@@ -291,4 +291,15 @@ AnonymousClass implements Creator
 
 LambdaBlockBody implements LambdaBody = MCJavaBlock;
 
+MethodReferenceExpression implements Expression
+    = Expression "::" TypeArguments? MethodReferenceTarget
+    | MCType "::" TypeArguments? MethodReferenceTarget
+    ;
+
+interface MethodReferenceTarget;
+
+ConstructorReferenceTarget implements MethodReferenceTarget = "new";
+MethodNameReferenceTarget implements MethodReferenceTarget = Name;
+
+
 }
