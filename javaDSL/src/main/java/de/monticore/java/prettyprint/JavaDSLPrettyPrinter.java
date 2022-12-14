@@ -62,7 +62,7 @@ public class JavaDSLPrettyPrinter implements JavaDSLVisitor2, JavaDSLHandler {
   }
 
   @Override
-  public void handle(ASTCompilationUnit a) {
+  public void handle(ASTOrdinaryCompilationUnit a) {
     CommentPrettyPrinter.printPreComments(a, getPrinter());
     if (a.isPresentPackageDeclaration()) {
       a.getPackageDeclaration().accept(getTraverser());
@@ -70,6 +70,14 @@ public class JavaDSLPrettyPrinter implements JavaDSLVisitor2, JavaDSLHandler {
     printSeparated(a.getImportDeclarationList().iterator(), "");
     printSeparated(a.getTypeDeclarationList().iterator(), "");
     CommentPrettyPrinter.printPostComments(a, getPrinter());
+  }
+
+  @Override
+  public void handle(ASTModularCompilationUnit node) {
+    CommentPrettyPrinter.printPreComments(node, getPrinter());
+    printSeparated(node.getImportDeclarationList().iterator(), "");
+    node.getModuleDeclaration().accept(getTraverser());
+    CommentPrettyPrinter.printPostComments(node, getPrinter());
   }
 
   @Override

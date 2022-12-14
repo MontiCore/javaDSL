@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import static de.monticore.java.JavaDSLAssertions.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaDSLParserTest extends AbstractTest {
@@ -104,6 +106,11 @@ public class JavaDSLParserTest extends AbstractTest {
     assertTrue(parser.parse_StringExpression("(test ? list.replaceAll(String::trim) : list) :: iterator").isPresent());
     assertTrue(parser.parse_StringExpression("super::toString").isPresent());
     assertTrue(parser.parse_StringExpression("Arrays::<String>sort").isPresent());
+  }
+
+  @Test
+  public void testModuleDeclaration() {
+    assertParsingSuccess("src/test/resources/moduleDeclaration/module-info.java");
   }
 
 }

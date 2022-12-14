@@ -72,8 +72,14 @@ grammar JavaDSL extends de.monticore.JavaLight,
 start CompilationUnit;
 
 // starting point for parsing a java file
-scope CompilationUnit
-    =   PackageDeclaration? ImportDeclaration* TypeDeclaration*
+interface scope CompilationUnit;
+
+scope OrdinaryCompilationUnit implements CompilationUnit
+    = PackageDeclaration? ImportDeclaration* TypeDeclaration*
+    ;
+
+scope ModularCompilationUnit implements CompilationUnit
+    = ImportDeclaration* ModuleDeclaration
     ;
 
 PackageDeclaration
@@ -83,6 +89,44 @@ PackageDeclaration
 ImportDeclaration
     =   "import" (["static"])? MCQualifiedName ("." ["*"])? ";"
     ;
+
+// Module declarations
+symbol ModuleDeclaration
+    = Annotation* ["open"]? "module" MCQualifiedName "{" ModuleDirective* "}"
+    ;
+
+astrule ModuleDeclaration =
+    method public String getName() {
+        return getMCQualifiedName().getQName();
+    };
+
+interface ModuleDirective;
+
+RequiresDirective implements ModuleDirective
+    = "requires" RequiresModifier? MCQualifiedName ";"
+    ;
+
+enum RequiresModifier
+    = "static"
+    | "transitive"
+    ;
+
+ExportsDirective implements ModuleDirective
+    = "exports" MCQualifiedName ("to" toModules:(MCQualifiedName || ",")+)? ";"
+    ;
+
+OpensDirective implements ModuleDirective
+    = "opens" MCQualifiedName ("to" toModules:(MCQualifiedName || ",")+)? ";"
+    ;
+
+UsesDirective implements ModuleDirective
+    = "uses" MCQualifiedName ";"
+    ;
+
+ProvidesDirective implements ModuleDirective
+    = "provides" service:MCQualifiedName "with" providers:(MCQualifiedName || ",")+ ";"
+    ;
+
 
 // Type declarations
 abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
