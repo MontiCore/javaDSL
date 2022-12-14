@@ -25,7 +25,7 @@ java {
     }
 }
 
-task generate(type: MCTask) {
+tasks.register('generate', MCTask) {
     grammar = file "$projectDir/$grammarsDir/de/monticore/java/JavaDSL.mc4"
     outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
     handcodedPath "$projectDir/src/main/java"
@@ -55,12 +55,11 @@ tasks.register('extractCorpus') {
                     from(zipTree(file))
                 }
             }
-
         }
     }
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     dependsOn(extractCorpus)
 }
 
