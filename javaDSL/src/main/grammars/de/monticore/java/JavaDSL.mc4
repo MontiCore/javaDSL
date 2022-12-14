@@ -199,6 +199,23 @@ DefaultValue
     =   "default" ElementValueOrExpr
     ;
 
+// Overrides for TYPE_USE annotations
+// See https://docs.oracle.com/javase/specs/jls/se19/html/jls-4.html#jls-4.11
+
+@Override
+MCArrayType implements MCType
+    = MCType (Annotation* "[" "]" {_builder.setDimensions(_builder.getDimensions()+1);} )+;
+
+@Override
+MCBasicGenericType implements MCGenericType <20>
+    = Annotation* Name ("." Annotation* Name)* "<" (MCTypeArgument || ",")* ">";
+
+@Override
+MCQualifiedType implements MCObjectType
+    = MCQualifiedName
+    | Annotation* Name ("." Annotation* Name)*
+    ;
+
 // STATEMENTS / BLOCKS
 
 interface Statement extends MCBlockStatement ;
