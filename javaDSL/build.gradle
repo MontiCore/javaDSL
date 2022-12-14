@@ -64,7 +64,6 @@ dependencies {
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
 
-    corpus(libs.monticore.runtime) {
-        artifact { classifier = "sources" }
-    }
+    corpus(libs.guava) { artifact { classifier = "sources" } }
+    corpus(libs.monticore.runtime) { artifact { classifier = "sources" } }
 }
