@@ -34,14 +34,30 @@ task generate(type: MCTask) {
     outputs.upToDateWhen { upToDate }
 }
 
-task extractCorpus(type: Copy) {
+tasks.register('extractCorpus') {
     dependsOn(configurations.corpus)
 
-    destinationDir = file "$buildDir/corpus"
-    includeEmptyDirs = false
+    def destinationDir = layout.buildDirectory.dir("corpus")
 
-    from(provider { configurations.corpus.collect { zipTree(it) } })
-    include("**/*java")
+    inputs.files(provider { configurations.corpus })
+    outputs.dir(destinationDir)
+    outputs.cacheIf { true }
+
+    doLast {
+        copy {
+            into(destinationDir)
+
+            includeEmptyDirs = false
+            include("**/*java")
+
+            configurations.corpus.each { file ->
+                into(file.name.substring(0, file.name.lastIndexOf("."))) {
+                    from(zipTree(file))
+                }
+            }
+
+        }
+    }
 }
 
 tasks.withType(Test) {
