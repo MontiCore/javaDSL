@@ -127,6 +127,15 @@ ProvidesDirective implements ModuleDirective
     = "provides" service:MCQualifiedName "with" providers:(MCQualifiedName || ",")+ ";"
     ;
 
+nokeyword "module";
+nokeyword "open";
+nokeyword "requires";
+nokeyword "exports";
+nokeyword "opens";
+nokeyword "uses";
+nokeyword "provides";
+nokeyword "with";
+nokeyword "to";
 
 // Type declarations
 abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
