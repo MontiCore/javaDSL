@@ -76,7 +76,7 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
   
   public String getIdent(ASTFormalParameter a) {
     String type = Layouter.nodeName(a);
-    String name = a.getDeclaratorId().getName();
+    String name = a.getDeclarator().getName();
     return format(name, type);
   }
   
