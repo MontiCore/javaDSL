@@ -3,7 +3,7 @@ emf = "2.15.0"
 gradle-shadow-plugin = "7.1.2"
 guava = "31.1-jre"
 junit = "5.9.0"
-monticore = "7.4.0-SNAPSHOT"
+monticore = "7.5.0-SNAPSHOT"
 
 
 [libraries]
