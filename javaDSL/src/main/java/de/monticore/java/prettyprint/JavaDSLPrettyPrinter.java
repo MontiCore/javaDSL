@@ -512,6 +512,53 @@ public class JavaDSLPrettyPrinter implements JavaDSLVisitor2, JavaDSLHandler {
   }
 
   @Override
+  public void handle(ASTAnnotatedDimension node) {
+    printSeparated(node.getAnnotationList().iterator(), " ");
+    getPrinter().print("[]");
+  }
+
+  @Override
+  public void handle(ASTAnnotatedName node) {
+    printSeparated(node.getAnnotationList().iterator(), " ");
+    getPrinter().print(node.getName());
+  }
+
+  @Override
+  public void handle(ASTMCArrayType node) {
+    node.getMCType().accept(getTraverser());
+
+    if (!node.isEmptyAnnotatedDimensions()) {
+      printSeparated(node.getAnnotatedDimensionList().iterator(), " ");
+    } else {
+      for (int i = 0; i < node.getDimensions(); i++) {
+        getPrinter().print("[]");
+      }
+    }
+  }
+
+  @Override
+  public void handle(ASTMCBasicGenericType node) {
+    if (!node.isEmptyAnnotatedNames()) {
+      printSeparated(node.getAnnotatedNameList().iterator(), ".");
+    } else {
+      getPrinter().print(String.join(".", node.getNameList()));
+    }
+
+    getPrinter().print("<");
+    printSeparated(node.getMCTypeArgumentList().iterator(), ", ");
+    getPrinter().print(">");
+  }
+
+  @Override
+  public void handle(ASTMCQualifiedType node) {
+    if (!node.isEmptyAnnotatedNames()) {
+      printSeparated(node.getAnnotatedNameList().iterator(), ".");
+    } else {
+      node.getMCQualifiedName().accept(getTraverser());
+    }
+  }
+
+  @Override
   public void handle(ASTExtType node) {
     CommentPrettyPrinter.printPreComments(node, getPrinter());
     node.getMCType().accept(getTraverser());
