@@ -1,0 +1,73 @@
+plugins {
+    alias(libs.plugins.monticore) apply false
+}
+
+allprojects {
+    group = "de.monticore"
+
+    buildDir = file("$projectDir/target")
+
+    repositories {
+        if (getProperty("useLocalRepo")) {
+            mavenLocal()
+        }
+
+        maven {
+            credentials.username mavenUser
+            credentials.password mavenPassword
+            url repo
+        }
+
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: "java-library"
+    apply plugin: "maven-publish"
+    apply plugin: "monticore"
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(11)
+        }
+
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    tasks.withType(JavaCompile) {
+        dependsOn(tasks.withType(MCTask))
+
+        options.encoding = "UTF-8"
+    }
+
+    tasks.withType(Test) {
+        useJUnitPlatform()
+
+        testLogging {
+            exceptionFormat = "full"
+            showStackTraces = true
+            showStandardStreams = true
+        }
+    }
+
+    publishing {
+        repositories {
+            maven {
+                credentials.username mavenUser
+                credentials.password mavenPassword
+
+                def releasesRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/monticore-releases/"
+                def snapshotsRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/monticore-snapshots/"
+                url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
+            }
+        }
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId = "$project.name"
+                from components.java
+            }
+        }
+    }
+}

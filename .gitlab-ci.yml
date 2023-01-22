@@ -1,32 +1,51 @@
 # (c) https://github.com/MontiCore/monticore
+<<<<<<< HEAD
 
 image: maven:3.5.4-jdk-8-alpine
+=======
+image: registry.git.rwth-aachen.de/monticore/container-registry/gradle:7.4.2-jdk11
+>>>>>>> b1632b992b7e88612c226e7c337d14e8cbff6536
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2"
-  MAVEN_CLI_OPTS: "--settings settings.xml --batch-mode"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
-cache:
-  paths:
-    - .m2/
-  key: ${CI_COMMIT_REF_SLUG}
 
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
 
 stages:
   - build
-  - trigger
   - test
+  - deploy
 
-build_dev:
+
+build:
   stage: build
   script:
-    - "mvn $MAVEN_CLI_OPTS $MAVEN_OPTS clean install -U"
-  only:
-    - dev
+    - "gradle assemble --refresh-dependencies $GRADLE_OPTS $ARGS1"
+  artifacts:
+    paths:
+      - "."
+    expire_in: 1 week
 
-build_branches:
-  stage: build
+test:
+  stage: test
+  dependencies:
+    - build
   script:
+<<<<<<< HEAD
     - "mvn $MAVEN_CLI_OPTS $MAVEN_OPTS clean install -U"
   except:
     - dev
+=======
+    - "gradle check $GRADLE_OPTS $ARGS2"
+
+deploy:
+  stage: deploy
+  dependencies:
+    - build
+  script:
+    - "gradle publish $GRADLE_OPTS $ARGS3 -PmavenPassword=$pass -PmavenUser=$user"
+  only:
+    - dev
+>>>>>>> b1632b992b7e88612c226e7c337d14e8cbff6536

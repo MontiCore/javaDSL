@@ -5,10 +5,7 @@ import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.se_rwth.commons.logging.LogStub;
-import org.antlr.v4.runtime.RecognitionException;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -16,30 +13,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static de.monticore.java.JavaDSLAssertions.*;
 
-public class JavaDSLParserTest {
-  
-  @BeforeClass
-  public static void setup() {
-    LogStub.init();
-    LogStub.enableFailQuick(false);
-  }
-  
+import static org.junit.jupiter.api.Assertions.*;
+
+public class JavaDSLParserTest extends AbstractTest {
+
   @Test
-  public void test1() throws RecognitionException, IOException {
-    Path model = Paths
-        .get("src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
+  public void test1() throws IOException {
+    Path model = Paths.get("src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
     JavaDSLParser parser = new JavaDSLParser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
 //    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
   }
-  
+
   @Test
-  public void test2() throws RecognitionException, IOException {
+  public void test2() throws IOException {
     Path model = Paths.get("src/test/resources/de/monticore/java/parser/ParseException.java");
     JavaDSLParser parser = new JavaDSLParser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
@@ -47,9 +38,9 @@ public class JavaDSLParserTest {
     assertTrue(ast.isPresent());
  //   AST2ModelFiles.get().serializeASTInstance(ast.get(), "ParseException");
   }
-  
+
   @Test
-  public void test3() throws RecognitionException, IOException {
+  public void test3() throws IOException {
     Path model = Paths.get("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
     JavaDSLParser parser = new JavaDSLParser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
@@ -57,9 +48,9 @@ public class JavaDSLParserTest {
     assertTrue(ast.isPresent());
     //AST2ModelFiles.get().serializeASTInstance(ast.get(), "TokenMgrError");
   }
-  
+
   @Test
-  public void test4() throws RecognitionException, IOException {
+  public void test4() throws IOException {
     StringBuffer buffer = new StringBuffer("");
     buffer.append("{ _channel = HIDDEN;");
     buffer.append("if (getCompiler() != null) {");
@@ -75,9 +66,9 @@ public class JavaDSLParserTest {
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
   }
-  
+
   @Test
-  public void test5() throws RecognitionException, IOException {
+  public void test5() throws IOException {
     Path model = Paths
         .get("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
     JavaDSLParser parser = new JavaDSLParser();
@@ -86,12 +77,40 @@ public class JavaDSLParserTest {
     assertTrue(ast.isPresent());
 //    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
   }
-  
+
   @Test
   public void testCondition() throws IOException {
     JavaDSLParser parser = new JavaDSLParser();
     Optional<ASTExpression> ast = parser.parse_StringExpression("ch = str.charAt(i) < 0x20");
     assertTrue(ast.isPresent());
+  }
+
+  @Test
+  public void testLambdas() throws IOException {
+    JavaDSLParser parser = new JavaDSLParser();
+    assertTrue(parser.parse_StringExpression("foo -> foo").isPresent());
+    assertTrue(parser.parse_StringExpression("(foo, bar) -> foo").isPresent());
+    assertTrue(parser.parse_StringExpression("(foo, bar) -> { return foo; }").isPresent());
+  }
+
+  @Test
+  public void testMethodReferences() throws IOException {
+    JavaDSLParser parser = new JavaDSLParser();
+    assertTrue(parser.parse_StringExpression("String::length").isPresent());
+    assertTrue(parser.parse_StringExpression("System::currentTimeMillis").isPresent());
+    assertTrue(parser.parse_StringExpression("List<String>::size").isPresent());
+    assertTrue(parser.parse_StringExpression("int[]::clone").isPresent());
+    assertTrue(parser.parse_StringExpression("System.out::println").isPresent());
+    assertTrue(parser.parse_StringExpression("\"abc\"::length").isPresent());
+    assertTrue(parser.parse_StringExpression("foo[x]::bar").isPresent());
+    assertTrue(parser.parse_StringExpression("(test ? list.replaceAll(String::trim) : list) :: iterator").isPresent());
+    assertTrue(parser.parse_StringExpression("super::toString").isPresent());
+    assertTrue(parser.parse_StringExpression("Arrays::<String>sort").isPresent());
+  }
+
+  @Test
+  public void testModuleDeclaration() {
+    assertParsingSuccess("src/test/resources/moduleDeclaration/module-info.java");
   }
 
 }

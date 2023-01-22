@@ -1,135 +1,121 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+<<<<<<< HEAD
 /**
  * A simple test for java tool.
  *
  */
 public class ParsableAndCompilableModelsTest extends AbstractTestClass {
+=======
+import static de.monticore.java.JavaDSLAssertions.*;
+
+public class ParsableAndCompilableModelsTest extends AbstractTest {
+>>>>>>> b1632b992b7e88612c226e7c337d14e8cbff6536
 
   // package parserBugs.*
   @Test
   public void test_parserBugs_ExplicitGenericInvocations() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "parserBugs/ExplicitGenericInvocations");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/parserBugs/ExplicitGenericInvocations.java");
   }
 
   @Test
   public void test_parserBugs_InterfaceWithStaticMethod() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "parserBugs/InterfaceWithStaticMethod");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/parserBugs/InterfaceWithStaticMethod.java");
   }
 
   // package basicTestClasses.types.*
   @Test
   public void test_simpleTestClasses_types_AnnotationTestModel() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/types/SimpleAnnotationTestModel");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleAnnotationTestModel.java");
   }
 
   @Test
   public void test_simpleTestClasses_types_SimpleClassTestModel() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/types/SimpleClassTestModel");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleClassTestModel.java");
   }
 
   @Test
   public void test_simpleTestClasses_types_SimpleEnumTestModels() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/types/SimpleEnumTestModels");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleEnumTestModels.java");
   }
 
   @Test
   public void test_simpleTestClasses_types_SimpleInterfaceTestModel() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/types/SimpleInterfaceTestModel");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleInterfaceTestModel.java");
   }
 
   // package simpleTestClasses.*
   @Test
   public void test_simpleTestClasses_EmptyClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/EmptyClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/EmptyClass.java");
   }
 
   @Test
   public void test_simpleTestClasses_HelloWorld() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/HelloWorld");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
   }
 
   @Test
   public void test_simpleTestClasses_OneFieldClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/OneFieldClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/OneFieldClass.java");
   }
 
   @Test
   public void test_simpleTestClasses_QualifiedNameTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "simpleTestClasses/QualifiedNameTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/simpleTestClasses/QualifiedNameTestClass.java");
   }
 
   // package stressfulPackage
   @Test
-  @Ignore
   public void test_stressfulPackage_StressfulSyntax() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "stressfulPackage/StressfulSyntax");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/stressfulPackage/StressfulSyntax.java");
   }
 
   // package symbolTable.enums.*
   @Test
   public void test_symbolTable_enums_EnumViaJavaEnum() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/enums/EnumViaJavaEnum");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaEnum.java");
   }
 
   @Test
   public void test_symbolTable_enums_EnumViaJavaInterface() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/enums/EnumViaJavaInterface");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaInterface.java");
   }
 
   // package symbolTable.resolve.*
   @Test
   public void test_symbolTable_resolve_GeneralResolveTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/resolve/GeneralResolveTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/resolve/GeneralResolveTestClass.java");
   }
 
   @Test
   public void test_symbolTable_resolve_TypeVariableShadowingTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/resolve/TypeVariableShadowingTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/resolve/TypeVariableShadowingTestClass.java");
   }
 
   // package symbolTable.typeArgumentsAndParameters.*
   @Test
   public void test_TypeArgumentsAndParameters_TypeArgumentTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass.java");
   }
 
   @Test
   public void test_TypeArgumentsAndParameters_TypeParameterTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/typeArgumentsAndParameters/TypeParameterTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeParameterTestClass.java");
   }
 
   // package symbolTable.*
   @Test
   public void test_symbolTable_ScopesSymbolTableTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/ScopesSymbolTableTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/ScopesSymbolTableTestClass.java");
   }
 
   @Test
   public void test_BasicTestClasses_VariablesTestClass() {
-    testParsabilityOfModel("src/test/resources/parsableAndCompilableModels",
-        "symbolTable/VariablesTestClass");
+    assertParsingSuccess("src/test/resources/parsableAndCompilableModels/symbolTable/VariablesTestClass.java");
   }
+
 }

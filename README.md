@@ -11,6 +11,7 @@
 #Release Notes
 This product includes the following software:
 * [AntLR](http://www.antlr.org/)
+<<<<<<< HEAD
 * [FreeMarker](http://freemarker.org/)
 
 #Build
@@ -29,3 +30,6 @@ On Windows you should configure git to not automatically replace LF with CRLF du
 * [Publications about MBSE and MontiCore](https://www.se-rwth.de/publications/)
 * [Licence definition](https://github.com/MontiCore/monticore/blob/master/00.org/Licenses/LICENSE-MONTICORE-3-LEVEL.md)
 
+=======
+* [FreeMarker](http://freemarker.org/)
+>>>>>>> b1632b992b7e88612c226e7c337d14e8cbff6536
