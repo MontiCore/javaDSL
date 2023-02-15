@@ -1,0 +1,11 @@
+[versions]
+guava = "31.1-jre"
+monticore = "7.4.0"
+
+
+[libraries]
+# com.google.guava - Guava
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+# de.monticore - MontiCore
+monticore-runtime = { module = "de.monticore:monticore-runtime", version.ref = "monticore" }

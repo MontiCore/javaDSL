@@ -15,6 +15,14 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("corpus") {
+            from(files("./gradle/corpus.versions.toml"))
+        }
+    }
+}
+
 rootProject.name = 'javaDSL'
 
 include(':javaDSL')
