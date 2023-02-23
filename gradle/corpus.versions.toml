@@ -1,11 +1,12 @@
-[versions]
-guava = "31.1-jre"
-monticore = "7.4.0"
-
-
 [libraries]
+# com.osmerion.quitte - Quitte
+# https://github.com/Osmerion/Quitte - Java 17
+quitte = { module = "com.osmerion.quitte:quitte", version = "0.7.0" }
+
 # com.google.guava - Guava
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
+# https://github.com/google/guava - Java 8
+guava = { module = "com.google.guava:guava", version = "31.1-jre" }
 
 # de.monticore - MontiCore
-monticore-runtime = { module = "de.monticore:monticore-runtime", version.ref = "monticore" }
+# https://github.com/MontiCore/monticore - Java 11
+monticore-runtime = { module = "de.monticore:monticore-runtime", version = "7.4.0" }
