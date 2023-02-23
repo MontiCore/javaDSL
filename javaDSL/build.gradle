@@ -4,7 +4,16 @@ def grammarsDir = "src/main/grammars"
 
 configurations {
     corpus {
+        canBeConsumed = false
+        canBeResolved = true
+
         transitive = false
+
+        resolutionStrategy.dependencySubstitution.all {
+            artifactSelection {
+                selectArtifact("jar", "jar", "sources")
+            }
+        }
     }
 }
 
@@ -79,6 +88,7 @@ dependencies {
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
 
-    corpus(corpus.guava) { artifact { classifier = "sources" } }
-    corpus(corpus.monticore.runtime) { artifact { classifier = "sources" } }
+    corpus(corpus.guava)
+    corpus(corpus.monticore.runtime)
+    corpus(corpus.quitte)
 }
