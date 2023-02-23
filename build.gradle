@@ -36,13 +36,13 @@ subprojects {
         withSourcesJar()
     }
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         dependsOn(tasks.withType(MCTask))
 
         options.encoding = "UTF-8"
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         useJUnitPlatform()
 
         testLogging {
