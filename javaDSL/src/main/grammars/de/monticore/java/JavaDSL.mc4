@@ -158,7 +158,38 @@ symbolrule ClassDeclaration =
 ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
-    
+
+/*
+ * Records Classes
+ *
+ * https://docs.oracle.com/javase/specs/jls/se19/html/jls-8.html#jls-8.10
+ */
+
+symbol scope RecordDeclaration extends TypeDeclaration
+    = JavaModifier* "record" Name TypeParameters? RecordHeader
+        ("implements" implementedInterface:(MCType || ",")+)?
+        RecordBody
+    ;
+
+RecordHeader
+    = "(" (RecordComponent || ",")* ")"
+    ;
+
+RecordComponent
+    = JavaModifier* MCType (arrayAnnotations:Annotation* "..." {_builder.setHasVariableArity(true);} )? Name
+    ;
+
+astrule RecordComponent =
+    hasVariableArity:boolean;
+
+RecordBody
+    = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
+    ;
+
+CompactConstructorDeclaration
+    = JavaModifier* Name body:MCJavaBlock
+    ;
+
 symbol scope InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
