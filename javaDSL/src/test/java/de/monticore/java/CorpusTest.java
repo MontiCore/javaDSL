@@ -24,6 +24,11 @@ import static de.monticore.java.JavaDSLAssertions.*;
  */
 public final class CorpusTest extends AbstractTest {
 
+  /*
+   * To learn more about corpus tests, please refer to:
+   * /src/main/grammars/de/monticore/java/JavaDSL.md
+   */
+
   private static List<String> provideFilesForCorpusTests() throws IOException {
     try (Stream<Path> stream = Files.walk(Path.of("target/corpus"))) {
       return stream.map(path -> Files.isRegularFile(path) ? path.toAbsolutePath().toString() : null)
