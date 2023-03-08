@@ -61,7 +61,9 @@ package de.monticore.java;
  *
  * (*) Dependencies are emitted because they have been listed previously.
  */
-grammar JavaDSL extends de.monticore.JavaLight,
+grammar JavaDSL extends
+    de.monticore.java.TextBlock,
+    de.monticore.JavaLight,
 	de.monticore.expressions.BitExpressions,
 	de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
 	de.monticore.literals.MCJavaLiterals,
@@ -406,5 +408,22 @@ interface MethodReferenceTarget;
 ConstructorReferenceTarget implements MethodReferenceTarget = "new";
 MethodNameReferenceTarget implements MethodReferenceTarget = Name;
 
+TextBlockLiteral implements Literal, SignedLiteral
+    = source:TextBlock
+    ;
+
+/*========================================================================*/
+/*============================ LEXER RULES ===============================*/
+/*========================================================================*/
+
+token TextBlock
+    = TextBlockDelimiter (TextBlockCharacters)? TextBlockDelimiter
+    : {setText(de.monticore.java.utils.TextBlockUtils.preprocessTextBlock(getText().substring(3, getText().length() - 4)));};
+
+fragment token TextBlockCharacters
+    = (' ' | '\t')* ('\r' | '\n') (. | EscapeSequence)*;
+
+fragment token TextBlockCharacter
+    = '"' | '\\' | EscapeSequence;
 
 }

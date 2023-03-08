@@ -606,6 +606,13 @@ public class JavaDSLPrettyPrinter implements JavaDSLVisitor2, JavaDSLHandler {
     getPrinter().print(node.getName());
   }
 
+  @Override
+  public void handle(ASTTextBlockLiteral node) {
+    getPrinter().println("\"\"\"");
+    getPrinter().print(node.getSource());
+    getPrinter().print("\"\"\"");
+  }
+
   protected void printSeparated(Iterator<? extends ASTNode> iter, String separator) {
     // print by iterate through all items
     String sep = "";

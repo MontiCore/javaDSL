@@ -34,7 +34,18 @@ java {
     }
 }
 
-tasks.register('generate', MCTask) {
+tasks.register("generateTextBlock", MCTask) {
+    grammar = file "$projectDir/$grammarsDir/de/monticore/java/TextBlock.mc4"
+    outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
+    handcodedPath "$projectDir/src/main/java"
+
+    def upToDate = incCheck("de/monticore/java/TextBlock.mc4")
+    outputs.upToDateWhen { upToDate }
+}
+
+tasks.register("generate", MCTask) {
+    dependsOn(tasks.generateTextBlock)
+
     grammar = file "$projectDir/$grammarsDir/de/monticore/java/JavaDSL.mc4"
     outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
     handcodedPath "$projectDir/src/main/java"
