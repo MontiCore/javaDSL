@@ -138,7 +138,7 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
 
   public String getIdent(ASTMCPrimitiveType node) {
     String type = Layouter.nodeName(node);
-    String name = node.printType(MCBasicTypesMill.mcBasicTypesPrettyPrinter());
+    String name = node.printType();
     return format(name, type);
   }
 
