@@ -48,6 +48,7 @@ tasks.register("generate", MCTask) {
 
     grammar = file "$projectDir/$grammarsDir/de/monticore/java/JavaDSL.mc4"
     outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
+    modelPath "$projectDir/$grammarsDir"
     handcodedPath "$projectDir/src/main/java"
 
     def upToDate = incCheck("de/monticore/java/JavaDSL.mc4")
