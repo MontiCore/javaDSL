@@ -102,5 +102,6 @@ dependencies {
 
     corpus(corpus.guava)
     corpus(corpus.monticore.runtime)
-    corpus(corpus.quitte)
+    // TODO: fix parser for Java 17 and enable
+    //corpus(corpus.quitte)
 }
