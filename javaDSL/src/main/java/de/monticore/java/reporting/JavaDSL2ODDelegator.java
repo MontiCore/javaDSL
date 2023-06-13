@@ -10,15 +10,11 @@ import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._od.JavaDSL2OD;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
-import de.monticore.java.prettyprint.JavaDSLPrettyPrinter;
 import de.monticore.javalight._od.JavaLight2OD;
 import de.monticore.literals.mccommonliterals._od.MCCommonLiterals2OD;
 import de.monticore.literals.mcjavaliterals._od.MCJavaLiterals2OD;
-import de.monticore.literals.prettyprint.MCCommonLiteralsPrettyPrinter;
-import de.monticore.literals.prettyprint.MCJavaLiteralsPrettyPrinter;
 import de.monticore.mcbasics._od.MCBasics2OD;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.prettyprint.MCBasicsPrettyPrinter;
 import de.monticore.statements.mcarraystatements._od.MCArrayStatements2OD;
 import de.monticore.statements.mcassertstatements._od.MCAssertStatements2OD;
 import de.monticore.statements.mccommonstatements._od.MCCommonStatements2OD;
@@ -27,13 +23,11 @@ import de.monticore.statements.mclowlevelstatements._od.MCLowLevelStatements2OD;
 import de.monticore.statements.mcreturnstatements._od.MCReturnStatements2OD;
 import de.monticore.statements.mcsynchronizedstatements._od.MCSynchronizedStatements2OD;
 import de.monticore.statements.mcvardeclarationstatements._od.MCVarDeclarationStatements2OD;
-import de.monticore.statements.prettyprint.*;
 import de.monticore.types.mcarraytypes._od.MCArrayTypes2OD;
 import de.monticore.types.mcbasictypes._od.MCBasicTypes2OD;
 import de.monticore.types.mccollectiontypes._od.MCCollectionTypes2OD;
 import de.monticore.types.mcfullgenerictypes._od.MCFullGenericTypes2OD;
 import de.monticore.types.mcsimplegenerictypes._od.MCSimpleGenericTypes2OD;
-import de.monticore.types.prettyprint.*;
 
 public final class JavaDSL2ODDelegator {
 

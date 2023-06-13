@@ -12,7 +12,6 @@ import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.monticore.java.prettyprint.JavaDSLPrettyPrinter;
 import de.monticore.prettyprint.IndentPrinter;
 import de.se_rwth.commons.logging.Log;
 
@@ -43,9 +42,8 @@ public class JavaDSLTool {
     // analyze the model with a visitor
 
     // execute a pretty printer
-    JavaDSLPrettyPrinter pp = new JavaDSLPrettyPrinter(new IndentPrinter());
     Log.info("Pretty printing the parsed JavaDSL into console:", JavaDSLTool.class.getName());
-    System.out.println(pp.prettyprint(ast));
+    System.out.println(JavaDSLMill.prettyPrint(ast, true));
   }
 
   public static ASTCompilationUnit loadArtifact(Path source) {
