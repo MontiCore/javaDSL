@@ -17,4 +17,4 @@ guava = { module = "com.google.guava:guava", version = "31.1-jre" }
 
 # de.monticore - MontiCore
 # https://github.com/MontiCore/monticore - Java 11
-monticore-runtime = { module = "de.monticore:monticore-runtime", version = "7.4.0" }
+monticore-runtime = { module = "de.monticore:monticore-runtime", version = "7.6.0-SNAPSHOT" }
