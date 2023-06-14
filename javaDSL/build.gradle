@@ -53,6 +53,7 @@ tasks.register("generate", MCTask) {
 
     def upToDate = incCheck("de/monticore/java/JavaDSL.mc4")
     outputs.upToDateWhen { upToDate }
+    dependsOn(generateTextBlock)  // should not be necessary -> otherwise, TextBlock was skipped
 }
 
 tasks.register('extractCorpus') {
