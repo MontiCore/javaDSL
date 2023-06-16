@@ -74,13 +74,13 @@ grammar JavaDSL extends
 start CompilationUnit;
 
 // starting point for parsing a java file
-interface scope CompilationUnit;
+interface CompilationUnit;
 
-scope OrdinaryCompilationUnit implements CompilationUnit
+OrdinaryCompilationUnit implements CompilationUnit
     = PackageDeclaration? ImportDeclaration* TypeDeclaration*
     ;
 
-scope ModularCompilationUnit implements CompilationUnit
+ModularCompilationUnit implements CompilationUnit
     = ImportDeclaration* ModuleDeclaration
     ;
 
