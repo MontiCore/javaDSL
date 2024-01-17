@@ -224,7 +224,7 @@ TypeParameters
     =   "<" (TypeParameter || ",")+ ">"
     ;
 
-symbol TypeParameter
+symbol TypeParameter implements MCTypeArgument
     =   Name ("extends" TypeBound)?
     ;
 
@@ -363,17 +363,6 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-@Override ExtType = MCType;
-
-ExtLiteral = Literal;
-
-@Override ExtReturnType = MCReturnType;
-
-@Override ExtTypeArgument = MCTypeArgument;
-
-ExtTypeParameter = TypeParameter;
-@Override ExtTypeParameters = TypeParameters;
-
 /*
  * TODO Remove this
  * This is a workaround to a questionable behavior in the core grammar JavaLight
@@ -388,9 +377,8 @@ JavaAnnotation extends JavaModifier implements ElementValue
             ( "(" AnnotationArguments? ")" )?
     ;
 
-@Override
 AnonymousClass implements Creator
-    =   ExtType Arguments ClassBody?
+    =   MCType Arguments ClassBody?
     ;
 
 
