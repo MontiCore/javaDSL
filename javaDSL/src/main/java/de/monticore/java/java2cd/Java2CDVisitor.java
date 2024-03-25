@@ -8,10 +8,7 @@ import de.monticore.cd4code._symboltable.CD4CodeSymbolTableCompleter;
 import de.monticore.cd4codebasis._ast.ASTCDConstructor;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cd4codebasis._ast.ASTCDParameter;
-import de.monticore.cdbasis._ast.ASTCDClass;
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
-import de.monticore.cdbasis._ast.ASTCDDefinition;
-import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.cdbasis._ast.*;
 import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.generating.templateengine.GlobalExtensionManagement;
@@ -60,7 +57,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   @Override
   public void visit(ASTClassDeclaration ast) {
     // type parameters
-    cdClass = CD4CodeMill.cDClassBuilder()
+    ASTCDClassBuilder classBuilder = CD4CodeMill.cDClassBuilder()
         .setModifier(PUBLIC.build()) // <- fix this
         .setName(ast.getName())
         .setCDInterfaceUsage(CDInterfaceUsageFacade.getInstance()
@@ -68,11 +65,15 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
                 ast.getImplementedInterfaceList()
                     .stream()
                     .map(ASTMCType::printType)
-                    .toArray(String[]::new)))
-        .setCDExtendUsage(CDExtendUsageFacade.getInstance()
-            .createCDExtendUsage(ast.getSuperClass().printType()))
-        .build();
+                    .toArray(String[]::new)));
 
+    if (ast.isPresentSuperClass()) {
+      classBuilder = classBuilder
+          .setCDExtendUsage(CDExtendUsageFacade.getInstance()
+              .createCDExtendUsage(ast.getSuperClass().printType()));
+    }
+
+    cdClass = classBuilder.build();
     currentType = cdClass;
     cdCompilationUnit.getCDDefinition().addCDElement(cdClass);
   }
@@ -193,19 +194,26 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
 
   @Override
   public void visit(ASTMethodDeclaration ast) {
-    ASTCDMethod method = CDMethodFacade.getInstance().createMethodInternal(
+    ASTCDMethod method = CDMethodFacade.getInstance().createMethod(
         PUBLIC.build(), // <- fix this
         ast.getMCReturnType(),
-        ast.getName(),
-        false,
-        ast.getFormalParameters()
-            .getFormalParameterListing()
-            .getFormalParameterList().stream()
-            .map(p -> CDParameterFacade.getInstance()
-                .createParameter(
-                    p.getMCType(), p.getDeclarator().getName()))
-            .collect(Collectors.toList()),
-        ast.getThrows().getMCQualifiedNameList());
+        ast.getName());
+
+    if (ast.getFormalParameters().isPresentFormalParameterListing()) {
+      method = CDMethodFacade.getInstance().createMethodInternal(
+          PUBLIC.build(), // <- fix this
+          ast.getMCReturnType(),
+          ast.getName(),
+          false,
+          ast.getFormalParameters()
+              .getFormalParameterListing()
+              .getFormalParameterList().stream()
+              .map(p -> CDParameterFacade.getInstance()
+                  .createParameter(
+                      p.getMCType(), p.getDeclarator().getName()))
+              .collect(Collectors.toList()),
+          ast.getThrows().getMCQualifiedNameList());
+    }
 
     StringBuilder methodBody = new StringBuilder();
     ast.getMCJavaBlock().getMCBlockStatementList().stream()
