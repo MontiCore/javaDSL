@@ -1,9 +1,19 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
+import de.monticore.cd.codegen.CDGenerator;
+import de.monticore.cd.codegen.CdUtilsPrinter;
+import de.monticore.generating.GeneratorSetup;
+import de.monticore.generating.templateengine.GlobalExtensionManagement;
+import de.monticore.generating.templateengine.TemplateController;
+import de.monticore.generating.templateengine.TemplateHookPoint;
+import de.monticore.java.java2cd.Java2CDConverter;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.javadsl._symboltable.IJavaDSLGlobalScope;
@@ -30,6 +40,8 @@ public class JavaDSLTool {
     // parse the model and create the AST representation
     final ASTCompilationUnit ast = loadArtifact(Path.of(model));
     Log.info(model + " parsed successfully!", JavaDSLTool.class.getName());
+
+    generateCD(ast);
 
     // execute default context conditions
 
@@ -70,5 +82,29 @@ public class JavaDSLTool {
 
     return compilationUnit;
   }
-  
+
+
+  public static void generateCD(ASTCompilationUnit ast) {
+    String outputDir = "target/gen-test/";
+    GeneratorSetup setup = new GeneratorSetup();
+    GlobalExtensionManagement glex = new GlobalExtensionManagement();
+    setup.setGlex(glex);
+    glex.setGlobalValue("cdPrinter", new CdUtilsPrinter());
+
+    File targetDir = new File(outputDir);
+    setup.setOutputDirectory(targetDir);
+
+    String configTemplate = "java2cd.Java2CD";
+    TemplateController tc = setup.getNewTemplateController(configTemplate);
+    CDGenerator generator = new CDGenerator(setup);
+    TemplateHookPoint hpp = new TemplateHookPoint(configTemplate);
+    List<Object> configTemplateArgs;
+    // select the conversion variant:
+    Java2CDConverter converter = new Java2CDConverter();
+    configTemplateArgs = Arrays.asList(glex, converter, setup.getHandcodedPath(), generator);
+
+    hpp.processValue(tc, ast, configTemplateArgs);
+  }
+
+
 }

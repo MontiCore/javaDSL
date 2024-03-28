@@ -63,6 +63,7 @@ tasks.register("generate", MCTask) {
 
 dependencies {
     implementation(platform(libs.junit.bom))
+    implementation "de.monticore.lang:cd4analysis:7.7.0-SNAPSHOT"
 
     api(libs.monticore.grammar.emf)
     api(libs.monticore.runtime.emf)
