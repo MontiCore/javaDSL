@@ -256,8 +256,14 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   public void visit(ASTMethodDeclaration ast) {
     ASTCDMethod method = CDMethodFacade.getInstance().createMethod(
         getModifier(ast.getMCModifierList().stream().map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
-        getMCType(ast.getMCReturnType().getMCType()),
         ast.getName());
+
+    if (ast.getMCReturnType().isPresentMCType()) {
+      method.setMCReturnType(
+          CD4CodeMill.mCReturnTypeBuilder()
+              .setMCType(getMCType(ast.getMCReturnType().getMCType()))
+              .build());
+    }
 
     if (ast.getFormalParameters().isPresentFormalParameterListing()) {
       addParameters(ast.getFormalParameters().getFormalParameterListing(), method);
