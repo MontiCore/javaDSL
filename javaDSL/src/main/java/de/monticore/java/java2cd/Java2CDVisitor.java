@@ -13,11 +13,8 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.generating.templateengine.GlobalExtensionManagement;
 import de.monticore.generating.templateengine.StringHookPoint;
-import de.monticore.java.JavaDSLTool;
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._prettyprint.JavaDSLFullPrettyPrinter;
-import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
 import de.monticore.javalight._ast.ASTConstructorDeclaration;
 import de.monticore.javalight._ast.ASTFormalParameterListing;
@@ -31,7 +28,6 @@ import de.monticore.types.MCTypeFacade;
 import de.monticore.types.mcbasictypes._ast.ASTMCImportStatement;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.types.mccollectiontypes._ast.ASTMCGenericType;
-import de.monticore.types.mccollectiontypes._ast.ASTMCListType;
 import de.monticore.types.mccollectiontypes._ast.ASTMCTypeArgument;
 import de.monticore.umlmodifier._ast.ASTModifier;
 
@@ -107,7 +103,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
     if (ast.isPresentSuperClass()) {
       classBuilder = classBuilder
           .setCDExtendUsage(CDExtendUsageFacade.getInstance()
-              .createCDExtendUsage(ast.getSuperClass().printType()));
+              .createCDExtendUsage(getMCType(ast.getSuperClass()).printType()));
     }
 
     ASTCDClass cdClass = classBuilder.build();
@@ -214,8 +210,10 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
               type,
               variable.getDeclarator().getName());
 
-      String initial = new JavaDSLFullPrettyPrinter(new IndentPrinter()).prettyprint(variable.getVariableInit());
-      glex.replaceTemplate(VALUE, attribute, new StringHookPoint(" = " + initial));
+      if (variable.isPresentVariableInit()) {
+        String initial = new JavaDSLFullPrettyPrinter(new IndentPrinter()).prettyprint(variable.getVariableInit());
+        glex.replaceTemplate(VALUE, attribute, new StringHookPoint(" = " + initial));
+      }
       currentType.addCDMember(attribute);
     }
   }
@@ -230,7 +228,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
       ASTMCArrayType arrayType = (ASTMCArrayType) mcType;
       type = MCTypeFacade.getInstance()
           .createArrayType(
-              arrayType.getMCType(), arrayType.getAnnotatedDimensionList().size());
+              getMCType(arrayType.getMCType()), arrayType.getAnnotatedDimensionList().size());
     } else if (mcType instanceof ASTMCGenericType) {
       ASTMCGenericType genericType = (ASTMCGenericType) mcType;
 
@@ -257,7 +255,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   public void visit(ASTMethodDeclaration ast) {
     ASTCDMethod method = CDMethodFacade.getInstance().createMethod(
         getModifier(ast.getMCModifierList().stream().map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
-        ast.getMCReturnType(),
+        getMCType(ast.getMCReturnType().getMCType()),
         ast.getName());
 
     if (ast.getFormalParameters().isPresentFormalParameterListing()) {
@@ -265,9 +263,12 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
     }
 
     JavaDSLFullPrettyPrinter printer = new JavaDSLFullPrettyPrinter(new IndentPrinter());
-    String methodBody = printer.prettyprint(ast.getMCJavaBlock());
+    StringBuilder methodBody = new StringBuilder();
+    ast.getMCJavaBlock().getMCBlockStatementList().stream()
+        .map(printer::prettyprint)
+        .forEach(methodBody::append);
 
-    glex.replaceTemplate(EMPTY_BODY, method, new StringHookPoint(methodBody));
+    glex.replaceTemplate(EMPTY_BODY, method, new StringHookPoint(methodBody.toString()));
     currentType.addCDMember(method);
   }
 
@@ -295,11 +296,12 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
     }
 
     JavaDSLFullPrettyPrinter printer = new JavaDSLFullPrettyPrinter(new IndentPrinter());
-    String methodBody = printer.prettyprint(ast.getMCJavaBlock());
+    StringBuilder methodBody = new StringBuilder();
+    ast.getMCJavaBlock().getMCBlockStatementList().stream()
+        .map(printer::prettyprint)
+        .forEach(methodBody::append);
 
-    glex.replaceTemplate(EMPTY_BODY, method, new
-
-        StringHookPoint(methodBody));
+    glex.replaceTemplate(EMPTY_BODY, method, new StringHookPoint(methodBody.toString()));
     currentType.addCDMember(method);
   }
 
