@@ -22,7 +22,10 @@ public class JavaDSLToolTest {
   @Test
   public void testTool() {
     JavaDSLTool.main(new String[] {
-        "src/test/resources/de/monticore/java/parser/ParseException.java"
+        "-i",
+        "src/test/resources/de/monticore/java/parser/Test.java",
+        "-o",
+        "target/generator-output"
     });
   }
 
