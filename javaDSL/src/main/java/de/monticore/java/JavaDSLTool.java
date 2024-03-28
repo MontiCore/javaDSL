@@ -3,7 +3,6 @@ package de.monticore.java;
 
 import de.monticore.cd.codegen.CDGenerator;
 import de.monticore.cd.codegen.CdUtilsPrinter;
-import de.monticore.cd.codegen.TopDecorator;
 import de.monticore.generating.GeneratorSetup;
 import de.monticore.generating.templateengine.GlobalExtensionManagement;
 import de.monticore.generating.templateengine.TemplateController;
@@ -12,10 +11,8 @@ import de.monticore.io.paths.MCPath;
 import de.monticore.java.java2cd.Java2CDConverter;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
-import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.symboltable.ImportStatement;
 import de.se_rwth.commons.Names;
@@ -37,10 +34,24 @@ import java.util.stream.Stream;
 
 public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
 
+  /**
+   * main method of the JavaDSL
+   *
+   * @param args array of the command line arguments
+   */
+
   public static void main(String[] args) {
     JavaDSLTool tool = new JavaDSLTool();
     tool.run(args);
   }
+
+  /**
+   * executes the arguments stated in the command line like parsing a given model to an ast,
+   * creating and printing out a corresponding symbol table or generating java files
+   * based of additional configuration templates or handwritten code
+   *
+   * @param args array of the command line arguments
+   */
 
   @Override
   public void run(String[] args) {
@@ -121,6 +132,12 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     }
   }
 
+  /**
+   * adds additional options to the cli tool
+   *
+   * @param options collection of all the possible options
+   */
+
   public Options addAdditionalOptions(Options options) {
 
     options.addOption(
@@ -156,7 +173,12 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     return options;
   }
 
-
+  /**
+   * gets the paths of all input models
+   *
+   * @param cmd cli arguments
+   * @return path of all models
+   */
   public MCPath createModelPath(CommandLine cmd) {
     if (cmd.hasOption("i")) {
       return new MCPath(splitPathEntries(cmd.getOptionValues("i")));
@@ -165,10 +187,22 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     }
   }
 
+  /**
+   * splits the compound paths of all input models
+   *
+   * @param composedPath combined path of all models
+   * @return seperated paths of input models
+   */
   public String[] splitPathEntries(String composedPath) {
     return composedPath.split(Pattern.quote(File.pathSeparator));
   }
 
+  /**
+   * splits the compound paths of all input models
+   *
+   * @param composedPaths combined paths of all models
+   * @return seperated paths of input models
+   */
   public final String[] splitPathEntries(String[] composedPaths) {
     return Arrays.stream(composedPaths)
         .map(this::splitPathEntries)
@@ -176,12 +210,26 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
         .toArray(String[]::new);
   }
 
+  /**
+   * parses all input models with a given file ending
+   *
+   * @param file file ending of the files to parse
+   * @param dirs input directories
+   * @return collection of asts of all parsed models
+   */
   public Collection<ASTCompilationUnit> parse(String file, Collection<Path> dirs) {
     return dirs.stream()
         .flatMap(directory -> this.parse(file, directory).stream())
         .collect(Collectors.toList());
   }
 
+  /**
+   * parses all input models with a given file ending
+   *
+   * @param fileExt file ending of the files to parse
+   * @param directory input directory
+   * @return collection of asts of all parsed models
+   */
   public Collection<ASTCompilationUnit> parse(String fileExt, Path directory) {
     try (Stream<Path> paths = Files.walk(directory)) {
       return paths
@@ -196,6 +244,15 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     return Collections.emptySet();
   }
 
+
+  /**
+   * creates the symboltable for the given ast
+   *
+   * @param ast the input ast
+   * @param cmd cli arguments
+   * @return the symbol-table of the ast
+   */
+
   public IJavaDSLArtifactScope createSymbolTable(ASTCompilationUnit ast, CommandLine cmd) {
     JavaDSLScopesGenitorDelegator genitor = JavaDSLMill.scopesGenitorDelegator();
     IJavaDSLArtifactScope scope = genitor.createFromAST(ast);
@@ -205,6 +262,12 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     return scope;
   }
 
+  /**
+   * prints the symboltable of the given scope out to a file
+   *
+   * @param scope symboltable to store
+   * @param path location of the file or directory containing the printed table
+   */
   public void storeSymTab(IJavaDSLArtifactScope scope, String path) {
     if (Path.of(path).toFile().isFile()) {
       this.storeSymbols(scope, path);
