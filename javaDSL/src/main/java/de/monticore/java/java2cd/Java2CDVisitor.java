@@ -21,6 +21,7 @@ import de.monticore.javalight._ast.ASTFormalParameterListing;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.prettyprint.IndentPrinter;
+import de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
@@ -306,79 +307,85 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   }
 
   protected ASTModifier getModifier(List<ASTJavaModifier> modifiers) {
-    int modifier = 0;
-    if (modifiers.size() == 1) {
-      modifier = modifiers.get(0).getModifier();
-    } else if (modifiers.size() == 2) {
-      modifier = modifiers.get(0).getModifier() * 10 + modifiers.get(1).getModifier();
-    } else if (modifiers.size() == 3) {
-      modifier = modifiers.get(0).getModifier() * 100 + modifiers.get(1).getModifier() * 10 + modifiers.get(2).getModifier();
-    }
+    List<Integer> digits = modifiers.stream()
+        .map(ASTJavaModifier::getModifier)
+        .collect(Collectors.toList());
 
-    switch (modifier) {
-      case 0:
-        return PACKAGE_PRIVATE.build();
-      case 1:
-        return PACKAGE_PRIVATE_ABSTRACT.build();
-      case 3:
-        return PACKAGE_PRIVATE_FINAL.build();
-      case 6:
-        return PRIVATE.build();
-      case 7:
-        return PROTECTED.build();
-      case 9:
-        return PACKAGE_PRIVATE_STATIC.build();
-      case 38:
-      case 83:
-        return PUBLIC_FINAL.build();
-      case 18:
-      case 81:
-        return PUBLIC_ABSTRACT.build();
-      case 98:
-      case 89:
-        return PUBLIC_STATIC.build();
-      case 37:
-      case 73:
-        return PROTECTED_FINAL.build();
-      case 17:
-      case 71:
-        return PROTECTED_ABSTRACT.build();
-      case 97:
-      case 79:
-        return PROTECTED_STATIC.build();
-      case 63:
-      case 36:
-        return PRIVATE_FINAL.build();
-      case 96:
-      case 69:
-        return PRIVATE_STATIC.build();
-      case 93:
-      case 39:
-        return PACKAGE_PRIVATE_STATIC_FINAL.build();
-      case 893:
-      case 839:
-      case 983:
-      case 938:
-      case 389:
-      case 398:
-        return PUBLIC_STATIC_FINAL.build();
-      case 793:
-      case 739:
-      case 973:
-      case 937:
-      case 379:
-      case 397:
-        return PROTECTED_STATIC_FINAL.build();
-      case 693:
-      case 639:
-      case 963:
-      case 936:
-      case 369:
-      case 396:
-        return PRIVATE_STATIC_FINAL.build();
-      default:
-        return PUBLIC.build();
+    if (digits.isEmpty()) {
+      return PACKAGE_PRIVATE.build();
     }
+    if (digits.size() == 1) {
+      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC)) {
+        return PUBLIC.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE)) {
+        return PRIVATE.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED)) {
+        return PROTECTED.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
+        return PACKAGE_PRIVATE_ABSTRACT.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+        return PACKAGE_PRIVATE_FINAL.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
+        return PACKAGE_PRIVATE_STATIC.build();
+      }
+    } else if (digits.size() == 2) {
+      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC)) {
+        if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
+          return PUBLIC_ABSTRACT.build();
+        }
+        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+          return PUBLIC_FINAL.build();
+        }
+        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
+          return PUBLIC_STATIC.build();
+        }
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED)) {
+        if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
+          return PROTECTED_ABSTRACT.build();
+        }
+        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+          return PROTECTED_FINAL.build();
+        }
+        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
+          return PROTECTED_STATIC.build();
+        }
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE)) {
+        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+          return PRIVATE_FINAL.build();
+        }
+        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
+          return PRIVATE_STATIC.build();
+        }
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
+          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+        return PACKAGE_PRIVATE_STATIC_FINAL.build();
+      }
+    } else if (modifiers.size() == 3) {
+      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC) &&
+          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
+          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+        return PUBLIC_STATIC_FINAL.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED) &&
+          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
+          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+        return PROTECTED_STATIC_FINAL.build();
+      }
+      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE) &&
+          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
+          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
+        return PRIVATE_STATIC_FINAL.build();
+      }
+    }
+    return PUBLIC.build();
   }
 
   public ASTCDCompilationUnit getCompilationUnit() {
