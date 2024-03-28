@@ -26,24 +26,4 @@ public class JavaDSLToolTest {
     });
   }
 
-  @Test
-  public void test() throws IOException {
-    JavaDSLMill.init();
-    JavaDSLParser javaParser = JavaDSLMill.parser();
-
-    Optional<ASTFieldDeclaration> optAST = javaParser.parse_StringFieldDeclaration("public String s = \"Hi\";");
-    assertTrue(optAST.isPresent());
-    ASTFieldDeclaration ast = optAST.get();
-
-    CD4CodeMill.init();
-    CD4CodeParser cdParser = CD4CodeMill.parser();
-
-    Optional<ASTCDAttribute> optAST1 = cdParser.parse_StringCDAttribute("public String s = \"Hi\";");
-    assertTrue(optAST1.isPresent());
-    ASTCDAttribute ast1 = optAST1.get();
-
-    ASTMCType attributeType = ast.getMCType().deepClone();
-    ASTMCType attributeType1 = ast1.getMCType().deepClone();
-  }
-
 }

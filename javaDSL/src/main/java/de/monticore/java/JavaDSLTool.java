@@ -85,7 +85,7 @@ public class JavaDSLTool {
 
 
   public static void generateCD(ASTCompilationUnit ast) {
-    String outputDir = "target/generated/gen-test";
+    String outputDir = "target/gen-test/";
     GeneratorSetup setup = new GeneratorSetup();
     GlobalExtensionManagement glex = new GlobalExtensionManagement();
     setup.setGlex(glex);
