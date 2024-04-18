@@ -20,10 +20,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JavaDSLToolTest {
 
   @Test
-  public void testTool() {
+  public void testToolWithTestClass() {
     JavaDSLTool.main(new String[] {
         "-i",
         "src/test/resources/de/monticore/java/parser/Test.java",
+        "-o",
+        "target/generator-output"
+    });
+  }
+  
+  @Test
+  public void testToolWithASTClassDeclarationClass() {
+    JavaDSLTool.main(new String[] {
+        "-i",
+        "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
         "-o",
         "target/generator-output"
     });

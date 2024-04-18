@@ -93,12 +93,14 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
         .setName(ast.getName());
 
     if (!ast.isEmptyImplementedInterface()) {
-      classBuilder.setCDInterfaceUsage(CDInterfaceUsageFacade.getInstance()
-          .createCDInterfaceUsage(
-              ast.getImplementedInterfaceList()
-                  .stream()
-                  .map(ASTMCType::printType)
-                  .toArray(String[]::new)));
+      List<String> interfaces = new ArrayList<>();
+      for (ASTMCType i : ast.getImplementedInterfaceList()) {
+        if (i instanceof ASTMCQualifiedType) {
+          interfaces.add(((ASTMCQualifiedType) i).getMCQualifiedName().getQName());
+        } else {
+          interfaces.add(i.printType());
+        }
+      }
     }
 
     if (ast.isPresentSuperClass()) {
