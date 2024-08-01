@@ -18,8 +18,6 @@ configurations {
 }
 
 sourceSets {
-    main.java.srcDir("$buildDir/generated-sources/monticore/sourcecode")
-
     grammars {
         resources {
             srcDir(grammarsDir)
