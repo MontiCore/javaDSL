@@ -58,6 +58,11 @@ package de.monticore.java;
  *     |-> de.monticore.types.MCSimpleGenericTypes
  *         |-> de.monticore.types.MCCollectionTypes
  *             |-> de.monticore.types.MCBasicTypes (*)
+ * |-> de.monticore.types.TypeParameters
+ *     |-> de.monticore.symbols.BasicSymbols
+ *         |-> de.monticore.MCBasics (*)
+ *     |-> de.monticore.types.MCBasicTypes
+ *         |-> de.monticore.MCBasics (*)
  *
  * (*) Dependencies are emitted because they have been listed previously.
  */
@@ -69,7 +74,8 @@ grammar JavaDSL extends
 	de.monticore.literals.MCJavaLiterals,
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
-	de.monticore.types.MCFullGenericTypes {
+	de.monticore.types.MCFullGenericTypes,
+	de.monticore.types.TypeParameters {
 
 start CompilationUnit;
 
@@ -218,18 +224,6 @@ symbol EnumConstantDeclaration
 
 EnumBody
     =   ";" ClassBodyDeclaration*
-    ;
-
-TypeParameters
-    =   "<" (TypeParameter || ",")+ ">"
-    ;
-
-symbol TypeParameter implements MCTypeArgument
-    =   Name ("extends" TypeBound)?
-    ;
-
-TypeBound
-    =   (MCType || "&")+
     ;
 
 ClassBlock implements ClassBodyDeclaration

@@ -19,6 +19,7 @@ import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclar
 import de.monticore.types.mcbasictypes.MCBasicTypesMill;
 import de.monticore.types.mcbasictypes._ast.ASTMCPrimitiveType;
 import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
+import de.monticore.types.typeparameters._ast.ASTTypeParameters;
 
 public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
   
