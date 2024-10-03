@@ -64,7 +64,7 @@ package de.monticore.java;
  *     |-> de.monticore.types.MCBasicTypes
  *         |-> de.monticore.MCBasics (*)
  *
- * (*) Dependencies are emitted because they have been listed previously.
+ * (*) Repeated Dependencies are omitted.
  */
 grammar JavaDSL extends
     de.monticore.java.TextBlock,
