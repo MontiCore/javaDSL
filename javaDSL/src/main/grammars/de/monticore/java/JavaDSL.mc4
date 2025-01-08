@@ -184,11 +184,13 @@ RecordHeader
     ;
 
 RecordComponent
-    = JavaModifier* MCType (arrayAnnotations:Annotation* "..." {_builder.setHasVariableArity(true);} )? Name
+    = JavaModifier* MCType (arrayAnnotations:Annotation* variableArity:"...")? Name
     ;
 
 astrule RecordComponent =
-    hasVariableArity:boolean;
+    method public boolean isHasVariableArity() {
+      return this.isPresentVariableArity();
+    };
 
 RecordBody
     = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
@@ -287,8 +289,12 @@ AnnotatedName = Annotation* Name;
 
 @Override
 MCArrayType implements MCType
-    = MCType (AnnotatedDimension {_builder.setDimensions(_builder.getDimensions()+1);} )+
+    = MCType (AnnotatedDimension)+
     ;
+astrule MCArrayType =
+    method public int getDimensions() {
+      return this.sizeAnnotatedDimensions();
+    };
 
 @Override
 MCBasicGenericType implements MCGenericType <20>
