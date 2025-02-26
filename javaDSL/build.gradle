@@ -63,7 +63,7 @@ tasks.withType(Test).configureEach {
 
 dependencies {
     implementation(platform(libs.junit.bom))
-    implementation "de.monticore.lang:cd4analysis:7.7.0-SNAPSHOT"
+    implementation "de.monticore.lang:cd4analysis:$version"
 
     api(libs.monticore.grammar)
     api(libs.monticore.runtime)

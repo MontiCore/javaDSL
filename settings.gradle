@@ -27,3 +27,4 @@ rootProject.name = 'javaDSL'
 
 include(':javaDSL')
 include(':javaDSL-emf')
+include(':ref-code-adaptation')

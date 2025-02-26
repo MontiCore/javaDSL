@@ -1,0 +1,5 @@
+classdiagram Validator{
+public class Entity {
+  String id ;
+}
+}

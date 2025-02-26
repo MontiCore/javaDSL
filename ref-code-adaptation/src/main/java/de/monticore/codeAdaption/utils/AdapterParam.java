@@ -1,0 +1,13 @@
+package de.monticore.codeAdaption.utils;
+
+public enum AdapterParam {
+  NAME_MATCHING,
+  INFIX_MATCHING,
+  ANNOTATION_MATCHING,
+
+  IGNORE_NON_MATCHED_TYPE,
+
+  IGNORE_NON_MATCHED_VAR,
+
+  IGNORE_NON_MATCHED_TYPE_MEMBER
+}
