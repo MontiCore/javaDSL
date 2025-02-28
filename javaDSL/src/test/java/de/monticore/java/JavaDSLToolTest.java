@@ -1,0 +1,42 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.java;
+
+import de.monticore.cd4code.CD4CodeMill;
+import de.monticore.cd4code._parser.CD4CodeParser;
+import de.monticore.cdbasis._ast.ASTCDAttribute;
+import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTMCQualifiedType;
+import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class JavaDSLToolTest {
+
+  @Test
+  public void testToolWithTestClass() {
+    JavaDSLTool.main(new String[] {
+        "-i",
+        "src/test/resources/de/monticore/java/parser/Test.java",
+        "-o",
+        "target/generator-output"
+    });
+  }
+  
+  @Test
+  public void testToolWithASTClassDeclarationClass() {
+    JavaDSLTool.main(new String[] {
+        "-i",
+        "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
+        "-o",
+        "target/generator-output"
+    });
+  }
+
+}

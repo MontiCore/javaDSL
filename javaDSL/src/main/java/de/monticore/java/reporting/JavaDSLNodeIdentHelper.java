@@ -19,6 +19,7 @@ import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclar
 import de.monticore.types.mcbasictypes.MCBasicTypesMill;
 import de.monticore.types.mcbasictypes._ast.ASTMCPrimitiveType;
 import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
+import de.monticore.types.typeparameters._ast.ASTTypeParameters;
 
 public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
   
@@ -138,7 +139,7 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
 
   public String getIdent(ASTMCPrimitiveType node) {
     String type = Layouter.nodeName(node);
-    String name = node.printType(MCBasicTypesMill.mcBasicTypesPrettyPrinter());
+    String name = node.printType();
     return format(name, type);
   }
 

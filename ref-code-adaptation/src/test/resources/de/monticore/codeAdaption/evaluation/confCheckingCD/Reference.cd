@@ -1,0 +1,23 @@
+package de.monticore.codeAdaption.evaluation.confCheckingCD;
+import java.lang.String;
+
+classdiagram Reference {
+
+  class Person {
+    String firstname;
+    String lastname;
+    Date birthday;
+  }
+
+  class User {
+    String loginName;
+    String password;
+    int intData;
+  }
+
+  class Role {
+    String name;
+  }
+
+  association  [1] User -> (roles)Role [*];
+}

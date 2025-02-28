@@ -4,7 +4,9 @@ package de.monticore.java;
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
+import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -111,6 +113,26 @@ public class JavaDSLParserTest extends AbstractTest {
   @Test
   public void testModuleDeclaration() {
     assertParsingSuccess("src/test/resources/moduleDeclaration/module-info.java");
+  }
+
+  @Test
+  public void testTextBlocks() throws IOException {
+    String textBlock = "\"\"\"" + "\n" +
+        "\t\tHello World" + "\n" +
+        "\t\t\tIndented" + "\n" +
+        "\"\"\"";
+
+    JavaDSLParser parser = new JavaDSLParser();
+    Optional<ASTLiteral> optLiteral = parser.parse_StringLiteral(textBlock);
+
+    assertTrue(optLiteral.isPresent());
+
+    ASTLiteral literal = optLiteral.get();
+    assertInstanceOf(ASTTextBlockLiteral.class, literal);
+    assertEquals(
+        "Hello World\n\tIndented",
+        ((ASTTextBlockLiteral) literal).getSource()
+    );
   }
 
 }

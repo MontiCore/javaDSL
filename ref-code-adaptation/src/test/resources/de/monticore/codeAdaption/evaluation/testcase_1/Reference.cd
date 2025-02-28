@@ -1,0 +1,28 @@
+package de.monticore.codeAdaption.evaluation.testcase_1;
+import java.lang.String;
+
+classdiagram Reference {
+
+  class Person {
+    String firstname;
+    String lastname;
+    Date birthday;
+  }
+
+  class User {
+    String loginName;
+    String password;
+    int intData;
+  }
+
+  class Role {
+    String name;
+  }
+
+  class Observer;
+  class Observable;
+
+  association  [1] User -> (roles)Role [*];
+
+  association [1] Observer (isObservedBy) <-> (observes) Observable [1];
+}

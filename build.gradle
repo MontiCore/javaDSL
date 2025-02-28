@@ -25,7 +25,7 @@ allprojects {
 subprojects {
     apply plugin: "java-library"
     apply plugin: "maven-publish"
-    apply plugin: "monticore"
+    apply plugin: "de.monticore.generator"
 
     java {
         toolchain {
@@ -36,13 +36,13 @@ subprojects {
         withSourcesJar()
     }
 
-    tasks.withType(JavaCompile) {
-        dependsOn(tasks.withType(MCTask))
+    tasks.withType(JavaCompile).configureEach {
+        dependsOn(tasks.withType(MCGenTask))
 
         options.encoding = "UTF-8"
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         useJUnitPlatform()
 
         testLogging {

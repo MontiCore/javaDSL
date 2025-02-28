@@ -1,0 +1,23 @@
+package de.monticore.codeAdaption.evaluation.testcase_2_cd4code;
+import java.lang.String;
+import java.util.Date;
+
+classdiagram Concrete {
+
+  <<stud="User">>class Student{
+   <<stud="firstname">>  String firstname;
+   <<stud="lastname">>   String lastname;
+   <<stud="birthday">>   Date birthDay;
+  }
+
+
+  <<stud="Role">> class HiwiRole {
+    <<stud="name">> String name ;
+  }
+
+
+
+  association  [1] Student   ->  (roles) HiwiRole [*];
+
+
+}

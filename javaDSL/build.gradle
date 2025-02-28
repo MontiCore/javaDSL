@@ -4,13 +4,20 @@ def grammarsDir = "src/main/grammars"
 
 configurations {
     corpus {
+        canBeConsumed = false
+        canBeResolved = true
+
         transitive = false
+
+        resolutionStrategy.dependencySubstitution.all {
+            artifactSelection {
+                selectArtifact("jar", "jar", "sources")
+            }
+        }
     }
 }
 
 sourceSets {
-    main.java.srcDir("$buildDir/generated-sources/monticore/sourcecode")
-
     grammars {
         resources {
             srcDir(grammarsDir)
@@ -23,15 +30,6 @@ java {
     registerFeature("grammars") {
         usingSourceSet(sourceSets.grammars)
     }
-}
-
-tasks.register('generate', MCTask) {
-    grammar = file "$projectDir/$grammarsDir/de/monticore/java/JavaDSL.mc4"
-    outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
-    handcodedPath "$projectDir/src/main/java"
-
-    def upToDate = incCheck("de/monticore/java/JavaDSL.mc4")
-    outputs.upToDateWhen { upToDate }
 }
 
 tasks.register('extractCorpus') {
@@ -65,6 +63,7 @@ tasks.withType(Test).configureEach {
 
 dependencies {
     implementation(platform(libs.junit.bom))
+    implementation "de.monticore.lang:cd4analysis:$version"
 
     api(libs.monticore.grammar)
     api(libs.monticore.runtime)
@@ -79,6 +78,8 @@ dependencies {
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
 
-    corpus(libs.guava) { artifact { classifier = "sources" } }
-    corpus(libs.monticore.runtime) { artifact { classifier = "sources" } }
+    corpus(corpus.guava)
+    corpus(corpus.monticore.runtime)
+    // TODO: fix parser for Java 17 and enable
+    //corpus(corpus.quitte)
 }

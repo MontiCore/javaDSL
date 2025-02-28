@@ -1,0 +1,7 @@
+package de.monticore.java;
+
+component grammar TextBlock {
+
+    token TextBlockDelimiter = '"' '"' '"';
+
+}

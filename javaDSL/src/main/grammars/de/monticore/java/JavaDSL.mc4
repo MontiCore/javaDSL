@@ -58,27 +58,35 @@ package de.monticore.java;
  *     |-> de.monticore.types.MCSimpleGenericTypes
  *         |-> de.monticore.types.MCCollectionTypes
  *             |-> de.monticore.types.MCBasicTypes (*)
+ * |-> de.monticore.types.TypeParameters
+ *     |-> de.monticore.symbols.BasicSymbols
+ *         |-> de.monticore.MCBasics (*)
+ *     |-> de.monticore.types.MCBasicTypes
+ *         |-> de.monticore.MCBasics (*)
  *
- * (*) Dependencies are emitted because they have been listed previously.
+ * (*) Repeated Dependencies are omitted.
  */
-grammar JavaDSL extends de.monticore.JavaLight,
+grammar JavaDSL extends
+    de.monticore.java.TextBlock,
+    de.monticore.JavaLight,
 	de.monticore.expressions.BitExpressions,
 	de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
 	de.monticore.literals.MCJavaLiterals,
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
-	de.monticore.types.MCFullGenericTypes {
+	de.monticore.types.MCFullGenericTypes,
+	de.monticore.types.TypeParameters {
 
 start CompilationUnit;
 
 // starting point for parsing a java file
-interface scope CompilationUnit;
+interface CompilationUnit;
 
-scope OrdinaryCompilationUnit implements CompilationUnit
+OrdinaryCompilationUnit implements CompilationUnit
     = PackageDeclaration? ImportDeclaration* TypeDeclaration*
     ;
 
-scope ModularCompilationUnit implements CompilationUnit
+ModularCompilationUnit implements CompilationUnit
     = ImportDeclaration* ModuleDeclaration
     ;
 
@@ -158,7 +166,40 @@ symbolrule ClassDeclaration =
 ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
-    
+
+/*
+ * Records Classes
+ *
+ * https://docs.oracle.com/javase/specs/jls/se19/html/jls-8.html#jls-8.10
+ */
+
+symbol scope RecordDeclaration extends TypeDeclaration
+    = JavaModifier* "record" Name TypeParameters? RecordHeader
+        ("implements" implementedInterface:(MCType || ",")+)?
+        RecordBody
+    ;
+
+RecordHeader
+    = "(" (RecordComponent || ",")* ")"
+    ;
+
+RecordComponent
+    = JavaModifier* MCType (arrayAnnotations:Annotation* variableArity:"...")? Name
+    ;
+
+astrule RecordComponent =
+    method public boolean isHasVariableArity() {
+      return this.isPresentVariableArity();
+    };
+
+RecordBody
+    = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
+    ;
+
+CompactConstructorDeclaration
+    = JavaModifier* Name body:MCJavaBlock
+    ;
+
 symbol scope InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
@@ -185,18 +226,6 @@ symbol EnumConstantDeclaration
 
 EnumBody
     =   ";" ClassBodyDeclaration*
-    ;
-
-TypeParameters
-    =   "<" (TypeParameter || ",")+ ">"
-    ;
-
-symbol TypeParameter
-    =   Name ("extends" TypeBound)?
-    ;
-
-TypeBound
-    =   (MCType || "&")+
     ;
 
 ClassBlock implements ClassBodyDeclaration
@@ -260,8 +289,12 @@ AnnotatedName = Annotation* Name;
 
 @Override
 MCArrayType implements MCType
-    = MCType (AnnotatedDimension {_builder.setDimensions(_builder.getDimensions()+1);} )+
+    = MCType (AnnotatedDimension)+
     ;
+astrule MCArrayType =
+    method public int getDimensions() {
+      return this.sizeAnnotatedDimensions();
+    };
 
 @Override
 MCBasicGenericType implements MCGenericType <20>
@@ -330,17 +363,6 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
-@Override ExtType = MCType;
-
-ExtLiteral = Literal;
-
-@Override ExtReturnType = MCReturnType;
-
-@Override ExtTypeArgument = MCTypeArgument;
-
-ExtTypeParameter = TypeParameter;
-@Override ExtTypeParameters = TypeParameters;
-
 /*
  * TODO Remove this
  * This is a workaround to a questionable behavior in the core grammar JavaLight
@@ -355,9 +377,8 @@ JavaAnnotation extends JavaModifier implements ElementValue
             ( "(" AnnotationArguments? ")" )?
     ;
 
-@Override
 AnonymousClass implements Creator
-    =   ExtType Arguments ClassBody?
+    =   MCType Arguments ClassBody?
     ;
 
 
@@ -375,5 +396,22 @@ interface MethodReferenceTarget;
 ConstructorReferenceTarget implements MethodReferenceTarget = "new";
 MethodNameReferenceTarget implements MethodReferenceTarget = Name;
 
+TextBlockLiteral implements Literal, SignedLiteral
+    = source:TextBlock
+    ;
+
+/*========================================================================*/
+/*============================ LEXER RULES ===============================*/
+/*========================================================================*/
+
+token TextBlock
+    = TextBlockDelimiter (TextBlockCharacters)? TextBlockDelimiter
+    : {setText(de.monticore.java.utils.TextBlockUtils.preprocessTextBlock(getText().substring(3, getText().length() - 4)));};
+
+fragment token TextBlockCharacters
+    = (' ' | '\t')* ('\r' | '\n') (. | EscapeSequence)*;
+
+fragment token TextBlockCharacter
+    = '"' | '\\' | EscapeSequence;
 
 }

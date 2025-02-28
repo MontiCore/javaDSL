@@ -1,0 +1,20 @@
+import java.lang.String ;
+
+classdiagram App {
+ class Application;
+
+
+ + class Entity{
+  - String id ;
+ }
+
+
+
+ + class Service;
+
+
+// association   Application -> service.Service;
+// association   Service ->entity.Entity;
+
+}
+

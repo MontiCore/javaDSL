@@ -1,0 +1,37 @@
+package de.monticore.codeAdaption.evaluation;
+import java.lang.String;
+
+classdiagram Concrete {
+
+  <<prof="Person", stud="Person">>class Person{
+   <<prof="firstname", stud="firstname">>  String firstname;
+   <<prof="lastname", stud="lastname">>   String lastname;
+   <<prof="birthday", stud="birthday">>   Date birthDay;
+  }
+
+  <<prof="User">> class Professor {
+    <<prof="loginName">> String workingId;
+    <<prof="password">>  String password;
+    <<prof="intData">>   int yearOfExperience;
+  }
+
+  <<prof="Role">>class TeachingRole  {
+  <<prof="name">>  String name ;
+  }
+
+  <<stud="User">>  class Student {
+    <<stud="loginName">> String matriculationId;
+    <<stud="password">>String password ;
+    <<stud="intData">> int semester;
+  }
+
+
+  <<stud="Role">> class HiwiRole {
+    <<stud="name">> String name ;
+  }
+
+
+
+  association  [1] Student   ->  (roles)HiwiRole [*];
+  association  [1] Professor ->  (roles)TeachingRole [*];
+}

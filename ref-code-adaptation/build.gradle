@@ -1,0 +1,98 @@
+import com.github.sherter.googlejavaformatgradleplugin.VerifyGoogleJavaFormat
+
+plugins {
+    id 'java'
+    id 'java-gradle-plugin'
+
+    id 'monticore' version "$version"
+    id 'com.github.johnrengelman.shadow' version "7.1.2"
+    id 'maven-publish'
+    id "com.github.sherter.google-java-format" version "0.9"  // Task "verifyGoogleJavaFormat" and "googleJavaFormat"
+
+}
+
+dependencies {
+
+    implementation group: 'de.se_rwth.commons', name: 'se-commons-logging', version:version
+    implementation group: 'de.monticore', name: 'monticore-runtime', version: version
+    implementation group: 'de.monticore', name: 'monticore-grammar', version: version
+    implementation group: 'de.monticore', name: 'class2mc', version: version
+    implementation group: 'de.monticore.lang', name: 'cd4analysis', version: version
+    implementation group: 'de.monticore', name: 'javaDSL', version: version
+    implementation group: 'de.monticore.lang', name: 'od',version: version
+    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
+    implementation 'fr.inria.gforge.spoon:spoon-core:10.2.0'
+
+
+
+    implementation "org.apache.commons:commons-lang3:3.9"
+
+    implementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+    implementation 'de.monticore.lang:cd4analysis:$version:cddiff'
+    implementation 'de.monticore.lang:cd4analysis:$version:tool'
+
+
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+
+
+
+
+    //implementation "org.codehaus.groovy:groovy:$groovy_version"
+    //implementation "de.se_rwth.commons:se-commons-groovy:3.0.7"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    grammar("de.monticore.lang:cd4analysis:$version") {
+    }
+    grammar("de.monticore:monticore-grammar:$version") {
+    }
+}
+
+shadowJar { // all in one jar
+    manifest {
+        attributes "Main-Class": "de.monticore.codeAdaption.CodeAdapterTool"
+    }
+    archiveClassifier = 'cli'
+    archiveFileName = "CodeAdapter.jar"
+    zip64 = true
+//        minimize()
+    duplicatesStrategy DuplicatesStrategy.INCLUDE
+}
+
+test {
+    useJUnitPlatform()
+}
+
+group = 'refCodeAdaptation'
+repositories {
+    if(("true").equals(getProperty('useLocalRepo'))) {
+        mavenLocal()
+    }
+    maven {
+        credentials.username mavenUser
+        credentials.password mavenPassword
+        url repo
+    }
+    mavenCentral()
+}
+
+description = 'CoEvolution'
+buildDir = file("$projectDir/target")
+
+
+googleJavaFormat {
+    exclude '**/target/**'
+    exclude '**/test/resources/**'
+    exclude '***/test/java/model/reference/hwc/Application'
+}
+
+verifyGoogleJavaFormat{
+    ignoreFailures true
+    exclude "**"
+}  // do not check format in "build"
+
+tasks.register('checkfmt', VerifyGoogleJavaFormat) {}
+
+tasks.register('fmt') {
+    dependsOn tasks.named("googleJavaFormat")
+}

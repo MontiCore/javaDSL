@@ -1,0 +1,17 @@
+package de.monticore.codeAdaption.evaluation.testcase_2_cd4code;
+import java.lang.String;
+
+classdiagram Reference {
+
+  class User {
+    String firstname;
+    String lastname;
+    Date birthday;
+  }
+
+  class Role {
+    String name;
+  }
+
+  association  [1] User -> (roles)Role [*];
+}

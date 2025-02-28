@@ -1,0 +1,20 @@
+#
+# The corpus of libraries is used to test the generated infrastructure. For this
+# purpose, a variety of open-source libraries targeting different Java versions
+# are used. Only the sources of these libraries are used during testing. Their
+# versions must not necessarily align with the project's dependencies.
+#
+# Read more in javaDSL/src/main/grammars/de/monticore/java/JavaDSL.md
+#
+[libraries]
+# com.osmerion.quitte - Quitte
+# https://github.com/Osmerion/Quitte - Java 17
+quitte = { module = "com.osmerion.quitte:quitte", version = "0.7.0" }
+
+# com.google.guava - Guava
+# https://github.com/google/guava - Java 8
+guava = { module = "com.google.guava:guava", version = "31.1-jre" }
+
+# de.monticore - MontiCore
+# https://github.com/MontiCore/monticore - Java 11
+monticore-runtime = { module = "de.monticore:monticore-runtime", version = "7.6.0-SNAPSHOT" }

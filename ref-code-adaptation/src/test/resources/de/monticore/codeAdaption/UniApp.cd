@@ -1,0 +1,17 @@
+import java.lang.String ;
+
+classdiagram UniApp {
+
+ <<ref="Application">> class SchoolApplication;
+
+
+ <<ref="Entity">> + class Student {
+  <<ref = "id">>- String studentId ;
+ }
+
+
+
+<<ref="Service">> + class StudentService;
+
+
+}
