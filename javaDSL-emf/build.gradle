@@ -6,9 +6,6 @@ def srcTestDir = "$buildDir/copied-sources/test"
 def grammarsDir = "${project(":javaDSL").projectDir}/src/main/grammars"
 
 sourceSets {
-    main.java.srcDirs("$srcMainDir/java", "$buildDir/generated-sources/monticore/sourcecode")
-    test.java.srcDirs("$srcTestDir/java")
-
     grammars {
         resources {
             srcDir(grammarsDir)
@@ -23,62 +20,38 @@ java {
     }
 }
 
-task copyMainSources(type: Copy) {
+tasks.register('copyMainSources', Copy) {
     destinationDir = file srcMainDir
     from "${project(':javaDSL').projectDir}/src/main"
 }
 
-task copyTestSources(type: Copy) {
+tasks.register('copyTestSources', Copy) {
     destinationDir = file srcTestDir
     from "${project(':javaDSL').projectDir}/src/main"
 }
 
-tasks.register("generateTextBlock", MCTask) {
+generateMCGrammars {
     dependsOn(copyMainSources, copyTestSources)
-
-    grammar = file "$grammarsDir/de/monticore/java/TextBlock.mc4"
-    outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
-    handcodedPath "$srcMainDir/java"
-
     script = "de/monticore/monticore_emf.groovy"
-
-    def upToDate = incCheck("de/monticore/java/TextBlock.mc4")
-    outputs.upToDateWhen { upToDate }
-}
-
-tasks.register("generate", MCTask) {
-    dependsOn(tasks.generateTextBlock)
-    dependsOn(copyMainSources, copyTestSources)
-
-    grammar = file "$grammarsDir/de/monticore/java/JavaDSL.mc4"
-    outputDir = file "$buildDir/generated-sources/monticore/sourcecode"
-    modelPath "$grammarsDir"
-    handcodedPath "$srcMainDir/java"
-
-    script = "de/monticore/monticore_emf.groovy"
-
-    def upToDate = incCheck("de/monticore/java/JavaDSL.mc4")
-    outputs.upToDateWhen { upToDate }
 }
 
 dependencies {
-    implementation(platform(libs.junit.bom))
-    implementation "de.monticore.lang:cd4analysis:7.7.0-SNAPSHOT"
+    implementation "de.monticore.lang:cd4analysis:$mc_version"
 
-    api(libs.monticore.grammar.emf)
-    api(libs.monticore.runtime.emf)
+    implementation "org.eclipse.emf:org.eclipse.emf.common:$emf_version"
+    implementation "org.eclipse.emf:org.eclipse.emf.ecore:$emf_version"
+    implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:$emf_version"
 
-    api(libs.emf.common)
-    api(libs.emf.ecore)
-    api(libs.emf.ecore.xmi)
+    implementation "de.monticore:monticore-grammar-emf:$mc_version"
+    implementation "de.monticore:monticore-runtime-emf:$mc_version"
 
-    grammar(libs.monticore.grammar) {
+    grammar("de.monticore:monticore-grammar:$mc_version") {
         capabilities {
             requireCapability("de.monticore:monticore-grammar-grammars")
         }
     }
 
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(libs.junit.jupiter.params)
-    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit_version"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
 }
