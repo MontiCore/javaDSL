@@ -20,7 +20,7 @@ public final class JavaDSLPrettyPrinterTest extends AbstractTest {
 
   private ASTJavaDSLNode parse(String modelName) throws IOException {
     Path model = Paths.get(modelName);
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -28,7 +28,7 @@ public final class JavaDSLPrettyPrinterTest extends AbstractTest {
   }
 
   private ASTJavaDSLNode parse(StringReader reader) throws IOException {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(reader);
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());

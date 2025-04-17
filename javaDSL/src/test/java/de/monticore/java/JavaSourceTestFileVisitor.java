@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import org.antlr.v4.runtime.RecognitionException;
 
@@ -156,7 +157,7 @@ class ParseJavaFileVisitor implements FileVisitor<Path> {
     try {
       String pathToModel = parentDirectory + File.pathSeparator + modelPath + ".java";
 
-      JavaDSLParser parser = new JavaDSLParser();
+      JavaDSLParser parser = JavaDSLMill.parser();
       Optional<ASTCompilationUnit> optCompilationUnit;
       Throwable cause = null;
 

@@ -1,5 +1,7 @@
 package de.monticore.java;
 
+import de.monticore.cd4code.CD4CodeMill;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.se_rwth.commons.logging.LogStub;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +21,10 @@ public abstract class AbstractTest {
   @BeforeEach
   public void reset() {
     LogStub.init();
+    JavaDSLMill.init();
+    JavaDSLMill.globalScope().clear();
+    CD4CodeMill.init();
+    CD4CodeMill.globalScope().clear();
   }
 
 }
