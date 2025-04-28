@@ -1,5 +1,6 @@
 package de.monticore.java;
 
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.se_rwth.commons.logging.Log;
@@ -12,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public final class JavaDSLAssertions {
 
   public static void assertParsingFailure(String pathToModel) {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
 
     Optional<ASTCompilationUnit> optCompilationUnit;
 
@@ -28,7 +29,7 @@ public final class JavaDSLAssertions {
   }
 
   public static ASTCompilationUnit assertParsingSuccess(String pathToModel) {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
 
     Optional<ASTCompilationUnit> optCompilationUnit;
     Throwable cause = null;

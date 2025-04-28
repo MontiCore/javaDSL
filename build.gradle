@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.monticore) apply false
+    id "de.monticore.generator" version "$mc_version" apply false
 }
 
 allprojects {

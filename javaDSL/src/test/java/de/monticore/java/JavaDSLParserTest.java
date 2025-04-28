@@ -2,6 +2,7 @@
 package de.monticore.java;
 
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
@@ -24,7 +25,7 @@ public class JavaDSLParserTest extends AbstractTest {
   @Test
   public void test1() throws IOException {
     Path model = Paths.get("src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -34,7 +35,7 @@ public class JavaDSLParserTest extends AbstractTest {
   @Test
   public void test2() throws IOException {
     Path model = Paths.get("src/test/resources/de/monticore/java/parser/ParseException.java");
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -44,7 +45,7 @@ public class JavaDSLParserTest extends AbstractTest {
   @Test
   public void test3() throws IOException {
     Path model = Paths.get("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -63,7 +64,7 @@ public class JavaDSLParserTest extends AbstractTest {
     buffer.append("getCompiler().addComment(_comment);");
     buffer.append("}");
     buffer.append("}   ");
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTJavaBlock> ast = parser.parseJavaBlock(new StringReader(buffer.toString()));
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -73,7 +74,7 @@ public class JavaDSLParserTest extends AbstractTest {
   public void test5() throws IOException {
     Path model = Paths
         .get("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
@@ -82,14 +83,14 @@ public class JavaDSLParserTest extends AbstractTest {
 
   @Test
   public void testCondition() throws IOException {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTExpression> ast = parser.parse_StringExpression("ch = str.charAt(i) < 0x20");
     assertTrue(ast.isPresent());
   }
 
   @Test
   public void testLambdas() throws IOException {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     assertTrue(parser.parse_StringExpression("foo -> foo").isPresent());
     assertTrue(parser.parse_StringExpression("(foo, bar) -> foo").isPresent());
     assertTrue(parser.parse_StringExpression("(foo, bar) -> { return foo; }").isPresent());
@@ -97,7 +98,7 @@ public class JavaDSLParserTest extends AbstractTest {
 
   @Test
   public void testMethodReferences() throws IOException {
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     assertTrue(parser.parse_StringExpression("String::length").isPresent());
     assertTrue(parser.parse_StringExpression("System::currentTimeMillis").isPresent());
     assertTrue(parser.parse_StringExpression("List<String>::size").isPresent());
@@ -122,7 +123,7 @@ public class JavaDSLParserTest extends AbstractTest {
         "\t\t\tIndented" + "\n" +
         "\"\"\"";
 
-    JavaDSLParser parser = new JavaDSLParser();
+    JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTLiteral> optLiteral = parser.parse_StringLiteral(textBlock);
 
     assertTrue(optLiteral.isPresent());

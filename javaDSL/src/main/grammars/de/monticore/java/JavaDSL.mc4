@@ -3,75 +3,83 @@
 package de.monticore.java;
 
 /**
- * The full grammar dependency tree as of 7.4
+ * The full grammar dependency tree as of 7.8
  *
  * JavaDSL
+ * |-> de.monticore.java.TextBlock
+ * |-> de.monticore.literals.MCJavaLiterals
+ *     |-> de.monticore.literals.MCCommonLiterals
+ *         |-> de.monticore.MCBasics
+ *         |-> de.monticore.literals.MCLiteralsBasis
  * |-> de.monticore.JavaLight
  *     |-> de.monticore.expressions.AssignmentExpressions
  *         |-> de.monticore.expressions.ExpressionsBasis
- *             |-> de.monticore.MCBasics
- *             |-> de.monticore.literals.MCLiteralsBasis
+ *             |-> de.monticore.MCBasics (*)
+ *             |-> de.monticore.literals.MCLiteralsBasis (*)
  *     |-> de.monticore.expressions.JavaClassExpressions
  *         |-> de.monticore.expressions.CommonExpressions
  *             |-> de.monticore.expressions.ExpressionsBasis (*)
- *     |-> de.monticore.statements.MCArrayStatements
  *         |-> de.monticore.statements.MCVarDeclarationStatements
+ *             |-> de.monticore.statements.MCStatementBasis
+ *             |-> de.monticore.types.MCBasicTypes
+ *                 |-> de.monticore.MCBasics (*)
  *             |-> de.monticore.expressions.ExpressionsBasis (*)
- *             |-> de.monticore.statements.MCStatementsBasis
  *             |-> de.monticore.symbols.OOSymbols
  *                 |-> de.monticore.symbols.BasicSymbols
  *                     |-> de.monticore.MCBasics (*)
- *             |-> de.monticore.types.MCBasicTypes
- *                 |-> de.monticore.MCBasics (*)
+ *         |-> de.monticore.types.MCFullGenericTypes
+ *             |-> de.monticore.types.MCSimpleGenericTypes
+ *                 |-> de.monticore.types.MCCollectionTypes
+ *                     |-> de.monticore.types.MCBasicTypes (*)
+ *         |-> de.monticore.expressions.UglyExpressions
+ *             |-> de.monticore.types.MCBasicTypes (*)
+ *             |-> de.monticore.expressions.ExpressionsBasis (*)
+ *     |-> de.monticore.statements.MCCommonLiterals (*)
  *     |-> de.monticore.statements.MCCommonStatements
  *         |-> de.monticore.statements.MCVarDeclarationStatements (*)
+ *     |-> de.monticore.statements.MCArrayStatements
+ *         |-> de.monticore.statements.MCVarDeclarationStatements (*)
  *     |-> de.monticore.statements.MCReturnStatements
+ *         |-> de.monticore.statements.MCStatementsBasis
  *         |-> de.monticore.expressions.ExpressionsBasis (*)
- *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *     |-> de.monticore.types.TypeParameters
+ *         |-> de.monticore.symbols.BasicSymbols (*)
+ *         |-> de.monticore.types.MCBasicTypes (*)
  * |-> de.monticore.expressions.BitExpressions
  *     |-> de.monticore.expressions.ExpressionsBasis (*)
  * |-> de.monticore.expressions.LambdaExpressions
- *     |-> de.monticore.expressions.ExpressionsBasis (*)
  *     |-> de.monticore.symbols.BasicSymbols (*)
  *     |-> de.monticore.types.MCBasicTypes (*)
- * |-> de.monticore.literals.MCJavaLiterals
- *     |-> de.monticore.literals.MCCommonLiterals (*)
- *         |-> de.monticore.MCBasics (*)
- *         |-> de.monticore.literals.MCLiteralsBasis (*)
+ *     |-> de.monticore.expressions.ExpressionsBasis (*)
  * |-> de.monticore.statements.MCFullJavaStatements
- *     |-> de.monticore.statements.MCArrayStatements (*)
  *     |-> de.monticore.statements.MCAssertStatements
- *         |-> de.monticore.expressions.ExpressionsBasis (*)
  *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *         |-> de.monticore.expressions.ExpressionsBasis (*)
  *     |-> de.monticore.statements.MCExceptionStatements
  *         |-> de.monticore.statements.MCCommonStatements (*)
  *     |-> de.monticore.statements.MCLowLevelStatements
- *         |-> de.monticore.MCBasics (*)
  *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *         |-> de.monticore.MCBasics (*)
  *     |-> de.monticore.statements.MCReturnStatements (*)
+ *         |-> de.monticore.statements.MCStatementsBasis (*)
+ *         |-> de.monticore.expressions.ExpressionsBasis (*)
  *     |-> de.monticore.statements.MCSynchronizedStatements
  *         |-> de.monticore.statements.MCCommonStatements (*)
+ *     |-> de.monticore.statements.MCArrayStatements (*)
+ *         |-> de.monticore.statements.MCVarDeclarationStatements (*)
  * |-> de.monticore.types.MCArrayTypes
- *     |-> de.monticore.types.MCBasicTypes
- *         |-> de.monticore.MCBasics (*)
- * |-> de.monticore.types.MCFullGenericTypes
- *     |-> de.monticore.types.MCSimpleGenericTypes
- *         |-> de.monticore.types.MCCollectionTypes
- *             |-> de.monticore.types.MCBasicTypes (*)
- * |-> de.monticore.types.TypeParameters
- *     |-> de.monticore.symbols.BasicSymbols
- *         |-> de.monticore.MCBasics (*)
- *     |-> de.monticore.types.MCBasicTypes
- *         |-> de.monticore.MCBasics (*)
+ *     |-> de.monticore.types.MCBasicTypes (*)
+ * |-> de.monticore.types.MCFullGenericTypes (*)
+ * |-> de.monticore.types.TypeParameters (*)
  *
  * (*) Repeated Dependencies are omitted.
  */
 grammar JavaDSL extends
     de.monticore.java.TextBlock,
+    de.monticore.literals.MCJavaLiterals,
     de.monticore.JavaLight,
 	de.monticore.expressions.BitExpressions,
 	de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
-	de.monticore.literals.MCJavaLiterals,
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
 	de.monticore.types.MCFullGenericTypes,
