@@ -8,7 +8,7 @@ allprojects {
     buildDir = file("$projectDir/target")
 
     repositories {
-        if (getProperty("useLocalRepo")) {
+        if (("true").equals(getProperty('useLocalRepo'))) {
             mavenLocal()
         }
 

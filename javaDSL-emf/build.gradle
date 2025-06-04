@@ -5,21 +5,6 @@ def srcTestDir = "$buildDir/copied-sources/test"
 
 def grammarsDir = "${project(":javaDSL").projectDir}/src/main/grammars"
 
-sourceSets {
-    grammars {
-        resources {
-            srcDir(grammarsDir)
-            include "**/*.mc4"
-        }
-    }
-}
-
-java {
-    registerFeature("grammars") {
-        usingSourceSet(sourceSets.grammars)
-    }
-}
-
 tasks.register('copyMainSources', Copy) {
     destinationDir = file srcMainDir
     from "${project(':javaDSL').projectDir}/src/main"
@@ -42,14 +27,8 @@ dependencies {
     implementation "org.eclipse.emf:org.eclipse.emf.ecore:$emf_version"
     implementation "org.eclipse.emf:org.eclipse.emf.ecore.xmi:$emf_version"
 
-    implementation "de.monticore:monticore-grammar-emf:$mc_version"
+    grammar "de.monticore:monticore-grammar-emf:$mc_version"
     implementation "de.monticore:monticore-runtime-emf:$mc_version"
-
-    grammar("de.monticore:monticore-grammar:$mc_version") {
-        capabilities {
-            requireCapability("de.monticore:monticore-grammar-grammars")
-        }
-    }
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit_version"
