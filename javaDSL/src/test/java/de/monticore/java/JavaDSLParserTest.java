@@ -3,17 +3,16 @@ package de.monticore.java;
 
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 
 import static de.monticore.java.JavaDSLAssertions.*;
@@ -22,39 +21,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaDSLParserTest extends AbstractTest {
 
-  @Test
-  public void test1() throws IOException {
-    Path model = Paths.get("src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
-//    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
+      "src/test/resources/de/monticore/java/parser/ParseException.java",
+      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
+      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
+  })
+  public void testParser(String path) throws IOException {
+    assertParsingSuccess(path);
   }
 
   @Test
-  public void test2() throws IOException {
-    Path model = Paths.get("src/test/resources/de/monticore/java/parser/ParseException.java");
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
- //   AST2ModelFiles.get().serializeASTInstance(ast.get(), "ParseException");
-  }
-
-  @Test
-  public void test3() throws IOException {
-    Path model = Paths.get("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
-    //AST2ModelFiles.get().serializeASTInstance(ast.get(), "TokenMgrError");
-  }
-
-  @Test
-  public void test4() throws IOException {
-    StringBuffer buffer = new StringBuffer("");
+  public void testJavaBlock() throws IOException {
+    StringBuffer buffer = new StringBuffer();
     buffer.append("{ _channel = HIDDEN;");
     buffer.append("if (getCompiler() != null) {");
     buffer.append("  de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
@@ -69,51 +49,52 @@ public class JavaDSLParserTest extends AbstractTest {
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
   }
-
-  @Test
-  public void test5() throws IOException {
-    Path model = Paths
-        .get("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
+  
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "ch = str.charAt(i) < 0x20"
+  })
+  public void testCondition(String input) throws IOException {
     JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
-//    AST2ModelFiles.get().serializeASTInstance(ast.get(), "ASTClassDeclaration");
-  }
-
-  @Test
-  public void testCondition() throws IOException {
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTExpression> ast = parser.parse_StringExpression("ch = str.charAt(i) < 0x20");
+    Optional<ASTExpression> ast = parser.parse_StringExpression(input);
     assertTrue(ast.isPresent());
   }
-
-  @Test
-  public void testLambdas() throws IOException {
+  
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "foo -> foo",
+      "(foo, bar) -> foo",
+      "(foo, bar) -> { return foo; }"
+  })
+  public void testLambdas(String input) throws IOException {
     JavaDSLParser parser = JavaDSLMill.parser();
-    assertTrue(parser.parse_StringExpression("foo -> foo").isPresent());
-    assertTrue(parser.parse_StringExpression("(foo, bar) -> foo").isPresent());
-    assertTrue(parser.parse_StringExpression("(foo, bar) -> { return foo; }").isPresent());
+    assertTrue(parser.parse_StringExpression(input).isPresent());
   }
 
-  @Test
-  public void testMethodReferences() throws IOException {
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "String::length",
+      "System::currentTimeMillis",
+      "List<String>::size",
+      "int[]::clone",
+      "System.out::println",
+      "\"abc\"::length",
+      "foo[x]::bar",
+      "(test ? list.replaceAll(String::trim) : list) :: iterator",
+      "super::toString",
+      "Arrays::<String>sort"
+  })
+  public void testMethodReferences(String input) throws IOException {
     JavaDSLParser parser = JavaDSLMill.parser();
-    assertTrue(parser.parse_StringExpression("String::length").isPresent());
-    assertTrue(parser.parse_StringExpression("System::currentTimeMillis").isPresent());
-    assertTrue(parser.parse_StringExpression("List<String>::size").isPresent());
-    assertTrue(parser.parse_StringExpression("int[]::clone").isPresent());
-    assertTrue(parser.parse_StringExpression("System.out::println").isPresent());
-    assertTrue(parser.parse_StringExpression("\"abc\"::length").isPresent());
-    assertTrue(parser.parse_StringExpression("foo[x]::bar").isPresent());
-    assertTrue(parser.parse_StringExpression("(test ? list.replaceAll(String::trim) : list) :: iterator").isPresent());
-    assertTrue(parser.parse_StringExpression("super::toString").isPresent());
-    assertTrue(parser.parse_StringExpression("Arrays::<String>sort").isPresent());
+    assertTrue(parser.parse_StringExpression(input).isPresent());
   }
 
-  @Test
-  public void testModuleDeclaration() {
-    assertParsingSuccess("src/test/resources/moduleDeclaration/module-info.java");
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "src/test/resources/moduleDeclaration/module-info.java"
+  })
+  public void testModuleDeclaration(String path) {
+    assertParsingSuccess(path);
   }
 
   @Test
