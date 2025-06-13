@@ -23,8 +23,6 @@ public abstract class AbstractTest {
     LogStub.init();
     JavaDSLMill.init();
     JavaDSLMill.globalScope().clear();
-    CD4CodeMill.init();
-    CD4CodeMill.globalScope().clear();
     LogStub.getFindings().clear();
   }
 

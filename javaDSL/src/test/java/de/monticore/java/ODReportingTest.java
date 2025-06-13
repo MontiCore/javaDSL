@@ -2,58 +2,70 @@
 package de.monticore.java;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.javadsl._symboltable.IJavaDSLGlobalScope;
-import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitor;
-import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
+import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
 import de.monticore.java.reporting.JavaDSL2ODReporter;
 import de.monticore.java.reporting.JavaDSLNodeIdentHelper;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static de.monticore.java.JavaDSLAssertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@Disabled // TODO These tests are working yet. There are some issues with the JavaDSL2OD transformation
 public class ODReportingTest extends AbstractTest {
-
-  private static void createAstAndST(String pathName, String modelName) {
-    ASTCompilationUnit compilationUnit = assertParsingSuccess(pathName + File.separator + modelName + ".java");
+  
+  @TempDir
+  private Path outputDir;
+  
+  private static void createAstAndST(Path pathName, String modelName, Path outputDir) {
+    ASTCompilationUnit compilationUnit =
+        assertParsingSuccess(pathName + File.separator + modelName + ".java");
+    
     ReportingRepository reporting = new ReportingRepository(new JavaDSLNodeIdentHelper());
-    JavaDSL2ODReporter reporter = new JavaDSL2ODReporter("target", modelName, reporting);
-
+    JavaDSL2ODReporter reporter =
+        new JavaDSL2ODReporter(outputDir.toString(), modelName, reporting);
+    
     IJavaDSLGlobalScope globalScope = JavaDSLMill.globalScope();
     globalScope.init();
-
-    JavaDSLScopesGenitor genitor = JavaDSLMill.scopesGenitor();
-    JavaDSLTraverser traverser = JavaDSLMill.traverser();
-
-    traverser.setJavaDSLHandler(genitor);
-    traverser.add4JavaDSL(genitor);
-    genitor.putOnStack(globalScope);
-
+    
+    JavaDSLScopesGenitorDelegator genitor = JavaDSLMill.scopesGenitorDelegator();
     IJavaDSLArtifactScope artifactScope = genitor.createFromAST(compilationUnit);
     globalScope.addSubScope(artifactScope);
-
+    
     reporter.flush(compilationUnit);
   }
-
-  @Test
-  public void checkHelloWorld() {
-    createAstAndST("src/test/resources/parsableAndCompilableModels/simpleTestClasses", "HelloWorld");
+  
+  public static Stream<Arguments> testReporting() {
+    Path resourcePath = Paths.get("src", "test", "resources", "parsableAndCompilableModels");
+    return Stream.of(arguments(resourcePath.resolve("simpleTestClasses"), "HelloWorld"),
+        arguments(resourcePath.resolve("simpleTestClasses"), "GenericClass"),
+        arguments(resourcePath.resolve("stressfulPackage"), "StressfulSyntax"));
   }
-
-  @Test
-  public void checkGenericClass() {
-    createAstAndST("src/test/resources/parsableAndCompilableModels/simpleTestClasses", "GenericClass");
+  
+  @ParameterizedTest
+  @MethodSource
+  public void testReporting(Path basePath, String modelName) {
+    createAstAndST(basePath, modelName, outputDir);
+    
+    Path expectedOutputDir = outputDir.resolve("reports").resolve(modelName);
+    Path expectedOutputFile = expectedOutputDir.resolve(modelName + "_AST.od");
+    assertTrue(expectedOutputDir.toFile().exists(),
+        "could not find generated directory: " + expectedOutputDir);
+    assertTrue(expectedOutputDir.toFile().isDirectory(),
+        "output directory is a file: " + expectedOutputDir);
+    assertTrue(expectedOutputFile.toFile().exists(),
+        "could not find generated object diagram: " + expectedOutputFile);
+    assertTrue(expectedOutputFile.toFile().length() > 0, "generated object diagram is empty");
   }
-
-  @Test
-  public void checkByte() {
-    createAstAndST("src/test/resources", "java.lang.Byte");
-  }
-
 }
