@@ -169,8 +169,15 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   /***
-   *get spoonType form the Spoon Model and the mcType.
-   * save the found spoonType in the type map.
+   * Retrieves the spoonType from the Spoon Model based on the provided mcType.
+   * Saves the found spoonType in the type map.
+   *
+   * @param mcType The ASTTypeDeclaration representing the type to be searched
+   *               for in the Spoon model.
+   * @return The corresponding CtType<?> found in the Spoon model for the
+   *         given mcType.
+   * @throws AssertionError if no matching CtType<?> is found in the Spoon
+   *         model (assert will fail).
    */
   private CtType<?> getSpoonType(ASTTypeDeclaration mcType) {
     // cas already found
@@ -184,10 +191,19 @@ public class SpoonUpdater implements CodeUpdater {
     typeMap.put(mcType, type.get());
     return type.get();
   }
-
+  
   /***
-   *get spoonMethod form the Spoon Model and the mcType an the mcMethod.
-   * save the found spoonMethod in the type map.
+   * Retrieves the spoonMethod from the Spoon Model based on the provided
+   * mcType and mcMethod. Saves the found spoonMethod in the method map.
+   *
+   * @param mcType The ASTTypeDeclaration representing the type to which
+   *               the method belongs.
+   * @param mcMethod The ASTMethodDeclaration representing the method to be
+   *                 searched for in the Spoon model.
+   * @return The corresponding CtMethod found in the Spoon model for the
+   *         given mcType and mcMethod.
+   * @throws AssertionError if no matching CtMethod is found in the
+   *                        Spoon model (assert will fail).
    */
   public CtMethod<?> getSpoonMethod(ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
     // cas method was already found
@@ -206,17 +222,30 @@ public class SpoonUpdater implements CodeUpdater {
     methodMap.put(mcMethod, method.get());
     return method.get();
   }
-
-  /***
-   * compare a mcType an spoonType and return true if both are identical.
+  
+  /**
+   * Compares a mcType and spoonType and returns true if both are identical.
+   *
+   * @param type The ASTTypeDeclaration representing the type to be compared.
+   * @param spoonType The CtType representing the spoon type to be compared.
+   * @return True if the file name of the mcType ends with the simple name
+   *         of the spoonType followed by ".java"; otherwise false.
    */
   protected boolean compare(ASTTypeDeclaration type, CtType<?> spoonType) {
     String fileName = type.get_SourcePositionStart().getFileName().orElse(type.getName());
     return fileName.replaceAll("\\\\", ".").endsWith(spoonType.getSimpleName() + ".java");
   }
-
-  /***
-   *compare spoonMethod and  mcMethod and return true if both are identical.
+  
+  /**
+   * Compares a spoonMethod and mcMethod and returns true if both are
+   * identical.
+   *
+   * @param mcMethod The ASTMethodDeclaration representing the method to be
+   *                 compared.
+   * @param spoonMethod The CtMethod representing the spoon method to be
+   *                    compared.
+   * @return True if the names, parameter count, and parameter types of both
+   *         methods match; otherwise false.
    */
   protected boolean compare(ASTMethodDeclaration mcMethod, CtMethod<?> spoonMethod) {
     // compare names

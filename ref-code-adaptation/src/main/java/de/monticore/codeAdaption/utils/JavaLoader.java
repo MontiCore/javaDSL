@@ -38,9 +38,17 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 
 public class JavaLoader {
-
-  /***
-   *parse a class diagram, build the symbol table and check the cocos.
+  
+  /**
+   * Parses a class diagram, builds the symbol table, and checks the
+   * consistency conditions (CoCos).
+   *
+   * @param file The class diagram file to be parsed. It must have a .cd
+   *             extension.
+   * @return The resulting ASTCDCompilationUnit created from the class
+   *         diagram.
+   * @throws AssertionError if the provided file does not have a .cd
+   *         extension, or if the AST could not be created successfully.
    */
   public static ASTCDCompilationUnit loadCD(File file) {
     // parse the class diagram
@@ -97,9 +105,13 @@ public class JavaLoader {
     ast.accept(c.getTraverser());
     ast.setEnclosingScope(as);
   }
-
-  /***
-   * loa a java files,transform it to an AST and creation symbol-tables.
+  
+  /**
+   * Loads a Java file, transforms it to an AST, and creates symbol tables.
+   *
+   * @param javaFile The Java file to be loaded and processed.
+   * @return The resulting ASTOrdinaryCompilationUnit created from the
+   *         Java file.
    */
   public static ASTOrdinaryCompilationUnit loadJava(File javaFile) {
     assertTrue(javaFile.getName().endsWith(".java"));
@@ -125,8 +137,13 @@ public class JavaLoader {
 
     return (ASTOrdinaryCompilationUnit) ast.get();
   }
-
-  /** print a javaASTNode */
+  
+  /**
+   * Prints a Java ASTNode as a formatted string.
+   *
+   * @param node The ASTNode to be printed.
+   * @return A formatted string representation of the provided ASTNode.
+   */
   public static String print(ASTNode node) {
     JavaDSLFullPrettyPrinter prettyPrinter = new JavaDSLFullPrettyPrinter(new IndentPrinter());
     return prettyPrinter.prettyprint(node);
@@ -146,22 +163,24 @@ public class JavaLoader {
       Log.error("Exception occur when writing the file " + path);
     }
   }
-
-  /***
-   * read recursive all java files in a directory and its subdirectories.
-   * @param directoryPath the root directory to read.
-   * @return the set of Java files as AST
+  
+  /**
+   * Reads recursively all Java files in a directory and its subdirectories.
+   *
+   * @param directoryPath The root directory to read.
+   * @return A set of Java files represented as ASTOrdinaryCompilationUnit.
    */
   public static Set<ASTOrdinaryCompilationUnit> readJavaCode(Path directoryPath) {
     Set<File> res = new HashSet<>();
     readJavaCode(directoryPath, res);
     return res.stream().map(JavaLoader::loadJava).collect(Collectors.toSet());
   }
-
-  /***
-   * read recursive all java files in a directory and its subdirectories.
-   * @param directoryPath the root directory to read.
-   * @return the set of Java files as files
+  
+  /**
+   * Reads recursively all Java files in a directory and its subdirectories.
+   *
+   * @param directoryPath The root directory to read.
+   * @return A set of Java files as File objects.
    */
   public static Set<File> readJavaFile(Path directoryPath) {
     Set<File> res = new HashSet<>();
