@@ -1,42 +1,51 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import de.monticore.cd4code.CD4CodeMill;
-import de.monticore.cd4code._parser.CD4CodeParser;
-import de.monticore.cdbasis._ast.ASTCDAttribute;
-import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._ast.ASTMCQualifiedType;
-import de.monticore.java.javadsl._parser.JavaDSLParser;
-import de.monticore.types.mcbasictypes._ast.ASTMCType;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import de.se_rwth.commons.logging.Log;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
-import java.util.Optional;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-public class JavaDSLToolTest {
+public class JavaDSLToolTest extends AbstractTest {
 
-  @Test
-  public void testToolWithTestClass() {
-    JavaDSLTool.main(new String[] {
-        "-i",
-        "src/test/resources/de/monticore/java/parser/Test.java",
-        "-o",
-        "target/generator-output"
-    });
+  @TempDir
+  private Path OUTPUT_DIR;
+  
+  public static Stream<Arguments> testTool(){
+    return Stream.of(
+        arguments(
+            Paths.get("src","test","resources","de","monticore","java","parser","Test.java"),
+            List.of(Paths.get("de","monticore","foo", "bla", "Test.java"))),
+        arguments(
+            Paths.get("src","test","resources","de","monticore","java","parser","ASTClassDeclaration.java"),
+            List.of(
+                Paths.get("de","monticore","javadsl","javadsl","_ast","ASTClassDeclaration.java"),
+                Paths.get("de","monticore","javadsl","javadsl","_ast","Builder.java")))
+    );
   }
   
-  @Test
-  public void testToolWithASTClassDeclarationClass() {
-    JavaDSLTool.main(new String[] {
-        "-i",
-        "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
-        "-o",
-        "target/generator-output"
-    });
+  @ParameterizedTest
+  @MethodSource
+  public void testTool(Path inputPath, List<Path> relOutputPaths) {
+    JavaDSLTool.main(new String[] { "-i", inputPath.toString(), "-o", OUTPUT_DIR.toString() });
+    
+    for (Path relExpectedOutputPath : relOutputPaths) {
+      Path expectedOutput = OUTPUT_DIR.resolve(relExpectedOutputPath);
+      assertTrue(expectedOutput.toFile().exists(),
+          "could not find generated file: " + expectedOutput);
+      assertTrue(expectedOutput.toFile().length() > 0,
+          "generated file is empty: " + expectedOutput);
+    }
+    
+    assertTrue(Log.getFindings().isEmpty(), "log is not empty");
   }
-
 }
