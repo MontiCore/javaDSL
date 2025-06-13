@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import de.se_rwth.commons.logging.Log;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -36,6 +37,7 @@ public final class JavaDSLPrettyPrinterTest extends AbstractTest {
     // Parsing printed input
     ASTJavaDSLNode printedAST = parse(new StringReader(output));
     assertTrue(ast.deepEquals(printedAST));
+    assertTrue(Log.getFindings().isEmpty());
   }
   
   private ASTJavaDSLNode parse(String modelName) throws IOException {
@@ -44,6 +46,7 @@ public final class JavaDSLPrettyPrinterTest extends AbstractTest {
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
+    assertTrue(Log.getFindings().isEmpty());
     return ast.get();
   }
   
@@ -52,6 +55,7 @@ public final class JavaDSLPrettyPrinterTest extends AbstractTest {
     Optional<ASTCompilationUnit> ast = parser.parse(reader);
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
+    assertTrue(Log.getFindings().isEmpty());
     return ast.get();
   }
 }
