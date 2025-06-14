@@ -50,17 +50,6 @@ test {
 }
 
 group = 'refCodeAdaptation'
-repositories {
-    if(("true").equals(getProperty('useLocalRepo'))) {
-        mavenLocal()
-    }
-    maven {
-        credentials.username mavenUser
-        credentials.password mavenPassword
-        url repo
-    }
-    mavenCentral()
-}
 
 description = 'CoEvolution'
 buildDir = file("$projectDir/target")
