@@ -47,9 +47,11 @@ public class AdapterUtils {
     }
     return "";
   }
-
-  /***
-   * read a java file an remove multilines an single lines comments.
+  
+  /**
+   * Reads a Java file and removes multi-line and single-line comments.
+   *
+   * @param file The Java file from which comments will be removed.
    */
   public static void removeComments(File file) {
 

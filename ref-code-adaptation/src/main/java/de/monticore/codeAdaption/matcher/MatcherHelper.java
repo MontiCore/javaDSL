@@ -189,7 +189,7 @@ public class MatcherHelper {
       return references;
     }
 
-    Set<ISymbol> temps = new HashSet(references);
+    Set<ISymbol> temps = new HashSet<>(references);
     for (ISymbol symbol : temps) {
       for (ISymbol symbol1 : temps) {
         if (!symbol.equals(symbol1) && (matchInfix(symbol.getName(), symbol1.getName()))) {

@@ -12,79 +12,50 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import org.junit.jupiter.api.Test;
+import de.se_rwth.commons.logging.Log;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class JavaDSLPrettyPrinterTest extends AbstractTest {
-
+  
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
+      "src/test/resources/de/monticore/java/parser/ParseException.java",
+      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
+      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
+  })
+  public void testPrettyPrinter(String path) throws IOException {
+    // Parse input
+    ASTJavaDSLNode ast = parse(path);
+    
+    // Prettyprinting input
+    String output = JavaDSLMill.prettyPrint(ast, false);
+    
+    // Parsing printed input
+    ASTJavaDSLNode printedAST = parse(new StringReader(output));
+    assertTrue(ast.deepEquals(printedAST));
+    assertTrue(Log.getFindings().isEmpty());
+  }
+  
   private ASTJavaDSLNode parse(String modelName) throws IOException {
     Path model = Paths.get(modelName);
     JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
+    assertTrue(Log.getFindings().isEmpty());
     return ast.get();
   }
-
+  
   private ASTJavaDSLNode parse(StringReader reader) throws IOException {
     JavaDSLParser parser = JavaDSLMill.parser();
     Optional<ASTCompilationUnit> ast = parser.parse(reader);
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
+    assertTrue(Log.getFindings().isEmpty());
     return ast.get();
   }
-
-  @Test
-  public void test1() throws IOException {
-    // Parse input
-    ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java");
-
-    // Prettyprinting input
-    String output = JavaDSLMill.prettyPrint(ast, false);
-
-    // Parsing printed input
-    ASTJavaDSLNode printedAST = parse(new StringReader(output));
-    assertTrue(ast.deepEquals(printedAST));
-  }
-
-  @Test
-  public void test2() throws IOException {
-    // Parse input
-    ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/ParseException.java");
-
-    // Prettyprinting input
-    String output = JavaDSLMill.prettyPrint(ast, false);
-
-    // Parsing printed input
-    ASTJavaDSLNode printedAST = parse(new StringReader(output));
-    assertTrue(ast.deepEquals(printedAST));
-  }
-
-  @Test
-  public void test3() throws IOException {
-    // Parse input
-    ASTJavaDSLNode ast = parse("src/test/resources/de/monticore/java/parser/TokenMgrError.java");
-
-    // Prettyprinting input
-    String output = JavaDSLMill.prettyPrint(ast, false);
-
-    // Parsing printed input
-    ASTJavaDSLNode printedAST = parse(new StringReader(output));
-    assertTrue(ast.deepEquals(printedAST));
-  }
-
-  @Test
-  public void test4() throws IOException {
-    // Parse input
-    ASTJavaDSLNode ast = parse("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
-
-    // Prettyprinting input
-    String output = JavaDSLMill.prettyPrint(ast, false);
-
-    // Parsing printed input
-    ASTJavaDSLNode printedAST = parse(new StringReader(output));
-    assertTrue(ast.deepEquals(printedAST));
-  }
-
 }

@@ -71,15 +71,10 @@ public final class JavaDSL2ODDelegator {
     MCArrayTypes2OD mcArrayTypes = new MCArrayTypes2OD(printer, reporting);
     this.traverser.add4MCArrayTypes(mcArrayTypes);
     this.traverser.setMCArrayTypesHandler(mcArrayTypes);
-
-    /*
-     * TODO
-     *  MCBasics2OD does not implement MCBasicsHandler. Figure out if
-     *  this is a bug or intended.
-     */
+    
     MCBasics2OD mcBasics = new MCBasics2OD(printer, reporting);
     this.traverser.add4MCBasics(mcBasics);
-//    this.traverser.setMCBasicsHandler(mcBasics);
+    this.traverser.setMCBasicsHandler(mcBasics);
 
     MCBasicTypes2OD mcBasicTypes = new MCBasicTypes2OD(printer, reporting);
     this.traverser.add4MCBasicTypes(mcBasicTypes);

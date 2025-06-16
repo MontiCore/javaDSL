@@ -16,10 +16,8 @@ import de.monticore.statements.mccommonstatements._ast.ASTEnumConstantSwitchLabe
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTDeclaratorId;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
-import de.monticore.types.mcbasictypes.MCBasicTypesMill;
 import de.monticore.types.mcbasictypes._ast.ASTMCPrimitiveType;
 import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
-import de.monticore.types.typeparameters._ast.ASTTypeParameters;
 
 public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
   
@@ -142,7 +140,15 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
     String name = node.printType();
     return format(name, type);
   }
-
+  
+  public String getIdent(ASTStringLiteral symbol) {
+    return format(symbol.getValue());
+  }
+  
+  public String getIdent(ASTIntLiteral symbol) {
+    return format(String.valueOf(symbol.getValue()));
+  }
+  
   @Override
   public String getIdent(ASTNode a) {
     if (a instanceof ASTConstructorDeclaration) {
@@ -189,9 +195,6 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
     }
     else if (a instanceof ASTFieldDeclaration) {
       return getIdent((ASTFieldDeclaration) a);
-    }
-    else if (a instanceof ASTTypeParameters) {
-      return getIdent((ASTTypeParameters) a);
     }
     else if (a instanceof ASTEnumDeclaration) {
       return getIdent((ASTEnumDeclaration) a);
