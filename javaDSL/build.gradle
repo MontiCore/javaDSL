@@ -49,9 +49,11 @@ tasks.withType(Test).configureEach {
 
 dependencies {
     implementation "de.monticore.lang:cd4analysis:$mc_version"
+    implementation "de.monticore:class2mc:$mc_version"
 
     grammar "de.monticore:monticore-grammar:$mc_version"
 
+    testImplementation testFixtures("de.monticore:monticore-grammar:$mc_version")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit_version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
