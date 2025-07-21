@@ -157,19 +157,15 @@ nokeyword "to";
 abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
 
 symbolrule TypeDeclaration =
-    isAnnotation: boolean ;
+    isAnnotation: boolean
+    isRecord: boolean;
 
-symbol scope ClassDeclaration extends TypeDeclaration
+scope ClassDeclaration extends TypeDeclaration
     =   JavaModifier* "class" Name TypeParameters?
         ("extends" superClass:MCType)?
         ("implements" implementedInterface:(MCType || ",")+)?
         ClassBody
     ;
-
-symbolrule ClassDeclaration =
-    superInterface:MCType*
-    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
-    methods: de.monticore.javalight._symboltable.JavaMethodSymbol* ;
 
 ClassBody
     =   "{" ClassBodyDeclaration* "}"
@@ -181,7 +177,7 @@ ClassBody
  * https://docs.oracle.com/javase/specs/jls/se19/html/jls-8.html#jls-8.10
  */
 
-symbol scope RecordDeclaration extends TypeDeclaration
+scope RecordDeclaration extends TypeDeclaration
     = JavaModifier* "record" Name TypeParameters? RecordHeader
         ("implements" implementedInterface:(MCType || ",")+)?
         RecordBody
@@ -208,7 +204,7 @@ CompactConstructorDeclaration
     = JavaModifier* Name body:MCJavaBlock
     ;
 
-symbol scope InterfaceDeclaration extends TypeDeclaration
+scope InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
         InterfaceBody
@@ -218,7 +214,7 @@ InterfaceBody
     =   "{" InterfaceBodyDeclaration* "}"
     ;
 
-symbol scope EnumDeclaration extends TypeDeclaration
+scope EnumDeclaration extends TypeDeclaration
     =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
@@ -267,7 +263,7 @@ ArrayInitializer implements VariableInitializer
 
 // ANNOTATIONS
 
-symbol scope AnnotationTypeDeclaration extends TypeDeclaration
+scope AnnotationTypeDeclaration extends TypeDeclaration
     =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
 
