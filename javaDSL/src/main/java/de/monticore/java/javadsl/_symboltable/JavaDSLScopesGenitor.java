@@ -19,7 +19,10 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP {
         artifactScope.setPackageName(packageDeclaration.getMCQualifiedName().getQName());
       }
     }
-
+    
+    // add java.lang import as java imports that package per default
+    artifactScope.addImports(new ImportStatement("java.lang", true));
+    
     // TODO figure out how to map static imports
     
     return artifactScope;
