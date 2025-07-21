@@ -220,11 +220,7 @@ scope EnumDeclaration extends TypeDeclaration
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
-symbolrule EnumDeclaration =
-    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
-    methods: de.monticore.javalight._symboltable.JavaMethodSymbol*;
-
-symbol EnumConstantDeclaration
+symbol EnumConstantDeclaration implements Field
     =   Annotation* Name Arguments? ClassBody?
     ;
 
