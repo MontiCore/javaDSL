@@ -191,7 +191,7 @@ public class SpoonUpdater implements CodeUpdater {
     typeMap.put(mcType, type.get());
     return type.get();
   }
-  
+
   /***
    * Retrieves the spoonMethod from the Spoon Model based on the provided
    * mcType and mcMethod. Saves the found spoonMethod in the method map.
@@ -222,30 +222,27 @@ public class SpoonUpdater implements CodeUpdater {
     methodMap.put(mcMethod, method.get());
     return method.get();
   }
-  
+
   /**
    * Compares a mcType and spoonType and returns true if both are identical.
    *
    * @param type The ASTTypeDeclaration representing the type to be compared.
    * @param spoonType The CtType representing the spoon type to be compared.
-   * @return True if the file name of the mcType ends with the simple name
-   *         of the spoonType followed by ".java"; otherwise false.
+   * @return True if the file name of the mcType ends with the simple name of the spoonType followed
+   *     by ".java"; otherwise false.
    */
   protected boolean compare(ASTTypeDeclaration type, CtType<?> spoonType) {
     String fileName = type.get_SourcePositionStart().getFileName().orElse(type.getName());
     return fileName.replaceAll("\\\\", ".").endsWith(spoonType.getSimpleName() + ".java");
   }
-  
+
   /**
-   * Compares a spoonMethod and mcMethod and returns true if both are
-   * identical.
+   * Compares a spoonMethod and mcMethod and returns true if both are identical.
    *
-   * @param mcMethod The ASTMethodDeclaration representing the method to be
-   *                 compared.
-   * @param spoonMethod The CtMethod representing the spoon method to be
-   *                    compared.
-   * @return True if the names, parameter count, and parameter types of both
-   *         methods match; otherwise false.
+   * @param mcMethod The ASTMethodDeclaration representing the method to be compared.
+   * @param spoonMethod The CtMethod representing the spoon method to be compared.
+   * @return True if the names, parameter count, and parameter types of both methods match;
+   *     otherwise false.
    */
   protected boolean compare(ASTMethodDeclaration mcMethod, CtMethod<?> spoonMethod) {
     // compare names
