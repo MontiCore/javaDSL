@@ -306,6 +306,15 @@ MCBasicGenericType implements MCGenericType <20>
     = (AnnotatedName || ".")+ "<" (MCTypeArgument || ",")* ">"
     ;
 
+astrule MCBasicGenericType =
+  method public String printWithoutTypeArguments() {
+    java.util.List<String> names = new ArrayList<>();
+    for(ASTAnnotatedName annotatedName : getAnnotatedNameList()) {
+      names.add(annotatedName.getName());
+    }
+    return String.join(".", names);
+  };
+
 @Override
 MCQualifiedType implements MCObjectType
     = (AnnotatedName || ".")+
