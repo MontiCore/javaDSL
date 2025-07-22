@@ -11,11 +11,15 @@ import de.monticore.io.paths.MCPath;
 import de.monticore.java.java2cd.Java2CDConverter;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTModularCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.symboltable.ImportStatement;
 import de.se_rwth.commons.Names;
+import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
 import de.se_rwth.commons.logging.Log;
 import org.apache.commons.cli.*;
 
@@ -24,22 +28,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
-
+  
+  
+  protected static final String SYMBOLS_OUT_DIRECTORY = "target" + File.separator + "symbols";
+  
+  
   /**
    * main method of the JavaDSL
    *
    * @param args array of the command line arguments
    */
-
   public static void main(String[] args) {
     JavaDSLTool tool = new JavaDSLTool();
     tool.run(args);
@@ -52,7 +56,6 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
    *
    * @param args array of the command line arguments
    */
-
   @Override
   public void run(String[] args) {
     Options options = initOptions();
@@ -77,9 +80,37 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       BasicSymbolsMill.initializeString();
 
       Log.enableFailQuick(false);
-      Collection<ASTCompilationUnit> asts =
-          this.parse(".java", this.createModelPath(cmd).getEntries());
+      List<ASTCompilationUnit> asts =
+          new ArrayList<>(this.parse(".java", this.createModelPath(cmd).getEntries()));
       Log.enableFailQuick(true);
+      
+      if (cmd.hasOption("pp")) {
+        String[] ppTargets = cmd.getOptionValues("pp");
+        if (ppTargets == null || ppTargets.length == 0) {
+          asts.forEach(ast -> storeSymbolsInFolder(ast, SYMBOLS_OUT_DIRECTORY));
+        }
+        else if (ppTargets.length == 1 && isLikelyFolderPath(cmd.getOptionValue("pp"))) {
+          asts.forEach(
+              compUnit -> this.storeSymbolsInFolder(compUnit, cmd.getOptionValue("pp")));
+        }
+        else if (ppTargets.length == asts.size()
+            && ppTargets.length == cmd.getOptionValues("i").length) {
+          for (int i = 0; i < asts.size(); i++) {
+            storeSymbols(
+                (IJavaDSLArtifactScope) asts.get(i).getEnclosingScope(),
+                ppTargets[i]
+            );
+          }
+        }
+        else {
+          Log.error(String.format("Received '%s' output files for the prettyprint option. "
+                  + "Expected that '%s' many output files are specified. "
+                  + "If output files for the prettyprint option are specified, then the number "
+                  + "of specified output files must be equal to the number of specified input files, "
+                  + "or one outputfolder should be specified.",
+              cmd.getOptionValues("pp").length, asts.size()));
+        }
+      }
 
       if (cmd.hasOption("path")) {
         String[] paths = splitPathEntries(cmd.getOptionValue("path"));
@@ -92,8 +123,32 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
               .collect(Collectors.toList());
 
       if (cmd.hasOption("s")) {
-        for (IJavaDSLArtifactScope scope : scopes) {
-          this.storeSymTab(scope, cmd.getOptionValue("s"));
+        if (cmd.getOptionValues("s") == null || cmd.getOptionValues("s").length == 0) {
+          for (ASTCompilationUnit compilationUnit : asts) {
+            storeSymbolsInFolder(compilationUnit, SYMBOLS_OUT_DIRECTORY);
+          }
+        }
+        else if (cmd.getOptionValues("s").length == 1 &&
+            isLikelyFolderPath(cmd.getOptionValue("s"))) {
+          asts.forEach(
+              compUnit -> this.storeSymbolsInFolder(compUnit, cmd.getOptionValue("s")));
+        }
+        else if (cmd.getOptionValues("s").length == asts.size()
+            && cmd.getOptionValues("s").length == cmd.getOptionValues("i").length) {
+          for (int i = 0; i < asts.size(); i++) {
+            storeSymbols(
+                (IJavaDSLArtifactScope) asts.get(i).getEnclosingScope(),
+                cmd.getOptionValues("s")[i]
+            );
+          }
+        }
+        else {
+          Log.error(String.format("Received '%s' output files for the storesymbols option. "
+                  + "Expected that '%s' many output files are specified. "
+                  + "If output files for the storesymbols option are specified, then the number "
+                  + "of specified output files must be equal to the number of specified input files, "
+                  + "or one outputfolder should be specified.",
+              cmd.getOptionValues("s").length, asts.size()));
         }
       }
 
@@ -180,11 +235,8 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
    * @return path of all models
    */
   public MCPath createModelPath(CommandLine cmd) {
-    if (cmd.hasOption("i")) {
-      return new MCPath(splitPathEntries(cmd.getOptionValues("i")));
-    } else {
-      return new MCPath();
-    }
+    String[] inputPathEntries = cmd.getOptionValues("i");
+    return new MCPath(splitPathEntries(inputPathEntries));
   }
 
   /**
@@ -243,38 +295,79 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
     }
     return Collections.emptySet();
   }
-
-
+  
   /**
-   * creates the symboltable for the given ast
+   * Stores the symbols for ast in the specified folder.
    *
-   * @param ast the input ast
-   * @param cmd cli arguments
-   * @return the symbol-table of the ast
+   * @param compilationUnit The ast of the SD
+   * @param folderPath      The folder to store the symbols in
    */
-
-  public IJavaDSLArtifactScope createSymbolTable(ASTCompilationUnit ast, CommandLine cmd) {
-    JavaDSLScopesGenitorDelegator genitor = JavaDSLMill.scopesGenitorDelegator();
-    IJavaDSLArtifactScope scope = genitor.createFromAST(ast);
-    if (cmd.hasOption("c2mc")) {
-      scope.addImports(new ImportStatement("java.lang", true));
-    }
-    return scope;
+  protected void storeSymbolsInFolder(ASTCompilationUnit compilationUnit, String folderPath) {
+    String relativeFilePath = getRelativeFilePath(compilationUnit).concat(".javasym");
+    Path filePath = Paths.get(folderPath, relativeFilePath);
+    storeSymbols((IJavaDSLArtifactScope) compilationUnit.getEnclosingScope(), filePath.toString());
   }
-
+  
   /**
-   * prints the symboltable of the given scope out to a file
+   * finds the file (without extension) for ast,
+   * given its package and name.
+   * E.g.: model with qualified name a.b.c
+   * "a/b/c"
    *
-   * @param scope symboltable to store
-   * @param path location of the file or directory containing the printed table
+   * @param compilationUnit The ast of the model
    */
-  public void storeSymTab(IJavaDSLArtifactScope scope, String path) {
-    if (Path.of(path).toFile().isFile()) {
-      this.storeSymbols(scope, path);
+  protected String getRelativeFilePath(ASTCompilationUnit compilationUnit) {
+    Optional<ASTMCQualifiedName> qualifiedName = Optional.empty();
+    String artifactName = "";
+    if (JavaDSLMill.typeDispatcher().isJavaDSLASTOrdinaryCompilationUnit(compilationUnit)) {
+      ASTOrdinaryCompilationUnit ast = JavaDSLMill.typeDispatcher().asJavaDSLASTOrdinaryCompilationUnit(compilationUnit);
+      if (ast.isPresentPackageDeclaration()) {
+        qualifiedName = Optional.of(ast.getPackageDeclaration().getMCQualifiedName());
+      }
+      if (ast.getTypeDeclarationList().size() == 1) {
+        artifactName = ast.getTypeDeclarationList().get(0).getName();
+      } else {
+        Optional<ASTTypeDeclaration> publicTypeDeclaration = ast.getTypeDeclarationList().stream().filter(x -> x.getSymbol().isIsPublic()).findFirst();
+        if (publicTypeDeclaration.isPresent()) {
+          artifactName = publicTypeDeclaration.get().getName();
+        }
+      }
+    } else if (JavaDSLMill.typeDispatcher().isJavaDSLASTModularCompilationUnit(compilationUnit)) {
+      ASTModularCompilationUnit ast = JavaDSLMill.typeDispatcher().asJavaDSLASTModularCompilationUnit(compilationUnit);
+      qualifiedName = Optional.of(ast.getModuleDeclaration().getMCQualifiedName());
+    }
+    
+    if (qualifiedName.isPresent()) {
+      String packagePath = qualifiedName.get().getQName().replace('.', File.separatorChar);
+      return Paths.get(packagePath, artifactName).toString();
     } else {
-      this.storeSymbols(scope, Paths.get(
-          path, Names.getPathFromPackage(scope.getFullName()) + ".javasym").toString());
+      if (artifactName.isBlank()) {
+        Log.error("0xTODO: Could not determine symbol table export path. "
+            + "Make sure that the file contains exactly one public class!");
+      }
+      return Paths.get(artifactName).toString();
     }
   }
-
+  
+  /**
+   * heuristic to test if the path seems to be a folder path
+   *
+   * @param pathStr the path to check
+   * @return whether we assume it is a path to a folder
+   */
+  protected boolean isLikelyFolderPath(String pathStr) {
+    // if it already exists, check:
+    Path path = Paths.get(pathStr);
+    File file = path.toFile();
+    if (file.exists()) {
+      return file.isDirectory();
+    }
+    // if it does not exist yet,
+    // check if the last part ends with an extension
+    // note that "a/b/.c" is expected to be a folder,
+    // "a/b/c.d" is not expected to be a folder,
+    // so we skip the first character
+    return !path.getFileName().toString().substring(1).contains(".");
+  }
+  
 }
