@@ -38,17 +38,14 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 
 public class JavaLoader {
-  
+
   /**
-   * Parses a class diagram, builds the symbol table, and checks the
-   * consistency conditions (CoCos).
+   * Parses a class diagram, builds the symbol table, and checks the consistency conditions (CoCos).
    *
-   * @param file The class diagram file to be parsed. It must have a .cd
-   *             extension.
-   * @return The resulting ASTCDCompilationUnit created from the class
-   *         diagram.
-   * @throws AssertionError if the provided file does not have a .cd
-   *         extension, or if the AST could not be created successfully.
+   * @param file The class diagram file to be parsed. It must have a .cd extension.
+   * @return The resulting ASTCDCompilationUnit created from the class diagram.
+   * @throws AssertionError if the provided file does not have a .cd extension, or if the AST could
+   *     not be created successfully.
    */
   public static ASTCDCompilationUnit loadCD(File file) {
     // parse the class diagram
@@ -105,13 +102,12 @@ public class JavaLoader {
     ast.accept(c.getTraverser());
     ast.setEnclosingScope(as);
   }
-  
+
   /**
    * Loads a Java file, transforms it to an AST, and creates symbol tables.
    *
    * @param javaFile The Java file to be loaded and processed.
-   * @return The resulting ASTOrdinaryCompilationUnit created from the
-   *         Java file.
+   * @return The resulting ASTOrdinaryCompilationUnit created from the Java file.
    */
   public static ASTOrdinaryCompilationUnit loadJava(File javaFile) {
     assertTrue(javaFile.getName().endsWith(".java"));
@@ -137,7 +133,7 @@ public class JavaLoader {
 
     return (ASTOrdinaryCompilationUnit) ast.get();
   }
-  
+
   /**
    * Prints a Java ASTNode as a formatted string.
    *
@@ -163,7 +159,7 @@ public class JavaLoader {
       Log.error("Exception occur when writing the file " + path);
     }
   }
-  
+
   /**
    * Reads recursively all Java files in a directory and its subdirectories.
    *
@@ -175,7 +171,7 @@ public class JavaLoader {
     readJavaCode(directoryPath, res);
     return res.stream().map(JavaLoader::loadJava).collect(Collectors.toSet());
   }
-  
+
   /**
    * Reads recursively all Java files in a directory and its subdirectories.
    *

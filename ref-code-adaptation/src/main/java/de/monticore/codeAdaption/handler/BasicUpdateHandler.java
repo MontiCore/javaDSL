@@ -176,13 +176,19 @@ public class BasicUpdateHandler {
   }
 
   protected ISymbol getConTypeSymbol(CDTypeSymbol symbol) {
-    return checker.getConElements(symbol.getAstNode()).iterator().next().getSymbol();
+    return checker
+        .getIncarnationMapping()
+        .getIncarnations(symbol.getAstNode())
+        .iterator()
+        .next()
+        .getSymbol();
   }
 
   protected ISymbol getConAttributeSymbol(FieldSymbol symbol) {
 
     return checker
-        .getConElements((ASTCDAttribute) symbol.getAstNode())
+        .getIncarnationMapping()
+        .getIncarnations((ASTCDAttribute) symbol.getAstNode())
         .iterator()
         .next()
         .getSymbol();
