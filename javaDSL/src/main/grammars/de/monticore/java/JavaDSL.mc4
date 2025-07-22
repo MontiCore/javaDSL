@@ -154,6 +154,7 @@ nokeyword "with";
 nokeyword "to";
 
 // Type declarations
+// TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
 abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
 
 symbolrule TypeDeclaration =
@@ -167,7 +168,8 @@ scope ClassDeclaration extends TypeDeclaration
         ClassBody
     ;
 
-ClassBody
+// TODO Replace with MCJavaBlock? -> with CoCos?
+scope(non_exporting ordered) ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
 
@@ -196,7 +198,8 @@ astrule RecordComponent =
       return this.isPresentVariableArity();
     };
 
-RecordBody
+// TODO Replace with MCJavaBlock? -> with CoCos?
+scope(non_exporting ordered) RecordBody
     = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
     ;
 
@@ -210,7 +213,8 @@ scope InterfaceDeclaration extends TypeDeclaration
         InterfaceBody
     ;
 
-InterfaceBody
+// TODO Replace with MCJavaBlock? -> with CoCos?
+scope(non_exporting ordered) InterfaceBody
     =   "{" InterfaceBodyDeclaration* "}"
     ;
 
@@ -263,6 +267,7 @@ scope AnnotationTypeDeclaration extends TypeDeclaration
     =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
 
+// TODO Replace with MCJavaBlock? -> with CoCos?
 AnnotationTypeBody
     =   "{" (AnnotationTypeElementDeclaration)* "}"
     ;
@@ -308,6 +313,7 @@ MCQualifiedType implements MCObjectType
 
 // STATEMENTS / BLOCKS
 
+// TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
 interface Statement extends MCBlockStatement ;
 
 scope JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
