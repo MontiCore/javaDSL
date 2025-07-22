@@ -47,7 +47,7 @@ public class AdapterUtils {
     }
     return "";
   }
-  
+
   /**
    * Reads a Java file and removes multi-line and single-line comments.
    *
