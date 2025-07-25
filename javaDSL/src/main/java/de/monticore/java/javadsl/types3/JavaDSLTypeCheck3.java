@@ -11,6 +11,7 @@ import de.monticore.literals.mcjavaliterals.types3.MCJavaLiteralsTypeVisitor;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.types.mcbasictypes.types3.MCBasicTypesTypeVisitor;
 import de.monticore.types.mccollectiontypes.types3.MCCollectionTypesTypeVisitor;
+import de.monticore.types.mcfullgenerictypes.types3.MCFullGenericTypesTypeVisitor;
 import de.monticore.types.mcsimplegenerictypes.types3.MCSimpleGenericTypesTypeVisitor;
 import de.monticore.types3.Type4Ast;
 import de.monticore.types3.generics.context.InferenceContext4Ast;
@@ -35,6 +36,18 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     JavaDSLTraverser traverser = JavaDSLMill.traverser();
     Type4Ast type4Ast = new Type4Ast();
     InferenceContext4Ast ctx4Ast = new InferenceContext4Ast();
+    
+    JavaDSLTypeVisitor visJavaDSL = new JavaDSLTypeVisitor();
+    visJavaDSL.setType4Ast(type4Ast);
+    traverser.add4JavaDSL(visJavaDSL);
+    
+    JavaDSLArrayTypesTypeVisitor visJavaDSLArrayTypesType = new JavaDSLArrayTypesTypeVisitor();
+    visJavaDSLArrayTypesType.setType4Ast(type4Ast);
+    traverser.add4JavaDSL(visJavaDSLArrayTypesType);
+    
+    JavaDSLSimpleGenericTypesTypeVisitor visSimpleGenericTypesType = new JavaDSLSimpleGenericTypesTypeVisitor();
+    visSimpleGenericTypesType.setType4Ast(type4Ast);
+    traverser.add4JavaDSL(visSimpleGenericTypesType);
     
     // Literals
     MCJavaLiteralsTypeVisitor visMCJavaLiterals = new MCJavaLiteralsTypeVisitor();
@@ -85,6 +98,10 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     MCSimpleGenericTypesTypeVisitor visMCSimpleGenericTypes = new MCSimpleGenericTypesTypeVisitor();
     visMCSimpleGenericTypes.setType4Ast(type4Ast);
     traverser.add4MCSimpleGenericTypes(visMCSimpleGenericTypes);
+    
+    MCFullGenericTypesTypeVisitor visMCFullGenericTypes = new MCFullGenericTypesTypeVisitor();
+    visMCFullGenericTypes.setType4Ast(type4Ast);
+    traverser.add4MCFullGenericTypes(visMCFullGenericTypes);
     
     JavaDSLTypeCheck3 javaDSLTC3 = new JavaDSLTypeCheck3(traverser, type4Ast, ctx4Ast);
     javaDSLTC3.setThisAsDelegate();
