@@ -18,6 +18,10 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP {
         ASTPackageDeclaration packageDeclaration = ordinaryCompilationUnit.getPackageDeclaration();
         artifactScope.setPackageName(packageDeclaration.getMCQualifiedName().getQName());
       }
+      
+      for (ASTImportDeclaration importDeclaration : ordinaryCompilationUnit.getImportDeclarationList()) {
+        artifactScope.addImports(new ImportStatement(importDeclaration.getMCQualifiedName().getQName(), importDeclaration.isSTAR()));
+      }
     }
     
     // add java.lang import as java imports that package per default
