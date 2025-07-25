@@ -155,13 +155,14 @@ nokeyword "to";
 
 // Type declarations
 // TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
-abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
+abstract symbol scope(shadowing) TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
 
 symbolrule TypeDeclaration =
     isAnnotation: boolean
     isRecord: boolean;
 
-scope ClassDeclaration extends TypeDeclaration
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) ClassDeclaration extends TypeDeclaration
     =   JavaModifier* "class" Name TypeParameters?
         ("extends" superClass:MCType)?
         ("implements" implementedInterface:(MCType || ",")+)?
@@ -169,7 +170,7 @@ scope ClassDeclaration extends TypeDeclaration
     ;
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
-scope(non_exporting ordered) ClassBody
+ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
 
@@ -179,7 +180,8 @@ scope(non_exporting ordered) ClassBody
  * https://docs.oracle.com/javase/specs/jls/se19/html/jls-8.html#jls-8.10
  */
 
-scope RecordDeclaration extends TypeDeclaration
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) RecordDeclaration extends TypeDeclaration
     = JavaModifier* "record" Name TypeParameters? RecordHeader
         ("implements" implementedInterface:(MCType || ",")+)?
         RecordBody
@@ -199,7 +201,7 @@ astrule RecordComponent =
     };
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
-scope(non_exporting ordered) RecordBody
+RecordBody
     = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
     ;
 
@@ -207,24 +209,27 @@ CompactConstructorDeclaration
     = JavaModifier* Name body:MCJavaBlock
     ;
 
-scope InterfaceDeclaration extends TypeDeclaration
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
         InterfaceBody
     ;
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
-scope(non_exporting ordered) InterfaceBody
+InterfaceBody
     =   "{" InterfaceBodyDeclaration* "}"
     ;
 
-scope EnumDeclaration extends TypeDeclaration
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) EnumDeclaration extends TypeDeclaration
     =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
-symbol EnumConstantDeclaration implements Field
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) symbol EnumConstantDeclaration implements Field
     =   Annotation* Name Arguments? ClassBody?
     ;
 
@@ -262,22 +267,25 @@ ArrayInitializer implements VariableInitializer
     ;
 
 // ANNOTATIONS
-
-scope AnnotationTypeDeclaration extends TypeDeclaration
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) AnnotationTypeDeclaration extends TypeDeclaration
     =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
 
-// TODO Replace with MCJavaBlock? -> with CoCos?
+// TODO Replace with MCJavaBlock? -> with CoCos? | Replace with { InterfaceBodyDeclaration }
 AnnotationTypeBody
     =   "{" (AnnotationTypeElementDeclaration)* "}"
     ;
 
 interface AnnotationTypeElementDeclaration ;
 
-symbol scope AnnotationMethod implements AnnotationTypeElementDeclaration
+// TODO Replace with MethodDeclaration?
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing non_exporting ordered) AnnotationMethod implements AnnotationTypeElementDeclaration, JavaMethod
     =   JavaModifier* MCType Name "(" ")" DefaultValue? ";"
     ;
 
+// TODO Replace with ConstDeclaration?
 AnnotationConstant implements AnnotationTypeElementDeclaration
     =   JavaModifier* MCType (VariableDeclarator || ",")+ ";"
     ;
@@ -325,7 +333,8 @@ MCQualifiedType implements MCObjectType
 // TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
 interface Statement extends MCBlockStatement ;
 
-scope JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
+// TODO: Remove scope duplicate when monticore#4726 is fixed
+scope(shadowing) JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
     =   "{" MCBlockStatement* "}"
     ;
 
@@ -361,6 +370,7 @@ TypeArguments
 
 interface FinallyBlock ;
 
+// TODO: Replace with Label from MCLowLevelStatements
 LabeledStatement implements Statement
     =   label:Name ":" Statement
     ;
@@ -392,7 +402,7 @@ JavaAnnotation extends JavaModifier implements ElementValue
             ( "(" AnnotationArguments? ")" )?
     ;
 
-AnonymousClass implements Creator
+scope(shadowing) AnonymousClass implements Creator
     =   MCType Arguments ClassBody?
     ;
 
