@@ -15,10 +15,7 @@ import de.monticore.java.javadsl._ast.ASTModularCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
-import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
-import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
-import de.monticore.symboltable.ImportStatement;
-import de.se_rwth.commons.Names;
+import de.monticore.java.utils.JavaDSLSymbolTableUtil;
 import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
 import de.se_rwth.commons.logging.Log;
 import org.apache.commons.cli.*;
@@ -75,9 +72,9 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
 
       Log.init();
       JavaDSLMill.init();
-
-      BasicSymbolsMill.initializePrimitives();
-      BasicSymbolsMill.initializeString();
+      
+      boolean useClass2MC = cmd.hasOption("c2mc");
+      JavaDSLSymbolTableUtil.prepareMill(useClass2MC);
 
       Log.enableFailQuick(false);
       List<ASTCompilationUnit> asts =
@@ -116,12 +113,10 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
         String[] paths = splitPathEntries(cmd.getOptionValue("path"));
         JavaDSLMill.globalScope().setSymbolPath(new MCPath(paths));
       }
-
-      Collection<IJavaDSLArtifactScope> scopes =
-          asts.stream()
-              .map(ast -> createSymbolTable(ast, cmd))
-              .collect(Collectors.toList());
-
+      
+      // Build symbol table and run symbol table completer
+      asts.forEach(JavaDSLSymbolTableUtil::buildSymbolTable);
+      
       if (cmd.hasOption("s")) {
         if (cmd.getOptionValues("s") == null || cmd.getOptionValues("s").length == 0) {
           for (ASTCompilationUnit compilationUnit : asts) {
