@@ -108,11 +108,13 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
               cmd.getOptionValues("pp").length, asts.size()));
         }
       }
-
+      
+      MCPath symbolPath = new MCPath();
       if (cmd.hasOption("path")) {
-        String[] paths = splitPathEntries(cmd.getOptionValue("path"));
-        JavaDSLMill.globalScope().setSymbolPath(new MCPath(paths));
+        String[] paths = cmd.getOptionValues("path");
+        Arrays.stream(paths).forEach(p -> symbolPath.addEntry(Paths.get(p)));
       }
+      JavaDSLMill.globalScope().setSymbolPath(symbolPath);
       
       // Build symbol table and run symbol table completer
       asts.forEach(JavaDSLSymbolTableUtil::buildSymbolTable);
