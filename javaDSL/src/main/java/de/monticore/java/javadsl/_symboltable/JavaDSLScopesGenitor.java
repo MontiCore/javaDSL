@@ -11,6 +11,11 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP {
   public IJavaDSLArtifactScope createFromAST(ASTCompilationUnit rootNode) {
     IJavaDSLArtifactScope artifactScope = super.createFromAST(rootNode);
     
+    // Java allows unnamed packages, so we set a name if needed
+    if (!artifactScope.isPresentName()) {
+      artifactScope.setName("");
+    }
+    
     if (rootNode instanceof ASTOrdinaryCompilationUnit) {
       ASTOrdinaryCompilationUnit ordinaryCompilationUnit = (ASTOrdinaryCompilationUnit) rootNode;
       
