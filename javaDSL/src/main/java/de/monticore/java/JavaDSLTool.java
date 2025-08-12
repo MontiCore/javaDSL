@@ -312,6 +312,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
    * "a/b/c"
    *
    * @param compilationUnit The ast of the model
+   * @return the relative file path as String based on the models qualified name
    */
   protected String getRelativeFilePath(ASTCompilationUnit compilationUnit) {
     Optional<ASTMCQualifiedName> qualifiedName = Optional.empty();

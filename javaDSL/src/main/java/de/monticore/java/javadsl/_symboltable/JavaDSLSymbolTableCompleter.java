@@ -79,6 +79,7 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
     symbol.setIsFinal(true);
     symbol.setIsReadOnly(true);
     symbol.setIsPublic(true);
+    symbol.setIsEnumConstant(true);
     
     final String enumName = node.getEnclosingScope().getName();
     final Optional<TypeDeclarationSymbol> enumDeclaration =
