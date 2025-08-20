@@ -241,6 +241,9 @@ ClassBlock implements ClassBodyDeclaration
     =   (["static"])? JavaBlock
     ;
 
+@Override
+EmptyStatement implements ClassBodyDeclaration;
+
 interface ClassMemberDeclaration extends ClassBodyDeclaration ;
 
 interface MethodBody ;
