@@ -17,6 +17,7 @@ import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.utils.JavaDSLSymbolTableUtil;
 import de.monticore.types.mcbasictypes._ast.ASTMCQualifiedName;
+import de.se_rwth.commons.logging.Finding;
 import de.se_rwth.commons.logging.Log;
 import org.apache.commons.cli.*;
 
@@ -84,9 +85,19 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       JavaDSLMill.globalScope().setSymbolPath(symbolPath);
 
       Log.enableFailQuick(false);
-      List<ASTCompilationUnit> asts =
-          new ArrayList<>(this.parse(".java", this.createModelPath(cmd).getEntries()));
+      Collection<ASTCompilationUnit> parsed = this.parse(".java", this.createModelPath(cmd).getEntries());
+      List<ASTCompilationUnit> asts = parsed.stream().filter(Objects::nonNull).collect(Collectors.toList());
+      if (asts.size() < parsed.size()) {
+        Set<String> errorFiles =
+            Log.getFindings().stream().map(Finding::getSourcePosition).filter(Optional::isPresent)
+                .map(x -> x.get().getFileName()).filter(Optional::isPresent).map(Optional::get)
+                .collect(Collectors.toSet());
+        Log.warn(String.format("There are %d files that could not be parsed!", errorFiles.size()));
+      }
+      Log.clearFindings();
       Log.enableFailQuick(true);
+      
+      System.out.printf("Successfully parsed %d files%n", asts.size());
       
       if (cmd.hasOption("pp")) {
         String[] ppTargets = cmd.getOptionValues("pp");
