@@ -75,6 +75,13 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       
       boolean useClass2MC = cmd.hasOption("c2mc");
       JavaDSLSymbolTableUtil.prepareMill(useClass2MC);
+      
+      MCPath symbolPath = new MCPath();
+      if (cmd.hasOption("path")) {
+        String[] paths = cmd.getOptionValues("path");
+        Arrays.stream(paths).forEach(p -> symbolPath.addEntry(Paths.get(p)));
+      }
+      JavaDSLMill.globalScope().setSymbolPath(symbolPath);
 
       Log.enableFailQuick(false);
       List<ASTCompilationUnit> asts =
@@ -109,15 +116,10 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
         }
       }
       
-      MCPath symbolPath = new MCPath();
-      if (cmd.hasOption("path")) {
-        String[] paths = cmd.getOptionValues("path");
-        Arrays.stream(paths).forEach(p -> symbolPath.addEntry(Paths.get(p)));
+      if (cmd.hasOption("s") || cmd.hasOption("o")) {
+        // Build symbol table and run symbol table completer
+        asts.forEach(JavaDSLSymbolTableUtil::buildSymbolTable);
       }
-      JavaDSLMill.globalScope().setSymbolPath(symbolPath);
-      
-      // Build symbol table and run symbol table completer
-      asts.forEach(JavaDSLSymbolTableUtil::buildSymbolTable);
       
       if (cmd.hasOption("s")) {
         if (cmd.getOptionValues("s") == null || cmd.getOptionValues("s").length == 0) {
