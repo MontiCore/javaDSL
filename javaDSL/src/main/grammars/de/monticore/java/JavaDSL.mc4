@@ -122,10 +122,11 @@ RequiresDirective implements ModuleDirective
     = "requires" RequiresModifier? MCQualifiedName ";"
     ;
 
-enum RequiresModifier
-    = "static"
-    | "transitive"
-    ;
+
+interface RequiresModifier;
+
+StaticModifier implements RequiresModifier = ["static"];
+TransitiveModifier implements RequiresModifier = ["transitive"];
 
 ExportsDirective implements ModuleDirective
     = "exports" MCQualifiedName ("to" toModules:(MCQualifiedName || ",")+)? ";"
@@ -152,6 +153,7 @@ nokeyword "uses";
 nokeyword "provides";
 nokeyword "with";
 nokeyword "to";
+nokeyword "transitive";
 
 // Type declarations
 // TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
