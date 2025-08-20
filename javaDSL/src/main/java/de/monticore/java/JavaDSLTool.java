@@ -84,17 +84,17 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       if (cmd.hasOption("pp")) {
         String[] ppTargets = cmd.getOptionValues("pp");
         if (ppTargets == null || ppTargets.length == 0) {
-          asts.forEach(ast -> storeSymbolsInFolder(ast, SYMBOLS_OUT_DIRECTORY));
+          asts.forEach(ast -> prettyPrintInFolder(ast, SYMBOLS_OUT_DIRECTORY));
         }
         else if (ppTargets.length == 1 && isLikelyFolderPath(cmd.getOptionValue("pp"))) {
           asts.forEach(
-              compUnit -> this.storeSymbolsInFolder(compUnit, cmd.getOptionValue("pp")));
+              compUnit -> prettyPrintInFolder(compUnit, cmd.getOptionValue("pp")));
         }
         else if (ppTargets.length == asts.size()
             && ppTargets.length == cmd.getOptionValues("i").length) {
           for (int i = 0; i < asts.size(); i++) {
-            storeSymbols(
-                (IJavaDSLArtifactScope) asts.get(i).getEnclosingScope(),
+            prettyPrintInFolder(
+                asts.get(i),
                 ppTargets[i]
             );
           }
@@ -296,13 +296,25 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
   /**
    * Stores the symbols for ast in the specified folder.
    *
-   * @param compilationUnit The ast of the SD
+   * @param compilationUnit The ast of the Java CompilationUnit
    * @param folderPath      The folder to store the symbols in
    */
   protected void storeSymbolsInFolder(ASTCompilationUnit compilationUnit, String folderPath) {
     String relativeFilePath = getRelativeFilePath(compilationUnit).concat(".javasym");
     Path filePath = Paths.get(folderPath, relativeFilePath);
     storeSymbols((IJavaDSLArtifactScope) compilationUnit.getEnclosingScope(), filePath.toString());
+  }
+  
+  /**
+   * Stores the pretty printed result for ast in the specified folder.
+   *
+   * @param compilationUnit The ast of the Java CompilationUnit
+   * @param folderPath      The folder to store the pret
+   */
+  protected void prettyPrintInFolder(ASTCompilationUnit compilationUnit, String folderPath) {
+    String relativeFilePath = getRelativeFilePath(compilationUnit).concat(".java");
+    Path filePath = Paths.get(folderPath, relativeFilePath);
+    prettyPrint(compilationUnit, filePath.toString());
   }
   
   /**
