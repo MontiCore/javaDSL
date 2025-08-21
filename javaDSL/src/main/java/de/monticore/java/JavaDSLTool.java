@@ -129,7 +129,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       
       if (cmd.hasOption("s") || cmd.hasOption("o")) {
         // Build symbol table and run symbol table completer
-        asts.forEach(JavaDSLSymbolTableUtil::buildSymbolTable);
+        JavaDSLSymbolTableUtil.buildSymbolTable(asts);
       }
       
       if (cmd.hasOption("s")) {

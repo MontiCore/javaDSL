@@ -14,6 +14,9 @@ import de.monticore.statements.mcvardeclarationstatements._symboltable.MCVarDecl
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.types.typeparameters._symboltable.TypeParametersSTCompleteTypes;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class JavaDSLSymbolTableUtil {
   public static void prepareMill(boolean enableC2MC) {
     JavaDSLMill.globalScope().clear();
@@ -29,6 +32,12 @@ public class JavaDSLSymbolTableUtil {
   public static IJavaDSLArtifactScope buildSymbolTable(ASTCompilationUnit ast) {
     IJavaDSLArtifactScope as = runSymTabGenitor(ast);
     runSymTabCompleter(ast);
+    return as;
+  }
+  
+  public static List<IJavaDSLArtifactScope> buildSymbolTable(List<ASTCompilationUnit> asts) {
+    List<IJavaDSLArtifactScope> as = asts.stream().map(JavaDSLSymbolTableUtil::runSymTabGenitor).collect(Collectors.toList());
+    asts.forEach(JavaDSLSymbolTableUtil::runSymTabCompleter);
     return as;
   }
   
