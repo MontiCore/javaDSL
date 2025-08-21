@@ -8,8 +8,6 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._visitor.MCCommonStatementsVisitor2;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
-import de.monticore.statements.mcvardeclarationstatements._visitor.MCVarDeclarationStatementsVisitor2;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.*;
 
@@ -123,8 +121,8 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
 
     JavaDSLTraverser traverser = JavaDSLMill.traverser();
 
-    MCVarDeclarationStatementsVisitor2 localVarCollector =
-        new MCVarDeclarationStatementsVisitor2() {
+    JavaDSLVisitor2 localVarCollector =
+        new JavaDSLVisitor2() {
           @Override
           public void visit(ASTLocalVariableDeclaration node) {
             localVars.add(node);
@@ -139,7 +137,7 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
           }
         };
 
-    traverser.add4MCVarDeclarationStatements(localVarCollector);
+    traverser.add4JavaDSL(localVarCollector);
     traverser.add4MCCommonStatements(formalParamVisitor);
     node.accept(traverser);
     localVarsMap.put(node, localVars);
