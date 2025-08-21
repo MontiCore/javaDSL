@@ -1,9 +1,11 @@
 package de.monticore.java.javadsl._symboltable;
 
+import de.monticore.ast.ASTNode;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
 import de.monticore.javalight._ast.ASTAnnotation;
+import de.monticore.javalight._ast.ASTConstructorDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
@@ -102,6 +104,19 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
     node.getSpannedScope().setShadowing(true);
     node.getSpannedScope().setExportingSymbols(false);
     node.getSpannedScope().setOrdered(true);
+  }
+  
+  @Override
+  public void endVisit(ASTConstructorDeclaration node) {
+    JavaMethodSymbol symbol = node.getSymbol();
+    IJavaDSLScope enclosingScope = JavaDSLMill.typeDispatcher().asJavaDSLIJavaDSLScope(node.getEnclosingScope());
+    ASTNode enclosingScopeNode = enclosingScope.getAstNode();
+    if (JavaDSLMill.typeDispatcher().isJavaDSLASTClassDeclaration(enclosingScopeNode)) {
+      ASTClassDeclaration enclosingClass = JavaDSLMill.typeDispatcher().asJavaDSLASTClassDeclaration(enclosingScopeNode);
+      symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
+    } else {
+      Log.error("0xTODO: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
+    }
   }
   
   @Override
