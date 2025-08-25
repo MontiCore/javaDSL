@@ -1,6 +1,7 @@
 package de.monticore.java.utils;
 
 import de.monticore.class2mc.Class2MCResolver;
+import de.monticore.class2mc.OOClass2MCResolver;
 import de.monticore.expressions.lambdaexpressions._symboltable.LambdaExpressionsSTCompleteTypes2;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
@@ -24,7 +25,7 @@ public class JavaDSLSymbolTableUtil {
     BasicSymbolsMill.initializePrimitives();
     
     if (enableC2MC) {
-      Class2MCResolver resolver = new Class2MCResolver();
+      Class2MCResolver resolver = new OOClass2MCResolver();
       JavaDSLMill.globalScope().addAdaptedTypeSymbolResolver(resolver);
     }
   }
