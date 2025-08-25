@@ -410,7 +410,7 @@ JavaAnnotation extends JavaModifier implements ElementValue
             ( "(" AnnotationArguments? ")" )?
     ;
 
-scope(shadowing) AnonymousClass implements Creator
+scope(shadowing) AnonymousClass extends ClassCreator implements Creator
     =   MCType Arguments ClassBody?
     ;
 
