@@ -189,6 +189,8 @@ scope(shadowing) RecordDeclaration extends TypeDeclaration
         RecordBody
     ;
 
+nokeyword "record";
+
 RecordHeader
     = "(" (RecordComponent || ",")* ")"
     ;
