@@ -374,10 +374,12 @@ ClassCreatorRest
 // Add support for 'var'
 @Override
 LocalVariableDeclaration
-    = MCModifier* ([key("var")] | MCType) (VariableDeclarator || ",")+ ;
+    = MCModifier* (["var"] | MCType) (VariableDeclarator || ",")+ ;
 
 @Override
-LambdaParameter implements Variable = ([key("var")] | MCType)? Name;
+LambdaParameter implements Variable = (["var"] | MCType)? Name;
+
+nokeyword "var";
 
 /*
  * TODO Remove this
