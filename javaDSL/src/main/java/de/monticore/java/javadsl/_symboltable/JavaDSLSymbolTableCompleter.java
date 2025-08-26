@@ -92,7 +92,7 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
       symbol.setType(typeObject);
     }
     else {
-      Log.error("0xTODO: Could not resolve enclosing enum declaration",
+      Log.error("0x0x7A003: Could not resolve enclosing enum declaration",
           node.get_SourcePositionStart());
     }
   }
@@ -115,7 +115,7 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
       ASTClassDeclaration enclosingClass = JavaDSLMill.typeDispatcher().asJavaDSLASTClassDeclaration(enclosingScopeNode);
       symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
     } else {
-      Log.error("0xTODO: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
+      Log.error("0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
     }
   }
   

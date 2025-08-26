@@ -365,7 +365,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       return Paths.get(packagePath, artifactName).toString();
     } else {
       if (artifactName.isBlank()) {
-        Log.error("0xTODO: Could not determine symbol table export path. "
+        Log.error("0x7A005: Could not determine symbol table export path. "
             + "Make sure that the file contains exactly one public class!");
       }
       return Paths.get(artifactName).toString();
