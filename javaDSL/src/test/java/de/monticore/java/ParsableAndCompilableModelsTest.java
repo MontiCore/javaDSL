@@ -20,6 +20,7 @@ public class ParsableAndCompilableModelsTest extends AbstractTest {
       "src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleInterfaceTestModel.java",
       "src/test/resources/parsableAndCompilableModels/simpleTestClasses/EmptyClass.java",
       "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java",
+      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/VarVariables.java",
       "src/test/resources/parsableAndCompilableModels/simpleTestClasses/OneFieldClass.java",
       "src/test/resources/parsableAndCompilableModels/simpleTestClasses/QualifiedNameTestClass.java",
       // Stressful package

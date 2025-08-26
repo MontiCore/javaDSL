@@ -10,7 +10,7 @@ import de.monticore.codeAdaption.matcher.VariableMatcher;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.symboltable.ISymbol;
 import java.util.List;
 import java.util.Optional;

@@ -11,7 +11,7 @@ import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mccommonstatements._visitor.MCCommonStatementsVisitor2;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.statements.mcvardeclarationstatements._visitor.MCVarDeclarationStatementsVisitor2;
 import java.util.List;
 import java.util.Optional;
