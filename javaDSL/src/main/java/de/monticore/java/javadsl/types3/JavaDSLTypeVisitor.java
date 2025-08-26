@@ -50,7 +50,7 @@ public class JavaDSLTypeVisitor extends AbstractTypeVisitor implements JavaDSLVi
               t -> true
           );
           if (type.isEmpty()) {
-            Log.error("0xFDAE3 unable to find type "
+            Log.error("0x7A006 unable to find type "
                     + name
                     + " within type "
                     + prefixType.printFullName(),
@@ -60,7 +60,7 @@ public class JavaDSLTypeVisitor extends AbstractTypeVisitor implements JavaDSLVi
           }
         }
         else {
-          Log.error("0xFDA3E unexpected access \"."
+          Log.error("0x7A007 unexpected access \"."
                   + name
                   + "\" for type "
                   + prefixType.printFullName(),
@@ -73,7 +73,7 @@ public class JavaDSLTypeVisitor extends AbstractTypeVisitor implements JavaDSLVi
     } while (numberOfPartsUsedForFirstType < mcQType.sizeAnnotatedNames());
     
     if (type.isEmpty()) {
-      Log.error("0xA0324 Cannot find symbol " + mcQType.getAnnotatedNameList().stream().map(ASTAnnotatedName::getName).collect(Collectors.joining(".")),
+      Log.error("0x7A008 Cannot find symbol " + mcQType.getAnnotatedNameList().stream().map(ASTAnnotatedName::getName).collect(Collectors.joining(".")),
           mcQType.get_SourcePositionStart(),
           mcQType.get_SourcePositionEnd()
       );
