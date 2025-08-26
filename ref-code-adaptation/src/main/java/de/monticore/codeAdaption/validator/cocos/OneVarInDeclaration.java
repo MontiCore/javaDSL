@@ -4,8 +4,8 @@ import static de.monticore.codeAdaption.utils.AdapterUtils.getPosition;
 
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
-import de.monticore.statements.mcvardeclarationstatements._cocos.MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.se_rwth.commons.logging.Log;
 
 /**
@@ -13,8 +13,7 @@ import de.se_rwth.commons.logging.Log;
  * allowed. allow is "String a; String b";
  */
 public class OneVarInDeclaration
-    implements JavaDSLASTFieldDeclarationCoCo,
-        MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo {
+    implements JavaDSLASTFieldDeclarationCoCo, JavaDSLASTLocalVariableDeclarationCoCo {
   protected String message =
       "0xRC002 %s invalid variable declaration: expected just one variable per declaration but got more.";
 

@@ -3,10 +3,10 @@ package de.monticore.codeAdaption.matcher.ignoreMatcher;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.VariableMatcher;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
 import java.util.Optional;
 
 /***

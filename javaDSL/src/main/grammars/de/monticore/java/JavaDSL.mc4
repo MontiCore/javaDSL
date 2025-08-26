@@ -396,6 +396,16 @@ ClassCreatorRest
     =   Arguments ClassBody?
     ;
 
+// Add support for 'var'
+@Override
+LocalVariableDeclaration
+    = MCModifier* (["var"] | MCType) (VariableDeclarator || ",")+ ;
+
+@Override
+LambdaParameter implements Variable = (["var"] | MCType)? Name;
+
+nokeyword "var";
+
 /*
  * TODO Remove this
  * This is a workaround to a questionable behavior in the core grammar JavaLight

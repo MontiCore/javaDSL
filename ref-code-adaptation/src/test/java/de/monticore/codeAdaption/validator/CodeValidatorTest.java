@@ -65,7 +65,7 @@ class CodeValidatorTest extends AdapterAbstractTest {
     ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(new File(fileName));
     validator.runCoCosPhase2(ast, cd);
 
-    Assertions.assertEquals(Log.getErrorCount(), 5);
+    Assertions.assertEquals(5, Log.getErrorCount());
     Log.getFindings().forEach(f -> Assertions.assertTrue(f.getMsg().startsWith(errorCode)));
   }
 }

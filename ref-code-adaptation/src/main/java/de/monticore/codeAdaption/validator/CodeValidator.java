@@ -32,20 +32,16 @@ import de.monticore.codeAdaption.validator.cocos.ValidAnnotation;
 import de.monticore.codeAdaption.validator.cocos.ValidTemplate;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
-import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
-import de.monticore.java.javadsl._cocos.JavaDSLASTJavaAnnotationCoCo;
-import de.monticore.java.javadsl._cocos.JavaDSLASTTypeDeclarationCoCo;
-import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
+import de.monticore.java.javadsl._cocos.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._cocos.JavaLightASTAnnotationCoCo;
 import de.monticore.javalight._cocos.JavaLightASTMethodDeclarationCoCo;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._cocos.MCCommonStatementsASTFormalParameterCoCo;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
-import de.monticore.statements.mcvardeclarationstatements._cocos.MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.nio.file.Path;
 import java.util.*;
@@ -183,19 +179,17 @@ public class CodeValidator {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     checker.addCoCo((JavaDSLASTJavaAnnotationCoCo) new ValidAnnotation(refCD));
     checker.addCoCo((JavaLightASTAnnotationCoCo) new ValidAnnotation(refCD));
+    // implicitly also adds CoCo to JavaDSLASTLocalVariableDeclaration
     checker.addCoCo((JavaDSLASTFieldDeclarationCoCo) new OneVarInDeclaration());
-    checker.addCoCo(
-        (MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo) new OneVarInDeclaration());
     checker.checkAll(ast);
   }
 
   protected void runCoCosPhase2(ASTOrdinaryCompilationUnit ast, ASTCDCompilationUnit refCD) {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
+    // implicitly also adds CoCo to JavaDSLASTLocalVariableDeclaration
     checker.addCoCo((JavaDSLASTTypeDeclarationCoCo) new ValidTemplate(refCD));
     checker.addCoCo((JavaLightASTMethodDeclarationCoCo) new ValidTemplate(refCD));
     checker.addCoCo((MCCommonStatementsASTFormalParameterCoCo) new ValidTemplate(refCD));
-    checker.addCoCo(
-        (MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo) new ValidTemplate(refCD));
     checker.checkAll(ast);
   }
 }

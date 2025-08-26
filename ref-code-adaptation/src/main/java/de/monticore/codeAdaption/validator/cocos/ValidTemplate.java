@@ -8,6 +8,7 @@ import de.monticore.codeAdaption.matcher.MatcherHelper;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
+import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.monticore.java.javadsl._cocos.JavaDSLASTTypeDeclarationCoCo;
 import de.monticore.javalight._ast.ASTAnnotation;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -15,8 +16,7 @@ import de.monticore.javalight._cocos.JavaLightASTMethodDeclarationCoCo;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._cocos.MCCommonStatementsASTFormalParameterCoCo;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
-import de.monticore.statements.mcvardeclarationstatements._cocos.MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ public class ValidTemplate
         JavaDSLASTTypeDeclarationCoCo,
         JavaLightASTMethodDeclarationCoCo,
         MCCommonStatementsASTFormalParameterCoCo,
-        MCVarDeclarationStatementsASTLocalVariableDeclarationCoCo {
+        JavaDSLASTLocalVariableDeclarationCoCo {
   protected ASTCDCompilationUnit cd;
 
   public ValidTemplate(ASTCDCompilationUnit cd) {

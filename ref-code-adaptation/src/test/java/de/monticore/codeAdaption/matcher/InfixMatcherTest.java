@@ -4,10 +4,10 @@ import static de.monticore.codeAdaption.utils.AdapterParam.INFIX_MATCHING;
 
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.*;
