@@ -6,12 +6,12 @@ import de.monticore.expressions.lambdaexpressions._symboltable.LambdaExpressions
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
+import de.monticore.java.javadsl._symboltable.JavaDSLMCVarDeclarationStatementsSymTabCompletion;
 import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
 import de.monticore.java.javadsl._symboltable.JavaDSLSymbolTableCompleter;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._symboltable.JavaLightSTCompleteTypes;
 import de.monticore.statements.mccommonstatements._symboltable.MCCommonStatementsSymTabCompletion;
-import de.monticore.statements.mcvardeclarationstatements._symboltable.MCVarDeclarationStatementsSymTabCompletion;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.types.typeparameters._symboltable.TypeParametersSTCompleteTypes;
 
@@ -48,7 +48,7 @@ public class JavaDSLSymbolTableUtil {
   }
   
   public static void runSymTabCompleter(ASTCompilationUnit ast) {
-    JavaDSLTraverser traverser = JavaDSLMill.traverser();
+    JavaDSLTraverser traverser = JavaDSLMill.inheritanceTraverser();
     
     JavaDSLSymbolTableCompleter javaDslCompleter = new JavaDSLSymbolTableCompleter();
     traverser.add4JavaDSL(javaDslCompleter);
@@ -63,8 +63,9 @@ public class JavaDSLSymbolTableUtil {
     LambdaExpressionsSTCompleteTypes2 lambdaExpressionsSTCompleteTypes2 = new LambdaExpressionsSTCompleteTypes2();
     traverser.add4LambdaExpressions(lambdaExpressionsSTCompleteTypes2);
     
-    MCVarDeclarationStatementsSymTabCompletion mcVarDecStmtsSymTabCompletion = new MCVarDeclarationStatementsSymTabCompletion();
-    traverser.add4MCVarDeclarationStatements(mcVarDecStmtsSymTabCompletion);
+    JavaDSLMCVarDeclarationStatementsSymTabCompletion javaDSLMCVarDeclarationStatementsSymTabCompletion = new JavaDSLMCVarDeclarationStatementsSymTabCompletion();
+    traverser.add4JavaDSL(javaDSLMCVarDeclarationStatementsSymTabCompletion);
+    traverser.add4MCVarDeclarationStatements(javaDSLMCVarDeclarationStatementsSymTabCompletion);
     
     TypeParametersSTCompleteTypes typeParametersSTCompleteTypes = new TypeParametersSTCompleteTypes();
     traverser.add4TypeParameters(typeParametersSTCompleteTypes);
