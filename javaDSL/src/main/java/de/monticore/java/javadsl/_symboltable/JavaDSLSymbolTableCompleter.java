@@ -112,10 +112,18 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
     IJavaDSLScope enclosingScope = JavaDSLMill.typeDispatcher().asJavaDSLIJavaDSLScope(node.getEnclosingScope());
     ASTNode enclosingScopeNode = enclosingScope.getAstNode();
     if (JavaDSLMill.typeDispatcher().isJavaDSLASTClassDeclaration(enclosingScopeNode)) {
-      ASTClassDeclaration enclosingClass = JavaDSLMill.typeDispatcher().asJavaDSLASTClassDeclaration(enclosingScopeNode);
+      ASTClassDeclaration enclosingClass =
+          JavaDSLMill.typeDispatcher().asJavaDSLASTClassDeclaration(enclosingScopeNode);
       symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
-    } else {
-      Log.error("0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
+    }
+    else if (JavaDSLMill.typeDispatcher().isJavaDSLASTEnumDeclaration(enclosingScopeNode)) {
+      ASTEnumDeclaration enclosingEnum =
+          JavaDSLMill.typeDispatcher().asJavaDSLASTEnumDeclaration(enclosingScopeNode);
+      symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingEnum.getSymbol()));
+    }
+    else {
+      Log.error(
+          "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
     }
   }
   
