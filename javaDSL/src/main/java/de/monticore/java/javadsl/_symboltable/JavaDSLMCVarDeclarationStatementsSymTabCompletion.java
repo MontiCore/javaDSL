@@ -12,8 +12,8 @@ import de.monticore.types.check.SymTypeExpressionFactory;
 import de.monticore.types3.TypeCheck3;
 import de.se_rwth.commons.logging.Log;
 
-public class JavaDSLMCVarDeclarationStatementsSymTabCompletion extends
-    MCVarDeclarationStatementsSymTabCompletion implements JavaDSLVisitor2 {
+public class JavaDSLMCVarDeclarationStatementsSymTabCompletion
+    extends MCVarDeclarationStatementsSymTabCompletion implements JavaDSLVisitor2 {
   
   @Override
   public void endVisit(ASTLocalVariableDeclaration node) {
@@ -21,13 +21,15 @@ public class JavaDSLMCVarDeclarationStatementsSymTabCompletion extends
       // we assume that there is just a single VariableDeclarator, as a CoCo prevents the
       // declaration of multiple variables with a single var
       ASTVariableDeclarator declarator = node.getVariableDeclarator(0);
-      ASTVariableInit variableInit =  declarator.getVariableInit();
+      ASTVariableInit variableInit = declarator.getVariableInit();
       
       SymTypeExpression targetType = SymTypeExpressionFactory.createObscureType();
       if (JavaDSLMill.typeDispatcher().isMCVarDeclarationStatementsASTSimpleInit(variableInit)) {
-        ASTSimpleInit simpleInit = JavaDSLMill.typeDispatcher().asMCVarDeclarationStatementsASTSimpleInit(variableInit);
+        ASTSimpleInit simpleInit =
+            JavaDSLMill.typeDispatcher().asMCVarDeclarationStatementsASTSimpleInit(variableInit);
         targetType = TypeCheck3.typeOf(simpleInit.getExpression());
-      } else {
+      }
+      else {
         Log.error("0x7A001: Unsupported ASTVariableInit type");
       }
       
@@ -35,8 +37,20 @@ public class JavaDSLMCVarDeclarationStatementsSymTabCompletion extends
         Log.error("0x7A002: Could not determine type of 'var' variable");
       }
       declarator.getDeclarator().getSymbol().setType(targetType);
-    } else {
+    }
+    else {
       super.endVisit(node);
+    }
+  }
+  
+  @Override
+  public void endVisit(
+      de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration node) {
+    if (!node.isEmptyVariableDeclarators()) {
+      ASTVariableDeclarator declarator = node.getVariableDeclarator(0);
+      if (declarator.getDeclarator().getSymbol().getType() == null) {
+        super.endVisit(node);
+      }
     }
   }
 }
