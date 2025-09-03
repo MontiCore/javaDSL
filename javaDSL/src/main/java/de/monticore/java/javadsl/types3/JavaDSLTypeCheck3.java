@@ -87,9 +87,9 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     
     // MCTypes
     
-    MCBasicTypesTypeVisitor visMCBasicTypes = new MCBasicTypesTypeVisitor();
-    visMCBasicTypes.setType4Ast(type4Ast);
-    traverser.add4MCBasicTypes(visMCBasicTypes);
+    JavaDSLMCBasicTypesTypeVisitor visJavaDSLMCBasicTypesType = new JavaDSLMCBasicTypesTypeVisitor();
+    visJavaDSLMCBasicTypesType.setType4Ast(type4Ast);
+    traverser.add4MCBasicTypes(visJavaDSLMCBasicTypesType);
     
     MCCollectionTypesTypeVisitor visMCCollectionTypes = new MCCollectionTypesTypeVisitor();
     visMCCollectionTypes.setType4Ast(type4Ast);
