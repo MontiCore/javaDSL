@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class JavaDSLSymbolTableUtil {
+  
   public static void prepareMill(boolean enableC2MC) {
     JavaDSLMill.globalScope().clear();
     
@@ -33,7 +34,8 @@ public class JavaDSLSymbolTableUtil {
   }
   
   public static List<IJavaDSLArtifactScope> buildSymbolTable(List<ASTCompilationUnit> asts) {
-    List<IJavaDSLArtifactScope> as = asts.stream().map(JavaDSLSymbolTableUtil::runSymTabGenitor).collect(Collectors.toList());
+    List<IJavaDSLArtifactScope> as =
+        asts.stream().map(JavaDSLSymbolTableUtil::runSymTabGenitor).collect(Collectors.toList());
     asts.forEach(JavaDSLSymbolTableUtil::runSymTabCompleter);
     asts.forEach(JavaDSLSymbolTableUtil::runSymTabFinalization);
     return as;
@@ -44,35 +46,13 @@ public class JavaDSLSymbolTableUtil {
     return genitor.createFromAST(ast);
   }
   
+  public static void runSymTabCompleter(ASTCompilationUnit ast) {
+    JavaDSLScopesGenitorP2Delegator p2Genitor = new JavaDSLScopesGenitorP2Delegator();
+    p2Genitor.createFromAST(ast);
+  }
+  
   public static void runSymTabFinalization(ASTCompilationUnit ast) {
     JavaDSLScopesGenitorP3Delegator p3Genitor = JavaDSLMill.scopesGenitorP3Delegator();
     p3Genitor.createFromAST(ast);
-  }
-  
-  public static void runSymTabCompleter(ASTCompilationUnit ast) {
-    JavaDSLTraverser traverser = JavaDSLMill.inheritanceTraverser();
-    
-    JavaDSLSymbolTableCompleter javaDslCompleter = new JavaDSLSymbolTableCompleter();
-    traverser.add4JavaDSL(javaDslCompleter);
-    traverser.add4JavaLight(javaDslCompleter);
-    
-    JavaLightSTCompleteTypes javaLightSTCompleteTypes = new JavaLightSTCompleteTypes();
-    traverser.add4JavaLight(javaLightSTCompleteTypes);
-    
-    JavaDSLMCCommonStatementsSymTabCompletion javaDSLMCCommonStatementsSymTabCompletion = new JavaDSLMCCommonStatementsSymTabCompletion();
-    traverser.add4JavaDSL(javaDSLMCCommonStatementsSymTabCompletion);
-    traverser.add4MCCommonStatements(javaDSLMCCommonStatementsSymTabCompletion);
-    
-    LambdaExpressionsSTCompleteTypes2 lambdaExpressionsSTCompleteTypes2 = new LambdaExpressionsSTCompleteTypes2();
-    traverser.add4LambdaExpressions(lambdaExpressionsSTCompleteTypes2);
-    
-    JavaDSLMCVarDeclarationStatementsSymTabCompletion javaDSLMCVarDeclarationStatementsSymTabCompletion = new JavaDSLMCVarDeclarationStatementsSymTabCompletion();
-    traverser.add4JavaDSL(javaDSLMCVarDeclarationStatementsSymTabCompletion);
-    traverser.add4MCVarDeclarationStatements(javaDSLMCVarDeclarationStatementsSymTabCompletion);
-    
-    TypeParametersSTCompleteTypes typeParametersSTCompleteTypes = new TypeParametersSTCompleteTypes();
-    traverser.add4TypeParameters(typeParametersSTCompleteTypes);
-    
-    ast.accept(traverser);
   }
 }

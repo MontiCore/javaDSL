@@ -10,12 +10,10 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mcarraystatements._ast.ASTArrayDeclaratorId;
-import de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
-import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
 import de.monticore.types.check.SymTypeExpression;
 import de.monticore.types.check.SymTypeExpressionFactory;
 import de.monticore.types.check.SymTypeOfObject;
@@ -37,7 +35,7 @@ import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCComm
 import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.STRICTFP;
 import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.SYNCHRONIZED;
 
-public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVisitor2 {
+public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor2 {
   
   @Override
   public void endVisit(ASTEnumDeclaration node) {
