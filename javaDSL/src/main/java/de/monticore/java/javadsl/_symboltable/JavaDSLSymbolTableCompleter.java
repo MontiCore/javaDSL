@@ -40,19 +40,8 @@ import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCComm
 public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVisitor2 {
   
   @Override
-  public void endVisit(ASTAnnotationTypeDeclaration node) {
-    TypeDeclarationSymbol symbol = node.getSymbol();
-    symbol.setIsAnnotation(true);
-    
-    updateModifiers(symbol, node.getJavaModifierList());
-  }
-  
-  @Override
   public void endVisit(ASTEnumDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
-    symbol.setIsEnum(true);
-    
-    updateModifiers(symbol, node.getJavaModifierList());
     
     List<SymTypeExpression> supertypes =
         node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
@@ -63,10 +52,6 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
   @Override
   public void endVisit(ASTRecordDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
-    
-    symbol.setIsRecord(true);
-    
-    updateModifiers(symbol, node.getJavaModifierList());
     
     List<SymTypeExpression> supertypes =
         node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
@@ -130,9 +115,6 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
   @Override
   public void endVisit(ASTClassDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
-    symbol.setIsClass(true);
-    
-    updateModifiers(symbol, node.getJavaModifierList());
     
     List<SymTypeExpression> supertypes = new ArrayList<>();
     if (node.isPresentSuperClass()) {
@@ -241,28 +223,5 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
         javaMethodSymbol.addAnnotations(TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
       }
     }
-  }
-  
-  protected void updateModifiers(OOTypeSymbol symbol, List<ASTJavaModifier> modifiers) {
-    modifiers.forEach(javaModifier -> {
-      if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PUBLIC) {
-        symbol.setIsPublic(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PROTECTED) {
-        symbol.setIsProtected(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PRIVATE) {
-        symbol.setIsPrivate(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.ABSTRACT) {
-        symbol.setIsAbstract(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.STATIC) {
-        symbol.setIsStatic(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.FINAL) {
-        symbol.setIsFinal(true);
-      }
-    });
   }
 }
