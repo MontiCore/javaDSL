@@ -355,6 +355,11 @@ CreatedName
     |   MCPrimitiveType
     ;
 
+// TODO: might need some attention...can we do that better?
+InnerCreatorExpression implements Expression <275>
+    =   Expression "." "new" InnerCreator
+    ;
+
 InnerCreator
     =   firstTypeArguments:TypeArguments? Name secondTypeArguments:TypeArguments? ClassCreatorRest
     ;
