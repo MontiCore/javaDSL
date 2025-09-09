@@ -243,7 +243,7 @@ EnumBody
     ;
 
 ClassBlock implements ClassBodyDeclaration
-    =   (["static"])? JavaBlock
+    =   (["static"])? MCJavaBlock
     ;
 
 @Override
@@ -338,35 +338,9 @@ MCQualifiedType implements MCObjectType
 
 // STATEMENTS / BLOCKS
 
-// TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
-interface Statement extends MCBlockStatement ;
-
 // TODO: Remove scope duplicate when monticore#4726 is fixed
-scope(shadowing) JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
-    =   "{" MCBlockStatement* "}"
-    ;
-
-scope TryStatement implements Statement
-    =   "try" JavaBlock ExceptionHandler
-    ;
-
-interface ExceptionHandler ;
-
-CatchExceptionsHandler implements ExceptionHandler
-    =   CatchClause+ ("finally" FinallyBlock)?
-    ;
-
-FinallyBlockOnlyHandler implements ExceptionHandler
-    =   ("finally" FinallyBlock)
-    ;
-
-TryStatementWithResources implements Statement
-    =   "try" "(" (Resource || ";")+ ";"? ")" JavaBlock CatchClause* ("finally" FinallyBlock)?
-    ;
-
-Resource
-    =   JavaModifier* MCType DeclaratorId "=" Expression
-    ;
+@Override
+scope(shadowing) MCJavaBlock implements MethodBody, ConstructorBody;
 
 IdentifierAndTypeArgument
     =   Name TypeArguments?
@@ -374,13 +348,6 @@ IdentifierAndTypeArgument
 
 TypeArguments
     =   "<" (MCTypeArgument || ",")* ">"
-    ;
-
-interface FinallyBlock ;
-
-// TODO: Replace with Label from MCLowLevelStatements
-LabeledStatement implements Statement
-    =   label:Name ":" Statement
     ;
 
 CreatedName
