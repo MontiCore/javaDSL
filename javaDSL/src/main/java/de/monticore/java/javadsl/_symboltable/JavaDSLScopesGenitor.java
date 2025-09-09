@@ -2,13 +2,16 @@ package de.monticore.java.javadsl._symboltable;
 
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
+import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
 import de.monticore.symboltable.ImportStatement;
 
-public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP {
 import java.util.List;
+
+public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
+    implements JavaLightVisitor2 {
   
   @Override
   public IJavaDSLArtifactScope createFromAST(ASTCompilationUnit rootNode) {
@@ -28,7 +31,9 @@ import java.util.List;
       }
       
       for (ASTImportDeclaration importDeclaration : ordinaryCompilationUnit.getImportDeclarationList()) {
-        artifactScope.addImports(new ImportStatement(importDeclaration.getMCQualifiedName().getQName(), importDeclaration.isSTAR()));
+        artifactScope.addImports(
+            new ImportStatement(importDeclaration.getMCQualifiedName().getQName(),
+                importDeclaration.isSTAR()));
       }
     }
     
@@ -84,8 +89,6 @@ import java.util.List;
     updateModifiers(symbol, node.getJavaModifierList());
   }
   
-  
-  
   @Override
   public void visit(ASTModuleDeclaration node) {
     super.visit(node);
@@ -110,6 +113,7 @@ import java.util.List;
    * Try to set the name of the ArtifactScope
    * The name of the artifact scope should equal the name of
    * a public type.
+   *
    * @param node Candidate for public type
    * @param modifiers List of node's modifiers
    */

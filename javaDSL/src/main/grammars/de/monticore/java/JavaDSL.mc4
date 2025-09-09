@@ -376,6 +376,17 @@ LocalVariableDeclaration
 @Override
 LambdaParameter implements Variable = (["var"] | MCType)? Name;
 
+@Override
+TryLocalVariableDeclaration
+    = JavaModifier* (["var"] | MCType) DeclaratorId "=" Expression ;
+
+@Override
+EnhancedForControl implements ForControl
+    = EnhancedForControlFormalParameter ":" Expression;
+
+EnhancedForControlFormalParameter
+    = JavaModifier* (["var"] | MCType) Declarator;
+
 nokeyword "var";
 
 /*

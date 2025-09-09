@@ -94,7 +94,8 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
   @Override
   public void endVisit(ASTConstructorDeclaration node) {
     JavaMethodSymbol symbol = node.getSymbol();
-    IJavaDSLScope enclosingScope = JavaDSLMill.typeDispatcher().asJavaDSLIJavaDSLScope(node.getEnclosingScope());
+    IJavaDSLScope enclosingScope =
+        JavaDSLMill.typeDispatcher().asJavaDSLIJavaDSLScope(node.getEnclosingScope());
     ASTNode enclosingScopeNode = enclosingScope.getAstNode();
     if (JavaDSLMill.typeDispatcher().isJavaDSLASTClassDeclaration(enclosingScopeNode)) {
       ASTClassDeclaration enclosingClass =
@@ -130,8 +131,10 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
     for (ASTVariableDeclarator v : node.getVariableDeclaratorList()) {
       SymTypeExpression declaratorType = TypeCheck3.symTypeFromAST(node.getMCType());
       if (JavaDSLMill.typeDispatcher().isMCArrayStatementsASTArrayDeclaratorId(v.getDeclarator())) {
-        ASTArrayDeclaratorId arrayDeclaratorId = JavaDSLMill.typeDispatcher().asMCArrayStatementsASTArrayDeclaratorId(v.getDeclarator());
-        declaratorType = SymTypeRelations.normalize(SymTypeExpressionFactory.createTypeArray(declaratorType, arrayDeclaratorId.sizeDim()));
+        ASTArrayDeclaratorId arrayDeclaratorId =
+            JavaDSLMill.typeDispatcher().asMCArrayStatementsASTArrayDeclaratorId(v.getDeclarator());
+        declaratorType = SymTypeRelations.normalize(
+            SymTypeExpressionFactory.createTypeArray(declaratorType, arrayDeclaratorId.sizeDim()));
       }
       v.getDeclarator().getSymbol().setType(declaratorType);
       addModifiersToField(v.getDeclarator().getSymbol(), node.getJavaModifierList());
@@ -144,6 +147,14 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
     JavaMethodSymbol symbol = node.getSymbol();
     addModifiersToMethOrConstr(symbol, node.getJavaModifierList());
     symbol.setType(TypeCheck3.symTypeFromAST(node.getMCType()));
+  }
+  
+  @Override
+  public void endVisit(ASTTryLocalVariableDeclaration node) {
+    if (!node.isVar()) {
+      FieldSymbol symbol = node.getDeclaratorId().getSymbol();
+      symbol.setType(TypeCheck3.symTypeFromAST(node.getMCType()));
+    }
   }
   
   protected void addModifiersToField(FieldSymbol fieldSymbol,
@@ -171,7 +182,8 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
           default:
             break;
         }
-      } else if (modifier instanceof ASTAnnotation) {
+      }
+      else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
         //fieldSymbol.addAnnotations(TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
         // TODO: FieldSymbols do not support annotations yet -> annotations are lost
@@ -218,9 +230,11 @@ public class JavaDSLSymbolTableCompleter implements JavaDSLVisitor2, JavaLightVi
           default:
             break;
         }
-      } else if (modifier instanceof ASTAnnotation) {
+      }
+      else if (modifier instanceof ASTAnnotation) {
         ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        javaMethodSymbol.addAnnotations(TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
+        javaMethodSymbol.addAnnotations(
+            TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
       }
     }
   }

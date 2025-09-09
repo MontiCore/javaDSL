@@ -5,13 +5,9 @@ import de.monticore.class2mc.OOClass2MCResolver;
 import de.monticore.expressions.lambdaexpressions._symboltable.LambdaExpressionsSTCompleteTypes2;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
-import de.monticore.java.javadsl._symboltable.JavaDSLMCVarDeclarationStatementsSymTabCompletion;
-import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
-import de.monticore.java.javadsl._symboltable.JavaDSLSymbolTableCompleter;
+import de.monticore.java.javadsl._symboltable.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._symboltable.JavaLightSTCompleteTypes;
-import de.monticore.statements.mccommonstatements._symboltable.MCCommonStatementsSymTabCompletion;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
 import de.monticore.types.typeparameters._symboltable.TypeParametersSTCompleteTypes;
 
@@ -39,12 +35,18 @@ public class JavaDSLSymbolTableUtil {
   public static List<IJavaDSLArtifactScope> buildSymbolTable(List<ASTCompilationUnit> asts) {
     List<IJavaDSLArtifactScope> as = asts.stream().map(JavaDSLSymbolTableUtil::runSymTabGenitor).collect(Collectors.toList());
     asts.forEach(JavaDSLSymbolTableUtil::runSymTabCompleter);
+    asts.forEach(JavaDSLSymbolTableUtil::runSymTabFinalization);
     return as;
   }
   
   public static IJavaDSLArtifactScope runSymTabGenitor(ASTCompilationUnit ast) {
     JavaDSLScopesGenitorDelegator genitor = JavaDSLMill.scopesGenitorDelegator();
     return genitor.createFromAST(ast);
+  }
+  
+  public static void runSymTabFinalization(ASTCompilationUnit ast) {
+    JavaDSLScopesGenitorP3Delegator p3Genitor = JavaDSLMill.scopesGenitorP3Delegator();
+    p3Genitor.createFromAST(ast);
   }
   
   public static void runSymTabCompleter(ASTCompilationUnit ast) {
@@ -57,8 +59,9 @@ public class JavaDSLSymbolTableUtil {
     JavaLightSTCompleteTypes javaLightSTCompleteTypes = new JavaLightSTCompleteTypes();
     traverser.add4JavaLight(javaLightSTCompleteTypes);
     
-    MCCommonStatementsSymTabCompletion mcCommonStatementsSymTabCompletion = new MCCommonStatementsSymTabCompletion();
-    traverser.add4MCCommonStatements(mcCommonStatementsSymTabCompletion);
+    JavaDSLMCCommonStatementsSymTabCompletion javaDSLMCCommonStatementsSymTabCompletion = new JavaDSLMCCommonStatementsSymTabCompletion();
+    traverser.add4JavaDSL(javaDSLMCCommonStatementsSymTabCompletion);
+    traverser.add4MCCommonStatements(javaDSLMCCommonStatementsSymTabCompletion);
     
     LambdaExpressionsSTCompleteTypes2 lambdaExpressionsSTCompleteTypes2 = new LambdaExpressionsSTCompleteTypes2();
     traverser.add4LambdaExpressions(lambdaExpressionsSTCompleteTypes2);
