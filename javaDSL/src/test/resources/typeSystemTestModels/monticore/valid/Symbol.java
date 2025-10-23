@@ -9,6 +9,7 @@ import de.monticore.symboltable.SymbolKind;
 import de.monticore.symboltable.modifiers.AccessModifier;
 import de.se_rwth.commons.SourcePosition;
 import de.se_rwth.commons.logging.Log;
+import com.google.common.base.Verify;
 
 import java.util.Optional;
 
@@ -22,7 +23,7 @@ public interface Symbol {
   SymbolKind getKind();
 
 //  default boolean isKindOf(SymbolKind kind) {
-//    return this.getKind().isKindOf((SymbolKind) Log.errorIfNull(kind));
+//    return this.getKind().isKindOf((SymbolKind) Verify.verifyNotNull(kind));
 //  }
 
 //  default AccessModifier getAccessModifier() {
