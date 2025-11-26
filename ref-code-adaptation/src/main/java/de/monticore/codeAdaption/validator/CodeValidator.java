@@ -112,7 +112,7 @@ public class CodeValidator {
     asts.forEach(ast -> runCoCosPhase2(ast, refCD));
 
     // check that all elements matched
-    Set<ASTTypeDeclaration> allType = new HashSet<>();
+    Set<ASTTypeDeclaration> allType = new LinkedHashSet<>();
     for (ASTOrdinaryCompilationUnit ast : asts) {
       JavaAstElemCollector collector = new JavaAstElemCollector();
       JavaDSLTraverser traverser = JavaDSLMill.traverser();
