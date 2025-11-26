@@ -26,8 +26,8 @@ public class SpoonUpdater implements CodeUpdater {
   private File outputDir;
   private Launcher launcher;
   private CtModel spoonModel;
-  private final Map<ASTTypeDeclaration, CtType<?>> typeMap = new HashMap<>();
-  private final Map<ASTMethodDeclaration, CtMethod<?>> methodMap = new HashMap<>();
+  private final Map<ASTTypeDeclaration, CtType<?>> typeMap = new LinkedHashMap<>();
+  private final Map<ASTMethodDeclaration, CtMethod<?>> methodMap = new LinkedHashMap<>();
 
   @Override
   public void setCodePath(Path path) {

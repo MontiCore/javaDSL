@@ -18,7 +18,7 @@ import java.util.*;
 
 public class JavaAstElemCollector implements JavaDSLVisitor2 {
   private final List<ASTTypeDeclaration> typeDeclarations = new ArrayList<>();
-  private final Map<ASTTypeDeclaration, TypeElementCollector> typeElements = new HashMap<>();
+  private final Map<ASTTypeDeclaration, TypeElementCollector> typeElements = new LinkedHashMap<>();
 
   @Override
   public void visit(ASTClassDeclaration node) {
@@ -109,8 +109,8 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
   List<ASTFieldDeclaration> fieldDeclarations = new ArrayList<>();
   List<ASTMCType> supertypesDeclarations = new ArrayList<>();
 
-  Map<ASTMethodDeclaration, List<ASTLocalVariableDeclaration>> localVarsMap = new HashMap<>();
-  Map<ASTMethodDeclaration, List<ASTFormalParameter>> formalParamsMap = new HashMap<>();
+  Map<ASTMethodDeclaration, List<ASTLocalVariableDeclaration>> localVarsMap = new LinkedHashMap<>();
+  Map<ASTMethodDeclaration, List<ASTFormalParameter>> formalParamsMap = new LinkedHashMap<>();
 
   @Override
   public void visit(ASTMethodDeclaration node) {
