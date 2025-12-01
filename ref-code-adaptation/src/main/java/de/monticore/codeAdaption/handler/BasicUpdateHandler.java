@@ -60,7 +60,7 @@ public class BasicUpdateHandler {
   public void handleUpdate(Set<ASTOrdinaryCompilationUnit> javaFiles) {
 
     // Collect elements of each type
-    Set<JavaAstElemCollector> typeElements = new HashSet<>();
+    Set<JavaAstElemCollector> typeElements = new LinkedHashSet<>();
     for (ASTOrdinaryCompilationUnit ast : javaFiles) {
 
       // collect code elements

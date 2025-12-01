@@ -167,7 +167,7 @@ public class JavaLoader {
    * @return A set of Java files represented as ASTOrdinaryCompilationUnit.
    */
   public static Set<ASTOrdinaryCompilationUnit> readJavaCode(Path directoryPath) {
-    Set<File> res = new HashSet<>();
+    Set<File> res = new LinkedHashSet<>();
     readJavaCode(directoryPath, res);
     return res.stream().map(JavaLoader::loadJava).collect(Collectors.toSet());
   }
@@ -179,7 +179,7 @@ public class JavaLoader {
    * @return A set of Java files as File objects.
    */
   public static Set<File> readJavaFile(Path directoryPath) {
-    Set<File> res = new HashSet<>();
+    Set<File> res = new LinkedHashSet<>();
     readJavaCode(directoryPath, res);
     return res;
   }

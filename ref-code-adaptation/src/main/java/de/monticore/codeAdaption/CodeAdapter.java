@@ -51,7 +51,7 @@ public class CodeAdapter {
     ASTCDCompilationUnit refCD = JavaLoader.loadCD(referenceCD);
     ASTCDCompilationUnit conCD = JavaLoader.loadCD(concreteCD);
 
-    Set<ASTOrdinaryCompilationUnit> adaptedCode = new HashSet<>();
+    Set<ASTOrdinaryCompilationUnit> adaptedCode = new LinkedHashSet<>();
 
     for (String mapping : mappings) {
 

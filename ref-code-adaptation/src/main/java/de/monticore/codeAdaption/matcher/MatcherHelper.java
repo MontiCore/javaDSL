@@ -92,7 +92,7 @@ public class MatcherHelper {
   public static List<ISymbol> cleanReferences(String name, List<ISymbol> infixList) {
     List<String> refs =
         infixList.stream().map(ref -> ref.getName().toLowerCase()).collect(Collectors.toList());
-    Map<Integer, ISymbol> refMap = new HashMap<>();
+    Map<Integer, ISymbol> refMap = new LinkedHashMap<>();
 
     for (int i = 0; i < refs.size(); i++) {
       refMap.put(name.toLowerCase().indexOf(refs.get(i)), infixList.get(i));
@@ -189,7 +189,7 @@ public class MatcherHelper {
       return references;
     }
 
-    Set<ISymbol> temps = new HashSet<>(references);
+    Set<ISymbol> temps = new LinkedHashSet<>(references);
     for (ISymbol symbol : temps) {
       for (ISymbol symbol1 : temps) {
         if (!symbol.equals(symbol1) && (matchInfix(symbol.getName(), symbol1.getName()))) {

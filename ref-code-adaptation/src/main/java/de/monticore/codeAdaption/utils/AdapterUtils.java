@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class AdapterUtils {
 
   public static Set<ASTCDType> getAllCDTypes(ASTCDCompilationUnit cd) {
-    Set<ASTCDType> res = new HashSet<>();
+    Set<ASTCDType> res = new LinkedHashSet<>();
     res.addAll(cd.getCDDefinition().getCDClassesList());
     res.addAll(cd.getCDDefinition().getCDInterfacesList());
     res.addAll(cd.getCDDefinition().getCDEnumsList());
