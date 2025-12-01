@@ -380,6 +380,13 @@ LambdaParameter implements Variable = (["var"] | MCType)? Name;
 TryLocalVariableDeclaration
     = JavaModifier* (["var"] | MCType) DeclaratorId "=" Expression ;
 
+// Add support for try-with-resources with external resources
+TryStatement4 implements MCStatement
+    =   "try" "(" resource:Field  ")"
+        core:MCJavaBlock
+        CatchClause*
+        ("finally" finally:MCJavaBlock)? ;
+
 @Override
 EnhancedForControl implements ForControl
     = EnhancedForControlFormalParameter ":" Expression;
