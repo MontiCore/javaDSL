@@ -97,7 +97,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
       Log.clearFindings();
       Log.enableFailQuick(true);
       
-      System.out.printf("Successfully parsed %d files%n", asts.size());
+      Log.info(String.format("Successfully parsed %d files", asts.size()), "JavaDSLTool");
       
       if (cmd.hasOption("pp")) {
         String[] ppTargets = cmd.getOptionValues("pp");
