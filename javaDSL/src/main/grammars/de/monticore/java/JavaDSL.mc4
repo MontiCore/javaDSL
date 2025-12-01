@@ -190,7 +190,7 @@ scope(shadowing) RecordDeclaration extends TypeDeclaration
     ;
 
 // TODO: "record" is a contextual keyword, but setting it to nokeyword creates conflicts with MethodDeclaration
-//nokeyword "record";
+nokeyword "record";
 
 RecordHeader
     = "(" (RecordComponent || ",")* ")"
