@@ -62,7 +62,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     java.util.Iterator<de.monticore.types.mcbasictypes._ast.ASTMCType> iter_implementedInterface =
         node.getImplementedInterfaceList().iterator();
     
-    node.getMCModifierList().forEach(n->n.accept(getTraverser()));
+    node.getJavaModifierList().forEach(n->n.accept(getTraverser()));
     
     getPrinter().print("record ");
     
