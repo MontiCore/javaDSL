@@ -173,7 +173,7 @@ scope(shadowing) ClassDeclaration extends TypeDeclaration
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
 ClassBody
-    =   "{" ClassBodyDeclaration* "}"
+    =   "{" ClassBodyDeclaration* "}" ";"*
     ;
 
 /*
@@ -207,7 +207,7 @@ astrule RecordComponent =
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
 RecordBody
-    = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
+    = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}" ";"*
     ;
 
 CompactConstructorDeclaration
@@ -223,14 +223,14 @@ scope(shadowing) InterfaceDeclaration extends TypeDeclaration
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
 InterfaceBody
-    =   "{" InterfaceBodyDeclaration* "}"
+    =   "{" InterfaceBodyDeclaration* "}" ";"*
     ;
 
 // TODO: Remove scope duplicate when monticore#4726 is fixed
 scope(shadowing) EnumDeclaration extends TypeDeclaration
     =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
-        "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
+        "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}" ";"*
     ;
 
 // TODO: Remove scope duplicate when monticore#4726 is fixed
