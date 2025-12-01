@@ -11,6 +11,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     super(printer, printComments);
   }
   
+  @Override
   public void handle(de.monticore.java.javadsl._ast.ASTClassDeclaration node) {
     if (this.isPrintComments()) {
       de.monticore.prettyprint.CommentPrettyPrinter.printPreComments(node, getPrinter());
@@ -53,6 +54,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     }
   }
   
+  @Override
   public void handle(de.monticore.java.javadsl._ast.ASTRecordDeclaration node) {
     if (this.isPrintComments()) {
       de.monticore.prettyprint.CommentPrettyPrinter.printPreComments(node, getPrinter());
@@ -60,7 +62,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     java.util.Iterator<de.monticore.types.mcbasictypes._ast.ASTMCType> iter_implementedInterface =
         node.getImplementedInterfaceList().iterator();
     
-    node.getMCModifierList().stream().map(m -> (ASTJavaModifier) m).collect(Collectors.toList()).forEach(n -> n.accept(getTraverser()));
+    node.getMCModifierList().forEach(n->n.accept(getTraverser()));
     
     getPrinter().print("record ");
     
@@ -94,6 +96,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     }
   }
   
+  @Override
   public void handle(de.monticore.java.javadsl._ast.ASTInterfaceDeclaration node) {
     if (this.isPrintComments()) {
       de.monticore.prettyprint.CommentPrettyPrinter.printPreComments(node, getPrinter());
@@ -134,6 +137,7 @@ public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
     
   }
   
+  @Override
   public void handle(de.monticore.java.javadsl._ast.ASTEnumDeclaration node) {
     if (this.isPrintComments()) {
       de.monticore.prettyprint.CommentPrettyPrinter.printPreComments(node, getPrinter());
