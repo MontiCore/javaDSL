@@ -71,6 +71,7 @@ package de.monticore.java;
  *     |-> de.monticore.types.MCBasicTypes (*)
  * |-> de.monticore.types.MCFullGenericTypes (*)
  * |-> de.monticore.types.TypeParameters (*)
+ * |-> de.monticore.types.MCStructuralTypes
  *
  * (*) Repeated Dependencies are omitted.
  */
@@ -83,7 +84,8 @@ grammar JavaDSL extends
 	de.monticore.statements.MCFullJavaStatements,
 	de.monticore.types.MCArrayTypes,
 	de.monticore.types.MCFullGenericTypes,
-	de.monticore.types.TypeParameters {
+	de.monticore.types.TypeParameters,
+	de.monticore.types.MCStructuralTypes {
 
 start CompilationUnit;
 

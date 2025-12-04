@@ -9,10 +9,10 @@ import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.literals.mccommonliterals.types3.MCCommonLiteralsTypeVisitor;
 import de.monticore.literals.mcjavaliterals.types3.MCJavaLiteralsTypeVisitor;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
-import de.monticore.types.mcbasictypes.types3.MCBasicTypesTypeVisitor;
 import de.monticore.types.mccollectiontypes.types3.MCCollectionTypesTypeVisitor;
 import de.monticore.types.mcfullgenerictypes.types3.MCFullGenericTypesTypeVisitor;
 import de.monticore.types.mcsimplegenerictypes.types3.MCSimpleGenericTypesTypeVisitor;
+import de.monticore.types.mcstructuraltypes.types3.MCStructuralTypesTypeVisitor;
 import de.monticore.types3.Type4Ast;
 import de.monticore.types3.generics.context.InferenceContext4Ast;
 import de.monticore.types3.util.*;
@@ -27,7 +27,7 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     // initialize static delegates
     BasicSymbolsMill.initializePrimitives();
     OOWithinScopeBasicSymbolsResolver.init();
-    OOWithinTypeBasicSymbolsResolver.init();
+    JavaDSLOOWithinTypeBasicSymbolsResolver.init();
     TypeContextCalculator.init();
     TypeVisitorOperatorCalculator.init();
     TypeVisitorLifting.init();
@@ -102,6 +102,10 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     MCFullGenericTypesTypeVisitor visMCFullGenericTypes = new MCFullGenericTypesTypeVisitor();
     visMCFullGenericTypes.setType4Ast(type4Ast);
     traverser.add4MCFullGenericTypes(visMCFullGenericTypes);
+    
+    MCStructuralTypesTypeVisitor visMCStructuralTypes = new MCStructuralTypesTypeVisitor();
+    visMCStructuralTypes.setType4Ast(type4Ast);
+    traverser.add4MCStructuralTypes(visMCStructuralTypes);
     
     JavaDSLTypeCheck3 javaDSLTC3 = new JavaDSLTypeCheck3(traverser, type4Ast, ctx4Ast);
     javaDSLTC3.setThisAsDelegate();
