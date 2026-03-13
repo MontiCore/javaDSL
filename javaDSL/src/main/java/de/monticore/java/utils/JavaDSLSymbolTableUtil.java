@@ -45,7 +45,7 @@ public class JavaDSLSymbolTableUtil {
     stopwatch.reset().start();
     Log.info("Build - Phase 3", "SymbolTableConstruction");
     asts.forEach(JavaDSLSymbolTableUtil::runSymTabFinalization);
-    Log.info("Build - Phase 2 finished in " + stopwatch.elapsed(TimeUnit.MILLISECONDS)+"ms", "SymbolTableConstruction");
+    Log.info("Build - Phase 3 finished in " + stopwatch.elapsed(TimeUnit.MILLISECONDS)+"ms", "SymbolTableConstruction");
     return as;
   }
   

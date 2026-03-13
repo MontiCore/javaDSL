@@ -13,6 +13,7 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.generating.templateengine.GlobalExtensionManagement;
 import de.monticore.generating.templateengine.StringHookPoint;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._prettyprint.JavaDSLFullPrettyPrinter;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
@@ -98,7 +99,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
         if (i instanceof ASTMCQualifiedType) {
           interfaces.add(((ASTMCQualifiedType) i).getMCQualifiedName().getQName());
         } else {
-          interfaces.add(i.printType());
+          interfaces.add(printJavaDSLASTMCType(i));
         }
       }
     }
@@ -106,7 +107,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
     if (ast.isPresentSuperClass()) {
       classBuilder = classBuilder
           .setCDExtendUsage(CDExtendUsageFacade.getInstance()
-              .createCDExtendUsage(getMCType(ast.getSuperClass()).printType()));
+              .createCDExtendUsage(printJavaDSLASTMCType(getMCType(ast.getSuperClass()))));
     }
 
     ASTCDClass cdClass = classBuilder.build();
@@ -127,7 +128,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
           .createCDInterfaceUsage(
               ast.getImplementedInterfaceList()
                   .stream()
-                  .map(ASTMCType::printType)
+                  .map(this::printJavaDSLASTMCType)
                   .toArray(String[]::new)));
     }
 
@@ -168,7 +169,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
             .createCDExtendUsage(
                 ast.getExtendedInterfaceList()
                     .stream()
-                    .map(ASTMCType::printType)
+                    .map(this::printJavaDSLASTMCType)
                     .toArray(String[]::new)))
         .build();
 
@@ -185,7 +186,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
             .createCDInterfaceUsage(
                 ast.getImplementedInterfaceList()
                     .stream()
-                    .map(ASTMCType::printType)
+                    .map(this::printJavaDSLASTMCType)
                     .toArray(String[]::new)))
         .build();
 
@@ -257,7 +258,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   @Override
   public void visit(ASTMethodDeclaration ast) {
     ASTCDMethod method = CDMethodFacade.getInstance().createMethod(
-        getModifier(ast.getMCModifierList().stream().map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
+        getModifier(ast.getMCModifierList().stream().filter(m -> m instanceof ASTJavaModifier).map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
         ast.getName());
 
     if (ast.getMCReturnType().isPresentMCType()) {
@@ -398,5 +399,12 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
 
   public ASTCDCompilationUnit getCompilationUnit() {
     return cdCompilationUnit;
+  }
+  
+  public String printJavaDSLASTMCType(ASTMCType type) {
+    JavaDSLMill.init();
+    String printedType = type.printType();
+    CD4CodeMill.init();
+    return printedType;
   }
 }
