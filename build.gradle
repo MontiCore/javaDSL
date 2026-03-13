@@ -1,6 +1,6 @@
 plugins {
     id "de.monticore.generator" version "$mc_version" apply false
-    id "com.github.johnrengelman.shadow" version "$shadow_plugin_version" apply false
+    id "com.gradleup.shadow" version "$shadow_plugin_version" apply false
 }
 
 allprojects {
