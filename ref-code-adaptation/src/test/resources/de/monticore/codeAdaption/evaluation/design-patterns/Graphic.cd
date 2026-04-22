@@ -1,0 +1,35 @@
+classdiagram Graphic {
+
+  <<ci="Component",re="Component">>
+  interface Graphic {
+    <<ci="execute",re="execute">> void render();
+  }
+
+  <<ci="Leaf">>
+  class Circle implements Graphic {
+    public void render();
+  }
+
+  <<re="Leaf">>
+  class Rectangle implements Graphic{
+    public void render();
+  }
+
+  <<ci="Composite",re="Composite">>
+  class Picture implements Graphic{
+    public void render();
+  }
+
+  association Picture -> Graphic [1..*];
+
+  <<npg="Target">> interface FlexImage {
+    <<npg="operation">> void flex();
+  }
+
+  <<npg="Adapter">>
+  class NPGAdapter implements FlexImage;
+
+  <<npg="Adaptee">> class NPGImage;
+
+  association NPGAdapter -> NPGImage [1];
+}
