@@ -43,7 +43,7 @@ shadowJar { // all in one jar
     archiveFileName = "CodeAdapter.jar"
     zip64 = true
 //        minimize()
-    duplicatesStrategy DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 test {
@@ -53,7 +53,7 @@ test {
 group = 'refCodeAdaptation'
 
 description = 'CoEvolution'
-buildDir = file("$projectDir/target")
+layout.buildDirectory = layout.projectDirectory.dir("target")
 
 
 googleJavaFormat {
@@ -63,7 +63,7 @@ googleJavaFormat {
 }
 
 verifyGoogleJavaFormat{
-    ignoreFailures true
+    ignoreFailures = true
     exclude "**"
 }  // do not check format in "build"
 

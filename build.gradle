@@ -5,7 +5,7 @@ plugins {
 allprojects {
     group = "de.monticore"
 
-    buildDir = file("$projectDir/target")
+    layout.buildDirectory = layout.projectDirectory.dir("target")
 
     repositories {
         if (("true").equals(getProperty('useLocalRepo'))) {
@@ -13,9 +13,9 @@ allprojects {
         }
 
         maven {
-            credentials.username mavenUser
-            credentials.password mavenPassword
-            url repo
+            credentials.username = mavenUser
+            credentials.password = mavenPassword
+            url = repo
         }
 
         mavenCentral()
@@ -37,8 +37,6 @@ subprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-        dependsOn(tasks.withType(MCGenTask))
-
         options.encoding = "UTF-8"
     }
 
@@ -55,8 +53,8 @@ subprojects {
     publishing {
         repositories {
             maven {
-                credentials.username mavenUser
-                credentials.password mavenPassword
+                credentials.username = mavenUser
+                credentials.password = mavenPassword
 
                 def releasesRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/monticore-releases/"
                 def snapshotsRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/monticore-snapshots/"
