@@ -41,4 +41,26 @@ public class ConfCheckerEvalTest extends EvaluationAbstractTest {
     double duration = (System.currentTimeMillis() - start) / 1000.0;
     System.out.println("duration: " + duration);
   }
+
+  @Test
+  @DisplayName("Evaluation conformance checker design patterns")
+  public void evaluationConformanceCheckerCDtest2() {
+    long start = System.currentTimeMillis();
+    Set<String> mappings = Set.of("ci", "re");
+    ASTCDCompilationUnit conCD = JavaLoader.loadCD(
+        new File(resourcesPath + "design-patterns/Graphic.cd"));
+    ASTCDCompilationUnit refCD = JavaLoader.loadCD(
+        new File(resourcesPath + "design-patterns/Composition.cd"));
+
+    CDConformanceChecker conformanceChecker = new CDConformanceChecker(confParameters);
+    Assertions.assertTrue(conformanceChecker.checkConformance(conCD, refCD, mappings));
+
+    mappings = Set.of("npg");
+    refCD = JavaLoader.loadCD(new File(resourcesPath + "design-patterns/Adapter.cd"));
+    Assertions.assertTrue(conformanceChecker.checkConformance(conCD, refCD, mappings));
+
+
+    double duration = (System.currentTimeMillis() - start) / 1000.0;
+    System.out.println("duration: " + duration);
+  }
 }
