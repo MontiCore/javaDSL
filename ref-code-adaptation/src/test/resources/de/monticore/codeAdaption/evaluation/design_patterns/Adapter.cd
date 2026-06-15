@@ -1,3 +1,5 @@
+package de.monticore.codeAdaption.evaluation.design_patterns;
+
 classdiagram Adapter {
 
   interface Target { void operation(); }

@@ -48,15 +48,15 @@ public class ConfCheckerEvalTest extends EvaluationAbstractTest {
     long start = System.currentTimeMillis();
     Set<String> mappings = Set.of("ci", "re");
     ASTCDCompilationUnit conCD = JavaLoader.loadCD(
-        new File(resourcesPath + "design-patterns/Graphic.cd"));
+        new File(resourcesPath + "design_patterns/Graphic.cd"));
     ASTCDCompilationUnit refCD = JavaLoader.loadCD(
-        new File(resourcesPath + "design-patterns/Composition.cd"));
+        new File(resourcesPath + "design_patterns/Composition.cd"));
 
     CDConformanceChecker conformanceChecker = new CDConformanceChecker(confParameters);
     Assertions.assertTrue(conformanceChecker.checkConformance(conCD, refCD, mappings));
 
     mappings = Set.of("npg");
-    refCD = JavaLoader.loadCD(new File(resourcesPath + "design-patterns/Adapter.cd"));
+    refCD = JavaLoader.loadCD(new File(resourcesPath + "design_patterns/Adapter.cd"));
     Assertions.assertTrue(conformanceChecker.checkConformance(conCD, refCD, mappings));
 
 
