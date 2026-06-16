@@ -1,0 +1,33 @@
+package de.monticore.codeAdaption.evaluation.testcase_16_observer_command_combined;
+
+import java.util.List;
+
+classdiagram Concrete {
+  <<observer="Subject">> class EventBus {
+    List<WorkflowCommand> listeners;
+    String lastEvent;
+    <<observer="attach">> void subscribe(WorkflowCommand command);
+    <<observer="detach">> void unsubscribe(WorkflowCommand command);
+    <<observer="notifyAll">> void publish(String event);
+  }
+
+  <<observer="Observer", command="Command">> interface WorkflowCommand {
+    <<observer="update", command="execute">> void run(String event, boolean async);
+  }
+
+  <<observer="Observer", command="Command">> class EmailCommand implements WorkflowCommand {
+    String address;
+    <<observer="update", command="execute">> void run(String event, boolean async);
+  }
+
+  <<observer="Observer", command="Command">> class SmsCommand implements WorkflowCommand {
+    String phoneNumber;
+    <<observer="update", command="execute">> void run(String event, boolean async);
+  }
+
+  <<command="Invoker">> class CommandQueue {
+    List<WorkflowCommand> backlog;
+    <<command="enqueue">> void schedule(WorkflowCommand command);
+    <<command="runAll">> void drain(String event);
+  }
+}

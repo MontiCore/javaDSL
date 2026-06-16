@@ -1,0 +1,9 @@
+classdiagram ForEachMethodExactConc {
+  <<ref="DataClass">> class Employee {
+    <<ref="copy()">> String copyEmployee();
+  }
+
+  <<ref="DataClass">> class Department {
+    <<ref="copy()">> int copyDepartment();
+  }
+}

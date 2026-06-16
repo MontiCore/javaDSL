@@ -1,0 +1,26 @@
+package de.monticore.codeAdaption.evaluation.testcase_7_controller_worker_observer;
+
+import java.util.List;
+
+classdiagram Reference {
+  class Builder {
+    any attribute;
+    void setAttribute(any attribute);
+  }
+
+  class Subject {
+    List<Observer> observers;
+    boolean subscribe(Observer o);
+    boolean unsubscribe(Observer o);
+    void notifyAll();
+  }
+
+  class Observer {
+    void update();
+  }
+}
+
+
+
+
+

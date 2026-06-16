@@ -1,0 +1,8 @@
+classdiagram ForEachMethodConc {
+  <<ref="DataClass">> class Employee {
+    <<ref="attribute">> String firstName;
+    <<ref="attribute">> int age;
+    String getFirstName();
+    int getAge();
+  }
+}

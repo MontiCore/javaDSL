@@ -1,0 +1,40 @@
+package de.monticore.codeAdaption.evaluation.testcase_13_template_observer_pattern;
+
+classdiagram Concrete {
+
+  <<template="AbstractClass", observer="Subject">> abstract class DataPipeline {
+    String pipelineName;
+    String source;
+    <<template="primitiveOperation1">> abstract void extractData();
+    <<template="primitiveOperation2">> abstract void processData();
+    <<template="primitiveOperation3">> abstract void loadData();
+  }
+
+  <<template="ConcreteClass">> class SalesDataPipeline extends DataPipeline {
+    String crmSystem;
+    <<template="primitiveOperation1">> void extractData();
+    <<template="primitiveOperation2">> void processData();
+    <<template="primitiveOperation3">> void loadData();
+  }
+
+  <<template="ConcreteClass">> class InventoryDataPipeline extends DataPipeline {
+    String erpSystem;
+    <<template="primitiveOperation1">> void extractData();
+    <<template="primitiveOperation2">> void processData();
+    <<template="primitiveOperation3">> void loadData();
+  }
+
+  <<observer="Observer">> interface PipelineObserver {
+    <<observer="update">> void onPipelineStage(String stage);
+  }
+
+  <<observer="Observer">> class LoggingObserver implements PipelineObserver {
+    String logLevel;
+    <<observer="update">> void onPipelineStage(String stage);
+  }
+
+  <<observer="Observer">> class MetricsObserver implements PipelineObserver {
+    String metricsEndpoint;
+    <<observer="update">> void onPipelineStage(String stage);
+  }
+}

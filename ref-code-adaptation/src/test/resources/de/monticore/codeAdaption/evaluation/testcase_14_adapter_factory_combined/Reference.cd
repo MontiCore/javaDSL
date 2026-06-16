@@ -1,0 +1,21 @@
+package de.monticore.codeAdaption.evaluation.testcase_14_adapter_factory_combined;
+
+classdiagram Reference {
+  interface Target {
+    boolean request(String payload);
+  }
+
+  class Adaptee {
+    boolean specificRequest(String payload);
+  }
+
+  class Adapter implements Target {
+    Adaptee adaptee;
+    Adapter(Adaptee adaptee);
+    boolean request(String payload);
+  }
+
+  abstract class Creator {
+    abstract Target create(Adaptee adaptee);
+  }
+}

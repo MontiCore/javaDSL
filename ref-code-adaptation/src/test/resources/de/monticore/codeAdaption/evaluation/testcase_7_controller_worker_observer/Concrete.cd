@@ -1,0 +1,36 @@
+package de.monticore.codeAdaption.evaluation.testcase_7_controller_worker_observer;
+
+import java.lang.Object;
+import java.lang.String;
+
+classdiagram Concrete {
+
+  <<buildPat="Builder", observer="Subject">> class Controller {
+    <<buildPat="attribute">> String id;
+    <<buildPat="attribute">> String status;
+    <<buildPat="setAttribute">> void sX(Object x);
+  }
+
+  <<observer="Observer">> interface WorkerInterface {
+    void work();
+  }
+
+  <<buildPat="Builder">> class WorkerA implements WorkerInterface {
+    <<buildPat="attribute">> String name;
+    <<buildPat="setAttribute">> void sX(Object x);
+    void work();
+  }
+
+  <<buildPat="Builder">> class WorkerB implements WorkerInterface {
+    <<buildPat="attribute">> String name;
+    <<buildPat="setAttribute">> void sX(Object x);
+    void work();
+  }
+}
+
+
+
+
+
+
+

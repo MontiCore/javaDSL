@@ -1,0 +1,9 @@
+package de.monticore.codeAdaption.evaluation.testcase_10_singleton_pattern;
+
+classdiagram Reference {
+  class Singleton {
+    static Singleton instance;
+    static Singleton getInstance();
+    any attribute;
+  }
+}

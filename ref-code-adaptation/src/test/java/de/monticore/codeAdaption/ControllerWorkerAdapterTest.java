@@ -1,0 +1,105 @@
+package de.monticore.codeAdaption;
+
+import static de.monticore.cdconformance.CDConfParameter.*;
+import static de.monticore.codeAdaption.utils.AdapterParam.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.utils.AdapterParam;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+public class ControllerWorkerAdapterTest extends AdapterAbstractTest {
+  private final String resourcesPath =
+      "src/test/resources/de/monticore/codeAdaption/evaluation/testcase_7_controller_worker_observer/";
+  private final File refCD = new File(resourcesPath + "Reference.cd");
+  private final File concreteCD = new File(resourcesPath + "Concrete.cd");
+  private final Path refCodePath = Path.of(resourcesPath + "concrete");
+  private final Path adapterCodePath = Path.of(resourcesPath + "adapter");
+  private final Path outputPath = Path.of("target/adapter/controller_worker_observer");
+
+  private Set<CDConfParameter> confParameters;
+  private Set<AdapterParam> adapterParams;
+
+  @BeforeEach
+  public void setup() {
+    initMills();
+    confParameters = Set.of(NAME_MAPPING, INHERITANCE, STEREOTYPE_MAPPING, STRICT_PARAMETER_ORDER);
+    adapterParams = Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE);
+  }
+
+  @Test
+  @DisplayName("Builder + Observer Patterns: Adapt Controller and Workers")
+  public void testControllerWorkerAdaptation() {
+    CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
+
+    assertDoesNotThrow(() -> {
+      adapter.adapt(refCD, concreteCD, Set.of("buildPat", "observer"), adapterCodePath, refCodePath, outputPath);
+    });
+
+    assertTrue(Files.exists(outputPath.resolve("ControllerBuilder.java")));
+    assertTrue(Files.exists(outputPath.resolve("WorkerABuilder.java")));
+    assertTrue(Files.exists(outputPath.resolve("WorkerBBuilder.java")));
+    assertTrue(Files.exists(outputPath.resolve("Controller.java")));
+    assertTrue(Files.exists(outputPath.resolve("WorkerA.java")));
+    assertTrue(Files.exists(outputPath.resolve("WorkerB.java")));
+
+    String controllerBuilderContent = readFileContent(outputPath, "ControllerBuilder.java");
+    String workerABuilderContent = readFileContent(outputPath, "WorkerABuilder.java");
+    String workerBBuilderContent = readFileContent(outputPath, "WorkerBBuilder.java");
+    String controllerContent = readFileContent(outputPath, "Controller.java");
+
+    assertTrue(controllerBuilderContent.contains("public class ControllerBuilder"));
+    assertTrue(controllerBuilderContent.contains("public Controller build()"));
+    assertTrue(controllerBuilderContent.contains("return this;") || controllerBuilderContent.contains("return this ;"));
+    assertTrue(controllerBuilderContent.contains("String idField") || controllerBuilderContent.contains("String idfield"));
+    assertTrue(controllerBuilderContent.contains("String statusField") || controllerBuilderContent.contains("String statusfield"));
+
+    assertTrue(workerABuilderContent.contains("public class WorkerABuilder"));
+    assertTrue(workerABuilderContent.contains("public WorkerA build()"));
+    assertTrue(workerABuilderContent.contains("String nameField") || workerABuilderContent.contains("String namefield"));
+
+    assertTrue(workerBBuilderContent.contains("public class WorkerBBuilder"));
+    assertTrue(workerBBuilderContent.contains("public WorkerB build()"));
+    assertTrue(workerBBuilderContent.contains("String nameField") || workerBBuilderContent.contains("String namefield"));
+
+    assertTrue(controllerContent.contains("private String id"));
+    assertTrue(controllerContent.contains("private String status"));
+    assertTrue(controllerContent.contains("public Controller(String id, String status)"));
+    assertTrue(controllerContent.contains("String getId()"));
+    assertTrue(controllerContent.contains("String getStatus()"));
+    assertTrue(controllerContent.contains("List<WorkerInterface> observers"));
+    assertTrue(controllerContent.contains("boolean subscribe(WorkerInterface"));
+    assertTrue(controllerContent.contains("boolean unsubscribe(WorkerInterface"));
+    assertTrue(controllerContent.contains("void notifyAll()"));
+    assertFalse(Files.exists(outputPath.resolve("OSubject.java")));
+    assertFalse(Files.exists(outputPath.resolve("OObserver.java")));
+    assertFalse(Files.exists(outputPath.resolve("BuilderBuilder.java")));
+
+    String workerAContent = readFileContent(outputPath, "WorkerA.java");
+    String workerBContent = readFileContent(outputPath, "WorkerB.java");
+
+    assertTrue(workerAContent.contains("public void update(") || workerAContent.contains("void update("));
+    assertTrue(workerBContent.contains("public void update(") || workerBContent.contains("void update("));
+  }
+
+  private String readFileContent(Path outputPath, String filename) {
+    try {
+      Path filePath = outputPath.resolve(filename);
+      assertTrue(Files.exists(filePath));
+      return Files.readString(filePath);
+    } catch (IOException e) {
+      fail("Failed to read file: " + filename);
+      return "";
+    }
+  }
+
+}
+

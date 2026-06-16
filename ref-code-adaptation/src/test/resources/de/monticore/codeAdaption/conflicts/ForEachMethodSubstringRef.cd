@@ -1,0 +1,6 @@
+classdiagram ForEachMethodSubstringRef {
+  class DataClass {
+    any attribute;
+    <<forEach="attribute">> any getAttributable();
+  }
+}

@@ -1,0 +1,9 @@
+package de.monticore.codeAdaption.evaluation.testcase_6_builder_pattern;
+
+classdiagram Reference {
+  class Builder {
+    any attribute;
+    void setAttribute(any attribute);
+  }
+}
+

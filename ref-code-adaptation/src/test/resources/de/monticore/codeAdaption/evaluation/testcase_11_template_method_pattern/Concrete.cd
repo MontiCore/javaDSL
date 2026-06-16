@@ -1,0 +1,33 @@
+package de.monticore.codeAdaption.evaluation.testcase_11_template_method_pattern;
+
+classdiagram Concrete {
+
+  <<template="AbstractClass">> abstract class DataProcessor {
+    String source;
+    String destination;
+    <<template="primitiveOperation1">> abstract void readData();
+    <<template="primitiveOperation2">> abstract void transformData();
+    <<template="hook">> void validateData();
+  }
+
+  <<template="ConcreteClass">> class CSVProcessor extends DataProcessor {
+    String delimiter;
+    <<template="primitiveOperation1">> void readData();
+    <<template="primitiveOperation2">> void transformData();
+    <<template="hook">> void validateData();
+  }
+
+  <<template="ConcreteClass">> class JSONProcessor extends DataProcessor {
+    boolean prettyPrint;
+    <<template="primitiveOperation1">> void readData();
+    <<template="primitiveOperation2">> void transformData();
+    <<template="hook">> void validateData();
+  }
+
+  <<template="ConcreteClass">> class XMLProcessor extends DataProcessor {
+    String encoding;
+    <<template="primitiveOperation1">> void readData();
+    <<template="primitiveOperation2">> void transformData();
+    <<template="hook">> void validateData();
+  }
+}

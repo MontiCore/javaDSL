@@ -1,0 +1,28 @@
+package de.monticore.codeAdaption.evaluation.testcase_9_strategy_pattern;
+
+classdiagram Concrete {
+
+  <<strategy="Context">> class PaymentProcessor {
+    String merchantId;
+    <<strategy="execute">> void processPayment(double amount);
+  }
+
+  <<strategy="Strategy">> interface PaymentStrategy {
+    <<strategy="execute">> void pay(double amount);
+  }
+
+  <<strategy="ConcreteStrategy">> class CreditCardStrategy implements PaymentStrategy {
+    String cardNumber;
+    <<strategy="execute">> void pay(double amount);
+  }
+
+  <<strategy="ConcreteStrategy">> class PayPalStrategy implements PaymentStrategy {
+    String email;
+    <<strategy="execute">> void pay(double amount);
+  }
+
+  <<strategy="ConcreteStrategy">> class BitcoinStrategy implements PaymentStrategy {
+    String walletAddress;
+    <<strategy="execute">> void pay(double amount);
+  }
+}

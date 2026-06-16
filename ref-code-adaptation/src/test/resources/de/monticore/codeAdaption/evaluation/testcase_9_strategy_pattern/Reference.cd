@@ -1,0 +1,21 @@
+package de.monticore.codeAdaption.evaluation.testcase_9_strategy_pattern;
+
+classdiagram Reference {
+  class Context {
+    Strategy strategy;
+    void setStrategy(Strategy strategy);
+    void execute(any attribute);
+  }
+
+  interface Strategy {
+    void execute(any attribute);
+  }
+
+  class ConcreteStrategyA implements Strategy {
+    void execute(any attribute);
+  }
+
+  class ConcreteStrategyB implements Strategy {
+    void execute(any attribute);
+  }
+}

@@ -1,0 +1,23 @@
+package de.monticore.codeAdaption.evaluation.testcase_12_strategy_singleton_pattern;
+
+classdiagram Reference {
+  class Singleton {
+    static Singleton instance;
+    static Singleton getInstance();
+    any attribute;
+  }
+
+  class Context {
+    Strategy strategy;
+    void setStrategy(Strategy strategy);
+    void execute();
+  }
+
+  interface Strategy {
+    void execute();
+  }
+
+  class ConcreteStrategy implements Strategy {
+    void execute();
+  }
+}

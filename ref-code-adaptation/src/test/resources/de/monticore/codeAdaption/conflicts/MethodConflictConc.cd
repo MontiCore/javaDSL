@@ -1,0 +1,6 @@
+classdiagram MethodConflictConc {
+  <<ref="Service">> class Service {
+    int value();
+    String value();
+  }
+}

@@ -1,0 +1,22 @@
+package de.monticore.codeAdaption.evaluation.testcase_10_singleton_pattern;
+
+classdiagram Concrete {
+
+  <<singleton="Singleton">> class DatabaseConnection {
+    <<singleton="attribute">> String connectionString;
+    <<singleton="attribute">> boolean isConnected;
+    void connect();
+    void disconnect();
+  }
+
+  <<singleton="Singleton">> class Logger {
+    <<singleton="attribute">> String logFile;
+    void log(String message);
+  }
+
+  class Application {
+    DatabaseConnection db;
+    Logger logger;
+    void initialize();
+  }
+}

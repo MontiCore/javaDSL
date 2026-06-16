@@ -1,0 +1,26 @@
+package de.monticore.codeAdaption.evaluation.testcase_16_observer_command_combined;
+
+import java.util.List;
+
+classdiagram Reference {
+  class Subject {
+    List<Observer> observers;
+    void attach(Observer observer);
+    void detach(Observer observer);
+    void notifyAll();
+  }
+
+  interface Observer {
+    void update();
+  }
+
+  interface Command {
+    void execute();
+  }
+
+  class Invoker {
+    List<Command> commands;
+    void enqueue(Command command);
+    void runAll();
+  }
+}

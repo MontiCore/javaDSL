@@ -1,0 +1,16 @@
+package de.monticore.codeAdaption.evaluation.testcase_11_template_method_pattern;
+
+classdiagram Reference {
+  abstract class AbstractClass {
+    void templateMethod();
+    abstract void primitiveOperation1();
+    abstract void primitiveOperation2();
+    void hook();
+  }
+
+  class ConcreteClass extends AbstractClass {
+    void primitiveOperation1();
+    void primitiveOperation2();
+    void hook();
+  }
+}

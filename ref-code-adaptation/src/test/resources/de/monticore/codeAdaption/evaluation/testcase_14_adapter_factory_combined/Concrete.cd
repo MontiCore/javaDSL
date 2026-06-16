@@ -1,0 +1,22 @@
+package de.monticore.codeAdaption.evaluation.testcase_14_adapter_factory_combined;
+
+classdiagram Concrete {
+  <<adapter="Target", factory="Product">> interface ShippingPort {
+    <<adapter="request">> boolean ship(String label, boolean insured);
+  }
+
+  <<adapter="Adaptee">> class LegacyCarrier {
+    String endpoint;
+    <<adapter="specificRequest">> boolean dispatch(String label, boolean insured);
+  }
+
+  <<adapter="Adapter", factory="ConcreteProduct">> class CarrierAdapter implements ShippingPort {
+    LegacyCarrier carrier;
+    CarrierAdapter(LegacyCarrier carrier);
+    <<adapter="request">> boolean ship(String label, boolean insured);
+  }
+
+  <<factory="Creator">> class ShippingFactory {
+    <<factory="create">> ShippingPort createCarrier(LegacyCarrier carrier);
+  }
+}

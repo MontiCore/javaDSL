@@ -1,0 +1,35 @@
+package de.monticore.codeAdaption.evaluation.testcase_12_strategy_singleton_pattern;
+
+classdiagram Concrete {
+
+  <<singleton="Singleton", strategy="Context">> class ConfigurationManager {
+    <<singleton="attribute">> String environment;
+    <<strategy="strategy">> ConfigStorageStrategy storageStrategy;
+    <<strategy="setStrategy">> void setStorageStrategy(ConfigStorageStrategy strategy);
+    <<strategy="execute">> void saveConfig(String key, String value);
+    <<strategy="execute">> String loadConfig(String key);
+  }
+
+  <<strategy="Strategy">> interface ConfigStorageStrategy {
+    <<strategy="execute">> void save(String key, String value);
+    <<strategy="execute">> String load(String key);
+  }
+
+  <<strategy="ConcreteStrategy">> class FileStorageStrategy implements ConfigStorageStrategy {
+    String basePath;
+    <<strategy="execute">> void save(String key, String value);
+    <<strategy="execute">> String load(String key);
+  }
+
+  <<strategy="ConcreteStrategy">> class DatabaseStorageStrategy implements ConfigStorageStrategy {
+    String connectionString;
+    <<strategy="execute">> void save(String key, String value);
+    <<strategy="execute">> String load(String key);
+  }
+
+  <<strategy="ConcreteStrategy">> class CloudStorageStrategy implements ConfigStorageStrategy {
+    String bucketName;
+    <<strategy="execute">> void save(String key, String value);
+    <<strategy="execute">> String load(String key);
+  }
+}

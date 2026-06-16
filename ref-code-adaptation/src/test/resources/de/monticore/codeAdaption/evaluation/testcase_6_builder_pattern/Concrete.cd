@@ -1,0 +1,28 @@
+package de.monticore.codeAdaption.evaluation.testcase_6_builder_pattern;
+
+import java.lang.String;
+import java.lang.Object;
+import java.util.Date;
+
+classdiagram Concrete {
+
+  <<buildPat="Builder">> class Person {
+    <<buildPat="attribute">> String name;
+    <<buildPat="attribute">> int age;
+    <<buildPat="attribute">> String email;
+    <<buildPat="attribute">> String phone;
+
+    <<buildPat="setAttribute">> void sX(Object x);
+  }
+
+  <<buildPat="Builder">> class Task {
+    <<buildPat="attribute">> int id;
+    <<buildPat="attribute">> String title;
+    <<buildPat="attribute">> String description;
+    <<buildPat="attribute">> String status;
+    <<buildPat="attribute">> Date dueDate;
+    <<buildPat="attribute">> String assignee;
+
+    <<buildPat="setAttribute">> void sX(Object x);
+  }
+}

@@ -1,0 +1,9 @@
+classdiagram ForEachMethodExactRef {
+  class DataClass {
+    any copy();
+  }
+
+  class Builder {
+    <<forEach="DataClass.copy()">> any copy();
+  }
+}
