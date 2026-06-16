@@ -13,6 +13,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 
+// Fixme: RegExUpdater needs to be repaired
+@Deprecated()
 public class RegexUpdater implements CodeUpdater {
   protected Set<File> code;
 

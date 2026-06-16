@@ -55,8 +55,7 @@ public class JavaLoader {
     try {
       optCdAST = cdParser.parse(file.getAbsolutePath());
     } catch (IOException e) {
-      System.out.println(e);
-      // Log.error("It was not possible to parse the class diagram " + file.getAbsolutePath());
+      Log.warn("Could not parse class diagram " + file.getAbsolutePath() + ": " + e.getMessage());
     }
     Assertions.assertTrue(optCdAST.isPresent());
 
@@ -69,16 +68,17 @@ public class JavaLoader {
     return optCdAST.get();
   }
 
+  /**
+   * Parses a CD file with the same symbol-table setup used by {@link #loadCD(File)}, but without
+   * requiring the diagram name to match the file name. This is used by adaptation fixtures whose
+   * file names are scenario-oriented.
+   */
   public static ASTCDCompilationUnit parseCD(String cdFile) {
     try {
       Optional<ASTCDCompilationUnit> cd = CD4CodeMill.parser().parseCDCompilationUnit(cdFile);
 
       if (cd.isPresent()) {
-        ICD4CodeArtifactScope as = CD4CodeMill.scopesGenitorDelegator().createFromAST(cd.get());
-        as.addImports(new ImportStatement("java.lang.String", true));
-        as.addImports(new ImportStatement("java.util", true));
-        cd.get().accept(new CD4CodeSymbolTableCompleter(cd.get()).getTraverser());
-
+        createCDSymTab(cd.get());
         return cd.get();
 
       } else {
@@ -209,16 +209,28 @@ public class JavaLoader {
     return new String(bytes);
   }
 
+  /**
+   * Pretty-prints Java ASTs into {@code codePath}, using each AST source file name as the target
+   * file name.
+   */
   public static void printAST(Set<ASTOrdinaryCompilationUnit> asts, Path codePath) {
     for (ASTOrdinaryCompilationUnit ast : asts) {
-      File sourceFile =
-          new File(ast.get_SourcePositionStart().getFileName().orElse(codePath.toString()));
+      // Extract just the file name from source position, write to codePath
+      String originalFileName = ast.get_SourcePositionStart().getFileName().orElse("");
+      String fileName = originalFileName.isEmpty()
+          ? "Unknown.java"
+          : Path.of(originalFileName).getFileName().toString();
+      Path targetPath = codePath.resolve(fileName);
+
       JavaDSLFullPrettyPrinter prettyPrinter = new JavaDSLFullPrettyPrinter(new IndentPrinter());
       String output = prettyPrinter.prettyprint(ast);
-      JavaLoader.writeFile(sourceFile.toPath(), output);
+      JavaLoader.writeFile(targetPath, output);
     }
   }
 
+  /**
+   * Deletes an output directory before adaptation writes new generated code.
+   */
   public static void removeDirectory(Path path) {
     try {
       // Delete the directory and its contents

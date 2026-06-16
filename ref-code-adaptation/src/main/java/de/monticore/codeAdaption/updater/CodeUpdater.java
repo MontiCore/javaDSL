@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption.updater;
 
 import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -9,6 +10,8 @@ import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /***
@@ -94,4 +97,176 @@ public interface CodeUpdater {
   void setOutputDirectory(Path outputPath);
 
   void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName);
+
+  /**
+   * Provide a mapping of concrete-type-simple-name -> grouping-type-simple-name
+   * so that updaters that operate on an AST (e.g. SpoonUpdater) can apply
+   * grouping replacements before pretty-printing. Default is a no-op to
+   * preserve backwards compatibility with other updaters.
+   * @param mappings mapping from concrete simple name to grouping simple name
+   */
+  default void setGroupingMappings(Map<String, String> mappings) {
+    // no-op
+  }
+
+  /**
+   * Register a concrete method signature so updaters can fix invocations that were
+   * renamed from a reference method with fewer arguments.
+   */
+  default void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
+    // no-op
+  }
+
+  /**
+   * Register an owner/signature-aware method rewrite. The reference key describes the source
+   * method before adaptation; the concrete key describes the target method after adaptation.
+   */
+  default void registerMethodRewrite(StableElementKey referenceMethod, StableElementKey concreteMethod) {
+    // no-op
+  }
+
+  /**
+   * Register an owner-aware field rewrite. Implementations can use this to avoid global name-only
+   * field access replacements.
+   */
+  default void registerFieldRewrite(StableElementKey referenceField, StableElementKey concreteField) {
+    // no-op
+  }
+
+  /**
+   * Add a new field to the given target type by cloning a template field
+   * and setting the provided name and type.
+   * Implementations should handle imports and type references.
+   */
+  default void addField(ASTTypeDeclaration targetType, ASTFieldDeclaration templateField, String newName, String newType) {
+
+  }
+
+  /**
+   * Add a new method to the given target type by cloning a template method
+   * and setting the provided name, parameter types/names and return type.
+   */
+  default void addMethod(ASTTypeDeclaration targetType,
+                         ASTMethodDeclaration templateMethod,
+                         String newName,
+                         List<String> paramTypes,
+                         List<String> paramNames,
+                         String returnType) {
+
+  }
+
+  /**
+   * Add a new method variant that allows specifying a method body snippet.
+   * Deprecated compatibility hook. New code should pass a structured {@link MethodBodySpec}.
+   */
+  @Deprecated
+  default void addMethod(ASTTypeDeclaration targetType,
+                         ASTMethodDeclaration templateMethod,
+                         String newName,
+                         List<String> paramTypes,
+                         List<String> paramNames,
+                         String returnType,
+                         String methodBody) {
+
+  }
+
+  /**
+   * Add a new method variant with a structured body. This avoids reparsing generated Java source
+   * snippets in concrete updater implementations.
+   */
+  default void addMethod(ASTTypeDeclaration targetType,
+                         ASTMethodDeclaration templateMethod,
+                         String newName,
+                         List<String> paramTypes,
+                         List<String> paramNames,
+                         String returnType,
+                         MethodBodySpec methodBody) {
+
+  }
+
+  /**
+   * Create a new top-level type by cloning the provided template type and giving it the provided name.
+   * Default no-op implementation for updaters that do not support type creation.
+   */
+  default void addType(ASTTypeDeclaration templateType, String newName) {
+
+  }
+
+  /**
+   * Remove a field from the given target type (by template AST field reference).
+   */
+  default void removeField(ASTTypeDeclaration targetType, ASTFieldDeclaration field) {
+
+  }
+
+  /**
+   * Remove a method from the given target type (by template AST method reference).
+   */
+  default void removeMethod(ASTTypeDeclaration targetType, ASTMethodDeclaration method) {
+
+  }
+
+  final class MethodBodySpec {
+    public enum Kind {
+      EMPTY,
+      ASSIGN_FIELD_AND_RETURN_THIS,
+      RETURN_NEW
+    }
+
+    private final Kind kind;
+    private final String fieldName;
+    private final String parameterName;
+    private final String constructorType;
+    private final java.util.List<String> constructorFieldArguments;
+
+    private MethodBodySpec(
+        Kind kind,
+        String fieldName,
+        String parameterName,
+        String constructorType,
+        List<String> constructorFieldArguments) {
+      this.kind = kind;
+      this.fieldName = fieldName;
+      this.parameterName = parameterName;
+      this.constructorType = constructorType;
+      this.constructorFieldArguments =
+          constructorFieldArguments == null
+              ? java.util.List.of()
+              : java.util.List.copyOf(constructorFieldArguments);
+    }
+
+    public static MethodBodySpec empty() {
+      return new MethodBodySpec(Kind.EMPTY, null, null, null, java.util.List.of());
+    }
+
+    public static MethodBodySpec assignFieldAndReturnThis(String fieldName, String parameterName) {
+      return new MethodBodySpec(
+          Kind.ASSIGN_FIELD_AND_RETURN_THIS, fieldName, parameterName, null, java.util.List.of());
+    }
+
+    public static MethodBodySpec returnNew(
+        String constructorType, java.util.List<String> fieldArguments) {
+      return new MethodBodySpec(Kind.RETURN_NEW, null, null, constructorType, fieldArguments);
+    }
+
+    public Kind kind() {
+      return kind;
+    }
+
+    public String fieldName() {
+      return fieldName;
+    }
+
+    public String parameterName() {
+      return parameterName;
+    }
+
+    public String constructorType() {
+      return constructorType;
+    }
+
+    public List<String> constructorFieldArguments() {
+      return constructorFieldArguments;
+    }
+  }
 }

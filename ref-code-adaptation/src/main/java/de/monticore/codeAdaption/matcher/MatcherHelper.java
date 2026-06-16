@@ -8,6 +8,7 @@ import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.matcher.annotMatcher.AnnotElementCollector;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTJavaAnnotation;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
@@ -15,6 +16,7 @@ import de.monticore.javalight._ast.*;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.symboltable.ISymbol;
+import de.se_rwth.commons.logging.Log;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -46,13 +48,17 @@ public class MatcherHelper {
     // build matching
     CodeMatching matching = new CodeMatching();
     matching.setTemplate(collector.getTemplate());
+    matching.setGenerateTemplate(collector.getGenTemplate());
     matching.setIgnore(collector.isIgnore());
 
     // resolve and add reference to the matching
     for (String ref : collector.getReferences()) {
       Optional<ISymbol> symbol = AdapterUtils.resolveCDSymbol(ref, cd);
-      assert symbol.isPresent();
-      matching.addReference(symbol.get());
+      if (symbol.isPresent()) {
+        matching.addReference(symbol.get());
+      } else {
+        Log.warn(String.format("MatcherHelper: could not resolve annotation reference '%s' in reference CD. Skipping this reference.", ref));
+      }
     }
 
     return matching;
@@ -74,7 +80,10 @@ public class MatcherHelper {
   public static String mkTemplateFormInfix(String name, List<ISymbol> infixList) {
     String template = name;
 
-    for (ISymbol infixSymbol : infixList) {
+    List<ISymbol> orderedInfixes = new ArrayList<>(infixList);
+    orderedInfixes.sort(
+        Comparator.comparingInt((ISymbol symbol) -> symbol.getName().length()).reversed());
+    for (ISymbol infixSymbol : orderedInfixes) {
       String infix = infixSymbol.getName();
       if (name.contains(infix)) {
         template = template.replace(infix, SIMPLE_PLACE_HOLDER);
@@ -108,7 +117,7 @@ public class MatcherHelper {
   }
 
   public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
-    for (ASTMCModifier mod : mods) {
+    for (ASTJavaModifier mod : mods) {
       if (mod instanceof ASTJavaAnnotation
           && ((ASTJavaAnnotation) mod).getAnnotationName().getQName().equals(ANNOT_NAME)) {
         return Optional.of((ASTJavaAnnotation) mod);
@@ -135,38 +144,40 @@ public class MatcherHelper {
    * @return the generated String.
    */
   public static String fillTemplate(String template, List<ISymbol> refSymbol) {
-    StringBuilder builder = new StringBuilder(template);
-
-    // Create a pattern to match everything between "${" and "}"
+    if (template == null || template.isEmpty() || refSymbol == null || refSymbol.isEmpty()) {
+      return template;
+    }
     Pattern pattern = Pattern.compile(PLACE_HOLDER_REGEX);
     Matcher matcher = pattern.matcher(template);
-
-    for (ISymbol feld : refSymbol) {
-      if (matcher.find()) {
-        String pHolder = matcher.group(1);
-
-        String replacement;
-        if (pHolder.equals(CAP_FIRST)) {
-          replacement = capFirst(feld.getName());
-        } else if (pHolder.equals(UNCAP_FIRST)) {
-          replacement = uncapFirst(feld.getName());
-        } else {
-          replacement = feld.getName();
-        }
-        builder =
-            new StringBuilder(builder.toString().replaceFirst(PLACE_HOLDER_REGEX, replacement));
+    StringBuffer result = new StringBuffer();
+    int referenceIndex = 0;
+    while (matcher.find()) {
+      if (referenceIndex >= refSymbol.size()) {
+        matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(0)));
+        continue;
       }
+      ISymbol field = refSymbol.get(referenceIndex++);
+      String pHolder = matcher.group(1);
+      String replacement;
+      if (pHolder.equals(CAP_FIRST)) {
+        replacement = capFirst(field.getName());
+      } else if (pHolder.equals(UNCAP_FIRST)) {
+        replacement = uncapFirst(field.getName());
+      } else {
+        replacement = field.getName();
+      }
+      matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
     }
-
-    return builder.toString();
+    matcher.appendTail(result);
+    return result.toString();
   }
 
   public static String capFirst(String str) {
-    return Character.toUpperCase(str.charAt(0)) + str.substring(1);
+    return JavaSourceNames.capitalize(str);
   }
 
   public static String uncapFirst(String str) {
-    return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+    return JavaSourceNames.uncapitalize(str);
   }
 
   public static List<ISymbol> resolveReferencesFromType(

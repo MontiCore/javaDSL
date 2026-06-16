@@ -21,6 +21,7 @@ import java.util.List;
 public class AnnotElementCollector implements JavaLightVisitor2 {
 
   private String template;
+  private String genTemplate;
   private final List<String> references = new ArrayList<>();
   private boolean ignore;
 
@@ -50,6 +51,11 @@ public class AnnotElementCollector implements JavaLightVisitor2 {
       traverser.add4MCCommonLiterals(visitor);
       val.accept(traverser);
     }
+
+    if (node.getName().equals(Constants.GENERATE_TEMPLATE)) {
+      ASTExpression val = node.getElementValueOrExpr().getExpression();
+      genTemplate = ((ASTStringLiteral) ((ASTLiteralExpression) val).getLiteral()).getValue();
+    }
   }
 
   public List<String> getReferences() {
@@ -58,6 +64,10 @@ public class AnnotElementCollector implements JavaLightVisitor2 {
 
   public String getTemplate() {
     return template;
+  }
+
+  public String getGenTemplate() {
+    return genTemplate;
   }
 
   public boolean isIgnore() {

@@ -127,6 +127,27 @@ public class CodeValidator {
     return true;
   }
 
+  /**
+   * Initializes the TypeMatcher with collected type declarations from Java files.
+   * This must be called before using the validator for matching operations.
+   * 
+   * @param javaFiles The Java compilation units to collect types from
+   */
+  public void initializeTypeMatcher(Set<ASTOrdinaryCompilationUnit> javaFiles) {
+    Set<ASTTypeDeclaration> allTypes = new LinkedHashSet<>();
+    
+    for (ASTOrdinaryCompilationUnit ast : javaFiles) {
+      JavaAstElemCollector collector = new JavaAstElemCollector();
+      JavaDSLTraverser traverser = JavaDSLMill.traverser();
+      traverser.add4JavaDSL(collector);
+      ast.accept(traverser);
+      
+      allTypes.addAll(collector.getAllTypeDeclarations());
+    }
+    
+    typeMatcher.setAllTypeDeclarations(allTypes);
+  }
+
   protected void checkAllMatching(JavaAstElemCollector collector) {
 
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {

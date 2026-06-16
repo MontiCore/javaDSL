@@ -1,16 +1,23 @@
 package de.monticore.codeAdaption.handler;
 
+import de.monticore.cd4codebasis._ast.ASTCDMethod;
+import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.cddiff.CDDiffUtil;
+import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.*;
 import de.monticore.codeAdaption.updater.CodeUpdater;
+import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
@@ -23,18 +30,9 @@ import de.monticore.symboltable.ISymbol;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.nio.file.Path;
 import java.util.*;
-// TODO: 20.09.2023 handle concrete handwritten-code
+import de.se_rwth.commons.logging.Log;
 
-/***
- * this class is to handle is to handle the update operation.
- * -
- * 1- iterate over all adaptable code-elements (Type, field, method,local variable,formal parameters-names).
- * 2- get the match of each element in the reference class diagram.
- * 3- compute the concrete value of each element form the matching using the conformance checker.
- * 4- use the updater to update the value in the code.
- * -
- * this handler assumes that each reference element has a unique incarnation.
- */
+/** Applies CD-based adaptation decisions to Java AST elements. */
 public class BasicUpdateHandler {
   protected ASTCDCompilationUnit conCD;
   protected ASTCDCompilationUnit refCD;
@@ -43,6 +41,14 @@ public class BasicUpdateHandler {
 
   protected CodeValidator validator;
 
+  /** Optional incarnation context for stereotype-based mapping when conformance is skipped */
+  protected IncarnationContext incarnationContext;
+
+  protected boolean useCommonParentForMultipleIncarnations = true;
+
+  /** Tracks generated type names created during a single handler run to avoid duplicate generation. */
+  protected final Set<String> generatedTypes = new HashSet<>();
+
   public BasicUpdateHandler(
       ASTCDCompilationUnit refCD,
       ASTCDCompilationUnit conCD,
@@ -50,14 +56,42 @@ public class BasicUpdateHandler {
       CDConformanceChecker checker,
       CodeUpdater updater,
       CodeValidator validator) {
+    this(refCD, conCD, conHwcPath, checker, updater, validator, null);
+  }
+
+  public BasicUpdateHandler(
+      ASTCDCompilationUnit refCD,
+      ASTCDCompilationUnit conCD,
+      Path conHwcPath,
+      CDConformanceChecker checker,
+      CodeUpdater updater,
+      CodeValidator validator,
+      IncarnationContext incarnationContext) {
+    this(refCD, conCD, conHwcPath, checker, updater, validator, incarnationContext, true);
+  }
+
+  public BasicUpdateHandler(
+      ASTCDCompilationUnit refCD,
+      ASTCDCompilationUnit conCD,
+      Path conHwcPath,
+      CDConformanceChecker checker,
+      CodeUpdater updater,
+      CodeValidator validator,
+      IncarnationContext incarnationContext,
+      boolean useCommonParentForMultipleIncarnations) {
     this.updater = updater;
     this.checker = checker;
     this.conCD = conCD;
     this.refCD = refCD;
     this.validator = validator;
+    this.incarnationContext = incarnationContext;
+    this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
   }
 
   public void handleUpdate(Set<ASTOrdinaryCompilationUnit> javaFiles) {
+
+    // Initialize TypeMatcher with collected types from the Java files
+    validator.initializeTypeMatcher(javaFiles);
 
     // Collect elements of each type
     Set<JavaAstElemCollector> typeElements = new LinkedHashSet<>();
@@ -88,26 +122,171 @@ public class BasicUpdateHandler {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
       Optional<CodeMatching> matching = validator.getMatchedType(type);
       if (matching.isPresent() && matching.get().mustBePerform()) {
-        String newName = buildConcreteName(matching.get());
-        updater.updateType(type, newName);
+        if (matching.get().getGenerateTemplate() != null && !matching.get().getGenerateTemplate().isEmpty()) {
+          generateTypeFromTemplate(type, matching.get(), collector);
+        } else {
+          String newName = buildConcreteName(matching.get());
+          updater.updateType(type, newName);
+        }
       }
     }
 
     // update type not present in the reference code
     for (ASTCDType cdType : CDDiffUtil.getAllCDTypes(refCD)) {
-      String newName = getConTypeSymbol(cdType.getSymbol()).getName();
+      String newName =
+          getSymbolFromContext(cdType.getSymbol())
+              .orElseGet(() -> getConTypeSymbol(cdType.getSymbol()))
+              .getName();
       updater.updateCDType(cdType, newName);
     }
+  }
+
+  private void generateTypeFromTemplate(
+      ASTTypeDeclaration templateType, CodeMatching typeMatching, JavaAstElemCollector collector) {
+    String generatedTypeName = buildConcreteName(typeMatching);
+    if (!generatedTypes.add(generatedTypeName)) {
+      return;
+    }
+
+    updater.addType(templateType, generatedTypeName);
+
+    List<ASTFieldDeclaration> templateFields = collector.getAllFieldDeclarations(templateType);
+    List<ASTMethodDeclaration> templateMethods = collector.getAllMethodDeclarations(templateType);
+    if (templateFields.isEmpty() || templateMethods.isEmpty()) {
+      removeTemplateMembers(templateType, templateFields, templateMethods);
+      return;
+    }
+
+    String concreteName = resolveGeneratedTargetTypeName(templateType, typeMatching);
+    List<GeneratedAttribute> attributes = collectGeneratedAttributes(concreteName);
+    ASTFieldDeclaration fieldTemplate = templateFields.get(0);
+    ASTMethodDeclaration methodTemplate = templateMethods.get(0);
+    List<String> buildFieldArgs = new ArrayList<>();
+
+    for (GeneratedAttribute attribute : attributes) {
+      String fieldName = attribute.name() + "Field";
+      updater.addField(templateType, fieldTemplate, fieldName, attribute.type());
+      buildFieldArgs.add(fieldName);
+
+      String setterName = setterName(attribute.name());
+      updater.addMethod(
+          templateType,
+          methodTemplate,
+          setterName,
+          List.of(attribute.type()),
+          List.of(attribute.name()),
+          generatedTypeName,
+          MethodBodySpec.assignFieldAndReturnThis(fieldName, attribute.name()));
+    }
+
+    updater.addMethod(
+        templateType,
+        methodTemplate,
+        "build",
+        Collections.emptyList(),
+        Collections.emptyList(),
+        concreteName,
+        MethodBodySpec.returnNew(concreteName, buildFieldArgs));
+
+    removeTemplateMembers(templateType, templateFields, templateMethods);
+  }
+
+  private String resolveGeneratedTargetTypeName(ASTTypeDeclaration templateType, CodeMatching matching) {
+    for (ISymbol refSym : matching.getReferences()) {
+      if (refSym instanceof CDTypeSymbol cdTypeSymbol) {
+        return getSymbolFromContext(refSym)
+            .orElseGet(() -> getConTypeSymbol(cdTypeSymbol))
+            .getName();
+      }
+    }
+    return resolveConcreteTypeName(templateType.getName());
+  }
+
+  private List<GeneratedAttribute> collectGeneratedAttributes(String concreteName) {
+    Optional<ASTCDType> concreteType = findConcreteType(concreteName);
+    if (concreteType.isEmpty()) {
+      return List.of();
+    }
+
+    List<GeneratedAttribute> attributes = new ArrayList<>();
+    for (ASTCDAttribute attribute : concreteType.get().getCDAttributeList()) {
+      String type = JavaLoader.print(attribute.getMCType());
+      if (incarnationContext != null && useCommonParentForMultipleIncarnations) {
+        type = replaceConcreteWithGroupingType(type);
+      }
+      attributes.add(new GeneratedAttribute(attribute.getName(), type));
+    }
+    return attributes;
+  }
+
+  private void removeTemplateMembers(
+      ASTTypeDeclaration templateType,
+      List<ASTFieldDeclaration> templateFields,
+      List<ASTMethodDeclaration> templateMethods) {
+    for (ASTFieldDeclaration templateField : templateFields) {
+      try {
+        updater.removeField(templateType, templateField);
+      } catch (Exception e) {
+        Log.debug("Could not remove template field: " + e.getMessage(), "BasicUpdateHandler");
+      }
+    }
+    for (ASTMethodDeclaration templateMethod : templateMethods) {
+      try {
+        updater.removeMethod(templateType, templateMethod);
+      } catch (Exception e) {
+        Log.debug("Could not remove template method: " + e.getMessage(), "BasicUpdateHandler");
+      }
+    }
+  }
+
+  private static String setterName(String attributeName) {
+    if (attributeName == null || attributeName.isEmpty()) {
+      return "set";
+    }
+    return "set" + JavaSourceNames.capitalize(attributeName);
   }
 
   protected void handleTMemberUpdate(JavaAstElemCollector collector) {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
 
+      // If the type is configured to be generated, skip member-level
+      // updates here because members are created on the generated type in handleTypeUpdate.
+      Optional<CodeMatching> typeMatching = validator.getMatchedType(type);
+      if (typeMatching.isPresent() && typeMatching.get().getGenerateTemplate() != null
+              && !typeMatching.get().getGenerateTemplate().isEmpty()) {
+        continue;
+      }
+
       // update method names
       for (ASTMethodDeclaration method : collector.getAllMethodDeclarations(type)) {
         Optional<CodeMatching> matching = validator.getMatchedMethod(type, method);
         if (matching.isPresent() && matching.get().mustBePerform()) {
-          String newName = buildConcreteName(matching.get());
+          // Check if this is a pattern template method with no concrete incarnation
+          // If so, skip the name update to preserve the template method name
+          boolean hasConcreteIncarnation = false;
+          boolean hasMethodReference = false;
+          String concreteMethodName = null;
+          for (ISymbol ref : matching.get().getReferences()) {
+            boolean methodReference =
+                ref.getAstNode() instanceof ASTCDMethod
+                    || (!(ref instanceof CDTypeSymbol) && !(ref instanceof FieldSymbol));
+            if (methodReference) {
+              hasMethodReference = true;
+              Optional<ISymbol> conMethod = getSymbolFromContext(ref);
+              if (conMethod.isPresent() && !conMethod.get().getName().equals(ref.getName())) {
+                hasConcreteIncarnation = true;
+                concreteMethodName = conMethod.get().getName();
+                registerConcreteMethodSignature(ref, conMethod.get());
+                break;
+              }
+            }
+          }
+
+          if (hasMethodReference && !hasConcreteIncarnation) {
+            continue;
+          }
+
+          String newName = concreteMethodName != null ? concreteMethodName : buildConcreteName(matching.get());
           updater.updateMethod(type, method, newName);
         }
       }
@@ -132,6 +311,8 @@ public class BasicUpdateHandler {
     }
   }
 
+  private record GeneratedAttribute(String name, String type) {}
+
   protected void handleVariableUpdate(JavaAstElemCollector collector) {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
       for (ASTMethodDeclaration method : collector.getAllMethodDeclarations(type)) {
@@ -145,7 +326,7 @@ public class BasicUpdateHandler {
           }
         }
 
-        // update all formal parameters
+        // update all formal parameters using normal matching logic
         for (ASTFormalParameter param : collector.getAllParameters(type, method)) {
           Optional<CodeMatching> matching = validator.getMatchedParameter(type, method, param);
           if (matching.isPresent() && matching.get().mustBePerform()) {
@@ -153,44 +334,395 @@ public class BasicUpdateHandler {
             updater.updateMethodParameter(type, method, param, newName);
           }
         }
+
+        // update all formal parameters using concrete CD method lookup (fallback)
+        updateMethodParametersFromConcreteCD(type, method, collector);
       }
     }
+  }
+
+  /**
+   * Update method parameters by looking up the concrete method in conCD and extracting
+   * parameter names directly from the concrete method signature.
+   */
+  protected void updateMethodParametersFromConcreteCD(
+      ASTTypeDeclaration type, ASTMethodDeclaration method, JavaAstElemCollector collector) {
+
+    List<ASTFormalParameter> refParams = collector.getAllParameters(type, method);
+    if (refParams.isEmpty()) {
+      return;
+    }
+
+    // Get concrete method name
+    String concreteMethodName = resolveConcreteMethodName(type, method);
+    if (concreteMethodName == null) {
+      return;
+    }
+
+    // Find the concrete type that matches the current type
+    String typeName = type.getName();
+    String concreteTypeName = resolveConcreteTypeName(typeName);
+    if (concreteTypeName == null) {
+      return;
+    }
+
+    // Find concrete method in conCD
+    Optional<ASTCDMethod> concreteMethod = findConcreteMethod(
+        concreteTypeName, concreteMethodName, refParams.size());
+
+    if (concreteMethod.isPresent()) {
+      List<ASTCDParameter> conParams = concreteMethod.get().getCDParameterList();
+
+      // Match parameters by position and update names
+      for (int i = 0; i < refParams.size() && i < conParams.size(); i++) {
+        String conParamName = conParams.get(i).getName();
+        updater.updateMethodParameter(type, method, refParams.get(i), conParamName);
+      }
+    }
+  }
+
+  /**
+   * Resolve concrete method name using the same logic as method renaming.
+   */
+  private String resolveConcreteMethodName(ASTTypeDeclaration type, ASTMethodDeclaration method) {
+    Optional<CodeMatching> matching = validator.getMatchedMethod(type, method);
+    if (matching.isPresent() && matching.get().mustBePerform()) {
+      return buildConcreteName(matching.get());
+    }
+    return null;
+  }
+
+  /**
+   * Resolve concrete type name using IncarnationContext or conformance checker.
+   */
+  private String resolveConcreteTypeName(String refTypeName) {
+    // First try IncarnationContext - look up type name by matching reference type names
+    if (incarnationContext != null) {
+      for (Map.Entry<ISymbol, List<ISymbol>> entry : incarnationContext.getReferenceToIncarnations().entrySet()) {
+        if (entry.getKey().getName().equals(refTypeName)) {
+          List<ISymbol> incarnations = entry.getValue();
+          if (incarnations != null && !incarnations.isEmpty()) {
+            ISymbol firstInc = incarnations.get(0);
+            if (useCommonParentForMultipleIncarnations) {
+              var grouping = incarnationContext.findGroupingTypeForImplementer(firstInc.getName());
+              if (grouping.isPresent()) {
+                return grouping.get();
+              }
+            }
+            return firstInc.getName();
+          }
+        }
+      }
+    }
+
+    // For single mapping, use conformance checker to find the concrete type
+    if (checker != null && checker.getIncarnationMapping() != null) {
+      for (ASTCDType refType : CDDiffUtil.getAllCDTypes(refCD)) {
+        if (refType.getName().equals(refTypeName)) {
+          var incarnations = checker.getIncarnationMapping().getIncarnations(refType);
+          if (incarnations != null && incarnations.iterator().hasNext()) {
+            return incarnations.iterator().next().getSymbol().getName();
+          }
+          break;
+        }
+      }
+    }
+
+    // Fall back to direct name matching in conCD (for cases where names are the same)
+    // Prefer interfaces over concrete classes when both exist with the same name.
+    for (ASTCDType conType : conCD.getCDDefinition().getCDInterfacesList()) {
+      if (conType.getName().equals(refTypeName)) {
+        return conType.getName();
+      }
+    }
+    for (ASTCDType conType : conCD.getCDDefinition().getCDClassesList()) {
+      if (conType.getName().equals(refTypeName)) {
+        return conType.getName();
+      }
+    }
+
+    // If not found, return the reference name (fallback)
+    return refTypeName;
+  }
+
+  /**
+   * Find concrete method in conCD by type name, method name, and parameter count.
+   */
+  private Optional<ASTCDMethod> findConcreteMethod(
+      String typeName, String methodName, int paramCount) {
+
+    // Find the concrete type
+    Optional<ASTCDType> concreteType = findConcreteType(typeName);
+    if (concreteType.isEmpty()) {
+      return Optional.empty();
+    }
+
+    // Search for method in the type
+    for (ASTCDMethod conMethod : concreteType.get().getCDMethodList()) {
+      if (conMethod.getName().equals(methodName)
+          && conMethod.getCDParameterList().size() == paramCount) {
+        return Optional.of(conMethod);
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Find concrete type by name in conCD.
+   */
+  private Optional<ASTCDType> findConcreteType(String typeName) {
+    for (ASTCDType conType : conCD.getCDDefinition().getCDClassesList()) {
+      if (conType.getName().equals(typeName)) {
+        return Optional.of(conType);
+      }
+    }
+    for (ASTCDType conType : conCD.getCDDefinition().getCDInterfacesList()) {
+      if (conType.getName().equals(typeName)) {
+        return Optional.of(conType);
+      }
+    }
+    return Optional.empty();
   }
 
   /***
    * build concrete name of an element form the matching found in the class diagram
    */
-  private String buildConcreteName(CodeMatching codeMatching) {
+  protected String buildConcreteName(CodeMatching matching) {
     List<ISymbol> conReferences = new ArrayList<>();
 
     // resolve concrete references
-    for (ISymbol refSymbol : codeMatching.getReferences()) {
+    for (ISymbol refSymbol : matching.getReferences()) {
+      // IncarnationContext
+      Optional<ISymbol> fromContext = getSymbolFromContext(refSymbol);
+      if (fromContext.isPresent()) {
+        conReferences.add(fromContext.get());
+        continue;
+      }
+
+      // Fall back to conformance checker
       if (refSymbol instanceof CDTypeSymbol) {
         conReferences.add(getConTypeSymbol((CDTypeSymbol) refSymbol));
-      } else {
+      } else if (refSymbol instanceof FieldSymbol) {
         conReferences.add(getConAttributeSymbol((FieldSymbol) refSymbol));
+      } else {
+        // Handle method symbols and other symbol types
+        conReferences.add(getConMethodSymbol(refSymbol));
       }
     }
-    // fill the template with the references
-    return MatcherHelper.fillTemplate(codeMatching.getTemplate(), conReferences);
+
+    // Prefer an explicit generation template if provided
+    String genTemplate = matching.getGenerateTemplate();
+    if (genTemplate != null && !genTemplate.isEmpty()) {
+      return MatcherHelper.fillTemplate(genTemplate, conReferences);
+    }
+
+    return MatcherHelper.fillTemplate(matching.getTemplate(), conReferences);
+  }
+
+  /**
+   * Looks up a reference symbol's incarnation from the IncarnationContext.
+   * Uses name-based matching since ISymbol objects from different loads may have different identities.
+   */
+  protected Optional<ISymbol> getSymbolFromContext(ISymbol refSymbol) {
+    if (incarnationContext == null) {
+      return Optional.empty();
+    }
+
+    List<ISymbol> incarnations = incarnationContext.getIncarnations(refSymbol);
+    if (incarnations == null || incarnations.isEmpty()) {
+      return Optional.empty();
+    }
+    if (refSymbol instanceof CDTypeSymbol && useCommonParentForMultipleIncarnations) {
+      Optional<ISymbol> commonParent = findCommonParentInIncarnations(incarnations);
+      if (commonParent.isPresent()) {
+        return commonParent;
+      }
+      for (ISymbol incarnation : incarnations) {
+        var grouping = incarnationContext.findGroupingTypeForImplementer(incarnation.getName());
+        if (grouping.isPresent()) {
+          Optional<ISymbol> groupingSymbol = findContextSymbolByName(grouping.get());
+          if (groupingSymbol.isPresent()) {
+            return groupingSymbol;
+          }
+        }
+      }
+      ISymbol first = incarnations.get(0);
+      if (incarnationContext.getInterfaceToImplementers() != null) {
+        for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getInterfaceToImplementers().entrySet()) {
+          List<ISymbol> impls = e.getValue();
+          if (impls != null) {
+            for (ISymbol impl : impls) {
+              if (impl.getName().equals(first.getName())) {
+                return Optional.of(e.getKey());
+              }
+            }
+          }
+        }
+      }
+    }
+    return Optional.of(incarnations.get(0));
+  }
+
+  private Optional<ISymbol> findCommonParentInIncarnations(List<ISymbol> incarnations) {
+    Set<String> incarnationNames = new HashSet<>();
+    for (ISymbol incarnation : incarnations) {
+      incarnationNames.add(incarnation.getName());
+    }
+    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getInterfaceToImplementers().entrySet()) {
+      String parentName = e.getKey().getName();
+      if (!incarnationNames.contains(parentName)) {
+        continue;
+      }
+      Set<String> implementerNames = new HashSet<>();
+      for (ISymbol implementer : e.getValue()) {
+        implementerNames.add(implementer.getName());
+      }
+      Set<String> withoutParent = new HashSet<>(incarnationNames);
+      withoutParent.remove(parentName);
+      if (withoutParent.equals(implementerNames)) {
+        return Optional.of(e.getKey());
+      }
+    }
+    return Optional.empty();
+  }
+
+  private Optional<ISymbol> findContextSymbolByName(String name) {
+    if (name == null || incarnationContext == null) {
+      return Optional.empty();
+    }
+    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getInterfaceToImplementers().entrySet()) {
+      if (e.getKey().getName().equals(name)) {
+        return Optional.of(e.getKey());
+      }
+    }
+    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getReferenceToIncarnations().entrySet()) {
+      if (e.getKey().getName().equals(name)) {
+        return Optional.of(e.getKey());
+      }
+      for (ISymbol incarnation : e.getValue()) {
+        if (incarnation.getName().equals(name)) {
+          return Optional.of(incarnation);
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  private void registerConcreteMethodSignature(ISymbol referenceMethodSymbol, ISymbol concreteMethodSymbol) {
+    if (concreteMethodSymbol == null || !(concreteMethodSymbol.getAstNode() instanceof ASTCDMethod)) {
+      return;
+    }
+    if (incarnationContext != null) {
+      Optional<StableElementKey> referenceKey = incarnationContext.getStableKey(referenceMethodSymbol);
+      Optional<StableElementKey> concreteKey = incarnationContext.getStableKey(concreteMethodSymbol);
+      if (referenceKey.isPresent() && concreteKey.isPresent()) {
+        updater.registerMethodRewrite(referenceKey.get(), concreteKey.get());
+      }
+    }
+    ASTCDMethod concreteMethod = (ASTCDMethod) concreteMethodSymbol.getAstNode();
+    List<String> parameterTypes = new ArrayList<>();
+    for (ASTCDParameter parameter : concreteMethod.getCDParameterList()) {
+      parameterTypes.add(JavaSourceNames.printNormalizedType(parameter.getMCType()));
+    }
+    updater.registerConcreteMethodSignature(concreteMethod.getName(), parameterTypes);
   }
 
   protected ISymbol getConTypeSymbol(CDTypeSymbol symbol) {
-    return checker
-        .getIncarnationMapping()
-        .getIncarnations(symbol.getAstNode())
-        .iterator()
-        .next()
-        .getSymbol();
+    if (checker == null) {
+      Log.warn("No CDConformanceChecker available for type " + symbol.getName());
+      return symbol;
+    }
+
+    if (checker.getIncarnationMapping() == null) {
+      Log.warn("No incarnation mapping available for type " + symbol.getName());
+      return symbol;
+    }
+
+    var incarnations = checker.getIncarnationMapping().getIncarnations(symbol.getAstNode());
+    if (incarnations != null && incarnations.iterator().hasNext()) {
+      return incarnations.iterator().next().getSymbol();
+    }
+
+    for (ASTCDType refType : CDDiffUtil.getAllCDTypes(refCD)) {
+      if (refType.getName().equals(symbol.getName())) {
+        incarnations = checker.getIncarnationMapping().getIncarnations(refType);
+        if (incarnations != null && incarnations.iterator().hasNext()) {
+          return incarnations.iterator().next().getSymbol();
+        }
+        break;
+      }
+    }
+
+    Log.warn("No incarnation found for type " + symbol.getName() + "; using reference symbol");
+    return symbol;
   }
 
   protected ISymbol getConAttributeSymbol(FieldSymbol symbol) {
+    if (checker == null) {
+      Log.warn("No CDConformanceChecker available for attribute " + symbol.getName());
+      return symbol;
+    }
 
-    return checker
-        .getIncarnationMapping()
-        .getIncarnations((ASTCDAttribute) symbol.getAstNode())
-        .iterator()
-        .next()
-        .getSymbol();
+    if (checker.getIncarnationMapping() == null) {
+      Log.warn("No incarnation mapping available for attribute " + symbol.getName());
+      return symbol;
+    }
+
+    var incarnations = checker.getIncarnationMapping().getIncarnations((ASTCDAttribute) symbol.getAstNode());
+    if (incarnations != null && incarnations.iterator().hasNext()) {
+      return incarnations.iterator().next().getSymbol();
+    }
+
+    Log.warn("No incarnation found for attribute " + symbol.getName() + "; using reference symbol");
+    return symbol;
+  }
+
+  protected ISymbol getConMethodSymbol(ISymbol symbol) {
+    if (checker == null) {
+      Log.warn("No CDConformanceChecker available for method " + symbol.getName());
+      return symbol;
+    }
+
+    if (symbol.getAstNode() instanceof ASTCDMethod && checker.getIncarnationMapping() != null) {
+      var incarnations = checker.getIncarnationMapping().getIncarnations((ASTCDMethod) symbol.getAstNode());
+      if (incarnations != null && incarnations.iterator().hasNext()) {
+        return incarnations.iterator().next().getSymbol();
+      }
+    }
+
+    Log.warn("No incarnation found for method " + symbol.getName() + "; using reference symbol");
+    return symbol;
+  }
+
+  /**
+   * Replace concrete implementer type names in a printed Java type string with the
+   * grouping type (interface or class) mapped by the IncarnationContext. Handles simple
+   * generic forms like List<T>, Map<K,V>, Optional<T> by recursive replacement of top-level args.
+   */
+  private String replaceConcreteWithGroupingType(String rawType) {
+    if (rawType == null
+        || rawType.isEmpty()
+        || incarnationContext == null
+        || !useCommonParentForMultipleIncarnations) return rawType;
+
+    return JavaSourceNames.replaceSimpleTypeNames(
+        rawType,
+        simple -> {
+          var grouping = incarnationContext.findGroupingTypeForImplementer(simple);
+          if (grouping.isPresent()) {
+            return grouping;
+          }
+          for (Map.Entry<ISymbol, List<ISymbol>> entry :
+              incarnationContext.getReferenceToIncarnations().entrySet()) {
+            if (entry.getKey().getName().equals(simple)) {
+              List<ISymbol> incs = entry.getValue();
+              if (incs != null && !incs.isEmpty()) {
+                return incarnationContext.findGroupingTypeForImplementer(incs.get(0).getName());
+              }
+            }
+          }
+          return Optional.empty();
+        });
   }
 }

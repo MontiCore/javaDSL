@@ -16,4 +16,10 @@ public @interface Adapt {
   String[] ref() default {};
 
   String template() default "";
+
+  /**
+   * Optional generation template used when producing new/generated names.
+   * Example: template = "${}" (validates adapter class), genTemplate = "${}Builder" (used to generate PersonBuilder)
+   */
+  String genTemplate() default "";
 }

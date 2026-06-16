@@ -1,5 +1,7 @@
 package de.monticore.codeAdaption.matcher.NameMatcher;
 
+import de.monticore.cd4codebasis._ast.ASTCDMethod;
+import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.matcher.CodeMatching;
@@ -16,6 +18,7 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /***
  * match Field and method in the code with attribute and method in the class diagram
@@ -47,13 +50,60 @@ public class NameTMemberMatcher implements TMemberMatcher {
   @Override
   public Optional<CodeMatching> getMatchedMethod(
       ASTTypeDeclaration type, ASTMethodDeclaration method) {
-    List<ISymbol> references = resolveMethodReferencesOf(type, method.getName(), String::equals);
+    List<String> parameterTypes = getMethodParameterTypes(method);
+    List<ISymbol> references = resolveMethodReferencesBySignature(type, method.getName(), parameterTypes);
 
     if (references.size() == 1) {
       return Optional.of(MatcherHelper.mkMatching("${}", references));
     }
 
     return Optional.empty();
+  }
+
+  private List<String> getMethodParameterTypes(ASTMethodDeclaration method) {
+    if (!method.getFormalParameters().isPresentFormalParameterListing()) {
+      return new ArrayList<>();
+    }
+    return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().stream()
+        .map(p -> JavaLoader.print(p.getMCType()))
+        .collect(Collectors.toList());
+  }
+
+  private List<ISymbol> resolveMethodReferencesBySignature(
+      ASTTypeDeclaration type, String methodName, List<String> parameterTypes) {
+
+    List<ISymbol> references = new ArrayList<>();
+    Optional<CodeMatching> matching = getTypeMatcher().getMatchedType(type);
+
+    if (matching.isEmpty()) {
+      return references;
+    }
+
+    for (ISymbol symbol : matching.get().getReferences()) {
+      if (symbol.getAstNode() instanceof ASTCDType) {
+        ASTCDType cdType = (ASTCDType) symbol.getAstNode();
+        for (ASTCDMethod cdMethod : cdType.getCDMethodList()) {
+          if (cdMethod.getName().equals(methodName)) {
+            List<String> cdParameterTypes = cdMethod.getCDParameterList().stream()
+                .map(ASTCDParameter::getMCType)
+                .map(JavaLoader::print)
+                .collect(Collectors.toList());
+
+            if (parameterTypes.equals(cdParameterTypes)) {
+              references.add(cdMethod.getSymbol());
+            }
+          }
+        }
+      }
+    }
+    return references;
+  }
+
+  private int getMethodParameterCount(ASTMethodDeclaration method) {
+    if (!method.getFormalParameters().isPresentFormalParameterListing()) {
+      return 0;
+    }
+    return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().size();
   }
 
   /***

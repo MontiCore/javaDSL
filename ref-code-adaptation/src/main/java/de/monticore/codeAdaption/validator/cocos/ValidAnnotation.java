@@ -74,7 +74,7 @@ public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightA
               ? 0
               : collector.getTemplate().chars().filter(s -> (char) s == '$').count();
       long references = collector.getReferences().size();
-      if (arguments != collector.getReferences().size()) {
+      if (arguments > 0 && arguments != collector.getReferences().size()) {
         Log.error(String.format(templateArguments, pos, references, arguments));
       }
 

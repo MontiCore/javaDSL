@@ -1,0 +1,9 @@
+package de.monticore.codeAdaption.evaluation.single_file_multi_pattern;
+
+classdiagram Reference {
+  class MyClass {
+      String oldField;
+      void oldMethod();
+      String sharedField;
+  }
+}

@@ -34,7 +34,7 @@ class JavaAstElemCollectorTest extends AdapterAbstractTest {
     ast.accept(traverser);
 
     // check a type collection
-    Assertions.assertEquals(collector.getAllTypeDeclarations().size(), 1);
+    Assertions.assertEquals(1, collector.getAllTypeDeclarations().size());
 
     // check type element collection
     ASTTypeDeclaration t = collector.getAllTypeDeclarations().get(0);

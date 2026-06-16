@@ -24,6 +24,7 @@ public class CodeMatching {
    * must be field with the concrete as argument reference to build the new name
    */
   private String template;
+  private String generateTemplate;
 
   public CodeMatching(boolean ignore) {
     this.ignore = ignore;
@@ -39,12 +40,20 @@ public class CodeMatching {
     return template;
   }
 
+  public String getGenerateTemplate() {
+    return generateTemplate;
+  }
+
   public void addReference(ISymbol reference) {
     this.references.add(reference);
   }
 
   public void setTemplate(String template) {
     this.template = template;
+  }
+
+  public void setGenerateTemplate(String generateTemplate) {
+    this.generateTemplate = generateTemplate;
   }
 
   public void setIgnore(boolean ignore) {

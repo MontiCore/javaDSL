@@ -49,6 +49,11 @@ public interface TMemberMatcher {
 
   default List<ISymbol> resolveMethodReferencesOf(
       ASTTypeDeclaration type, String name, BiFunction<String, String, Boolean> match) {
+    return resolveMethodReferencesOf(type, name, match, -1); // -1 - ignore parameter count
+  }
+
+  default List<ISymbol> resolveMethodReferencesOf(
+      ASTTypeDeclaration type, String name, BiFunction<String, String, Boolean> match, int paramCount) {
 
     List<ISymbol> references = new ArrayList<>();
     Optional<CodeMatching> matching = getTypeMatcher().getMatchedType(type);
@@ -57,11 +62,15 @@ public interface TMemberMatcher {
       return references;
     }
 
-    // resolve attribute reference in referencing types
+    // resolve method reference in referencing types
     for (ISymbol symbol : matching.get().getReferences()) {
-      for (ASTCDMethod att : ((ASTCDType) symbol.getAstNode()).getCDMethodList()) {
-        if (match.apply(name, att.getName())) {
-          references.add(att.getSymbol());
+      for (ASTCDMethod cdMethod : ((ASTCDType) symbol.getAstNode()).getCDMethodList()) {
+        if (match.apply(name, cdMethod.getName())) {
+          // If paramCount is specified, also check parameter count for overloaded methods
+          if (paramCount >= 0 && cdMethod.getCDParameterList().size() != paramCount) {
+            continue; // Skip methods with different parameter counts
+          }
+          references.add(cdMethod.getSymbol());
         }
       }
     }

@@ -50,11 +50,22 @@ public class InfixTMemberMatcher implements TMemberMatcher {
   public Optional<CodeMatching> getMatchedMethod(
       ASTTypeDeclaration type, ASTMethodDeclaration method) {
 
-    // resolve references
+    // Get parameter count from the Java method for overloaded method matching
+    int paramCount = getMethodParameterCount(method);
+
+    // resolve references with parameter count filtering for overloaded methods
     List<ISymbol> references = resolveFieldReferencesOf(type, method.getName(), this::match);
     references.addAll(resolveTypeReferencesOf(type, method.getName(), this::match));
+    references.addAll(resolveMethodReferencesOf(type, method.getName(), this::match, paramCount));
 
     return MatcherHelper.mkMatchingFromInfixRef(references, method.getName());
+  }
+
+  private int getMethodParameterCount(ASTMethodDeclaration method) {
+    if (!method.getFormalParameters().isPresentFormalParameterListing()) {
+      return 0;
+    }
+    return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().size();
   }
 
   /***

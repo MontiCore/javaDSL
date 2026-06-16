@@ -13,4 +13,5 @@ public class Constants {
   public static final String SIMPLE_PLACE_HOLDER = "${}";
   public static final String CAP_FIRST_PLACE_HOLDER = "${" + CAP_FIRST + "}";
   public static final String UNCAP_FIRST_PLACE_HOLDER = "${" + UNCAP_FIRST + "}";
+  public static final String GENERATE_TEMPLATE = "genTemplate";
 }

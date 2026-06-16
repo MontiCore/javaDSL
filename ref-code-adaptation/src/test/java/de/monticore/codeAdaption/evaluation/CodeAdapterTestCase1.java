@@ -5,12 +5,15 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 
 import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.codeAdaption.CodeAdapter;
+import de.monticore.codeAdaption.CodeAdaptationException;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CodeAdapterTestCase1 extends EvaluationAbstractTest {
 
@@ -32,6 +35,10 @@ public class CodeAdapterTestCase1 extends EvaluationAbstractTest {
   public void evaluationCodeAdapterCaseStudy1Test() {
     Set<String> mappings = Set.of("stud", "prof");
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
-    adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output);
+    CodeAdaptationException exception =
+        assertThrows(
+            CodeAdaptationException.class,
+            () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output));
+    assertTrue(exception.getMessage().contains("association role field conflict"));
   }
 }
