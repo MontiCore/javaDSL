@@ -7,12 +7,12 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.cdconformance.CDConformanceChecker;
-import de.monticore.cddiff.CDDiffUtil;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.*;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
@@ -34,8 +34,8 @@ import de.se_rwth.commons.logging.Log;
 
 /** Applies CD-based adaptation decisions to Java AST elements. */
 public class BasicUpdateHandler {
-  protected ASTCDCompilationUnit conCD;
-  protected ASTCDCompilationUnit refCD;
+  protected CDModelIndex conIndex;
+  protected CDModelIndex refIndex;
   protected CDConformanceChecker checker;
   protected CodeUpdater updater;
 
@@ -44,7 +44,7 @@ public class BasicUpdateHandler {
   /** Optional incarnation context for stereotype-based mapping when conformance is skipped */
   protected IncarnationContext incarnationContext;
 
-  protected boolean useCommonParentForMultipleIncarnations = true;
+  protected boolean useCommonParentForMultipleIncarnations;
 
   /** Tracks generated type names created during a single handler run to avoid duplicate generation. */
   protected final Set<String> generatedTypes = new HashSet<>();
@@ -81,8 +81,8 @@ public class BasicUpdateHandler {
       boolean useCommonParentForMultipleIncarnations) {
     this.updater = updater;
     this.checker = checker;
-    this.conCD = conCD;
-    this.refCD = refCD;
+    this.conIndex = CDModelIndex.of(conCD);
+    this.refIndex = CDModelIndex.of(refCD);
     this.validator = validator;
     this.incarnationContext = incarnationContext;
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
@@ -132,7 +132,7 @@ public class BasicUpdateHandler {
     }
 
     // update type not present in the reference code
-    for (ASTCDType cdType : CDDiffUtil.getAllCDTypes(refCD)) {
+    for (ASTCDType cdType : refIndex.types()) {
       String newName =
           getSymbolFromContext(cdType.getSymbol())
               .orElseGet(() -> getConTypeSymbol(cdType.getSymbol()))
@@ -417,7 +417,7 @@ public class BasicUpdateHandler {
 
     // For single mapping, use conformance checker to find the concrete type
     if (checker != null && checker.getIncarnationMapping() != null) {
-      for (ASTCDType refType : CDDiffUtil.getAllCDTypes(refCD)) {
+      for (ASTCDType refType : refIndex.types()) {
         if (refType.getName().equals(refTypeName)) {
           var incarnations = checker.getIncarnationMapping().getIncarnations(refType);
           if (incarnations != null && incarnations.iterator().hasNext()) {
@@ -430,12 +430,12 @@ public class BasicUpdateHandler {
 
     // Fall back to direct name matching in conCD (for cases where names are the same)
     // Prefer interfaces over concrete classes when both exist with the same name.
-    for (ASTCDType conType : conCD.getCDDefinition().getCDInterfacesList()) {
+    for (ASTCDType conType : conIndex.interfaces()) {
       if (conType.getName().equals(refTypeName)) {
         return conType.getName();
       }
     }
-    for (ASTCDType conType : conCD.getCDDefinition().getCDClassesList()) {
+    for (ASTCDType conType : conIndex.classes()) {
       if (conType.getName().equals(refTypeName)) {
         return conType.getName();
       }
@@ -452,37 +452,16 @@ public class BasicUpdateHandler {
       String typeName, String methodName, int paramCount) {
 
     // Find the concrete type
-    Optional<ASTCDType> concreteType = findConcreteType(typeName);
-    if (concreteType.isEmpty()) {
-      return Optional.empty();
-    }
-
-    // Search for method in the type
-    for (ASTCDMethod conMethod : concreteType.get().getCDMethodList()) {
-      if (conMethod.getName().equals(methodName)
-          && conMethod.getCDParameterList().size() == paramCount) {
-        return Optional.of(conMethod);
-      }
-    }
-
-    return Optional.empty();
+    return conIndex.methods(typeName, methodName).stream()
+        .filter(conMethod -> conMethod.getCDParameterList().size() == paramCount)
+        .findFirst();
   }
 
   /**
    * Find concrete type by name in conCD.
    */
   private Optional<ASTCDType> findConcreteType(String typeName) {
-    for (ASTCDType conType : conCD.getCDDefinition().getCDClassesList()) {
-      if (conType.getName().equals(typeName)) {
-        return Optional.of(conType);
-      }
-    }
-    for (ASTCDType conType : conCD.getCDDefinition().getCDInterfacesList()) {
-      if (conType.getName().equals(typeName)) {
-        return Optional.of(conType);
-      }
-    }
-    return Optional.empty();
+    return conIndex.type(typeName);
   }
 
   /***
@@ -644,7 +623,7 @@ public class BasicUpdateHandler {
       return incarnations.iterator().next().getSymbol();
     }
 
-    for (ASTCDType refType : CDDiffUtil.getAllCDTypes(refCD)) {
+    for (ASTCDType refType : refIndex.types()) {
       if (refType.getName().equals(symbol.getName())) {
         incarnations = checker.getIncarnationMapping().getIncarnations(refType);
         if (incarnations != null && incarnations.iterator().hasNext()) {

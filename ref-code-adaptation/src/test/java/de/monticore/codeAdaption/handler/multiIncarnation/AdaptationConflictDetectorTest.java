@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   private static final Path ROOT =
       Path.of("src/test/resources/de/monticore/codeAdaption/conflicts");
+  private static final Path EVALUATION_ROOT =
+      Path.of("src/test/resources/de/monticore/codeAdaption/evaluation");
   private static final Set<String> MAPPINGS = Set.of("ref");
 
   private Set<CDConfParameter> confParams;
@@ -80,6 +82,22 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   @Test
   public void acceptsDeterministicExplicitMappings() {
     assertDoesNotThrow(() -> validate("ValidManualRef.cd", "ValidManualConc.cd"));
+  }
+
+  @Test
+  public void acceptsEvaluationTestcase1ObserverChainRoles() {
+    ASTCDCompilationUnit refCD =
+        JavaLoader.parseCD(EVALUATION_ROOT.resolve("testcase_1/Reference.cd").toString());
+    ASTCDCompilationUnit conCD =
+        JavaLoader.parseCD(EVALUATION_ROOT.resolve("testcase_1/Concrete.cd").toString());
+    Set<String> mappings = Set.of("stud", "prof");
+    Map<String, IncarnationContext> contexts = new java.util.LinkedHashMap<>();
+    for (String mapping : mappings) {
+      contexts.put(mapping, new ManualIncarnationContextBuilder(refCD, conCD, confParams).buildContextForMapping(mapping));
+    }
+
+    assertDoesNotThrow(
+        () -> AdaptationConflictDetector.validate(refCD, conCD, mappings, contexts, confParams));
   }
 
   @Test

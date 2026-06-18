@@ -3,6 +3,7 @@ package de.monticore.codeAdaption;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +33,7 @@ class CodeAdapterCleanupTest {
         }
         """;
 
-    String cleaned = CodeAdapter.postProcessGeneratedJavaSource(source);
+    String cleaned = JavaSourcePostProcessor.process(source);
 
     assertFalse(cleaned.contains("import Person;"));
     assertFalse(cleaned.contains("import de.monticore.codeAdaption.utils.Adapt;"));
@@ -60,11 +61,10 @@ class CodeAdapterCleanupTest {
         }
         """;
 
-    String cleanedNeedsImport = CodeAdapter.postProcessGeneratedJavaSource(needsImport);
+    String cleanedNeedsImport = JavaSourcePostProcessor.process(needsImport);
     assertTrue(cleanedNeedsImport.contains("package demo;"));
     assertTrue(cleanedNeedsImport.contains("import java.util.List;"));
-    assertFalse(
-        CodeAdapter.postProcessGeneratedJavaSource(commentOnly).contains("import java.util."));
+    assertFalse(JavaSourcePostProcessor.process(commentOnly).contains("import java.util."));
   }
 
   @Test
@@ -81,7 +81,7 @@ class CodeAdapterCleanupTest {
         }
         """;
 
-    String cleaned = CodeAdapter.postProcessGeneratedJavaSource(source);
+    String cleaned = JavaSourcePostProcessor.process(source);
 
     assertTrue(cleaned.contains("import java.util.List;"));
     assertTrue(cleaned.contains("import java.util.Map;"));

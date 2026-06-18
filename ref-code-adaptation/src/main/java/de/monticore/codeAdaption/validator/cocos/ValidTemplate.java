@@ -16,7 +16,6 @@ import de.monticore.javalight._cocos.JavaLightASTMethodDeclarationCoCo;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.statements.mccommonstatements._cocos.MCCommonStatementsASTFormalParameterCoCo;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 

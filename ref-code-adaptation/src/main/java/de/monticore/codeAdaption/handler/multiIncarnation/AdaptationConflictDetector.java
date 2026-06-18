@@ -9,10 +9,10 @@ import de.monticore.cdbasis._ast.ASTCDClass;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConfParameter;
-import de.monticore.cddiff.CDDiffUtil;
 import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.codeAdaption.CodeAdaptationException;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -27,16 +27,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Detects conflicts that cdconcretization would otherwise repair or reject. */
-// TODO: Add docu
+/**
+ * Detects manual adaptation conflicts that cdconcretization would otherwise repair or reject.
+ *
+ * <p>The detector works on already built incarnation contexts. It therefore reports only cases
+ * where the chosen concrete incarnations cannot safely realize the reference model without
+ * producing duplicate members, ambiguous associations, or incompatible inheritance/member shapes.
+ */
 public class AdaptationConflictDetector {
-  private final ASTCDCompilationUnit referenceCD;
-  private final ASTCDCompilationUnit concreteCD;
   private final Set<String> mappings;
   private final Map<String, IncarnationContext> contexts;
   private final Set<CDConfParameter> confParams;
   private final boolean useCommonParentForMultipleIncarnations;
   private final List<String> conflicts = new ArrayList<>();
+  private final CDModelIndex referenceIndex;
+  private final CDModelIndex concreteIndex;
   private final Map<String, ASTCDType> referenceTypes = new LinkedHashMap<>();
   private final Map<String, ASTCDType> concreteTypes = new LinkedHashMap<>();
 
@@ -56,14 +61,14 @@ public class AdaptationConflictDetector {
       Map<String, IncarnationContext> contexts,
       Set<CDConfParameter> confParams,
       boolean useCommonParentForMultipleIncarnations) {
-    this.referenceCD = referenceCD;
-    this.concreteCD = concreteCD;
     this.mappings = mappings;
     this.contexts = contexts;
     this.confParams = confParams;
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
-    CDDiffUtil.getAllCDTypes(referenceCD).forEach(type -> referenceTypes.put(type.getName(), type));
-    CDDiffUtil.getAllCDTypes(concreteCD).forEach(type -> concreteTypes.put(type.getName(), type));
+    this.referenceIndex = CDModelIndex.of(referenceCD);
+    this.concreteIndex = CDModelIndex.of(concreteCD);
+    referenceIndex.types().forEach(type -> referenceTypes.put(type.getName(), type));
+    concreteIndex.types().forEach(type -> concreteTypes.put(type.getName(), type));
   }
 
   /**
@@ -126,6 +131,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Validates conflicts that come directly from the manual incarnation context.
+   *
+   * <p>This covers explicit type, field, and method mappings before looking at derived structure.
+   * A conflict here means the context itself maps one reference element to concrete elements that
+   * cannot all stand in for it.
+   */
   private void validateManualMappings() {
     for (IncarnationContext context : contexts.values()) {
       for (Map.Entry<StableElementKey, List<StableElementKey>> entry :
@@ -146,6 +158,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Checks whether a mapped reference type and concrete type have compatible CD kinds.
+   *
+   * <p>Classes, interfaces, and enums are not generally interchangeable. The only tolerated
+   * mismatch is the common-parent case used for multiple incarnations, where a concrete class and
+   * one of its grouping interfaces can jointly realize the reference type.
+   */
   private void validateTypeMapping(
       IncarnationContext context, StableElementKey referenceKey, StableElementKey concreteKey) {
     ASTCDType reference = referenceTypes.get(referenceKey.getName());
@@ -165,6 +184,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Returns whether a class/interface mismatch is explained by a configured grouping parent.
+   *
+   * <p>When multiple concrete types incarnate the same reference type, a common interface can act
+   * as the stable reference point for generated code. In that mode, the mismatch is not reported as
+   * a type-kind conflict.
+   */
   private boolean canUseCommonParentForTypeMismatch(
       IncarnationContext context,
       StableElementKey referenceKey,
@@ -198,6 +224,12 @@ public class AdaptationConflictDetector {
     return !concreteParentNames(concrete).isEmpty();
   }
 
+  /**
+   * Detects field mappings that collapse incompatible concrete fields into one reference field.
+   *
+   * <p>The same concrete owner/name pair may appear more than once, but it must keep the same field
+   * type. Different types would make the adapted reference field ambiguous.
+   */
   private void validateFieldTargets(
       String mapping, StableElementKey reference, List<StableElementKey> targets) {
     Map<String, String> byOwnerAndName = new LinkedHashMap<>();
@@ -214,6 +246,12 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Detects method mappings that collapse incompatible concrete methods into one reference method.
+   *
+   * <p>Methods with the same signature must agree on their return type. Otherwise generated calls
+   * to the reference method would not have a single stable Java type.
+   */
   private void validateMethodTargets(
       String mapping, StableElementKey reference, List<StableElementKey> targets) {
     Map<String, String> bySignature = new LinkedHashMap<>();
@@ -230,6 +268,12 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Validates concrete type declarations that are illegal or unsafe before adaptation starts.
+   *
+   * <p>This catches structural problems such as multiple class super types, invalid extends or
+   * implements targets, and inheritance cycles.
+   */
   private void validateConcreteTypeStructure() {
     for (ASTCDType type : concreteTypes.values()) {
       if (type instanceof ASTCDClass cdClass && cdClass.getSuperclassList().size() > 1) {
@@ -243,6 +287,12 @@ public class AdaptationConflictDetector {
     validateInheritanceCycles();
   }
 
+  /**
+   * Checks whether each extends or implements edge points to a type of the required kind.
+   *
+   * <p>Classes may extend classes and implement interfaces. Interfaces may extend interfaces. Any
+   * other combination is rejected because generated Java would be invalid.
+   */
   private void validateSuperTypeKinds(ASTCDType type) {
     if (type instanceof ASTCDClass) {
       CDTypeRelations.firstSuperclassName(type)
@@ -277,6 +327,12 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Detects inheritance cycles in the concrete CD.
+   *
+   * <p>The check includes class inheritance and interface inheritance/implementation edges. A cycle
+   * is reported before generation because Java cannot compile such a hierarchy.
+   */
   private void validateInheritanceCycles() {
     Map<String, Set<String>> edges = new LinkedHashMap<>();
     for (ASTCDType type : concreteTypes.values()) {
@@ -313,6 +369,12 @@ public class AdaptationConflictDetector {
     return false;
   }
 
+  /**
+   * Validates duplicate fields and methods declared in each concrete type.
+   *
+   * <p>Duplicate field names or method signatures are only problematic here when their Java types
+   * disagree. Equal declarations are tolerated because they do not introduce an adaptation choice.
+   */
   private void validateConcreteMembers() {
     for (ASTCDType type : concreteTypes.values()) {
       Map<String, String> fields = new LinkedHashMap<>();
@@ -340,6 +402,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Detects fields that hide inherited fields with incompatible types.
+   *
+   * <p>Generated code can safely use an inherited field name only if the visible field has the same
+   * type throughout the hierarchy. A different local type would make references through a parent or
+   * child view disagree.
+   */
   private void validateInheritedFieldConflicts(ASTCDType type, Map<String, String> ownFields) {
     ArrayDeque<String> queue = new ArrayDeque<>();
     CDTypeRelations.firstSuperclassName(type).map(this::simpleName).ifPresent(queue::add);
@@ -372,6 +441,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Validates mapped enum types.
+   *
+   * <p>Only constants shared by the reference and concrete enum are compared. Missing or additional
+   * constants are handled by the normal adaptation flow; this check only rejects order changes that
+   * would alter the meaning of ordinal-sensitive generated code.
+   */
   private void validateEnums() {
     for (IncarnationContext context : contexts.values()) {
       for (Map.Entry<StableElementKey, List<StableElementKey>> entry :
@@ -393,6 +469,7 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /** Reports an enum order conflict when common constants appear in a different relative order. */
   private void validateEnumOrder(String mapping, ASTCDEnum referenceEnum, ASTCDEnum concreteEnum) {
     Map<String, Integer> concretePositions = new HashMap<>();
     for (int i = 0; i < concreteEnum.getCDEnumConstantList().size(); i++) {
@@ -416,19 +493,31 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Validates every reference association against the concrete associations reachable by a mapping.
+   *
+   * <p>The association checks cover direction ambiguity, cardinality compatibility, and generated
+   * role-field conflicts.
+   */
   private void validateAssociations() {
     for (String mapping : mappings) {
       IncarnationContext context = contexts.get(mapping);
       if (context == null) {
         continue;
       }
-      for (ASTCDAssociation referenceAssociation :
-          referenceCD.getCDDefinition().getCDAssociationsList()) {
+      for (ASTCDAssociation referenceAssociation : referenceIndex.associations()) {
         validateAssociation(mapping, context, referenceAssociation);
       }
     }
   }
 
+  /**
+   * Matches one reference association to compatible concrete associations for a mapping.
+   *
+   * <p>A concrete association may match in the same direction or the reverse direction, depending
+   * on which concrete types incarnate the reference endpoints. If both directions match at once,
+   * the association is ambiguous and cannot be adapted deterministically.
+   */
   private void validateAssociation(
       String mapping, IncarnationContext context, ASTCDAssociation referenceAssociation) {
     String refLeft = simpleName(referenceAssociation.getLeftQualifiedName().getQName());
@@ -438,8 +527,7 @@ public class AdaptationConflictDetector {
     if (leftTargets.isEmpty() || rightTargets.isEmpty()) {
       return;
     }
-    for (ASTCDAssociation concreteAssociation :
-        concreteCD.getCDDefinition().getCDAssociationsList()) {
+    for (ASTCDAssociation concreteAssociation : concreteIndex.associations()) {
       String conLeft = simpleName(concreteAssociation.getLeftQualifiedName().getQName());
       String conRight = simpleName(concreteAssociation.getRightQualifiedName().getQName());
       boolean same = leftTargets.contains(conLeft) && rightTargets.contains(conRight);
@@ -474,6 +562,7 @@ public class AdaptationConflictDetector {
     validateAssociationRoleConflicts(mapping, referenceAssociation, leftTargets, rightTargets);
   }
 
+  /** Compares the matched association sides after direction has been resolved. */
   private void validateAssociationSides(
       String mapping,
       ASTCDAssocSide referenceLeft,
@@ -486,6 +575,11 @@ public class AdaptationConflictDetector {
     validateCardinality(mapping, referenceRight, concreteRight, referenceAssociation, concreteAssociation);
   }
 
+  /**
+   * Reports a cardinality conflict when both sides declare cardinalities and they differ.
+   *
+   * <p>Missing cardinalities are treated as unspecified and are therefore not rejected here.
+   */
   private void validateCardinality(
       String mapping,
       ASTCDAssocSide referenceSide,
@@ -503,37 +597,86 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Detects when an association role would generate a duplicate Java field on the same concrete
+   * owner type.
+   *
+   * <p>Association roles are interpreted from the perspective of generated Java code: a role on
+   * one association side becomes a field on the opposite type. For example, {@code A -> (bs) B}
+   * contributes a field named {@code bs} to {@code A}. Symmetrically, {@code (as) A <- B}
+   * contributes {@code as} to {@code B}.
+   *
+   * <p>A conflict is reported only if the reference role, after applying the current incarnation
+   * mapping, could land on a concrete owner type that already receives the same role-derived field
+   * from an unrelated concrete association. It is not enough that the same concrete type appears in
+   * another association, or even that the same role name exists elsewhere. The duplicate must have
+   * the same generated field owner.
+   */
   private void validateAssociationRoleConflicts(
       String mapping,
       ASTCDAssociation referenceAssociation,
       Set<String> leftTargets,
       Set<String> rightTargets) {
-    if (!referenceAssociation.getRight().isPresentCDRole()) {
-      return;
-    }
-    String role = referenceAssociation.getRight().getCDRole().getName();
-    for (ASTCDAssociation other : concreteCD.getCDDefinition().getCDAssociationsList()) {
-      if (!other.getRight().isPresentCDRole()) {
+    for (RoleFieldCandidate referenceRole : roleFieldCandidates(referenceAssociation)) {
+      Set<String> ownerTargets =
+          referenceRole.owner().equals(simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
+              ? leftTargets
+              : rightTargets;
+      Set<String> targetTargets =
+          referenceRole.owner().equals(simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
+              ? rightTargets
+              : leftTargets;
+      if (ownerTargets.isEmpty()) {
         continue;
       }
-      if (!role.equals(other.getRight().getCDRole().getName())) {
-        continue;
-      }
-      String otherLeft = simpleName(other.getLeftQualifiedName().getQName());
-      String otherRight = simpleName(other.getRightQualifiedName().getQName());
-      if ((leftTargets.contains(otherLeft) && rightTargets.contains(otherRight))
-          || (leftTargets.contains(otherRight) && rightTargets.contains(otherLeft))) {
-        continue;
-      }
-      if (leftTargets.contains(otherLeft) || leftTargets.contains(otherRight)) {
-        conflict(
-            mapping,
-            "association role field conflict",
-            "role '" + role + "' may create a duplicate Java field");
+      for (ASTCDAssociation other : concreteIndex.associations()) {
+        for (RoleFieldCandidate concreteRole : roleFieldCandidates(other)) {
+          if (!referenceRole.role().equals(concreteRole.role())) {
+            continue;
+          }
+          if (ownerTargets.contains(concreteRole.owner())
+              && targetTargets.contains(concreteRole.target())) {
+            continue;
+          }
+          if (ownerTargets.contains(concreteRole.owner())) {
+            conflict(
+                mapping,
+                "association role field conflict",
+                "role '" + referenceRole.role() + "' may create a duplicate Java field on "
+                    + concreteRole.owner());
+          }
+        }
       }
     }
   }
 
+  /**
+   * Converts CD association roles to generated Java field candidates.
+   *
+   * <p>The {@code owner} is the type that would contain the generated field, {@code role} is the
+   * field name, and {@code target} is the field type or collection element type. The owner is the
+   * opposite association side, because a navigable role describes how one side references the
+   * other.
+   */
+  private List<RoleFieldCandidate> roleFieldCandidates(ASTCDAssociation association) {
+    List<RoleFieldCandidate> result = new ArrayList<>();
+    String left = simpleName(association.getLeftQualifiedName().getQName());
+    String right = simpleName(association.getRightQualifiedName().getQName());
+    if (association.getLeft().isPresentCDRole()) {
+      result.add(new RoleFieldCandidate(right, association.getLeft().getCDRole().getName(), left));
+    }
+    if (association.getRight().isPresentCDRole()) {
+      result.add(new RoleFieldCandidate(left, association.getRight().getCDRole().getName(), right));
+    }
+    return result;
+  }
+
+  /**
+   * Detects reference members whose type is {@code any} without a concrete incarnation.
+   *
+   * <p>The placeholder {@code any} is only safe when the mapping tells us which concrete field or
+   * method should provide the actual Java type. Otherwise generated code would have to guess.
+   */
   private void validateUnderspecifiedTypes() {
     for (String mapping : mappings) {
       IncarnationContext context = contexts.get(mapping);
@@ -582,6 +725,13 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Detects stereotypes that name an overloaded reference method without a signature.
+   *
+   * <p>A stereotype like {@code ref="doIt"} is ambiguous when the reference type contains multiple
+   * {@code doIt} overloads. In that case the concrete method must point to a signature-bearing
+   * reference key instead of only the method name.
+   */
   private void validateAmbiguousStereotypes() {
     for (String mapping : mappings) {
       for (ASTCDType concreteType : concreteTypes.values()) {
@@ -615,6 +765,12 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /**
+   * Validates reference elements that declare a {@code forEach} stereotype.
+   *
+   * <p>A {@code forEach} declaration promises that the context builder can derive one or more
+   * concrete incarnations. If none are present, the adaptation would silently drop generated output.
+   */
   private void validateForEachMappings() {
     for (String mapping : mappings) {
       IncarnationContext context = contexts.get(mapping);
@@ -634,6 +790,7 @@ public class AdaptationConflictDetector {
     }
   }
 
+  /** Reports a missing {@code forEach} incarnation for one reference type, field, or method. */
   private void validateForEachMapping(
       String mapping, IncarnationContext context, StableElementKey key, Object element) {
     Optional<String> forEachValue = getForEachValue(element);
@@ -666,7 +823,7 @@ public class AdaptationConflictDetector {
     for (String interfaceName : CDTypeRelations.interfaceNames(concrete)) {
       parents.add(simpleName(interfaceName));
     }
-    parents.removeIf(parent -> !concreteTypes.containsKey(parent));
+    parents.removeIf(parent -> !concreteIndex.hasType(parent));
     return parents;
   }
 
@@ -776,4 +933,13 @@ public class AdaptationConflictDetector {
   private String simpleName(String name) {
     return JavaSourceNames.simpleName(name);
   }
+
+  /**
+   * A Java field implied by an association role.
+   *
+   * @param owner the type that would receive the generated field
+   * @param role the generated field name
+   * @param target the referenced type behind the field
+   */
+  private record RoleFieldCandidate(String owner, String role, String target) {}
 }

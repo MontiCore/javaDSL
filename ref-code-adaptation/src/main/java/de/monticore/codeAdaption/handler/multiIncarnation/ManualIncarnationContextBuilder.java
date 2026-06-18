@@ -1,14 +1,12 @@
 package de.monticore.codeAdaption.handler.multiIncarnation;
 
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
-import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConfParameter;
-import de.monticore.cddiff.CDDiffUtil;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.symboltable.ISymbol;
 import java.util.ArrayList;
@@ -32,6 +30,8 @@ public class ManualIncarnationContextBuilder {
   private final ASTCDCompilationUnit referenceCD;
   private final ASTCDCompilationUnit concreteCD;
   private final Set<CDConfParameter> confParams;
+  private final CDModelIndex referenceModelIndex;
+  private final CDModelIndex concreteModelIndex;
 
   public ManualIncarnationContextBuilder(
       ASTCDCompilationUnit referenceCD,
@@ -40,6 +40,8 @@ public class ManualIncarnationContextBuilder {
     this.referenceCD = referenceCD;
     this.concreteCD = concreteCD;
     this.confParams = confParams;
+    this.referenceModelIndex = CDModelIndex.of(referenceCD);
+    this.concreteModelIndex = CDModelIndex.of(concreteCD);
   }
 
   /**
@@ -48,7 +50,7 @@ public class ManualIncarnationContextBuilder {
    */
   public IncarnationContext buildContextForMapping(String mapping) {
     Map<ISymbol, List<ISymbol>> referenceToIncarnations = new LinkedHashMap<>();
-    ReferenceIndex referenceIndex = ReferenceIndex.of(referenceCD);
+    ReferenceIndex referenceIndex = ReferenceIndex.of(referenceModelIndex);
 
     collectTypeMappings(mapping, referenceIndex, referenceToIncarnations);
     collectMemberMappings(mapping, referenceIndex, referenceToIncarnations);
@@ -70,7 +72,7 @@ public class ManualIncarnationContextBuilder {
       String mapping,
       ReferenceIndex referenceIndex,
       Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
+    for (ASTCDType concreteType : concreteModelIndex.types()) {
       Optional<String> explicit = getStereotypeValue(concreteType, mapping);
       if (explicit.isPresent()) {
         referenceIndex.findType(explicit.get()).ifPresent(ref -> addMapping(referenceToIncarnations, ref, concreteType.getSymbol()));
@@ -86,7 +88,7 @@ public class ManualIncarnationContextBuilder {
       String mapping,
       ReferenceIndex referenceIndex,
       Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
+    for (ASTCDType concreteType : concreteModelIndex.types()) {
       List<ASTCDType> referenceOwners = mappedReferenceOwners(referenceToIncarnations, concreteType);
       for (ASTCDAttribute concreteAttribute : concreteType.getCDAttributeList()) {
         Optional<String> explicit = getStereotypeValue(concreteAttribute, mapping);
@@ -120,7 +122,7 @@ public class ManualIncarnationContextBuilder {
    */
   private void collectForEachMappings(
       ReferenceIndex referenceIndex, Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    for (ASTCDType referenceType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+    for (ASTCDType referenceType : referenceModelIndex.types()) {
       getStereotypeValue(referenceType, "forEach")
           .flatMap(referenceIndex::findType)
           .ifPresent(
@@ -201,14 +203,7 @@ public class ManualIncarnationContextBuilder {
   }
 
   private Optional<ASTCDType> findConcreteOwner(ASTCDAttribute attribute) {
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
-      for (ASTCDAttribute candidate : concreteType.getCDAttributeList()) {
-        if (candidate == attribute || candidate.getSymbol() == attribute.getSymbol()) {
-          return Optional.of(concreteType);
-        }
-      }
-    }
-    return Optional.empty();
+    return concreteModelIndex.ownerOf(attribute);
   }
 
   private Set<String> forEachMethodNameCandidates(
@@ -345,7 +340,8 @@ public class ManualIncarnationContextBuilder {
   }
 
   private void registerSymbolKeys(ASTCDCompilationUnit cd, Map<ISymbol, StableElementKey> result) {
-    for (ASTCDType type : CDDiffUtil.getAllCDTypes(cd)) {
+    CDModelIndex index = cd == referenceCD ? referenceModelIndex : concreteModelIndex;
+    for (ASTCDType type : index.types()) {
       result.put(type.getSymbol(), StableElementKey.type(type));
       for (ASTCDAttribute attribute : type.getCDAttributeList()) {
         result.put(attribute.getSymbol(), StableElementKey.field(type, attribute));
@@ -358,14 +354,12 @@ public class ManualIncarnationContextBuilder {
 
   private Map<ISymbol, List<ISymbol>> extractInterfaceImplementersFromAST() {
     Map<ISymbol, List<ISymbol>> result = new LinkedHashMap<>();
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
+    for (ASTCDType concreteType : concreteModelIndex.types()) {
       for (String implName : CDTypeRelations.interfaceNames(concreteType)) {
         String simpleImplName = simpleName(implName);
-        for (ASTCDType possibleInterface : CDDiffUtil.getAllCDTypes(concreteCD)) {
-          if (possibleInterface.getName().equals(simpleImplName)) {
-            addMapping(result, possibleInterface.getSymbol(), concreteType.getSymbol());
-          }
-        }
+        concreteModelIndex
+            .type(simpleImplName)
+            .ifPresent(possibleInterface -> addMapping(result, possibleInterface.getSymbol(), concreteType.getSymbol()));
       }
     }
     return result;
@@ -472,9 +466,9 @@ public class ManualIncarnationContextBuilder {
     private final Map<String, List<ASTCDAttribute>> simpleFields = new LinkedHashMap<>();
     private final Map<String, List<ASTCDMethod>> simpleMethods = new LinkedHashMap<>();
 
-    static ReferenceIndex of(ASTCDCompilationUnit referenceCD) {
+    static ReferenceIndex of(CDModelIndex referenceIndex) {
       ReferenceIndex index = new ReferenceIndex();
-      for (ASTCDType type : CDDiffUtil.getAllCDTypes(referenceCD)) {
+      for (ASTCDType type : referenceIndex.types()) {
         index.types.put(type.getName(), type);
         for (ASTCDAttribute field : type.getCDAttributeList()) {
           index.fields.put(type.getName() + "." + field.getName(), field);

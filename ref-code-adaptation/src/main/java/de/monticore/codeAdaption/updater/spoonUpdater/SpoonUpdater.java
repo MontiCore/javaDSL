@@ -5,7 +5,9 @@ import static de.monticore.codeAdaption.utils.JavaLoader.print;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.updater.CodeUpdater;
+import de.monticore.codeAdaption.utils.Constants;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -13,9 +15,13 @@ import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import spoon.reflect.visitor.filter.TypeFilter;
 import de.se_rwth.commons.logging.Log;
 import spoon.Launcher;
@@ -35,7 +41,6 @@ public class SpoonUpdater implements CodeUpdater {
   private Map<String, String> groupingMappings = Collections.emptyMap();
   private final Map<String, List<String>> concreteMethodSignatures = new LinkedHashMap<>();
   private final Map<StableElementKey, StableElementKey> methodRewrites = new LinkedHashMap<>();
-  private final Map<StableElementKey, StableElementKey> fieldRewrites = new LinkedHashMap<>();
   private final Map<ASTTypeDeclaration, CtType<?>> typeMap = new LinkedHashMap<>();
   private final Map<ASTMethodDeclaration, CtMethod<?>> methodMap = new LinkedHashMap<>();
 
@@ -70,6 +75,110 @@ public class SpoonUpdater implements CodeUpdater {
     return JavaLoader.readJavaFile(outputDir.toPath());
   }
 
+  @Override
+  public void cleanCode(Path codePath) {
+    Path formattedPath = codePath.resolveSibling(codePath.getFileName() + "_formatted");
+    try {
+      FileUtils.deleteQuietly(formattedPath.toFile());
+      Files.createDirectories(formattedPath);
+      Map<String, Path> originalFilesByName = javaFilesBySimpleName(codePath);
+
+      Launcher cleanupLauncher = new Launcher();
+      cleanupLauncher.getEnvironment().setAutoImports(true);
+      cleanupLauncher.getEnvironment().setNoClasspath(true);
+      try (var paths = Files.walk(codePath)) {
+        paths
+            .filter(Files::isRegularFile)
+            .filter(p -> p.toString().endsWith(".java"))
+            .forEach(p -> cleanupLauncher.addInputResource(p.toAbsolutePath().toString()));
+      }
+      cleanupLauncher.buildModel();
+
+      List<CtAnnotation<?>> annotations =
+          new ArrayList<>(
+              cleanupLauncher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
+      annotations.stream().filter(SpoonUpdater::isAdaptAnnotation).forEach(CtAnnotation::delete);
+
+      cleanupLauncher.setSourceOutputDirectory(formattedPath.toFile());
+      cleanupLauncher.prettyprint();
+
+      try (var paths = Files.walk(formattedPath)) {
+        paths
+            .filter(Files::isRegularFile)
+            .filter(p -> p.toString().endsWith(".java"))
+            .forEach(
+                p -> {
+                  try {
+                    Path target =
+                        originalFilesByName.getOrDefault(
+                            p.getFileName().toString(), codePath.resolve(formattedPath.relativize(p)));
+                    Files.createDirectories(target.getParent());
+                    copyReplacingWithRetry(p, target);
+                  } catch (IOException e) {
+                    throw new IllegalStateException(
+                        "Failed to copy formatted file '" + p + "' to output", e);
+                  }
+                });
+      }
+
+      JavaSourcePostProcessor.processDirectory(codePath);
+      Log.info("SpoonUpdater.cleanCode: Cleanup completed", "CodeAdapter");
+    } catch (IOException e) {
+      Log.error("SpoonUpdater.cleanCode: Failed to clean code: " + e.getMessage());
+    } finally {
+      FileUtils.deleteQuietly(formattedPath.toFile());
+    }
+  }
+
+  private static Map<String, Path> javaFilesBySimpleName(Path codePath) throws IOException {
+    Map<String, Path> result = new LinkedHashMap<>();
+    try (var paths = Files.walk(codePath)) {
+      paths
+          .filter(Files::isRegularFile)
+          .filter(path -> path.toString().endsWith(".java"))
+          .forEach(path -> result.putIfAbsent(path.getFileName().toString(), path));
+    }
+    return result;
+  }
+
+  private static void copyReplacingWithRetry(Path source, Path target) throws IOException {
+    IOException lastException = null;
+    for (int attempt = 0; attempt < 5; attempt++) {
+      try {
+        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+        return;
+      } catch (IOException e) {
+        lastException = e;
+        try {
+          Thread.sleep(50L * (attempt + 1));
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          throw e;
+        }
+      }
+    }
+    throw lastException;
+  }
+
+  private static boolean isAdaptAnnotation(CtAnnotation<?> annotation) {
+    CtTypeReference<?> annotationType = annotation.getAnnotationType();
+    if (annotationType != null) {
+      String simpleName = annotationType.getSimpleName();
+      String qualifiedName = annotationType.getQualifiedName();
+      if (Constants.ANNOT_NAME.equals(simpleName)
+          || simpleName.endsWith("." + Constants.ANNOT_NAME)
+          || Constants.ANNOT_PACKAGE.equals(qualifiedName)
+          || qualifiedName.endsWith("." + Constants.ANNOT_NAME)) {
+        return true;
+      }
+    }
+    String rendered = annotation.toString().trim();
+    return rendered.startsWith("@" + Constants.ANNOT_NAME)
+        || rendered.startsWith("@." + Constants.ANNOT_NAME)
+        || rendered.contains("." + Constants.ANNOT_NAME + "(")
+        || rendered.contains("." + Constants.ANNOT_NAME + "[");
+  }
+
 
   public void setGroupingMappings(Map<String, String> mappings) {
     if (mappings == null || mappings.isEmpty()) {
@@ -96,17 +205,6 @@ public class SpoonUpdater implements CodeUpdater {
       return;
     }
     methodRewrites.put(referenceMethod, concreteMethod);
-  }
-
-  @Override
-  public void registerFieldRewrite(StableElementKey referenceField, StableElementKey concreteField) {
-    if (referenceField == null
-        || concreteField == null
-        || referenceField.getKind() != StableElementKey.Kind.FIELD
-        || concreteField.getKind() != StableElementKey.Kind.FIELD) {
-      return;
-    }
-    fieldRewrites.put(referenceField, concreteField);
   }
 
   private void applyConcreteMethodSignatures() {
@@ -187,7 +285,8 @@ public class SpoonUpdater implements CodeUpdater {
           && invocation.getExecutable().getDeclaringType().getSimpleName() != null) {
         return invocation.getExecutable().getDeclaringType().getSimpleName();
       }
-    } catch (Exception e) {
+    } catch (Exception ignored) {
+      // Fall through to target metadata when declaring type metadata is absent.
     }
     try {
       if (invocation.getTarget() != null

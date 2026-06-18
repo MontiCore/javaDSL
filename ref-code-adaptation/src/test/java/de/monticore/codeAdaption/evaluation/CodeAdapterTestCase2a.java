@@ -2,7 +2,6 @@ package de.monticore.codeAdaption.evaluation;
 
 import static de.monticore.cdconformance.CDConfParameter.*;
 import static de.monticore.codeAdaption.utils.AdapterParam.*;
-import static de.monticore.codeAdaption.utils.AdapterParam.IGNORE_NON_MATCHED_VAR;
 
 import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.codeAdaption.CodeAdapter;

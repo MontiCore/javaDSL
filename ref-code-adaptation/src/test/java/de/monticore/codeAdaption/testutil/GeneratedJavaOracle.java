@@ -120,13 +120,14 @@ public final class GeneratedJavaOracle {
 
   private static Optional<Path> resolveExpectedCD(CDConcretizationTestCase testCase) {
     String concName = testCase.concCd().getFileName().toString();
+    Path resourceRoot = Path.of(CDConcretizationTestCase.RESOURCE_ROOT);
     String relativeConc =
-        Path.of(CDConcretizationTestCase.RESOURCE_ROOT)
+        resourceRoot
             .relativize(testCase.concCd())
             .toString()
             .replace('\\', '/');
     if (EXPECTED_OUT_OVERRIDES.containsKey(relativeConc)) {
-      Path out = Path.of(CDConcretizationTestCase.RESOURCE_ROOT).resolve(EXPECTED_OUT_OVERRIDES.get(relativeConc));
+      Path out = resourceRoot.resolve(EXPECTED_OUT_OVERRIDES.get(relativeConc));
       if (Files.exists(out)) {
         return Optional.of(out);
       }

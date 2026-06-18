@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -74,17 +73,6 @@ public class ControllerWorkerAdapterReversedTest extends AdapterAbstractTest {
 
     assertTrue(workerAContent.contains("public void update(") || workerAContent.contains("void update("));
     assertTrue(workerBContent.contains("public void update(") || workerBContent.contains("void update("));
-  }
-
-  private String readFileContent(Path outputPath, String filename) {
-    try {
-      Path filePath = outputPath.resolve(filename);
-      assertTrue(Files.exists(filePath));
-      return Files.readString(filePath);
-    } catch (IOException e) {
-      fail("Failed to read file: " + filename);
-      return "";
-    }
   }
 }
 

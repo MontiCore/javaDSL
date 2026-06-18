@@ -6,6 +6,7 @@ import static de.monticore.cdconformance.CDConfParameter.NAME_MAPPING;
 import static de.monticore.cdconformance.CDConfParameter.STEREOTYPE_MAPPING;
 import static de.monticore.cdconformance.CDConfParameter.STRICT_PARAMETER_ORDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
@@ -152,7 +153,7 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
         new IncarnationContextBuilder(checker, refCD, conCD).buildContextForMapping("observer", true);
 
     assertTrue(checkerOnly.getReferenceToIncarnations().isEmpty());
-    assertTrue(manualFallback.getReferenceToIncarnations().size() > 0);
+    assertFalse(manualFallback.getReferenceToIncarnations().isEmpty());
   }
 
   @Test

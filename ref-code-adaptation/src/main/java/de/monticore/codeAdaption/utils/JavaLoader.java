@@ -1,16 +1,15 @@
 package de.monticore.codeAdaption.utils;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import de.monticore.ast.ASTNode;
 import de.monticore.cd._symboltable.BuiltInTypes;
 import de.monticore.cd4code.CD4CodeMill;
-import de.monticore.cd4code._cocos.CD4CodeCoCoChecker;
 import de.monticore.cd4code._parser.CD4CodeParser;
 import de.monticore.cd4code._symboltable.CD4CodeSymbolTableCompleter;
 import de.monticore.cd4code._symboltable.ICD4CodeArtifactScope;
-import de.monticore.cd4code.cocos.CD4CodeCoCosDelegator;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl.JavaDSLTool;
@@ -62,9 +61,6 @@ public class JavaLoader {
     // create symbol table
     createCDSymTab(optCdAST.get());
 
-    // checkCoCos
-    CD4CodeCoCoChecker cdChecker = new CD4CodeCoCosDelegator().getCheckerForAllCoCos();
-    //  cdChecker.checkAll(optCdAST.get());
     return optCdAST.get();
   }
 
@@ -118,7 +114,8 @@ public class JavaLoader {
     ast = Optional.ofNullable(tool.parse(javaFile.getAbsolutePath()));
 
     assertTrue(ast.isPresent());
-    assertTrue(ast.get() instanceof ASTOrdinaryCompilationUnit);
+    ASTOrdinaryCompilationUnit ordinaryCompilationUnit =
+        assertInstanceOf(ASTOrdinaryCompilationUnit.class, ast.get());
 
     // create symbol table
     IJavaDSLGlobalScope globalScope = JavaDSLMill.globalScope();
@@ -128,10 +125,10 @@ public class JavaLoader {
     traverser.add4JavaDSL(genitor);
     genitor.putOnStack(globalScope);
 
-    IJavaDSLArtifactScope artifactScope = genitor.createFromAST(ast.get());
+    IJavaDSLArtifactScope artifactScope = genitor.createFromAST(ordinaryCompilationUnit);
     globalScope.addSubScope(artifactScope);
 
-    return (ASTOrdinaryCompilationUnit) ast.get();
+    return ordinaryCompilationUnit;
   }
 
   /**
@@ -235,7 +232,6 @@ public class JavaLoader {
     try {
       // Delete the directory and its contents
       FileUtils.deleteDirectory(new File(path.toString()));
-      ;
     } catch (IOException e) {
       Log.error("Failed to delete directory: " + e.getMessage());
     }

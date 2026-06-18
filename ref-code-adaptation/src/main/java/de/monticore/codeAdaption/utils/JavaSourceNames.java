@@ -226,9 +226,6 @@ public final class JavaSourceNames {
       if (type instanceof ASTMCQualifiedType qualifiedType) {
         return named(qualifiedType.getMCQualifiedName().getQName());
       }
-      if (type instanceof de.monticore.java.javadsl._ast.ASTMCQualifiedType qualifiedType) {
-        return named(qualifiedType.getMCQualifiedName().getQName());
-      }
       return parseTypeKeyWithSpoon(type.printType()).orElseGet(() -> named(type.printType()));
     }
 

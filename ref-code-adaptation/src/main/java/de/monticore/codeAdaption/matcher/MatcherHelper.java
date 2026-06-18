@@ -1,7 +1,6 @@
 package de.monticore.codeAdaption.matcher;
 
 import static de.monticore.codeAdaption.utils.Constants.*;
-import static de.monticore.codeAdaption.utils.Constants.PLACE_HOLDER_REGEX;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;

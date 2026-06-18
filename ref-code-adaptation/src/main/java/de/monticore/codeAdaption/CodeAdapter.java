@@ -4,19 +4,17 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
-import de.monticore.cddiff.CDDiffUtil;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.symboltable.ISymbol;
 import de.monticore.codeAdaption.handler.BasicUpdateHandler;
 import de.monticore.codeAdaption.handler.multiIncarnation.*;
 import de.monticore.codeAdaption.updater.CodeUpdater;
-import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
+import de.monticore.codeAdaption.updater.CodeUpdaterFactory;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.AdapterUtils;
-import de.monticore.codeAdaption.utils.Constants;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
-import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
@@ -28,13 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import org.apache.commons.io.FileUtils;
-import spoon.Launcher;
-import spoon.reflect.declaration.CtAnnotation;
-import spoon.reflect.reference.CtTypeReference;
-import spoon.reflect.visitor.filter.TypeFilter;
 
 public class CodeAdapter {
   protected Set<AdapterParam> adapterParams;
@@ -44,11 +37,6 @@ public class CodeAdapter {
     this.adapterParams = adapterParams;
     this.confParams = confParams;
   }
-
-  // Textual post-print grouping replacement helper was removed in for
-  // AST-level replacements applied by `SpoonUpdater`. All grouping mappings are
-  // now computed via `computeGroupingMappings(...)` and passed to updaters through
-  // the `CodeUpdater.setGroupingMappings(...)` API before printing.
 
   /**
    * Adapts reference Java code to a concrete class diagram without completing the concrete model
@@ -72,6 +60,32 @@ public class CodeAdapter {
   }
 
   /**
+   * Adapts reference Java code using caller-provided updater instances.
+   *
+   * <p>The factory is called once for every isolated temporary adaptation run and must return a
+   * fresh updater each time.
+   */
+  public void adapt(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath,
+      CodeUpdaterFactory updaterFactory) {
+    adapt(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        false,
+        true,
+        updaterFactory);
+  }
+
+  /**
    * Adapts reference Java code to a concrete class diagram.
    *
    * <p>With {@code useConcretization=true}, cdconcretization may complete the concrete CD before
@@ -92,6 +106,36 @@ public class CodeAdapter {
       Path outputPath,
       boolean useConcretization,
       boolean useCommonParentForMultipleIncarnations) {
+    adapt(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        CodeUpdaterFactory.spoon());
+  }
+
+  /**
+   * Adapts reference Java code to a concrete class diagram using an injectable updater factory.
+   *
+   * <p>The default overloads use a Spoon-backed updater factory. Callers can provide another
+   * implementation as long as the factory returns a fresh updater for every call.
+   */
+  public void adapt(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations,
+      CodeUpdaterFactory updaterFactory) {
+
+    Objects.requireNonNull(updaterFactory, "updaterFactory");
 
     // load CD models
     ASTCDCompilationUnit conCD = JavaLoader.parseCD(concreteCD.getPath());
@@ -100,6 +144,7 @@ public class CodeAdapter {
     if (useConcretization) {
       concretizeConcreteCD(conCD, refCD, mappings);
     }
+    CDModelIndex conIndex = CDModelIndex.of(conCD);
 
     // Build incarnation contexts for all mappings upfront
     Map<String, IncarnationContext> mappingContexts =
@@ -134,7 +179,7 @@ public class CodeAdapter {
       // Single mapping - check conformance individually
       String mapping = mappings.iterator().next();
       CDConformanceChecker checker = new CDConformanceChecker(confParams);
-      boolean mappingValid = false;
+      boolean mappingValid;
       try {
         mappingValid = checker.checkConformance(conCD, refCD, mapping);
       } catch (Throwable t) {
@@ -232,12 +277,7 @@ public class CodeAdapter {
           // Write cloned AST to temp directory as .java files
           JavaLoader.printAST(mappingRefCode, tempPath);
 
-           // Create NEW SpoonUpdater for this mapping's code
-           CodeUpdater updater = new SpoonUpdater();
-           updater.setCodePath(tempPath);
-           // Provide grouping mappings so SpoonUpdater can apply AST-level replacements
-           updater.setGroupingMappings(groupingAgg);
-           updater.setOutputDirectory(tempPath);
+          CodeUpdater updater = prepareUpdater(updaterFactory, tempPath, groupingAgg);
 
           // Use BasicUpdateHandler for each mapping
           BasicUpdateHandler singleHandler = new BasicUpdateHandler(
@@ -252,7 +292,7 @@ public class CodeAdapter {
           singleHandler.handleUpdate(mappingRefCode);
 
           // Print output to temp directory
-          Set<File> outputFiles = updater.printCode();
+          updater.printCode();
 
           // Read the processed output back from temp directory
           Set<ASTOrdinaryCompilationUnit> processedCode = JavaLoader.readJavaCode(tempPath);
@@ -297,27 +337,16 @@ public class CodeAdapter {
             // Write cloned AST to temp directory as .java files
             JavaLoader.printAST(mappingRefCode, tempPath);
 
-            // Create new SpoonUpdater for this incarnation's code
-            CodeUpdater updater = new SpoonUpdater();
-            updater.setCodePath(tempPath);
-            // Provide grouping mappings so SpoonUpdater can apply AST-level replacements
-            updater.setGroupingMappings(groupingAgg);
-            updater.setOutputDirectory(tempPath);
+            CodeUpdater updater = prepareUpdater(updaterFactory, tempPath, groupingAgg);
 
             // Build a selector that prefers incarnations belonging to the current concrete type
             final String targetTypeName = concreteTypeSymbol.getName();
-            // collect attribute names for the concrete type from conCD
-            // TODO: I have written preprocessing collecters for all elements and hierarchies in cd4analysis.
-            //  Add them also in this project as this is the 4-th time where I resolve the types and iterate
             Set<String> attrNames = new HashSet<>();
-            for (ASTCDType conType : CDDiffUtil.getAllCDTypes(conCD)) {
-              if (conType.getName().equals(targetTypeName)) {
-                for (var a : conType.getCDAttributeList()) {
-                  attrNames.add(a.getName());
-                }
-                break;
-              }
-            }
+            conIndex
+                .type(targetTypeName)
+                .ifPresent(
+                    conType ->
+                        conIndex.attributes(conType.getName()).forEach(attribute -> attrNames.add(attribute.getName())));
 
             // simple IncarnationSelector that prefers concrete symbols matching the target type
             IncarnationSelector selector = new IncarnationSelector() {
@@ -356,7 +385,7 @@ public class CodeAdapter {
             handler.handleUpdate(mappingRefCode);
 
             // Print output to temp directory
-            Set<File> outputFiles = updater.printCode();
+            updater.printCode();
 
             // Read the processed output back from temp directory
             Set<ASTOrdinaryCompilationUnit> processedCode = JavaLoader.readJavaCode(tempPath);
@@ -387,20 +416,20 @@ public class CodeAdapter {
       JavaLoader.printAST(finalCode, outputPath);
       if (!useConcretization) {
         // Clean up @Adapt annotations and other metadata from adapted code.
-        cleanCode(outputPath);
+        cleanCode(outputPath, updaterFactory);
       }
     }
     copyConcreteFiles(conHwcPath, outputPath);
   }
 
-  /**
-   * Builds incarnation contexts for all mappings.
-   * This collects all available incarnations for each reference symbol across all mappings.
-   */
-  // TODO: I don't think this will be used as the other method as preference
-  private Map<String, IncarnationContext> buildIncarnationContexts(
-      ASTCDCompilationUnit refCD, ASTCDCompilationUnit conCD, Set<String> mappings) {
-    return buildIncarnationContexts(refCD, conCD, mappings, false);
+  private CodeUpdater prepareUpdater(
+      CodeUpdaterFactory updaterFactory, Path tempPath, Map<String, String> groupingMappings) {
+    CodeUpdater updater =
+        Objects.requireNonNull(updaterFactory.createUpdater(), "updaterFactory.createUpdater()");
+    updater.setCodePath(tempPath);
+    updater.setGroupingMappings(groupingMappings);
+    updater.setOutputDirectory(tempPath);
+    return updater;
   }
 
   private Map<String, IncarnationContext> buildIncarnationContexts(
@@ -427,7 +456,7 @@ public class CodeAdapter {
 
       // Run conformance check for this mapping (works for both single and multi-mapping)
       // The CDConformanceChecker now handles adapter pattern method ambiguity correctly
-      boolean mappingValid = false;
+      boolean mappingValid;
       try {
         mappingValid = checker.checkConformance(conCD, refCD, mapping);
          } catch (Throwable e) {
@@ -446,7 +475,7 @@ public class CodeAdapter {
 
       // Use IncarnationContextBuilder to properly extract incarnations
       IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
-      IncarnationContext context = builder.buildContextForMapping(mapping, !useConcretizationMappings);
+      IncarnationContext context = builder.buildContextForMapping(mapping, false);
       contexts.put(mapping, context);
     }
 
@@ -566,7 +595,7 @@ public class CodeAdapter {
       ASTCDCompilationUnit conCD) {
 
     Set<String> concreteTypeNames =
-        CDDiffUtil.getAllCDTypes(conCD).stream()
+        CDModelIndex.of(conCD).types().stream()
             .map(ASTCDType::getName)
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 
@@ -729,112 +758,12 @@ public class CodeAdapter {
    * @param codePath generated Java directory
    */
   static void cleanCode(Path codePath) {
-    Path formattedPath = codePath.resolveSibling(codePath.getFileName() + "_formatted");
-    try {
-      FileUtils.deleteQuietly(formattedPath.toFile());
-      Files.createDirectories(formattedPath);
-      Map<String, Path> originalFilesByName = javaFilesBySimpleName(codePath);
-
-      Launcher launcher = new Launcher();
-      launcher.getEnvironment().setAutoImports(true);
-      launcher.getEnvironment().setNoClasspath(true);
-      try (var paths = Files.walk(codePath)) {
-        paths
-            .filter(Files::isRegularFile)
-            .filter(p -> p.toString().endsWith(".java"))
-            .forEach(p -> launcher.addInputResource(p.toAbsolutePath().toString()));
-      }
-      launcher.buildModel();
-
-      List<CtAnnotation<?>> annotations =
-          new ArrayList<>(launcher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
-      annotations.stream().filter(CodeAdapter::isAdaptAnnotation).forEach(CtAnnotation::delete);
-
-      launcher.setSourceOutputDirectory(formattedPath.toFile());
-      launcher.prettyprint();
-
-      try (var paths = Files.walk(formattedPath)) {
-        paths
-            .filter(Files::isRegularFile)
-            .filter(p -> p.toString().endsWith(".java"))
-            .forEach(
-                p -> {
-                  try {
-                    Path target =
-                        originalFilesByName.getOrDefault(
-                            p.getFileName().toString(), codePath.resolve(formattedPath.relativize(p)));
-                    Files.createDirectories(target.getParent());
-                    copyReplacingWithRetry(p, target);
-                  } catch (IOException e) {
-                    throw new IllegalStateException(
-                        "Failed to copy formatted file '" + p + "' to output", e);
-                  }
-                });
-      }
-
-      JavaSourcePostProcessor.processDirectory(codePath);
-      Log.info("CodeAdapter.cleanCode: Cleanup completed", "CodeAdapter");
-    } catch (IOException e) {
-      Log.error("CodeAdapter.cleanCode: Failed to clean code: " + e.getMessage());
-    } finally {
-      FileUtils.deleteQuietly(formattedPath.toFile());
-    }
+    cleanCode(codePath, CodeUpdaterFactory.spoon());
   }
 
-  private static Map<String, Path> javaFilesBySimpleName(Path codePath) throws IOException {
-    Map<String, Path> result = new LinkedHashMap<>();
-    try (var paths = Files.walk(codePath)) {
-      paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.toString().endsWith(".java"))
-          .forEach(path -> result.putIfAbsent(path.getFileName().toString(), path));
-    }
-    return result;
-  }
-
-  /**
-   * Replaces a generated file with a bounded retry for short-lived Windows file locks left by the
-   * parser/pretty-printer pipeline.
-   */
-  private static void copyReplacingWithRetry(Path source, Path target) throws IOException {
-    IOException lastException = null;
-    for (int attempt = 0; attempt < 5; attempt++) {
-      try {
-        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-        return;
-      } catch (IOException e) {
-        lastException = e;
-        try {
-          Thread.sleep(50L * (attempt + 1));
-        } catch (InterruptedException interrupted) {
-          Thread.currentThread().interrupt();
-          throw e;
-        }
-      }
-    }
-    throw lastException;
-  }
-
-  static String postProcessGeneratedJavaSource(String content) {
-    return JavaSourcePostProcessor.process(content);
-  }
-
-  private static boolean isAdaptAnnotation(CtAnnotation<?> annotation) {
-    CtTypeReference<?> annotationType = annotation.getAnnotationType();
-    if (annotationType != null) {
-      String simpleName = annotationType.getSimpleName();
-      String qualifiedName = annotationType.getQualifiedName();
-      if (Constants.ANNOT_NAME.equals(simpleName)
-          || simpleName.endsWith("." + Constants.ANNOT_NAME)
-          || Constants.ANNOT_PACKAGE.equals(qualifiedName)
-          || qualifiedName.endsWith("." + Constants.ANNOT_NAME)) {
-        return true;
-      }
-    }
-    String rendered = annotation.toString().trim();
-    return rendered.startsWith("@" + Constants.ANNOT_NAME)
-        || rendered.startsWith("@." + Constants.ANNOT_NAME)
-        || rendered.contains("." + Constants.ANNOT_NAME + "(")
-        || rendered.contains("." + Constants.ANNOT_NAME + "[");
+  private static void cleanCode(Path codePath, CodeUpdaterFactory updaterFactory) {
+    CodeUpdater updater =
+        Objects.requireNonNull(updaterFactory.createUpdater(), "updaterFactory.createUpdater()");
+    updater.cleanCode(codePath);
   }
 }

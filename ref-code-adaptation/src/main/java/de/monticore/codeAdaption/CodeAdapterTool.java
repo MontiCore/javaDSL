@@ -3,7 +3,6 @@ package de.monticore.codeAdaption;
 import de.monticore.CD4CodeTool;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.se_rwth.commons.logging.Log;
-import java.util.*;
 import org.apache.commons.cli.*;
 
 public class CodeAdapterTool extends CD4CodeTool {

@@ -5,10 +5,10 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdconformance.CDConformanceChecker;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.symboltable.ISymbol;
-import de.monticore.cddiff.CDDiffUtil;
 import java.util.*;
 import java.util.function.BiFunction;
 
@@ -22,6 +22,8 @@ public class IncarnationContextBuilder {
   private final CDConformanceChecker conformanceChecker;
   private final ASTCDCompilationUnit referenceCD;
   private final ASTCDCompilationUnit concreteCD;
+  private final CDModelIndex referenceIndex;
+  private final CDModelIndex concreteIndex;
 
   public IncarnationContextBuilder(CDConformanceChecker conformanceChecker,
                                    ASTCDCompilationUnit referenceCD,
@@ -29,6 +31,8 @@ public class IncarnationContextBuilder {
     this.conformanceChecker = conformanceChecker;
     this.referenceCD = referenceCD;
     this.concreteCD = concreteCD;
+    this.referenceIndex = CDModelIndex.of(referenceCD);
+    this.concreteIndex = CDModelIndex.of(concreteCD);
   }
 
   /**
@@ -129,9 +133,9 @@ public class IncarnationContextBuilder {
     return result;
   }
 
-  // TODO
   private void registerSymbolKeys(ASTCDCompilationUnit cd, Map<ISymbol, StableElementKey> result) {
-    for (ASTCDType type : CDDiffUtil.getAllCDTypes(cd)) {
+    CDModelIndex index = cd == referenceCD ? referenceIndex : concreteIndex;
+    for (ASTCDType type : index.types()) {
       result.put(type.getSymbol(), StableElementKey.type(type));
       for (ASTCDAttribute attribute : type.getCDAttributeList()) {
         result.put(attribute.getSymbol(), StableElementKey.field(type, attribute));
@@ -147,12 +151,11 @@ public class IncarnationContextBuilder {
    * Preference: choose an interface candidate when multiple candidates match; otherwise choose the
    * candidate with minimal maximum inheritance distance to the implementers; deterministic tie-breaker: lexical order.
    */
-  // TODO
   private Map<String, String> computeGroupingMap(Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
     Map<String, String> result = new HashMap<>();
     // build parent map: typeName -> immediate parent names (interfaces/supertypes)
     Map<String, Set<String>> parentMap = new HashMap<>();
-    List<ASTCDType> allTypes = CDDiffUtil.getAllCDTypes(concreteCD);
+    List<ASTCDType> allTypes = concreteIndex.types();
     Set<String> allTypeNames = new HashSet<>();
     for (ASTCDType t : allTypes) allTypeNames.add(t.getName());
 
@@ -223,7 +226,6 @@ public class IncarnationContextBuilder {
         }
       }
 
-      String chosen = null;
       Set<String> interfaceSet = new HashSet<>();
       for (ASTCDType t : allTypes) {
         interfaceSet.addAll(getImplementedInterfaceNames(t));
@@ -259,29 +261,27 @@ public class IncarnationContextBuilder {
         }
       }
 
-      chosen = best;
-      if (chosen != null) {
-        for (String inc : targetSet) result.put(inc, chosen);
+      if (best != null) {
+        for (String inc : targetSet) result.put(inc, best);
       }
     }
 
     return result;
   }
 
-  // TODO
   /** Extracts interface-to-implementer relationships from the concrete CD. */
   private Map<ISymbol, List<ISymbol>> extractInterfaceImplementersFromAST() {
     Map<ISymbol, List<ISymbol>> result = new HashMap<>();
 
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
+    for (ASTCDType concreteType : concreteIndex.types()) {
       for (String implName : getImplementedInterfaceNames(concreteType)) {
-        for (ASTCDType possibleInterface : CDDiffUtil.getAllCDTypes(concreteCD)) {
-          if (possibleInterface.getName().equals(implName)) {
-            ISymbol ifaceSym = possibleInterface.getSymbol();
-            result.computeIfAbsent(ifaceSym, k -> new ArrayList<>()).add(concreteType.getSymbol());
-            break;
-          }
-        }
+        concreteIndex
+            .type(implName)
+            .ifPresent(
+                possibleInterface -> {
+                  ISymbol ifaceSym = possibleInterface.getSymbol();
+                  result.computeIfAbsent(ifaceSym, k -> new ArrayList<>()).add(concreteType.getSymbol());
+                });
       }
     }
 
@@ -294,27 +294,25 @@ public class IncarnationContextBuilder {
    * concrete types as implementers for the corresponding concrete interface symbols
    * if possible.
    */
-  // TODO
   private Map<ISymbol, List<ISymbol>> extractInterfaceImplementersFromConformance(Object incarnationMapping) {
     Map<ISymbol, List<ISymbol>> result = new HashMap<>();
     try {
-      for (ASTCDType refType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+      for (ASTCDType refType : referenceIndex.types()) {
         var incarnations = conformanceChecker.getIncarnationMapping().getIncarnations(refType);
         if (incarnations == null) continue;
         for (var inc : incarnations) {
           ISymbol conSym = inc.getSymbol();
           String name = conSym.getName();
-          for (ASTCDType possibleInterface : CDDiffUtil.getAllCDTypes(concreteCD)) {
-            if (possibleInterface.getName().equals(name)) {
-              List<ISymbol> impls = result.computeIfAbsent(possibleInterface.getSymbol(), k -> new ArrayList<>());
-              for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
-                if (getImplementedInterfaceNames(concreteType).contains(possibleInterface.getName())) {
-                  impls.add(concreteType.getSymbol());
-                }
-              }
-              break;
-            }
-          }
+          concreteIndex
+              .type(name)
+              .ifPresent(
+                  possibleInterface -> {
+                    List<ISymbol> impls =
+                        result.computeIfAbsent(possibleInterface.getSymbol(), k -> new ArrayList<>());
+                    for (ASTCDType concreteType : concreteIndex.implementersOf(possibleInterface.getName())) {
+                      impls.add(concreteType.getSymbol());
+                    }
+                  });
         }
       }
     } catch (Exception e) {
@@ -326,12 +324,11 @@ public class IncarnationContextBuilder {
   /**
    * Extracts incarnations from the conformance checker's incarnation mapping.
    */
-  // TODO
   private Map<ISymbol, List<ISymbol>> extractIncarnations(Object incarnationMapping, String mapping) {
     Map<ISymbol, List<ISymbol>> result = new HashMap<>();
 
     // Extract CD types and their incarnations
-    for (var cdType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+    for (var cdType : referenceIndex.types()) {
       var incarnations = conformanceChecker.getIncarnationMapping().getIncarnations(cdType);
       List<ISymbol> incarnationSymbols = new ArrayList<>();
       for (var incarnation : incarnations) {
@@ -343,7 +340,7 @@ public class IncarnationContextBuilder {
     }
 
     // Extract CD attributes and their incarnations
-    for (var cdType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+    for (var cdType : referenceIndex.types()) {
       for (var cdAttribute : cdType.getCDAttributeList()) {
         var incarnations = conformanceChecker.getIncarnationMapping().getIncarnations(cdAttribute);
         List<ISymbol> incarnationSymbols = new ArrayList<>();
@@ -375,13 +372,12 @@ public class IncarnationContextBuilder {
    * Scans all concrete CD elements for stereotypes like <<mapping="RefElementName">>
    * and builds the mapping from reference element to concrete element.
    */
-  // TODO
   private Map<ISymbol, List<ISymbol>> extractFromStereotypes(String mapping) {
     Map<ISymbol, List<ISymbol>> result = new HashMap<>();
     Map<String, ISymbol> refElementsByName = buildRefElementMap();
 
     // Extract type mappings from stereotypes
-    for (ASTCDType concreteType : CDDiffUtil.getAllCDTypes(concreteCD)) {
+    for (ASTCDType concreteType : concreteIndex.types()) {
       Optional<String> refTypeName = getStereotypeValue(concreteType, mapping);
       if (refTypeName.isPresent()) {
         ISymbol refSymbol = refElementsByName.get(refTypeName.get());
@@ -435,11 +431,10 @@ public class IncarnationContextBuilder {
    * Keys are "TypeName" for types, "TypeName.fieldName" for attributes,
    * and "TypeName.methodName(paramType1,paramType2)" for methods (signature-aware).
    */
-  // TODO
   private Map<String, ISymbol> buildRefElementMap() {
     Map<String, ISymbol> map = new HashMap<>();
 
-    for (ASTCDType refType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+    for (ASTCDType refType : referenceIndex.types()) {
       // Add type
       map.put(refType.getName(), refType.getSymbol());
 
@@ -462,7 +457,7 @@ public class IncarnationContextBuilder {
     }
 
     Map<String, List<ISymbol>> simpleMethodsByOwner = new HashMap<>();
-    for (ASTCDType refType : CDDiffUtil.getAllCDTypes(referenceCD)) {
+    for (ASTCDType refType : referenceIndex.types()) {
       for (ASTCDMethod method : refType.getCDMethodList()) {
         simpleMethodsByOwner
             .computeIfAbsent(refType.getName() + "." + method.getName(), ignored -> new ArrayList<>())
@@ -523,18 +518,16 @@ public class IncarnationContextBuilder {
     return null;
   }
 
-  // TODO
   private Optional<String> findMappedInterfaceReference(
       ASTCDType concreteType, String mapping, Map<String, ISymbol> refElementsByName) {
     for (String interfaceName : getImplementedInterfaceNames(concreteType)) {
-      for (ASTCDType possibleInterface : CDDiffUtil.getAllCDTypes(concreteCD)) {
-        if (!possibleInterface.getName().equals(interfaceName)) {
-          continue;
-        }
-        Optional<String> mappedReference = getStereotypeValue(possibleInterface, mapping);
-        if (mappedReference.isPresent() && refElementsByName.containsKey(mappedReference.get())) {
-          return mappedReference;
-        }
+      Optional<ASTCDType> possibleInterface = concreteIndex.type(interfaceName);
+      if (possibleInterface.isEmpty()) {
+        continue;
+      }
+      Optional<String> mappedReference = getStereotypeValue(possibleInterface.get(), mapping);
+      if (mappedReference.isPresent() && refElementsByName.containsKey(mappedReference.get())) {
+        return mappedReference;
       }
     }
     return Optional.empty();

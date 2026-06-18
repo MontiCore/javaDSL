@@ -8,7 +8,6 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.utils.AdapterParam;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -89,17 +88,5 @@ public class ControllerWorkerAdapterTest extends AdapterAbstractTest {
     assertTrue(workerAContent.contains("public void update(") || workerAContent.contains("void update("));
     assertTrue(workerBContent.contains("public void update(") || workerBContent.contains("void update("));
   }
-
-  private String readFileContent(Path outputPath, String filename) {
-    try {
-      Path filePath = outputPath.resolve(filename);
-      assertTrue(Files.exists(filePath));
-      return Files.readString(filePath);
-    } catch (IOException e) {
-      fail("Failed to read file: " + filename);
-      return "";
-    }
-  }
-
 }
 

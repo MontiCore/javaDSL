@@ -50,39 +50,41 @@ Last updated: 15.06.2026
     be injectable through the `adapt` entry point so Spoon can be replaced by
     another updater implementation without changing the adapter orchestration.
   - Implemented: [ ]
-  - Addressed: [ ]
-  - Notes: Spoon remains the default implementation, but callers should be able
-    to provide an updater through an interface-based parameter.
+  - Addressed: [x]
+  - Notes: Spoon remains the default implementation. `CodeAdapter` now accepts a
+    `CodeUpdaterFactory` through its `adapt` entry points, and every isolated
+    mapping/incarnation run receives a fresh updater instance.
 
-- [ ] R-006: Document evaluation test cases
+- [x] R-006: Document evaluation test cases
   - Source/date: 15.06.2026
   - Details: Add `evaluation.md` documentation that explains the purpose,
-    inputs, mappings, expected behavior, and known limitations of the evaluation
-    test cases.
-  - Implemented: [ ]
-  - Addressed: [ ]
-  - Notes: The documentation should include testcase 1 and explain why it is
-    currently expected to report an error.
+    inputs, mappings, expected behavior of all testcases in the codeAdaptation resources, that are not in the subdirectories (13 test classes).
+  - Implemented: [x]
+  - Addressed: [x]
+  - Notes: `evaluation.md` documents the 13 numbered evaluation resource cases.
+    Testcase 1 is documented with the current post-R-007 behavior: it is
+    expected to run successfully, not report the former association-role
+    conflict.
 
-- [ ] R-007: Make evaluation testcase 1 functional
+- [x] R-007: Make evaluation testcase 1 functional
   - Source/date: 15.06.2026
   - Details: Testcase 1 should be converted from an error-only expectation into
     a functioning evaluation test case, or the underlying modeling/adaptation
     conflict should be resolved so the case can run successfully.
-  - Implemented: [ ]
-  - Addressed: [ ]
+  - Implemented: [x]
+  - Addressed: [x]
   - Notes: Current analysis target: testcase 1 reports an association-role field
     conflict because role-derived fields from the Observer/Observable mappings
     are ambiguous for the manual adaptation path.
 
-- [ ] R-008: Introduce a central CD lookup/index structure
+- [x] R-008: Introduce a central CD lookup/index structure
   - Source/date: 15.06.2026
   - Details: Add a central class or data structure, comparable to the
     preprocessing/index approach in cd4analysis, that traverses each class
     diagram AST once and stores frequently used type/member relationships in
     maps.
-  - Implemented: [ ]
-  - Addressed: [ ]
+  - Implemented: [x]
+  - Addressed: [x]
   - Notes: Adaptation code should look up CD types, attributes, methods, and
     associations from this index instead of repeatedly iterating the whole AST
     or resolving through utility methods such as `CDUtil`/`CDDiffUtil` at every

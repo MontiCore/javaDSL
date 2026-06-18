@@ -7,8 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -49,17 +47,6 @@ public class StrategySingletonAdapterTest extends AdapterAbstractTest {
                 adapterCodePath,
                 refCodePath,
                 outputPath));
-  }
-
-  private String readFileContent(Path outputPath, String filename) {
-    try {
-      Path filePath = outputPath.resolve(filename);
-      assertTrue(Files.exists(filePath));
-      return Files.readString(filePath);
-    } catch (IOException e) {
-      fail("Failed to read file: " + filename);
-      return "";
-    }
   }
 }
 

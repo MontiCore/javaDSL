@@ -29,11 +29,7 @@ import spoon.reflect.visitor.filter.TypeFilter;
 public class AdapterUtils {
 
   public static Set<ASTCDType> getAllCDTypes(ASTCDCompilationUnit cd) {
-    Set<ASTCDType> res = new LinkedHashSet<>();
-    res.addAll(cd.getCDDefinition().getCDClassesList());
-    res.addAll(cd.getCDDefinition().getCDInterfacesList());
-    res.addAll(cd.getCDDefinition().getCDEnumsList());
-    return res;
+    return new LinkedHashSet<>(CDModelIndex.of(cd).types());
   }
 
   public static Optional<ISymbol> resolveCDSymbol(String name, ASTCDCompilationUnit refCD) {
@@ -54,23 +50,23 @@ public class AdapterUtils {
       Log.debug("AdapterUtils.resolveCDSymbol: qualified ref type='" + typeName + "' member='" + memberName + "'", "AdapterUtils");
 
       // Try to find the referenced type in the reference CD AST
-      for (ASTCDType t : getAllCDTypes(refCD)) {
-        if (t.getName().equals(typeName)) {
-          // search attributes
-          for (ASTCDAttribute attr : t.getCDAttributeList()) {
-            if (attr.getName().equals(memberName) && attr.getSymbol() != null) {
-              Log.debug("AdapterUtils.resolveCDSymbol: resolved to attribute '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
-              return Optional.of(attr.getSymbol());
-            }
-          }
-          // search methods
-          for (ASTCDMethod m : t.getCDMethodList()) {
-            if (m.getName().equals(memberName) && m.getSymbol() != null) {
-              Log.debug("AdapterUtils.resolveCDSymbol: resolved to method '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
-              return Optional.of(m.getSymbol());
-            }
-          }
-        }
+      CDModelIndex index = CDModelIndex.of(refCD);
+      Optional<ISymbol> attribute =
+          index.attribute(typeName, memberName)
+              .map(ASTCDAttribute::getSymbol)
+              .map(symbol -> (ISymbol) symbol);
+      if (attribute.isPresent()) {
+        Log.debug("AdapterUtils.resolveCDSymbol: resolved to attribute '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
+        return attribute;
+      }
+      Optional<ISymbol> method =
+          index.methods(typeName, memberName).stream()
+              .findFirst()
+              .map(ASTCDMethod::getSymbol)
+              .map(symbol -> (ISymbol) symbol);
+      if (method.isPresent()) {
+        Log.debug("AdapterUtils.resolveCDSymbol: resolved to method '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
+        return method;
       }
       // not found as qualified member -> fallthrough to global lookup below
       n = memberName; // try resolving member name globally as a fallback

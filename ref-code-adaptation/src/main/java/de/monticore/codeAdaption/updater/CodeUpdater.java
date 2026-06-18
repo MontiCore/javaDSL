@@ -99,6 +99,14 @@ public interface CodeUpdater {
   void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName);
 
   /**
+   * Remove adapter-only metadata and perform implementation-specific post-processing on generated
+   * Java sources. Implementations that do not need a cleanup step may keep the default no-op.
+   */
+  default void cleanCode(Path codePath) {
+    // no-op
+  }
+
+  /**
    * Provide a mapping of concrete-type-simple-name -> grouping-type-simple-name
    * so that updaters that operate on an AST (e.g. SpoonUpdater) can apply
    * grouping replacements before pretty-printing. Default is a no-op to

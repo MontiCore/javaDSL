@@ -5,10 +5,8 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.utils.AdapterParam;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.*;
 
@@ -88,14 +86,5 @@ public class CodeAdapterTest extends AdapterAbstractTest {
     Assertions.assertEquals(
         "importjava.util.*;publicclassStudentRepositoryextendsRepository<Student>{privateSet<Student>studentSet=newHashSet<>();publicOptional<Student>findStudentByStudentId(Stringid){returnOptional.empty();}publicList<Student>getAllStudentSortedByStudentId(){List<Student>studentList=newArrayList<>();}publicvoidstore(Studentstudent){studentSet.add(student);}}",
         studentRepository);
-  }
-
-  protected String readFileWithoutSpace(Path dir, String filename) {
-    Optional<File> file =
-        JavaLoader.readJavaFile(dir).stream()
-            .filter(f -> f.getName().endsWith(filename))
-            .findFirst();
-    Assertions.assertTrue(file.isPresent());
-    return JavaLoader.readFileContent(file.get()).replaceAll("\\s+", "");
   }
 }

@@ -5,23 +5,15 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.updater.CodeUpdaterFactory;
+import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
 import de.monticore.codeAdaption.utils.AdapterParam;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Set;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +31,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
   private Set<AdapterParam> adapterParams;
 
   @BeforeEach
-  public void setup() throws IOException {
+  public void setup() {
     initMills();
     deleteRecursively(outputPath);
     confParameters = Set.of(NAME_MAPPING, INHERITANCE, STEREOTYPE_MAPPING, STRICT_PARAMETER_ORDER);
@@ -129,101 +121,33 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(taskContent.contains("String title"));
   }
 
-  private String readFileContent(Path outputPath, String filename) {
-    try {
-      Path filePath = outputPath.resolve(filename);
-      assertTrue(Files.exists(filePath));
-      return Files.readString(filePath, StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      fail("Failed to read file: " + filename);
-      return "";
-    }
-  }
+  @Test
+  @DisplayName("Builder Pattern: updater factory is used for isolated adaptation runs")
+  public void usesInjectedUpdaterFactory() {
+    CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
+    Path factoryOutputPath = outputPath.resolve("factory");
+    AtomicInteger createdUpdaters = new AtomicInteger();
+    CodeUpdaterFactory recordingFactory =
+        () -> {
+          createdUpdaters.incrementAndGet();
+          return new SpoonUpdater();
+        };
 
-  private Set<String> generatedFileNames(Path outputPath) {
-    try (var files = Files.list(outputPath)) {
-      return files
-          .filter(Files::isRegularFile)
-          .map(path -> path.getFileName().toString())
-          .collect(Collectors.toSet());
-    } catch (IOException e) {
-      fail("Failed to list generated files");
-      return Set.of();
-    }
-  }
+    assertDoesNotThrow(
+        () ->
+            adapter.adapt(
+                refCD,
+                concreteCD,
+                Set.of("buildPat"),
+                adapterCodePath,
+                concreteCodePath,
+                factoryOutputPath,
+                recordingFactory));
 
-  private void assertNoAdapterMetadata(Path outputPath) {
-    try (var files = Files.list(outputPath)) {
-      for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
-        String content = Files.readString(file, StandardCharsets.UTF_8);
-        assertFalse(content.contains("@Adapt"), () -> "Adapter annotation leaked into " + file);
-        assertFalse(
-            content.contains("de.monticore.codeAdaption.utils.Adapt"),
-            () -> "Adapter import leaked into " + file);
-      }
-    } catch (IOException e) {
-      fail("Failed to inspect generated Java metadata: " + e.getMessage());
-    }
-  }
-
-  private void assertGeneratedJavaCompiles(Path sourceDir) {
-    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    assertNotNull(compiler, "Tests must run on a JDK with javax.tools.JavaCompiler available");
-
-    Path classesDir = sourceDir.resolve("_compile");
-    try {
-      deleteRecursively(classesDir);
-      Files.createDirectories(classesDir);
-      List<Path> javaFiles = generatedJavaFiles(sourceDir);
-      DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-      try (StandardJavaFileManager fileManager =
-          compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
-        Iterable<? extends JavaFileObject> compilationUnits =
-            fileManager.getJavaFileObjectsFromPaths(javaFiles);
-        List<String> options =
-            List.of(
-                "-d",
-                classesDir.toString(),
-                "-classpath",
-                System.getProperty("java.class.path"));
-        Boolean compiled =
-            compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits).call();
-        assertTrue(
-            Boolean.TRUE.equals(compiled),
-            () ->
-                diagnostics.getDiagnostics().stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(System.lineSeparator())));
-      }
-    } catch (IOException e) {
-      fail("Failed to compile generated Java: " + e.getMessage());
-    } finally {
-      try {
-        deleteRecursively(classesDir);
-      } catch (IOException ignored) {
-        // Temporary compile output is not part of the oracle.
-      }
-    }
-  }
-
-  private List<Path> generatedJavaFiles(Path sourceDir) throws IOException {
-    try (var files = Files.list(sourceDir)) {
-      return files
-          .filter(path -> path.toString().endsWith(".java"))
-          .sorted()
-          .collect(Collectors.toCollection(ArrayList::new));
-    }
-  }
-
-  private void deleteRecursively(Path path) throws IOException {
-    if (!Files.exists(path)) {
-      return;
-    }
-    try (var paths = Files.walk(path)) {
-      for (Path current : paths.sorted(Comparator.reverseOrder()).toList()) {
-        Files.deleteIfExists(current);
-      }
-    }
+    assertEquals(3, createdUpdaters.get());
+    assertTrue(Files.isRegularFile(factoryOutputPath.resolve("PersonBuilder.java")));
+    assertTrue(Files.isRegularFile(factoryOutputPath.resolve("TaskBuilder.java")));
+    assertGeneratedJavaCompiles(factoryOutputPath);
   }
 }
 

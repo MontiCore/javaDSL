@@ -123,16 +123,15 @@ public final class JavaSourcePostProcessor {
     }
   }
 
-  private static boolean removeKnownInvalidImports(ASTOrdinaryCompilationUnit ast) {
+  private static void removeKnownInvalidImports(ASTOrdinaryCompilationUnit ast) {
     List<ASTImportDeclaration> validImports =
         ast.getImportDeclarationList().stream()
             .filter(importDeclaration -> !isKnownInvalidImport(importDeclaration))
             .toList();
     if (validImports.size() == ast.getImportDeclarationList().size()) {
-      return false;
+      return;
     }
     ast.setImportDeclarationList(new ArrayList<>(validImports));
-    return true;
   }
 
   private static List<ASTImportDeclaration> knownInvalidImports(ASTOrdinaryCompilationUnit ast) {
