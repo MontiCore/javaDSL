@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -207,22 +208,56 @@ public class JavaLoader {
   }
 
   /**
-   * Pretty-prints Java ASTs into {@code codePath}, using each AST source file name as the target
-   * file name.
+   * Pretty-prints Java ASTs into {@code codePath}, preserving package directories when present.
    */
   public static void printAST(Set<ASTOrdinaryCompilationUnit> asts, Path codePath) {
     for (ASTOrdinaryCompilationUnit ast : asts) {
-      // Extract just the file name from source position, write to codePath
-      String originalFileName = ast.get_SourcePositionStart().getFileName().orElse("");
-      String fileName = originalFileName.isEmpty()
-          ? "Unknown.java"
-          : Path.of(originalFileName).getFileName().toString();
-      Path targetPath = codePath.resolve(fileName);
+      Path targetPath = outputPathFor(ast, codePath);
 
       JavaDSLFullPrettyPrinter prettyPrinter = new JavaDSLFullPrettyPrinter(new IndentPrinter());
       String output = prettyPrinter.prettyprint(ast);
+      try {
+        if (targetPath.getParent() != null) {
+          Files.createDirectories(targetPath.getParent());
+        }
+      } catch (IOException e) {
+        Log.error("Exception occur when creating the directory for " + targetPath);
+      }
       JavaLoader.writeFile(targetPath, output);
     }
+  }
+
+  private static Path outputPathFor(ASTOrdinaryCompilationUnit ast, Path codePath) {
+    String fileName = primaryTypeFileName(ast).orElseGet(() -> sourceFileName(ast).orElse("Unknown.java"));
+    if (ast.isPresentPackageDeclaration()) {
+      Path packagePath =
+          Path.of(
+              ast.getPackageDeclaration()
+                  .getMCQualifiedName()
+                  .getQName()
+                  .replace('.', File.separatorChar));
+      return codePath.resolve(packagePath).resolve(fileName);
+    }
+    return codePath.resolve(sourceFileName(ast).orElse(fileName));
+  }
+
+  private static Optional<String> primaryTypeFileName(ASTOrdinaryCompilationUnit ast) {
+    return ast.getTypeDeclarationList().stream()
+        .findFirst()
+        .map(type -> type.getName() + ".java");
+  }
+
+  private static Optional<String> sourceFileName(ASTOrdinaryCompilationUnit ast) {
+    return ast.get_SourcePositionStart()
+        .getFileName()
+        .flatMap(
+            fileName -> {
+              try {
+                return Optional.of(Path.of(fileName).getFileName().toString());
+              } catch (InvalidPathException e) {
+                return Optional.empty();
+              }
+            });
   }
 
   /**

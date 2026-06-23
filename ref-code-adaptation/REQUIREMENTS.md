@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 15.06.2026
+Last updated: 23.06.2026
 
 ## Requirements
 
@@ -43,17 +43,18 @@ Last updated: 15.06.2026
   - Notes: New code should depend on `SpoonUpdater` or the `CodeUpdater`
     interface.
 
-- [ ] R-005: Keep updater implementations interchangeable
-  - Source/date: 15.06.2026
+- [x] R-005: Keep updater implementations interchangeable
+  - Source/date: 18.06.2026
   - Details: Code adaptation must depend on updater interfaces, not on a
     concrete Spoon implementation in the adaptation workflow. The updater must
     be injectable through the `adapt` entry point so Spoon can be replaced by
     another updater implementation without changing the adapter orchestration.
-  - Implemented: [ ]
+  - Implemented: [x]
   - Addressed: [x]
   - Notes: Spoon remains the default implementation. `CodeAdapter` now accepts a
     `CodeUpdaterFactory` through its `adapt` entry points, and every isolated
-    mapping/incarnation run receives a fresh updater instance.
+    mapping/incarnation run receives a fresh updater instance. The factory-based
+    API is superseded by R-015, which requires a mill-style updater lifecycle.
 
 - [x] R-006: Document evaluation test cases
   - Source/date: 15.06.2026
@@ -140,3 +141,79 @@ Last updated: 15.06.2026
   - Implemented: [ ]
   - Addressed: [ ]
   - Notes:
+
+- [ ] R-014: Stabilize the remaining disabled cdconcretization cases
+  - Source/date: 20.06.2026
+  - Details: Re-enable stale-successful cases and define the required fix path
+    for cases that still need model functionality, Java projection behavior,
+    fixture repair, or negative-test assertions.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: `AssocSubtypeTarget` and `InterfaceMI` were re-enabled after
+    successful isolation runs.
+
+- [ ] R-015: Replace the updater factory with an updater mill
+  - Source/date: 23.06.2026
+  - Details: Replace `CodeUpdaterFactory` / updater-factory usage with a
+    mill-style lifecycle that exposes `init`, `getUpdater`, and `reset`.
+    The mill should own updater initialization and provide the current updater
+    to the adaptation workflow without leaking concrete Spoon construction into
+    orchestration code.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: The mill should preserve updater interchangeability from R-005 while
+    making lifecycle boundaries explicit for single-shot and isolated
+    multi-incarnation adaptation runs.
+
+- [ ] R-016: Update the adaptation workflow
+  - Source/date: 23.06.2026
+  - Details: Rework the documented and implemented adaptation workflow so it
+    reflects the last changes.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes:
+
+- [ ] R-017: Refactor classes larger than 500 lines
+  - Source/date: 23.06.2026
+  - Details: Refactor classes that exceed 500 lines, especially `CodeAdapter`,
+    `AdaptationConflictDetector`, `BasicUpdateHandler`, and `SpoonUpdater`.
+    Split responsibilities into logical categories, helper classes, or dedicated
+    strategy objects.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: `AdaptationConflictDetector` is a strong candidate for pluggable
+    conflict-check strategies. `SpoonUpdater` should separate Spoon model setup,
+    member/type updates, cleanup, and formatting concerns where practical.
+
+- [ ] R-018: Clarify multi-incarnation mapping versus multi-pattern cases
+  - Source/date: 23.06.2026
+  - Details: Make the distinction between multi-incarnation mapping and
+    multi-pattern adaptation explicit in class names, method names, comments,
+    and documentation. Multi-incarnation mapping means one reference concept is
+    mapped to multiple concrete incarnations; multi-pattern adaptation means one
+    testcase or workflow combines multiple adaptation patterns.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: Avoid using "multi-pattern" as a synonym for multi-incarnation and
+    avoid hiding multi-pattern testcase behavior behind incarnation-specific
+    names.
+
+- [ ] R-019: Rename `JavaSourcePostProcessor`
+  - Source/date: 23.06.2026
+  - Details: Rename `JavaSourcePostProcessor` to a clearer name that describes
+    its actual responsibility in source cleanup and generated Java
+    normalization.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: Update production code, tests, and documentation references together
+    so the old post-processor name does not remain as the public concept.
+
+- [ ] R-020: Improve testcase names
+  - Source/date: 23.06.2026
+  - Details: Rename unclear testcases and test methods so their names describe
+    the scenario, mapping shape, and expected result instead of relying on
+    numbers or overly broad labels.
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: Evaluation testcase resources may keep stable numeric identifiers
+    when needed, but test class and method names should communicate intent.

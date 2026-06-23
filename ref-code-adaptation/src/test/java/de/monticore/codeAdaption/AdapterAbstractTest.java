@@ -70,7 +70,7 @@ public abstract class AdapterAbstractTest {
   }
 
   protected static Set<String> generatedFileNames(Path outputPath) {
-    try (Stream<Path> files = Files.list(outputPath)) {
+    try (Stream<Path> files = Files.walk(outputPath)) {
       return files
           .filter(Files::isRegularFile)
           .map(path -> path.getFileName().toString())
@@ -82,7 +82,7 @@ public abstract class AdapterAbstractTest {
   }
 
   protected static List<Path> generatedJavaFiles(Path sourceDir) {
-    try (Stream<Path> files = Files.list(sourceDir)) {
+    try (Stream<Path> files = Files.walk(sourceDir)) {
       return files
           .filter(path -> path.toString().endsWith(".java"))
           .sorted()

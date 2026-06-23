@@ -100,21 +100,22 @@ public interface CodeUpdater {
 
   /**
    * Remove adapter-only metadata and perform implementation-specific post-processing on generated
-   * Java sources. Implementations that do not need a cleanup step may keep the default no-op.
+   * Java sources.
    */
   default void cleanCode(Path codePath) {
-    // no-op
+    throw unsupported("cleanCode");
   }
 
   /**
    * Provide a mapping of concrete-type-simple-name -> grouping-type-simple-name
    * so that updaters that operate on an AST (e.g. SpoonUpdater) can apply
-   * grouping replacements before pretty-printing. Default is a no-op to
-   * preserve backwards compatibility with other updaters.
+   * grouping replacements before pretty-printing.
    * @param mappings mapping from concrete simple name to grouping simple name
    */
   default void setGroupingMappings(Map<String, String> mappings) {
-    // no-op
+    if (mappings != null && !mappings.isEmpty()) {
+      throw unsupported("setGroupingMappings");
+    }
   }
 
   /**
@@ -122,7 +123,7 @@ public interface CodeUpdater {
    * renamed from a reference method with fewer arguments.
    */
   default void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
-    // no-op
+    throw unsupported("registerConcreteMethodSignature");
   }
 
   /**
@@ -130,7 +131,7 @@ public interface CodeUpdater {
    * method before adaptation; the concrete key describes the target method after adaptation.
    */
   default void registerMethodRewrite(StableElementKey referenceMethod, StableElementKey concreteMethod) {
-    // no-op
+    throw unsupported("registerMethodRewrite");
   }
 
   /**
@@ -138,7 +139,7 @@ public interface CodeUpdater {
    * field access replacements.
    */
   default void registerFieldRewrite(StableElementKey referenceField, StableElementKey concreteField) {
-    // no-op
+    throw unsupported("registerFieldRewrite");
   }
 
   /**
@@ -147,7 +148,19 @@ public interface CodeUpdater {
    * Implementations should handle imports and type references.
    */
   default void addField(ASTTypeDeclaration targetType, ASTFieldDeclaration templateField, String newName, String newType) {
+    throw unsupported("addField");
+  }
 
+  /**
+   * Add a new field and optionally force the cloned field to be static.
+   */
+  default void addField(
+      ASTTypeDeclaration targetType,
+      ASTFieldDeclaration templateField,
+      String newName,
+      String newType,
+      boolean isStatic) {
+    addField(targetType, templateField, newName, newType);
   }
 
   /**
@@ -160,7 +173,27 @@ public interface CodeUpdater {
                          List<String> paramTypes,
                          List<String> paramNames,
                          String returnType) {
+    throw unsupported("addMethod");
+  }
 
+  default void addMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> paramTypes,
+      List<String> paramNames,
+      String returnType,
+      boolean isStatic) {
+    addMethod(targetType, templateMethod, newName, paramTypes, paramNames, returnType);
+  }
+
+  /**
+   * Returns whether generated methods for the target should be signature-only, e.g. interface
+   * declarations or abstract method templates in abstract classes.
+   */
+  default boolean requiresSignatureOnlyMethod(
+      ASTTypeDeclaration targetType, ASTMethodDeclaration templateMethod) {
+    return false;
   }
 
   /**
@@ -175,7 +208,21 @@ public interface CodeUpdater {
                          List<String> paramNames,
                          String returnType,
                          String methodBody) {
-
+    if (methodBody == null || methodBody.isBlank()) {
+      addMethod(
+          targetType,
+          templateMethod,
+          newName,
+          paramTypes,
+          paramNames,
+          returnType,
+          MethodBodySpec.empty());
+      return;
+    }
+    throw new UnsupportedOperationException(
+        getClass().getName()
+            + " does not support deprecated string-body addMethod. Use MethodBodySpec for "
+            + "structured generated method bodies.");
   }
 
   /**
@@ -189,29 +236,33 @@ public interface CodeUpdater {
                          List<String> paramNames,
                          String returnType,
                          MethodBodySpec methodBody) {
-
+    throw unsupported("addMethod");
   }
 
   /**
    * Create a new top-level type by cloning the provided template type and giving it the provided name.
-   * Default no-op implementation for updaters that do not support type creation.
    */
   default void addType(ASTTypeDeclaration templateType, String newName) {
-
+    throw unsupported("addType");
   }
 
   /**
    * Remove a field from the given target type (by template AST field reference).
    */
   default void removeField(ASTTypeDeclaration targetType, ASTFieldDeclaration field) {
-
+    throw unsupported("removeField");
   }
 
   /**
    * Remove a method from the given target type (by template AST method reference).
    */
   default void removeMethod(ASTTypeDeclaration targetType, ASTMethodDeclaration method) {
+    throw unsupported("removeMethod");
+  }
 
+  private UnsupportedOperationException unsupported(String operation) {
+    return new UnsupportedOperationException(
+        getClass().getName() + " does not support updater operation: " + operation);
   }
 
   final class MethodBodySpec {

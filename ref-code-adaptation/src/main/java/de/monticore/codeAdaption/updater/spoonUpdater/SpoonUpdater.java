@@ -7,6 +7,7 @@ import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.utils.Constants;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
@@ -30,8 +31,10 @@ import spoon.refactoring.Refactoring;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.*;
 import spoon.reflect.declaration.*;
+import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtVariableReference;
+import spoon.support.compiler.VirtualFile;
 
 public class SpoonUpdater implements CodeUpdater {
   private File outputDir;
@@ -46,6 +49,12 @@ public class SpoonUpdater implements CodeUpdater {
 
   @Override
   public void setCodePath(Path path) {
+    try {
+      JavaSourcePostProcessor.processDirectory(path);
+    } catch (IOException e) {
+      Log.error("SpoonUpdater.setCodePath: Failed to prepare source code: " + e.getMessage());
+    }
+
     // init spoon environment
     launcher = new Launcher();
     launcher.getEnvironment().setAutoImports(true);
@@ -81,7 +90,7 @@ public class SpoonUpdater implements CodeUpdater {
     try {
       FileUtils.deleteQuietly(formattedPath.toFile());
       Files.createDirectories(formattedPath);
-      Map<String, Path> originalFilesByName = javaFilesBySimpleName(codePath);
+      Map<Path, Path> originalFilesByRelativePath = javaFilesByRelativePath(codePath);
 
       Launcher cleanupLauncher = new Launcher();
       cleanupLauncher.getEnvironment().setAutoImports(true);
@@ -102,6 +111,7 @@ public class SpoonUpdater implements CodeUpdater {
       cleanupLauncher.setSourceOutputDirectory(formattedPath.toFile());
       cleanupLauncher.prettyprint();
 
+      Set<Path> copiedTargets = new LinkedHashSet<>();
       try (var paths = Files.walk(formattedPath)) {
         paths
             .filter(Files::isRegularFile)
@@ -109,17 +119,20 @@ public class SpoonUpdater implements CodeUpdater {
             .forEach(
                 p -> {
                   try {
+                    Path relativePath = formattedPath.relativize(p);
                     Path target =
-                        originalFilesByName.getOrDefault(
-                            p.getFileName().toString(), codePath.resolve(formattedPath.relativize(p)));
+                        originalFilesByRelativePath.getOrDefault(
+                            relativePath, codePath.resolve(relativePath));
                     Files.createDirectories(target.getParent());
                     copyReplacingWithRetry(p, target);
+                    copiedTargets.add(target.toAbsolutePath().normalize());
                   } catch (IOException e) {
                     throw new IllegalStateException(
                         "Failed to copy formatted file '" + p + "' to output", e);
                   }
                 });
       }
+      deleteRehomedOriginals(originalFilesByRelativePath.values(), copiedTargets);
 
       JavaSourcePostProcessor.processDirectory(codePath);
       Log.info("SpoonUpdater.cleanCode: Cleanup completed", "CodeAdapter");
@@ -130,15 +143,25 @@ public class SpoonUpdater implements CodeUpdater {
     }
   }
 
-  private static Map<String, Path> javaFilesBySimpleName(Path codePath) throws IOException {
-    Map<String, Path> result = new LinkedHashMap<>();
+  private static Map<Path, Path> javaFilesByRelativePath(Path codePath) throws IOException {
+    Map<Path, Path> result = new LinkedHashMap<>();
     try (var paths = Files.walk(codePath)) {
       paths
           .filter(Files::isRegularFile)
           .filter(path -> path.toString().endsWith(".java"))
-          .forEach(path -> result.putIfAbsent(path.getFileName().toString(), path));
+          .forEach(path -> result.put(codePath.relativize(path), path));
     }
     return result;
+  }
+
+  private static void deleteRehomedOriginals(Collection<Path> originalFiles, Set<Path> copiedTargets)
+      throws IOException {
+    for (Path original : originalFiles) {
+      Path normalizedOriginal = original.toAbsolutePath().normalize();
+      if (!copiedTargets.contains(normalizedOriginal) && Files.exists(original)) {
+        Files.delete(original);
+      }
+    }
   }
 
   private static void copyReplacingWithRetry(Path source, Path target) throws IOException {
@@ -352,7 +375,7 @@ public class SpoonUpdater implements CodeUpdater {
 
           String newName = groupingMappings.get(simple);
           if (newName != null && !newName.equals(simple)) {
-            ref.setSimpleName(newName);
+            rewriteTypeReferenceName(ref, newName);
           }
         } catch (Exception ignored) {
           // Keep independent references from blocking each other.
@@ -383,6 +406,15 @@ public class SpoonUpdater implements CodeUpdater {
     // get Spoon Variable
     String srcName = srcField.getVariableDeclarator(0).getDeclarator().getName();
     CtVariable<?> attribute = getSpoonType(srcType).getField(srcName);
+    if (attribute == null) {
+      Log.warn(
+          "Cannot rename field '"
+              + srcName
+              + "' in "
+              + srcType.getName()
+              + " because no Spoon target exists; completed-member projection may add it later.");
+      return;
+    }
 
     // perform update
     CtRenameGenericVariableRefactoring refactor = new CtRenameGenericVariableRefactoring();
@@ -397,14 +429,14 @@ public class SpoonUpdater implements CodeUpdater {
     // case super class
     CtTypeReference<?> superType = spoonType.getSuperclass();
     if (superType != null && superType.getSimpleName().equals(srcName)) {
-      spoonType.getSuperclass().setSimpleName(newName);
+      rewriteTypeReferenceName(spoonType.getSuperclass(), newName);
       return;
     }
 
     // case super interface
     for (CtTypeReference<?> superType2 : spoonType.getSuperInterfaces()) {
       if (superType2.getSimpleName().equals(srcName)) {
-        superType2.setSimpleName(newName);
+        rewriteTypeReferenceName(superType2, newName);
       }
     }
   }
@@ -468,7 +500,7 @@ public class SpoonUpdater implements CodeUpdater {
 
     for (CtTypeReference<?> typeRef : refTypes) {
       if (typeRef.getSimpleName().equals(cdType.getName())) {
-        typeRef.setSimpleName(newName);
+        rewriteTypeReferenceName(typeRef, newName);
       }
     }
 
@@ -482,14 +514,34 @@ public class SpoonUpdater implements CodeUpdater {
 
   @Override
   public void addField(ASTTypeDeclaration targetType, ASTFieldDeclaration templateField, String newName, String newType) {
+    addField(targetType, templateField, newName, newType, false);
+  }
+
+  @Override
+  public void addField(
+      ASTTypeDeclaration targetType,
+      ASTFieldDeclaration templateField,
+      String newName,
+      String newType,
+      boolean isStatic) {
     // Clone the template field from Spoon model and add to the target type with new name and type.
     String templateFieldName = templateField.getVariableDeclarator(0).getDeclarator().getName();
     CtType<?> spoonType = getSpoonType(targetType);
+    if (spoonType.getField(newName) != null) {
+      return;
+    }
     CtField<?> srcField = spoonType.getField(templateFieldName);
-    assert srcField != null;
-    CtField<?> clone = srcField.clone();
+    CtField<?> clone =
+        srcField != null
+            ? srcField.clone()
+            : getFactory().Core().createField();
     clone.setSimpleName(newName);
     clone.setType(createTypeReference(newType));
+    if (isStatic) {
+      clone.addModifier(ModifierKind.STATIC);
+    } else {
+      clone.removeModifier(ModifierKind.STATIC);
+    }
     spoonType.addField(clone);
   }
 
@@ -519,8 +571,30 @@ public class SpoonUpdater implements CodeUpdater {
                         java.util.List<String> paramTypes,
                         java.util.List<String> paramNames,
                         String returnType) {
-    getSpoonType(targetType)
-        .addMethod(cloneConfiguredMethod(targetType, templateMethod, newName, paramTypes, paramNames, returnType));
+    addMethod(targetType, templateMethod, newName, paramTypes, paramNames, returnType, false);
+  }
+
+  @Override
+  public void addMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      java.util.List<String> paramTypes,
+      java.util.List<String> paramNames,
+      String returnType,
+      boolean isStatic) {
+    CtType<?> spoonType = getSpoonType(targetType);
+    if (hasMethod(spoonType, newName, paramTypes)) {
+      return;
+    }
+    CtMethod<?> clone =
+        cloneConfiguredMethod(targetType, templateMethod, newName, paramTypes, paramNames, returnType);
+    if (isStatic) {
+      clone.addModifier(ModifierKind.STATIC);
+    } else {
+      clone.removeModifier(ModifierKind.STATIC);
+    }
+    spoonType.addMethod(clone);
   }
 
   @Override
@@ -553,15 +627,29 @@ public class SpoonUpdater implements CodeUpdater {
     getSpoonType(targetType).addMethod(clone);
   }
 
+  @Override
+  public boolean requiresSignatureOnlyMethod(
+      ASTTypeDeclaration targetType, ASTMethodDeclaration templateMethod) {
+    CtType<?> spoonType = getSpoonType(targetType);
+    if (spoonType.isInterface()) {
+      return true;
+    }
+    CtMethod<?> template = getSpoonMethod(targetType, templateMethod);
+    return template != null && template.hasModifier(ModifierKind.ABSTRACT);
+  }
+
   private CtMethod<?> cloneConfiguredMethod(ASTTypeDeclaration targetType,
                                             ASTMethodDeclaration templateMethod,
                                             String newName,
                                             java.util.List<String> paramTypes,
                                             java.util.List<String> paramNames,
                                             String returnType) {
+    CtType<?> spoonType = getSpoonType(targetType);
     CtMethod<?> srcMethod = getSpoonMethod(targetType, templateMethod);
-    assert srcMethod != null;
-    CtMethod<?> clone = srcMethod.clone();
+    CtMethod<?> clone =
+        srcMethod != null
+            ? srcMethod.clone()
+            : getFactory().Core().createMethod();
     clone.setSimpleName(newName);
     clone.getParameters().clear();
     for (int i = 0; i < paramNames.size(); i++) {
@@ -573,7 +661,45 @@ public class SpoonUpdater implements CodeUpdater {
     if (returnType != null && !returnType.isEmpty()) {
       clone.setType(createTypeReference(returnType));
     }
+    if (requiresSignatureOnlyMethod(targetType, templateMethod)) {
+      clone.setBody(null);
+      if (!spoonType.isInterface()) {
+        clone.addModifier(ModifierKind.ABSTRACT);
+      }
+    } else if (clone.getBody() == null && (returnType == null || !"void".equals(returnType))) {
+      CtBlock<?> body = getFactory().Core().createBlock();
+      CtReturn<?> returnStatement = getFactory().Core().createReturn();
+      returnStatement.setReturnedExpression((CtExpression) defaultExpression(returnType));
+      body.addStatement(returnStatement);
+      clone.setBody(body);
+    } else if (clone.getBody() == null) {
+      clone.setBody(getFactory().Core().createBlock());
+    }
     return clone;
+  }
+
+  private boolean hasMethod(CtType<?> type, String name, java.util.List<String> paramTypes) {
+    for (CtMethod<?> method : type.getMethods()) {
+      if (!name.equals(method.getSimpleName())) {
+        continue;
+      }
+      if (method.getParameters().size() != paramTypes.size()) {
+        continue;
+      }
+      boolean sameParameters = true;
+      for (int i = 0; i < paramTypes.size(); i++) {
+        String actual = method.getParameters().get(i).getType().getSimpleName();
+        String expected = JavaSourceNames.simpleName(paramTypes.get(i));
+        if (!actual.equals(expected)) {
+          sameParameters = false;
+          break;
+        }
+      }
+      if (sameParameters) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -655,12 +781,25 @@ public class SpoonUpdater implements CodeUpdater {
     if (typeName == null || typeName.isEmpty()) {
       return getFactory().Type().createReference(Object.class);
     }
+    Optional<CtTypeReference<?>> originalParsed = parseTypeReference(typeName.trim());
+    if (originalParsed.isPresent()) {
+      return originalParsed.get();
+    }
+    String normalized = JavaSourceNames.normalizeType(typeName);
+    CtTypeReference<?> primitiveReference = primitiveTypeReference(normalized);
+    if (primitiveReference != null) {
+      return primitiveReference;
+    }
+    Optional<CtTypeReference<?>> parsed = parseTypeReference(normalized);
+    if (parsed.isPresent()) {
+      return parsed.get();
+    }
     try {
       // Try to create reference by name
-      return getFactory().Type().createReference(typeName);
+      return getFactory().Type().createReference(normalized);
     } catch (Exception e) {
       // Fallback for primitive types
-        return switch (typeName) {
+        return switch (normalized) {
             case "int" -> getFactory().Type().createReference(int.class);
             case "long" -> getFactory().Type().createReference(long.class);
             case "double" -> getFactory().Type().createReference(double.class);
@@ -672,9 +811,46 @@ public class SpoonUpdater implements CodeUpdater {
             default ->
                 // TODO: Maybe a warning would be better and just null return here?
                 // As a last resort, try java.lang.
-                    getFactory().Type().createReference("java.lang." + typeName);
+                    getFactory().Type().createReference("java.lang." + normalized);
         };
     }
+  }
+
+  private CtTypeReference<?> primitiveTypeReference(String typeName) {
+    return switch (typeName) {
+      case "void" -> getFactory().Type().createReference(void.class);
+      case "int" -> getFactory().Type().createReference(int.class);
+      case "long" -> getFactory().Type().createReference(long.class);
+      case "double" -> getFactory().Type().createReference(double.class);
+      case "float" -> getFactory().Type().createReference(float.class);
+      case "boolean" -> getFactory().Type().createReference(boolean.class);
+      case "char" -> getFactory().Type().createReference(char.class);
+      case "short" -> getFactory().Type().createReference(short.class);
+      case "byte" -> getFactory().Type().createReference(byte.class);
+      default -> null;
+    };
+  }
+
+  private Optional<CtTypeReference<?>> parseTypeReference(String typeName) {
+    try {
+      Launcher parser = new Launcher();
+      parser.getEnvironment().setNoClasspath(true);
+      parser.addInputResource(
+          new VirtualFile("class __TypeProbe { " + typeName + " value; }", "__TypeProbe.java"));
+      parser.buildModel();
+      return parser.getModel().getElements(new TypeFilter<>(CtField.class)).stream()
+          .findFirst()
+          .map(field -> field.getType().clone());
+    } catch (Exception ignored) {
+      return Optional.empty();
+    }
+  }
+
+  private void rewriteTypeReferenceName(CtTypeReference<?> reference, String newName) {
+    reference.setSimpleName(newName);
+    reference.setPackage(null);
+    reference.setDeclaringType(null);
+    reference.setSimplyQualified(true);
   }
 
   private spoon.reflect.factory.Factory getFactory() {

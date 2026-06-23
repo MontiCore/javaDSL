@@ -43,12 +43,13 @@ public class ControllerWorkerAdapterTest extends AdapterAbstractTest {
       adapter.adapt(refCD, concreteCD, Set.of("buildPat", "observer"), adapterCodePath, refCodePath, outputPath);
     });
 
-    assertTrue(Files.exists(outputPath.resolve("ControllerBuilder.java")));
-    assertTrue(Files.exists(outputPath.resolve("WorkerABuilder.java")));
-    assertTrue(Files.exists(outputPath.resolve("WorkerBBuilder.java")));
-    assertTrue(Files.exists(outputPath.resolve("Controller.java")));
-    assertTrue(Files.exists(outputPath.resolve("WorkerA.java")));
-    assertTrue(Files.exists(outputPath.resolve("WorkerB.java")));
+    Set<String> generatedFiles = generatedFileNames(outputPath);
+    assertTrue(generatedFiles.contains("ControllerBuilder.java"));
+    assertTrue(generatedFiles.contains("WorkerABuilder.java"));
+    assertTrue(generatedFiles.contains("WorkerBBuilder.java"));
+    assertTrue(generatedFiles.contains("Controller.java"));
+    assertTrue(generatedFiles.contains("WorkerA.java"));
+    assertTrue(generatedFiles.contains("WorkerB.java"));
 
     String controllerBuilderContent = readFileContent(outputPath, "ControllerBuilder.java");
     String workerABuilderContent = readFileContent(outputPath, "WorkerABuilder.java");

@@ -11,14 +11,18 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
+import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,6 +44,7 @@ public final class CompletedCDJavaProjector {
         Path target = outputPath.resolve(file.typeName() + ".java");
         Files.writeString(target, file.source(), StandardCharsets.UTF_8);
       }
+      JavaSourcePostProcessor.processDirectory(outputPath);
     } catch (IOException e) {
       throw new IllegalStateException(
           "Failed to write Java projection for completed concrete CD to " + outputPath, e);
@@ -66,10 +71,10 @@ public final class CompletedCDJavaProjector {
       if (context.shouldSkipType(type)) {
         continue;
       }
-      files.add(new GeneratedJavaFile(type.getName(), generateType(type, context)));
+        files.add(new GeneratedJavaFile(type.getName(), generateType(type, context)));
     }
     if (files.isEmpty()) {
-      files.add(new GeneratedJavaFile("Placeholder", javaHeader() + "public class Placeholder {\n}\n"));
+      files.add(new GeneratedJavaFile("Placeholder", "public class Placeholder {\n}\n"));
     }
     return files;
   }
@@ -97,9 +102,9 @@ public final class CompletedCDJavaProjector {
   }
 
   private static String generateInterface(ASTCDInterface interfaceType, ProjectionContext context) {
-    StringBuilder sb = new StringBuilder(javaHeader());
+    StringBuilder sb = new StringBuilder();
     sb.append("public interface ").append(interfaceType.getName());
-    appendInterfaces(sb, interfaceType, " extends ");
+    appendInterfaces(sb, interfaceType, " extends ", context);
     sb.append(" {\n");
     appendMembers(sb, interfaceType, true, context);
     sb.append("}\n");
@@ -107,14 +112,14 @@ public final class CompletedCDJavaProjector {
   }
 
   private static String generateClass(ASTCDType type, ProjectionContext context) {
-    StringBuilder sb = new StringBuilder(javaHeader());
+    StringBuilder sb = new StringBuilder();
     sb.append("public ");
     if (requiresAbstractProjection(type)) {
       sb.append("abstract ");
     }
     sb.append("class ").append(type.getName());
-    appendSuperclass(sb, type);
-    appendInterfaces(sb, type, " implements ");
+    appendSuperclass(sb, type, context);
+    appendInterfaces(sb, type, " implements ", context);
     sb.append(" {\n");
     appendMembers(sb, type, false, context);
     sb.append("}\n");
@@ -129,16 +134,11 @@ public final class CompletedCDJavaProjector {
     if (constants.isBlank()) {
       constants = "";
     }
-    return javaHeader()
-        + "public enum "
+    return "public enum "
         + enumType.getName()
         + " {\n  "
         + constants
         + ";\n}\n";
-  }
-
-  private static String javaHeader() {
-    return "import java.util.*;\n\n";
   }
 
   private static boolean requiresAbstractProjection(ASTCDType type) {
@@ -147,15 +147,16 @@ public final class CompletedCDJavaProjector {
         || !CDTypeRelations.interfaceNames(type).isEmpty();
   }
 
-  private static void appendSuperclass(StringBuilder sb, ASTCDType type) {
+  private static void appendSuperclass(StringBuilder sb, ASTCDType type, ProjectionContext context) {
     CDTypeRelations.firstSuperclassName(type)
-        .ifPresent(superClass -> sb.append(" extends ").append(normalizeType(superClass)));
+        .ifPresent(superClass -> sb.append(" extends ").append(context.normalizeType(superClass)));
   }
 
-  private static void appendInterfaces(StringBuilder sb, ASTCDType type, String keyword) {
+  private static void appendInterfaces(
+      StringBuilder sb, ASTCDType type, String keyword, ProjectionContext context) {
     List<String> interfaces =
         CDTypeRelations.interfaceNames(type).stream()
-            .map(CompletedCDJavaProjector::normalizeType)
+            .map(context::normalizeType)
             .toList();
     if (!interfaces.isEmpty()) {
       sb.append(keyword).append(String.join(", ", interfaces));
@@ -176,7 +177,7 @@ public final class CompletedCDJavaProjector {
         continue;
       }
       sb.append("  private ")
-          .append(printType(attribute.getMCType()))
+          .append(printType(attribute.getMCType(), context))
           .append(" ")
           .append(fieldName)
           .append(";\n\n");
@@ -188,12 +189,12 @@ public final class CompletedCDJavaProjector {
         continue;
       }
       String methodName = context.projectMethodName(type, method.getName());
-      String signatureKey = methodName + "(" + parameterTypes(method) + ")";
+      String signatureKey = methodName + "(" + parameterTypes(method, context) + ")";
       if (!emittedMethodSignatures.add(signatureKey)) {
         continue;
       }
 
-      String returnType = printReturnType(method);
+      String returnType = printReturnType(method, context);
       sb.append("  ");
       if (!interfaceMembers) {
         sb.append("public ");
@@ -202,7 +203,7 @@ public final class CompletedCDJavaProjector {
           .append(" ")
           .append(methodName)
           .append("(")
-          .append(formatParameters(method))
+          .append(formatParameters(method, context))
           .append(")");
       if (interfaceMembers) {
         sb.append(";\n\n");
@@ -253,36 +254,28 @@ public final class CompletedCDJavaProjector {
         && !("wait".equals(name) && parameterCount <= 2);
   }
 
-  private static String parameterTypes(ASTCDMethod method) {
+  private static String parameterTypes(ASTCDMethod method, ProjectionContext context) {
     return method.getCDParameterList().stream()
-        .map(parameter -> printType(parameter.getMCType()))
+        .map(parameter -> printType(parameter.getMCType(), context))
         .collect(Collectors.joining(","));
   }
 
-  private static String formatParameters(ASTCDMethod method) {
+  private static String formatParameters(ASTCDMethod method, ProjectionContext context) {
     return method.getCDParameterList().stream()
-        .map(CompletedCDJavaProjector::formatParameter)
+        .map(parameter -> formatParameter(parameter, context))
         .collect(Collectors.joining(", "));
   }
 
-  private static String formatParameter(ASTCDParameter parameter) {
-    return printType(parameter.getMCType()) + " " + parameter.getName();
+  private static String formatParameter(ASTCDParameter parameter, ProjectionContext context) {
+    return printType(parameter.getMCType(), context) + " " + parameter.getName();
   }
 
-  private static String printReturnType(ASTCDMethod method) {
-    return normalizeType(JavaLoader.print((ASTNode) method.getMCReturnType()));
+  private static String printReturnType(ASTCDMethod method, ProjectionContext context) {
+    return context.normalizeType(JavaLoader.print((ASTNode) method.getMCReturnType()));
   }
 
-  private static String printType(ASTMCType type) {
-    return normalizeType(JavaLoader.print(type));
-  }
-
-  private static String normalizeType(String printed) {
-    String normalized = printed == null ? "" : printed.trim();
-    if (normalized.isEmpty() || "any".equals(normalized)) {
-      return "Object";
-    }
-    return normalized.replaceAll("\\bany\\b", "Object");
+  private static String printType(ASTMCType type, ProjectionContext context) {
+    return context.normalizeType(JavaLoader.print(type));
   }
 
   private static String defaultValue(String typeName) {
@@ -300,10 +293,21 @@ public final class CompletedCDJavaProjector {
   public record GeneratedJavaFile(String typeName, String source) {}
 
   private static final class ProjectionContext {
+    private final Map<String, String> importedTypes = new LinkedHashMap<>();
     private final Set<String> typeNames = new LinkedHashSet<>();
     private final List<ASTCDMethod> serviceMessageMethods = new ArrayList<>();
 
+    // TODO: Fix problem with imports to remove this manual import
     private ProjectionContext(ASTCDCompilationUnit cd) {
+      importedTypes.put("List", "java.util.List");
+      importedTypes.put("Optional", "java.util.Optional");
+      importedTypes.put("ZonedDateTime", "java.time.ZonedDateTime");
+      for (var importStatement : cd.getMCImportStatementList()) {
+        String imported = importStatement.getMCQualifiedName().getQName();
+        if (!imported.endsWith(".*")) {
+          importedTypes.putIfAbsent(JavaSourceNames.simpleName(imported), imported);
+        }
+      }
       for (ASTCDType type : AdapterUtils.getAllCDTypes(cd)) {
         typeNames.add(type.getName());
         if (type.getName().endsWith("Service")) {
@@ -341,7 +345,7 @@ public final class CompletedCDJavaProjector {
     private int fieldPriority(ASTCDAttribute attribute) {
       String name = attribute.getName();
       if ((name.startsWith("source") || name.startsWith("target")) && name.contains("Account_")) {
-        return printType(attribute.getMCType()).contains("Private") ? 0 : 1;
+        return printType(attribute.getMCType(), this).contains("Private") ? 0 : 1;
       }
       return 0;
     }
@@ -396,11 +400,62 @@ public final class CompletedCDJavaProjector {
       return name;
     }
 
-    private static boolean isServiceMessageMethod(ASTCDMethod method) {
+    private boolean isServiceMessageMethod(ASTCDMethod method) {
       return method.getName().startsWith("sendTo")
-          && "void".equals(printReturnType(method))
+          && "void".equals(printReturnType(method, this))
           && method.getCDParameterList().size() == 1
-          && "String".equals(printType(method.getCDParameter(0).getMCType()));
+          && "String".equals(printType(method.getCDParameter(0).getMCType(), this));
+    }
+
+    private String normalizeType(String printed) {
+      String normalized = printed == null ? "" : printed.trim();
+      if (normalized.isEmpty() || "any".equals(normalized)) {
+        return "Object";
+      }
+      return qualifyImportedTypes(JavaSourceNames.normalizeType(replaceAny(normalized)));
+    }
+
+    private static String replaceAny(String type) {
+      StringBuilder result = new StringBuilder(type.length());
+      int index = 0;
+      while (index < type.length()) {
+        char current = type.charAt(index);
+        if (Character.isJavaIdentifierStart(current)) {
+          int end = index + 1;
+          while (end < type.length() && Character.isJavaIdentifierPart(type.charAt(end))) {
+            end++;
+          }
+          String token = type.substring(index, end);
+          result.append("any".equals(token) ? "Object" : token);
+          index = end;
+        } else {
+          result.append(current);
+          index++;
+        }
+      }
+      return result.toString();
+    }
+
+    private String qualifyImportedTypes(String type) {
+      StringBuilder result = new StringBuilder(type.length());
+      int index = 0;
+      while (index < type.length()) {
+        char current = type.charAt(index);
+        if (Character.isJavaIdentifierStart(current)) {
+          int end = index + 1;
+          while (end < type.length()
+              && (Character.isJavaIdentifierPart(type.charAt(end)) || type.charAt(end) == '.')) {
+            end++;
+          }
+          String token = type.substring(index, end);
+          result.append(token.indexOf('.') >= 0 ? token : importedTypes.getOrDefault(token, token));
+          index = end;
+        } else {
+          result.append(current);
+          index++;
+        }
+      }
+      return result.toString();
     }
   }
 

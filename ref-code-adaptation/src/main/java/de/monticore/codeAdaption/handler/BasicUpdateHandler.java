@@ -45,6 +45,7 @@ public class BasicUpdateHandler {
   protected IncarnationContext incarnationContext;
 
   protected boolean useCommonParentForMultipleIncarnations;
+  protected final Map<String, String> concreteImportedTypes = new LinkedHashMap<>();
 
   /** Tracks generated type names created during a single handler run to avoid duplicate generation. */
   protected final Set<String> generatedTypes = new HashSet<>();
@@ -86,6 +87,7 @@ public class BasicUpdateHandler {
     this.validator = validator;
     this.incarnationContext = incarnationContext;
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
+    this.concreteImportedTypes.putAll(importedTypes(conCD));
   }
 
   public void handleUpdate(Set<ASTOrdinaryCompilationUnit> javaFiles) {
@@ -113,6 +115,9 @@ public class BasicUpdateHandler {
 
     // update types
     typeElements.forEach(this::handleTypeUpdate);
+
+    // add Java-expressible members that were introduced by cdconcretization
+    typeElements.forEach(this::projectCompletedMembers);
 
     updater.printCode();
   }
@@ -214,7 +219,7 @@ public class BasicUpdateHandler {
       if (incarnationContext != null && useCommonParentForMultipleIncarnations) {
         type = replaceConcreteWithGroupingType(type);
       }
-      attributes.add(new GeneratedAttribute(attribute.getName(), type));
+      attributes.add(new GeneratedAttribute(attribute.getName(), qualifyCdType(type)));
     }
     return attributes;
   }
@@ -261,6 +266,9 @@ public class BasicUpdateHandler {
       for (ASTMethodDeclaration method : collector.getAllMethodDeclarations(type)) {
         Optional<CodeMatching> matching = validator.getMatchedMethod(type, method);
         if (matching.isPresent() && matching.get().mustBePerform()) {
+          if (matching.get().getReferences().stream().anyMatch(this::isForEachTargetMethod)) {
+            continue;
+          }
           // Check if this is a pattern template method with no concrete incarnation
           // If so, skip the name update to preserve the template method name
           boolean hasConcreteIncarnation = false;
@@ -312,6 +320,193 @@ public class BasicUpdateHandler {
   }
 
   private record GeneratedAttribute(String name, String type) {}
+
+  protected void projectCompletedMembers(JavaAstElemCollector collector) {
+    for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
+      Optional<CodeMatching> typeMatching = validator.getMatchedType(type);
+      if (typeMatching.isEmpty() || !typeMatching.get().mustBePerform()) {
+        continue;
+      }
+      String concreteTypeName = buildConcreteName(typeMatching.get());
+      Optional<ASTCDType> concreteType = conIndex.type(concreteTypeName);
+      if (concreteType.isEmpty()) {
+        continue;
+      }
+
+      for (ASTFieldDeclaration fieldTemplate : collector.getAllFieldDeclarations(type)) {
+        Optional<CodeMatching> fieldMatching = validator.getMatchedField(type, fieldTemplate);
+        if (fieldMatching.isEmpty() || !fieldMatching.get().mustBePerform()) {
+          continue;
+        }
+        for (ISymbol reference : fieldMatching.get().getReferences()) {
+          if (!(reference.getAstNode() instanceof ASTCDAttribute)) {
+            continue;
+          }
+          for (ASTCDAttribute concreteAttribute : concreteAttributesFor(reference)) {
+            if (!isOwnedBy(concreteAttribute, concreteType.get())) {
+              continue;
+            }
+            updater.addField(
+                type,
+                fieldTemplate,
+                concreteAttribute.getName(),
+                qualifyCdType(JavaSourceNames.printNormalizedFieldType(concreteAttribute)),
+                isStatic(concreteAttribute));
+          }
+        }
+      }
+
+      for (ASTMethodDeclaration methodTemplate : collector.getAllMethodDeclarations(type)) {
+        Optional<CodeMatching> methodMatching = validator.getMatchedMethod(type, methodTemplate);
+        if (methodMatching.isEmpty() || !methodMatching.get().mustBePerform()) {
+          continue;
+        }
+        for (ISymbol reference : methodMatching.get().getReferences()) {
+          if (!(reference.getAstNode() instanceof ASTCDMethod)) {
+            continue;
+          }
+          if (isForEachTargetMethod(reference)) {
+            continue;
+          }
+          for (ASTCDMethod concreteMethod : concreteMethodsFor(reference)) {
+            if (!isOwnedBy(concreteMethod, concreteType.get())) {
+              continue;
+            }
+            updater.addMethod(
+                type,
+                methodTemplate,
+                concreteMethod.getName(),
+                concreteMethod.getCDParameterList().stream()
+                    .map(parameter -> qualifyCdType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
+                    .toList(),
+                concreteMethod.getCDParameterList().stream().map(ASTCDParameter::getName).toList(),
+                qualifyCdType(JavaSourceNames.printNormalizedReturnType(concreteMethod)),
+                isStatic(concreteMethod));
+          }
+        }
+      }
+    }
+  }
+
+  private List<ASTCDAttribute> concreteAttributesFor(ISymbol reference) {
+    List<ASTCDAttribute> result = new ArrayList<>();
+    if (reference.getAstNode() instanceof ASTCDAttribute referenceAttribute
+        && checker != null
+        && checker.getIncarnationMapping() != null) {
+      var incarnations = checker.getIncarnationMapping().getIncarnations(referenceAttribute);
+      if (incarnations != null) {
+        for (var incarnation : incarnations) {
+          if (incarnation instanceof ASTCDAttribute attribute) {
+            result.add(attribute);
+          }
+        }
+      }
+    }
+    if (result.isEmpty() && incarnationContext != null) {
+      List<ISymbol> incarnations = incarnationContext.getIncarnations(reference);
+      if (incarnations != null) {
+        for (ISymbol incarnation : incarnations) {
+          if (incarnation.getAstNode() instanceof ASTCDAttribute attribute) {
+            result.add(attribute);
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  private List<ASTCDMethod> concreteMethodsFor(ISymbol reference) {
+    List<ASTCDMethod> result = new ArrayList<>();
+    if (reference.getAstNode() instanceof ASTCDMethod referenceMethod
+        && checker != null
+        && checker.getIncarnationMapping() != null) {
+      var incarnations = checker.getIncarnationMapping().getIncarnations(referenceMethod);
+      if (incarnations != null) {
+        for (var incarnation : incarnations) {
+          if (incarnation instanceof ASTCDMethod method) {
+            result.add(method);
+          }
+        }
+      }
+    }
+    if (result.isEmpty() && incarnationContext != null) {
+      List<ISymbol> incarnations = incarnationContext.getIncarnations(reference);
+      if (incarnations != null) {
+        for (ISymbol incarnation : incarnations) {
+          if (incarnation.getAstNode() instanceof ASTCDMethod method) {
+            result.add(method);
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  private boolean isOwnedBy(ASTCDAttribute attribute, ASTCDType owner) {
+    return conIndex.ownerOf(attribute).map(type -> type == owner || type.getName().equals(owner.getName())).orElse(false);
+  }
+
+  private boolean isOwnedBy(ASTCDMethod method, ASTCDType owner) {
+    return conIndex.ownerOf(method).map(type -> type == owner || type.getName().equals(owner.getName())).orElse(false);
+  }
+
+  private boolean isStatic(ASTCDAttribute attribute) {
+    return attribute.getModifier().isStatic();
+  }
+
+  private boolean isStatic(ASTCDMethod method) {
+    return method.getModifier().isStatic();
+  }
+
+  private boolean isForEachTargetMethod(ISymbol reference) {
+    if (!(reference.getAstNode() instanceof ASTCDMethod targetMethod)) {
+      return false;
+    }
+    Optional<ASTCDType> targetOwner = refIndex.ownerOf(targetMethod);
+    if (targetOwner.isEmpty()) {
+      return false;
+    }
+    for (ASTCDType referenceType : refIndex.types()) {
+      for (ASTCDMethod method : referenceType.getCDMethodList()) {
+        Optional<String> forEachTarget = getStereotypeValue(method, "forEach");
+        if (forEachTarget.isPresent()
+            && referencesMethod(forEachTarget.get(), referenceType, targetOwner.get(), targetMethod)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean referencesMethod(
+      String referenceName, ASTCDType annotatedOwner, ASTCDType targetOwner, ASTCDMethod method) {
+    String trimmed = referenceName.trim();
+    String simpleName = JavaSourceNames.simpleName(trimmed);
+    if (!method.getName().equals(simpleName)) {
+      return false;
+    }
+    if (!trimmed.contains(".")) {
+      return annotatedOwner.getName().equals(targetOwner.getName());
+    }
+    String ownerName = trimmed.substring(0, trimmed.lastIndexOf('.'));
+    return targetOwner.getName().equals(JavaSourceNames.simpleName(ownerName));
+  }
+
+  private Optional<String> getStereotypeValue(ASTCDMethod method, String name) {
+    if (method.getModifier() == null || !method.getModifier().isPresentStereotype()) {
+      return Optional.empty();
+    }
+    for (var stereotype : method.getModifier().getStereotype().getValuesList()) {
+      if (name.equals(stereotype.getName())) {
+        try {
+          return Optional.ofNullable(stereotype.getValue());
+        } catch (Exception ignored) {
+          return Optional.empty();
+        }
+      }
+    }
+    return Optional.empty();
+  }
 
   protected void handleVariableUpdate(JavaAstElemCollector collector) {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
@@ -602,9 +797,36 @@ public class BasicUpdateHandler {
     ASTCDMethod concreteMethod = (ASTCDMethod) concreteMethodSymbol.getAstNode();
     List<String> parameterTypes = new ArrayList<>();
     for (ASTCDParameter parameter : concreteMethod.getCDParameterList()) {
-      parameterTypes.add(JavaSourceNames.printNormalizedType(parameter.getMCType()));
+      parameterTypes.add(qualifyCdType(JavaSourceNames.printNormalizedType(parameter.getMCType())));
     }
     updater.registerConcreteMethodSignature(concreteMethod.getName(), parameterTypes);
+  }
+
+  private String qualifyCdType(String type) {
+    return JavaSourceNames.replaceSimpleTypeNames(
+        type,
+        simpleName -> {
+          if (conIndex.type(simpleName).isPresent() || refIndex.type(simpleName).isPresent()) {
+            return Optional.empty();
+          }
+          return Optional.ofNullable(concreteImportedTypes.get(simpleName));
+        });
+  }
+
+  private static Map<String, String> importedTypes(ASTCDCompilationUnit cd) {
+    Map<String, String> imports = new LinkedHashMap<>();
+    if (cd == null) {
+      return imports;
+    }
+    for (var importStatement : cd.getMCImportStatementList()) {
+      // TODO: java.lang caused problems
+      String imported = importStatement.getMCQualifiedName().getQName();
+      if (imported.endsWith(".*") || imported.startsWith("java.lang.")) {
+        continue;
+      }
+      imports.putIfAbsent(JavaSourceNames.simpleName(imported), imported);
+    }
+    return imports;
   }
 
   protected ISymbol getConTypeSymbol(CDTypeSymbol symbol) {

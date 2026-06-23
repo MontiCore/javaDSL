@@ -76,14 +76,13 @@ public final class CDConcretizationTestCases {
   /** Not yet implemented/broken/more complex cases */
   private static final Set<String> DISABLED_CASES =
       Set.of(
-          "evaluation/staticDelegator/StaticDelegatorConc.cd",
-          "evaluation/staticDelegator/attrWorkaround/InstanceMethodExistsConc.cd",
-          "evaluation/macoco/EmptyConc.cd",
-          "methods/multiIncarnation/ReturnTypeMIOneExistsConc.cd",
           "methods/underspecified/ParameterTypeUnderspecifiedNoIncConc.cd",
-          "methods/underspecified/ReturnTypeUnderspecifiedNoIncConc.cd",
-          "associations/AssocSubtypeTargetConc.cd",
-          "multipleIncarnation/InterfaceMIConc.cd");
+          "methods/underspecified/ReturnTypeUnderspecifiedNoIncConc.cd");
+
+  private static final Set<String> EXPECTED_FAILURE_CASES =
+      Set.of(
+          "methods/underspecified/ParameterTypeUnderspecifiedNoIncConc.cd",
+          "methods/underspecified/ReturnTypeUnderspecifiedNoIncConc.cd");
 
   private static final Map<String, Boolean> STRICT_PARAMETER_ORDER =
       Map.ofEntries(
@@ -174,6 +173,14 @@ public final class CDConcretizationTestCases {
 
   public static List<CDConcretizationTestCase> enabledCases() {
     return allCases().stream().filter(CDConcretizationTestCase::enabled).toList();
+  }
+
+  public static List<CDConcretizationTestCase> expectedFailureCases() {
+    return allCases().stream()
+        .filter(testCase -> EXPECTED_FAILURE_CASES.contains(testCase.concCd().toString()
+            .replace('\\', '/')
+            .replace(CDConcretizationTestCase.RESOURCE_ROOT, "")))
+        .toList();
   }
 
   static String resolveRefPath(String concRelativePath) {

@@ -19,13 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import spoon.Launcher;
-import spoon.reflect.declaration.CtField;
-import spoon.reflect.reference.CtArrayTypeReference;
-import spoon.reflect.reference.CtTypeReference;
-import spoon.reflect.reference.CtWildcardReference;
-import spoon.reflect.visitor.filter.TypeFilter;
-import spoon.support.compiler.VirtualFile;
 
 /** Shared Java/CD naming and type helpers used by the adapter pipeline. */
 public final class JavaSourceNames {
@@ -54,9 +47,10 @@ public final class JavaSourceNames {
     if (normalized.isBlank()) {
       return "Object";
     }
-    return parseTypeKey(normalized)
+    String rendered = parseTypeKey(normalized)
         .map(TypeKey::normalized)
         .orElseGet(() -> fallbackNormalize(normalized));
+    return rendered;
   }
 
   public static String printNormalizedType(ASTMCType type) {
@@ -120,7 +114,7 @@ public final class JavaSourceNames {
       return replacement.orElse(rawType);
     }
     RewriteResult rewritten = parsed.get().rewrite(replacementForSimpleName);
-    return rewritten.changed() ? rewritten.type().render(false, true) : rawType;
+    return rewritten.changed() ? rewritten.type().render(false, true, false) : rawType;
   }
 
   private static Optional<TypeKey> parseTypeKey(String rawType) {
@@ -131,7 +125,7 @@ public final class JavaSourceNames {
         return Optional.of(TypeKey.from(returnType.get()));
       }
     } catch (IOException | RuntimeException ignored) {
-      // Fall through to the Java type parser and, if necessary, Spoon.
+      // Fall through to the Java type parser.
     }
 
     try {
@@ -140,26 +134,9 @@ public final class JavaSourceNames {
         return Optional.of(TypeKey.from(type.get()));
       }
     } catch (IOException | RuntimeException ignored) {
-      // Fall through to Spoon, which accepts some Java fragments MontiCore rejects.
     }
 
-    return parseTypeKeyWithSpoon(rawType);
-  }
-
-  private static Optional<TypeKey> parseTypeKeyWithSpoon(String rawType) {
-    try {
-      Launcher launcher = new Launcher();
-      launcher.getEnvironment().setNoClasspath(true);
-      launcher.addInputResource(
-          new VirtualFile("class __TypeProbe { " + rawType + " value; }", "__TypeProbe.java"));
-      launcher.buildModel();
-      return launcher.getModel().getElements(new TypeFilter<>(CtField.class)).stream()
-          .findFirst()
-          .map(CtField::getType)
-          .map(TypeKey::from);
-    } catch (Exception ignored) {
-      return Optional.empty();
-    }
+    return Optional.empty();
   }
 
   private static String beforeParameterList(String value) {
@@ -173,6 +150,12 @@ public final class JavaSourceNames {
       return "Object";
     }
     return fallbackSimpleName(compact);
+  }
+
+  public static String boxPrimitiveTypeArguments(String rendered) {
+    return parseTypeKey(rendered == null ? "" : rendered.trim())
+        .map(TypeKey::normalized)
+        .orElse(rendered);
   }
 
   private static String fallbackSimpleName(String value) {
@@ -226,28 +209,7 @@ public final class JavaSourceNames {
       if (type instanceof ASTMCQualifiedType qualifiedType) {
         return named(qualifiedType.getMCQualifiedName().getQName());
       }
-      return parseTypeKeyWithSpoon(type.printType()).orElseGet(() -> named(type.printType()));
-    }
-
-    private static TypeKey from(CtTypeReference<?> reference) {
-      if (reference instanceof CtArrayTypeReference<?> arrayReference) {
-        return from(arrayReference.getComponentType())
-            .withAdditionalArrays(arrayReference.getDimensionCount());
-      }
-      if (reference instanceof CtWildcardReference wildcardReference) {
-        return named(wildcardReference.getSimpleName());
-      }
-      String qualifiedName = reference.getQualifiedName();
-      String typeName =
-          qualifiedName == null || qualifiedName.isBlank()
-              ? reference.getSimpleName()
-              : qualifiedName;
-      return new TypeKey(
-          typeName,
-          reference.getActualTypeArguments().stream()
-              .map(typeArgument -> (TypeArgumentKey) new ConcreteTypeArgument(from(typeArgument)))
-              .toList(),
-          0);
+      return named(type.printType());
     }
 
     private static TypeKey named(String name) {
@@ -263,11 +225,15 @@ public final class JavaSourceNames {
     }
 
     private String normalized() {
-      return render(true, false);
+      return render(true, false, false);
     }
 
-    private String render(boolean normalizeNames, boolean spaced) {
-      StringBuilder result = new StringBuilder(normalizeNames ? normalizeLeafName(name) : name);
+    private String render(boolean normalizeNames, boolean spaced, boolean boxLeaf) {
+      String leafName = normalizeNames ? normalizeLeafName(name) : name;
+      if (boxLeaf) {
+        leafName = boxedPrimitiveName(leafName);
+      }
+      StringBuilder result = new StringBuilder(leafName);
       if (!arguments.isEmpty()) {
         String delimiter = spaced ? ", " : ",";
         result.append("<");
@@ -300,6 +266,20 @@ public final class JavaSourceNames {
       }
       return new RewriteResult(
           new TypeKey(rewrittenName, List.copyOf(rewrittenArguments), arrayDimensions), changed);
+    }
+
+    private static String boxedPrimitiveName(String value) {
+      return switch (value) {
+        case "boolean" -> "Boolean";
+        case "byte" -> "Byte";
+        case "short" -> "Short";
+        case "int" -> "Integer";
+        case "long" -> "Long";
+        case "float" -> "Float";
+        case "double" -> "Double";
+        case "char" -> "Character";
+        default -> value;
+      };
     }
 
     private static String normalizeLeafName(String value) {
@@ -338,7 +318,7 @@ public final class JavaSourceNames {
   private record ConcreteTypeArgument(TypeKey type) implements TypeArgumentKey {
     @Override
     public String render(boolean normalizeNames, boolean spaced) {
-      return type.render(normalizeNames, spaced);
+      return type.render(normalizeNames, spaced, true);
     }
 
     @Override
@@ -357,7 +337,7 @@ public final class JavaSourceNames {
         return "?";
       }
       String separator = spaced ? (upper ? " extends " : " super ") : (upper ? "extends" : "super");
-      return "?" + separator + bound.get().render(normalizeNames, spaced);
+      return "?" + separator + bound.get().render(normalizeNames, spaced, true);
     }
 
     @Override

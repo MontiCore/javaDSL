@@ -48,18 +48,14 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
             adapter.adapt(
                 refCD, concreteCD, Set.of("buildPat"), adapterCodePath, concreteCodePath, outputPath));
 
-    assertTrue(Files.isRegularFile(outputPath.resolve("PersonBuilder.java")));
-    assertTrue(Files.isRegularFile(outputPath.resolve("TaskBuilder.java")));
-    assertTrue(Files.isRegularFile(outputPath.resolve("Person.java")));
-    assertTrue(Files.isRegularFile(outputPath.resolve("Task.java")));
     assertEquals(
         Set.of("PersonBuilder.java", "TaskBuilder.java", "Person.java", "Task.java"),
         generatedFileNames(outputPath));
     assertNoAdapterMetadata(outputPath);
     assertGeneratedJavaCompiles(outputPath);
 
-    String personBuilderContent = readFileContent(outputPath, "PersonBuilder.java");
-    String taskBuilderContent = readFileContent(outputPath, "TaskBuilder.java");
+    String personBuilderContent = simplifyGeneratedReferences(readFileContent(outputPath, "PersonBuilder.java"));
+    String taskBuilderContent = simplifyGeneratedReferences(readFileContent(outputPath, "TaskBuilder.java"));
 
     assertTrue(personBuilderContent.contains("public class PersonBuilder"));
     assertTrue(personBuilderContent.contains("public PersonBuilder setName(String name)"));
@@ -109,8 +105,8 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertFalse(personBuilderContent.contains("class Builder"));
     assertFalse(taskBuilderContent.contains("class Builder"));
 
-    String personContent = readFileContent(outputPath, "Person.java");
-    String taskContent = readFileContent(outputPath, "Task.java");
+    String personContent = simplifyGeneratedReferences(readFileContent(outputPath, "Person.java"));
+    String taskContent = simplifyGeneratedReferences(readFileContent(outputPath, "Task.java"));
 
     assertTrue(personContent.contains("public class Person"));
     assertTrue(personContent.contains("String name"));
@@ -145,9 +141,16 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
                 recordingFactory));
 
     assertEquals(3, createdUpdaters.get());
-    assertTrue(Files.isRegularFile(factoryOutputPath.resolve("PersonBuilder.java")));
-    assertTrue(Files.isRegularFile(factoryOutputPath.resolve("TaskBuilder.java")));
+    assertTrue(generatedFileNames(factoryOutputPath).contains("PersonBuilder.java"));
+    assertTrue(generatedFileNames(factoryOutputPath).contains("TaskBuilder.java"));
     assertGeneratedJavaCompiles(factoryOutputPath);
+  }
+
+  private static String simplifyGeneratedReferences(String content) {
+    return content
+        .replace("de.monticore.codeAdaption.evaluation.testcase_6_builder_pattern.", "")
+        .replace("java.lang.", "")
+        .replace("java.util.", "");
   }
 }
 

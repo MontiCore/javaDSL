@@ -57,6 +57,10 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     return CDConcretizationTestCases.enabledCases().stream();
   }
 
+  static Stream<CDConcretizationTestCase> expectedFailureCases() {
+    return CDConcretizationTestCases.expectedFailureCases().stream();
+  }
+
   @ParameterizedTest(name = "{0}")
   @MethodSource("testCases")
   void adaptsWithConcretizationCompleter(CDConcretizationTestCase testCase) {
@@ -84,11 +88,39 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     assertFalse(
         javaFiles.isEmpty(),
         () -> "No Java output generated for " + materializedTestCase.displayName());
+    assertNoWildcardJdkImports(materializedTestCase, javaFiles);
     assertNoAdaptMetadata(materializedTestCase, javaFiles);
     assertGeneratedJavaCompiles(javaFiles);
     initMills();
     GeneratedJavaOracle.assertMatchesExpectedStructure(
         materializedTestCase, confParameters, javaFiles);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("expectedFailureCases")
+  void rejectsUnderspecifiedMethodTypesWithoutIncarnation(CDConcretizationTestCase testCase) {
+    Log.enableFailQuick(false);
+    CDConcretizationTestCase materializedTestCase =
+        CDConcretizationFixtureWorkspace.materialize(testCase);
+    confParameters = defaultConformanceParams(materializedTestCase.strictParameterOrder());
+
+    ASTCDCompilationUnit completedConcreteCD = JavaLoader.parseCD(materializedTestCase.concCd().toString());
+    ASTCDCompilationUnit refCD = JavaLoader.parseCD(materializedTestCase.refCd().toString());
+    try {
+      new ConcretizationCompleter(confParameters)
+          .completeCD(completedConcreteCD, refCD, new ArrayList<>(materializedTestCase.mappings()));
+    } catch (Exception ignored) {
+    }
+
+    assertTrue(
+        Log.getFindings().stream()
+            .anyMatch(
+                finding ->
+                    finding
+                        .getMsg()
+                        .contains(
+                            "Underspecified placeholder type not allowed in method without incarnations")),
+        () -> "Expected underspecified method-type diagnostic for " + materializedTestCase.displayName());
   }
 
   private static Set<CDConfParameter> defaultConformanceParams(boolean strictParameterOrder) {
@@ -119,6 +151,22 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
       CDConcretizationTestCase testCase, Set<CDConfParameter> confParameters) {
     initMills();
     Path projectionPath = projectionPath(testCase);
+    ASTCDCompilationUnit completedConcreteCD =
+        expectedOutCd(testCase)
+            .map(path -> JavaLoader.parseCD(path.toString()))
+            .orElseGet(() -> completeProjectionCd(testCase, confParameters));
+    CompletedCDJavaProjector.write(completedConcreteCD, projectionPath);
+    return projectionPath;
+  }
+
+  private static java.util.Optional<Path> expectedOutCd(CDConcretizationTestCase testCase) {
+    String concName = testCase.concCd().getFileName().toString();
+    Path out = testCase.concCd().resolveSibling(concName.replace("Conc.cd", "Out.cd"));
+    return java.nio.file.Files.exists(out) ? java.util.Optional.of(out) : java.util.Optional.empty();
+  }
+
+  private static ASTCDCompilationUnit completeProjectionCd(
+      CDConcretizationTestCase testCase, Set<CDConfParameter> confParameters) {
     ASTCDCompilationUnit completedConcreteCD = JavaLoader.parseCD(testCase.concCd().toString());
     ASTCDCompilationUnit refCD = JavaLoader.parseCD(testCase.refCd().toString());
     try {
@@ -131,8 +179,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
               + ": "
               + t.getMessage());
     }
-    CompletedCDJavaProjector.write(completedConcreteCD, projectionPath);
-    return projectionPath;
+    return completedConcreteCD;
   }
 
   private static Path projectionPath(CDConcretizationTestCase testCase) {
@@ -188,6 +235,30 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
       String source = java.nio.file.Files.readString(path);
       return source.contains("@Adapt")
           || source.contains("import de.monticore.codeAdaption.utils.Adapt");
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to read generated Java file " + path, e);
+    }
+  }
+
+  private static void assertNoWildcardJdkImports(
+      CDConcretizationTestCase testCase, List<java.nio.file.Path> javaFiles) {
+    List<java.nio.file.Path> filesWithWildcards =
+        javaFiles.stream()
+            .filter(CDConcretizationAdapterTest::containsWildcardJdkImport)
+            .toList();
+
+    assertTrue(
+        filesWithWildcards.isEmpty(),
+        () -> "Generated projection contains wildcard JDK imports for "
+            + testCase.displayName()
+            + ": "
+            + filesWithWildcards);
+  }
+
+  private static boolean containsWildcardJdkImport(java.nio.file.Path path) {
+    try {
+      String source = java.nio.file.Files.readString(path);
+      return source.contains("import java.util.*;") || source.contains("import java.time.*;");
     } catch (IOException e) {
       throw new IllegalStateException("Failed to read generated Java file " + path, e);
     }

@@ -278,8 +278,12 @@ public final class GeneratedJavaOracle {
     if (type == null) {
       return "void";
     }
-    String qualifiedName = type.getQualifiedName();
-    return qualifiedName == null || qualifiedName.isBlank() ? type.getSimpleName() : qualifiedName;
+    String rendered = type.toString();
+    if (rendered == null || rendered.isBlank()) {
+      String qualifiedName = type.getQualifiedName();
+      return qualifiedName == null || qualifiedName.isBlank() ? type.getSimpleName() : qualifiedName;
+    }
+    return rendered;
   }
 
   private static TypeKind typeKind(ASTCDType type) {

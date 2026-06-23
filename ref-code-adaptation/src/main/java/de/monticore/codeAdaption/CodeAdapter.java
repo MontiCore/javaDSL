@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
@@ -179,13 +180,7 @@ public class CodeAdapter {
       // Single mapping - check conformance individually
       String mapping = mappings.iterator().next();
       CDConformanceChecker checker = new CDConformanceChecker(confParams);
-      boolean mappingValid;
-      try {
-        mappingValid = checker.checkConformance(conCD, refCD, mapping);
-      } catch (Throwable t) {
-        Log.warn("Conformance checker threw during check for mapping '" + mapping + "': " + t.getMessage() + " - will use stereotype-based fallback");
-        mappingValid = false;
-      }
+      boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
 
       if (!mappingValid) {
         // Adaptation should continue using the stereotype-based fallback to construct
@@ -214,7 +209,7 @@ public class CodeAdapter {
       // by matching interface methods only with interface methods and class methods only with class methods
       for (String mapping : mappings) {
         CDConformanceChecker checker = new CDConformanceChecker(confParams);
-        boolean mappingValid = checker.checkConformance(conCD, refCD, mapping);
+        boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
 
         if (mappingValid) {
           Log.info("Mapping '" + mapping + "' passed conformance check", "CodeAdapter");
@@ -414,10 +409,8 @@ public class CodeAdapter {
           mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conCD);
 
       JavaLoader.printAST(finalCode, outputPath);
-      if (!useConcretization) {
-        // Clean up @Adapt annotations and other metadata from adapted code.
-        cleanCode(outputPath, updaterFactory);
-      }
+      // Clean up @Adapt annotations and invalid imports in both adaptation modes.
+      cleanCode(outputPath, updaterFactory);
     }
     copyConcreteFiles(conHwcPath, outputPath);
   }
@@ -456,13 +449,7 @@ public class CodeAdapter {
 
       // Run conformance check for this mapping (works for both single and multi-mapping)
       // The CDConformanceChecker now handles adapter pattern method ambiguity correctly
-      boolean mappingValid;
-      try {
-        mappingValid = checker.checkConformance(conCD, refCD, mapping);
-         } catch (Throwable e) {
-          Log.warn("Mapping '" + mapping + "' threw exception during conformance check: " + e.getMessage() + " - using stereotype-based fallback");
-          mappingValid = false;
-        }
+      boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
 
         if (!mappingValid) {
           // Attempt to build an IncarnationContext. The builder will use stereotypes as a fallback
@@ -473,9 +460,15 @@ public class CodeAdapter {
               (checker.getIncarnationMapping() != null ? checker.getIncarnationMapping().getClass().getSimpleName() : "null"), "CodeAdapter");
         }
 
-      // Use IncarnationContextBuilder to properly extract incarnations
-      IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
-      IncarnationContext context = builder.buildContextForMapping(mapping, false);
+      IncarnationContext context;
+      if (!mappingValid || checker.getIncarnationMapping() == null) {
+        context =
+            new ManualIncarnationContextBuilder(refCD, conCD, confParams)
+                .buildContextForMapping(mapping);
+      } else {
+        IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
+        context = builder.buildContextForMapping(mapping, false);
+      }
       contexts.put(mapping, context);
     }
 
@@ -485,15 +478,91 @@ public class CodeAdapter {
   private void concretizeConcreteCD(
       ASTCDCompilationUnit conCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
     ConcretizationCompleter completer = new ConcretizationCompleter(confParams);
+    boolean failQuickEnabled = Log.isFailQuickEnabled();
+    boolean completed = false;
     try {
+      Log.enableFailQuick(false);
       completer.completeCD(conCD, refCD, new ArrayList<>(mappings));
+      completed = true;
       Log.info("Concretized concrete CD before code adaptation", "CodeAdapter");
     } catch (Throwable t) {
       Log.warn(
           "CD concretization failed before code adaptation: "
               + t.getMessage()
               + " - continuing with available conformance mappings");
+    } finally {
+      if (completed) {
+        Log.enableFailQuick(failQuickEnabled);
+      }
     }
+  }
+
+  private boolean checkConformanceOrFalse(
+      CDConformanceChecker checker,
+      ASTCDCompilationUnit conCD,
+      ASTCDCompilationUnit refCD,
+      String mapping) {
+    boolean failQuickEnabled = Log.isFailQuickEnabled();
+    boolean mappingValid = false;
+    try {
+      Log.enableFailQuick(false);
+      mappingValid = checker.checkConformance(conCD, refCD, mapping);
+      return mappingValid;
+    } catch (Throwable t) {
+      Log.warn(
+          "Conformance checker threw during check for mapping '"
+              + mapping
+              + "': "
+              + t.getMessage()
+              + " - will use stereotype-based fallback");
+      return false;
+    } finally {
+      if (mappingValid) {
+        Log.enableFailQuick(failQuickEnabled);
+      }
+    }
+  }
+
+  // TODO: Do I still neeed this?
+  private boolean hasMethodToMethodForEach(ASTCDCompilationUnit refCD) {
+    CDModelIndex index = CDModelIndex.of(refCD);
+    for (ASTCDType type : index.types()) {
+      for (ASTCDMethod method : type.getCDMethodList()) {
+        Optional<String> target = getStereotypeValue(method, "forEach");
+        if (target.isPresent() && referencesMethod(index, type, target.get())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean referencesMethod(CDModelIndex index, ASTCDType owner, String referenceName) {
+    String trimmed = referenceName.trim();
+    String simpleName = JavaSourceNames.simpleName(trimmed);
+    if (trimmed.contains(".")) {
+      String ownerName = trimmed.substring(0, trimmed.lastIndexOf('.'));
+      String simpleOwnerName = JavaSourceNames.simpleName(ownerName);
+      return index.methods(simpleOwnerName).stream()
+          .anyMatch(method -> method.getName().equals(simpleName));
+    }
+    return owner.getCDMethodList().stream().anyMatch(method -> method.getName().equals(simpleName));
+  }
+
+  private Optional<String> getStereotypeValue(ASTCDMethod method, String name) {
+    if (method.getModifier() == null || !method.getModifier().isPresentStereotype()) {
+      return Optional.empty();
+    }
+    for (var stereotype : method.getModifier().getStereotype().getValuesList()) {
+      if (name.equals(stereotype.getName())) {
+        try {
+          return Optional.ofNullable(stereotype.getValue());
+        } catch (Exception ignored) {
+          return Optional.empty();
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   /**
@@ -660,8 +729,7 @@ public class CodeAdapter {
           .forEach(
               p -> {
                 try {
-                  Path rel = conHwcPath.relativize(p);
-                  Path target = outputPath.resolve(rel);
+                  Path target = concreteCopyTarget(conHwcPath, p, outputPath);
                   Files.createDirectories(target.getParent());
                   if (!Files.exists(target)) {
                     Files.copy(p, target);
@@ -674,6 +742,26 @@ public class CodeAdapter {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to include concrete handwritten code", e);
     }
+  }
+
+  private static Path concreteCopyTarget(Path conHwcPath, Path source, Path outputPath) {
+    if (!source.toString().endsWith(".java")) {
+      return outputPath.resolve(conHwcPath.relativize(source));
+    }
+    try {
+      ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(source.toFile());
+      if (ast.isPresentPackageDeclaration()) {
+        Path packagePath =
+            Path.of(
+                ast.getPackageDeclaration()
+                    .getMCQualifiedName()
+                    .getQName()
+                    .replace('.', File.separatorChar));
+        return outputPath.resolve(packagePath).resolve(source.getFileName());
+      }
+    } catch (RuntimeException | AssertionError ignored) {
+    }
+    return outputPath.resolve(conHwcPath.relativize(source));
   }
 
   /**

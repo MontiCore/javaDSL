@@ -44,8 +44,8 @@ class CodeAdapterCleanupTest {
   }
 
   @Test
-  void postProcessorAddsJavaUtilImportOnlyForSourceIdentifiers() {
-    String needsImport =
+  void postProcessorDoesNotInventJavaUtilImportsForSourceIdentifiers() {
+    String unresolvedSimpleName =
         """
         package demo;
         public class Example {
@@ -61,14 +61,14 @@ class CodeAdapterCleanupTest {
         }
         """;
 
-    String cleanedNeedsImport = JavaSourcePostProcessor.process(needsImport);
+    String cleanedNeedsImport = JavaSourcePostProcessor.process(unresolvedSimpleName);
     assertTrue(cleanedNeedsImport.contains("package demo;"));
-    assertTrue(cleanedNeedsImport.contains("import java.util.List;"));
+    assertFalse(cleanedNeedsImport.contains("import java.util.List;"));
     assertFalse(JavaSourcePostProcessor.process(commentOnly).contains("import java.util."));
   }
 
   @Test
-  void postProcessorAddsExplicitJavaUtilImportsOnlyForMissingTypes() {
+  void postProcessorPreservesExistingImportsButDoesNotAddMissingImports() {
     String source =
         """
         package demo;
@@ -83,8 +83,8 @@ class CodeAdapterCleanupTest {
 
     String cleaned = JavaSourcePostProcessor.process(source);
 
-    assertTrue(cleaned.contains("import java.util.List;"));
-    assertTrue(cleaned.contains("import java.util.Map;"));
+    assertFalse(cleaned.contains("import java.util.List;"));
+    assertFalse(cleaned.contains("import java.util.Map;"));
     assertTrue(cleaned.contains("import java.util.Set;"));
     assertFalse(cleaned.contains("import java.util.*;"));
   }
