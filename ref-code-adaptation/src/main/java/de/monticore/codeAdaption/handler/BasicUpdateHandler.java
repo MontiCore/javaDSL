@@ -819,8 +819,9 @@ public class BasicUpdateHandler {
       return imports;
     }
     for (var importStatement : cd.getMCImportStatementList()) {
-      // TODO: java.lang caused problems
       String imported = importStatement.getMCQualifiedName().getQName();
+      // Wildcard imports do not provide an unambiguous simple-name mapping. java.lang types are
+      // resolved implicitly by Java, so qualifying them only creates unnecessary generated imports.
       if (imported.endsWith(".*") || imported.startsWith("java.lang.")) {
         continue;
       }

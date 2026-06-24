@@ -1,6 +1,5 @@
-package de.monticore.codeAdaption.evaluation.testcase_13_template_observer_pattern;
-
 import java.util.List;
+
 
 classdiagram Reference {
   abstract class AbstractClass {

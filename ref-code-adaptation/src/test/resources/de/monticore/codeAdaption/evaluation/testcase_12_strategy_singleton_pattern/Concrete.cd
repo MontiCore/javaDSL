@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.testcase_12_strategy_singleton_pattern;
+import java.lang.String;
 
 classdiagram Concrete {
 

@@ -30,8 +30,8 @@ Last updated: 23.06.2026
   - Implemented: [x]
   - Addressed: [x]
   - Notes: A tiny malformed-string fallback remains isolated in
-    `JavaSourceNames`; unresolved simple `java.util` imports remain an explicit
-    adapter policy backed by a dynamic JDK resolver.
+    `JavaSourceNames`; generated-source cleanup does not infer unresolved
+    simple `java.util` imports.
 
 - [x] R-004: Keep `RegexUpdater` only for compatibility
   - Source/date: 12.06.2026

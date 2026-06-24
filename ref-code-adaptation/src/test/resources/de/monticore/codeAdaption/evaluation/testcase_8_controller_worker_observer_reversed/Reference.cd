@@ -1,6 +1,5 @@
-package de.monticore.codeAdaption.evaluation.testcase_8_controller_worker_observer_reversed;
-
 import java.util.List;
+
 
 classdiagram Reference {
   class Builder {

@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.testcase_11_template_method_pattern;
+import java.lang.String;
 
 classdiagram Concrete {
 

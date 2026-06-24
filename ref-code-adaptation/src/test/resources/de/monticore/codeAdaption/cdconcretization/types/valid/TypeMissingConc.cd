@@ -1,4 +1,3 @@
-import java.lang.String;
 classdiagram TypeMissingConc {
 
   class Course {

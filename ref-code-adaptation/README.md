@@ -27,8 +27,8 @@ The class diagrams define which reference classes, fields, and methods incarnate
 7. Clean generated Java:
    - remove `@Adapt` annotations with Spoon
    - remove invalid generated imports through JavaDSL import declarations
-   - add explicit missing `java.util.<Type>` imports from Spoon type references
-     and a dynamic JDK resolver
+   - preserve valid existing imports without inventing imports for unresolved
+     simple names
    - keep Spoon as the only whole-file formatter; import cleanup edits only
      import declaration source ranges
 8. Compile and structurally verify generated Java in tests.
@@ -82,7 +82,7 @@ name rules must make the target deterministic.
 
 ## Important Implementation Points
 
-- `JavaLoader.parseCD` must use the same symbol-table setup as `loadCD`, including built-in types and `java.lang`, because test CDs can use Java-level types such as `Object`.
+- `JavaLoader.parseCD` must use the same symbol-table setup as `loadCD`, including built-in types. CDs must declare imports explicitly for Java library types such as `Object`, `String`, `List`, or `Optional`.
 - `BasicUpdateHandler` handles normal single-incarnation adaptation and builder generation.
 - `MultiIncarnationUpdateHandler` handles reference elements with multiple concrete incarnations.
 - `CDTypeRelations` is the only place that should contain compatibility reflection for CD APIs such as interfaces, superclasses, modifiers, and type-reference printing.
@@ -90,9 +90,9 @@ name rules must make the target deterministic.
 - `AdaptationConflictDetector` validates manual mappings before Java output is written.
 - `CompletedCDJavaProjector` fills Java-expressible gaps only after cdconcretization, such as missing fields, methods, types, enum constants, inheritance, and interfaces.
 - `JavaSourcePostProcessor` is the final source cleanup step. It parses JavaDSL
-  compilation units for import declarations, asks Spoon for type references, and
-  uses the JDK platform class loader to decide whether an unresolved simple name
-  can be imported from `java.util`.
+  compilation units for import declarations and removes only known invalid or
+  malformed generated imports. It does not infer missing JDK imports from
+  unresolved simple names.
 - `JavaSourceNames` centralizes Java/CD type naming, signature keys, generic
   rendering, arrays, primitives, `void`, and `any` normalization. Callers should
   use it instead of open-coded simple-name or signature parsing.

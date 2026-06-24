@@ -1,3 +1,4 @@
+import java.lang.String;
 classdiagram FieldConflictConc {
   class Base {
     int id;

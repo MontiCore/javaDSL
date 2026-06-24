@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.single_file_multi_pattern;
+import java.lang.String;
 
 classdiagram Concrete {
   <<pattern1="MyClass", pattern2="MyClass">> class MyClass {

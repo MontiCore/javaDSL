@@ -808,12 +808,19 @@ public class SpoonUpdater implements CodeUpdater {
             case "char" -> getFactory().Type().createReference(char.class);
             case "short" -> getFactory().Type().createReference(short.class);
             case "byte" -> getFactory().Type().createReference(byte.class);
-            default ->
-                // TODO: Maybe a warning would be better and just null return here?
-                // As a last resort, try java.lang.
-                    getFactory().Type().createReference("java.lang." + normalized);
+            default -> unresolvedTypeReference(normalized);
         };
     }
+  }
+
+  private CtTypeReference<?> unresolvedTypeReference(String typeName) {
+    CtTypeReference<?> reference = getFactory().Core().createTypeReference();
+    String simpleName = JavaSourceNames.simpleName(typeName);
+    reference.setSimpleName(simpleName.isBlank() ? "Object" : simpleName);
+    reference.setPackage(null);
+    reference.setDeclaringType(null);
+    reference.setSimplyQualified(true);
+    return reference;
   }
 
   private CtTypeReference<?> primitiveTypeReference(String typeName) {

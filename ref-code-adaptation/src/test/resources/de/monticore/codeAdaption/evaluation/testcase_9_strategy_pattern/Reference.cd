@@ -1,4 +1,3 @@
-package de.monticore.codeAdaption.evaluation.testcase_9_strategy_pattern;
 
 classdiagram Reference {
   class Context {

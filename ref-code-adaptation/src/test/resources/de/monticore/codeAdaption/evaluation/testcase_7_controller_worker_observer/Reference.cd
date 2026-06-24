@@ -1,6 +1,5 @@
-package de.monticore.codeAdaption.evaluation.testcase_7_controller_worker_observer;
-
 import java.util.List;
+
 
 classdiagram Reference {
   class Builder {

@@ -1,7 +1,6 @@
-package de.monticore.codeAdaption.evaluation.testcase_8_controller_worker_observer_reversed;
-
-import java.lang.Object;
 import java.lang.String;
+import java.lang.Object;
+
 
 classdiagram Concrete {
 

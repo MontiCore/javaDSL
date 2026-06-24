@@ -1,6 +1,5 @@
-package de.monticore.codeAdaption.evaluation.testcase_16_observer_command_combined;
-
 import java.util.List;
+
 
 classdiagram Reference {
   class Subject {

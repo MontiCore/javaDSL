@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.testcase_14_adapter_factory_combined;
+import java.lang.String;
 
 classdiagram Concrete {
   <<adapter="Target", factory="Product">> interface ShippingPort {

@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.single_file_multi_pattern;
+import java.lang.String;
 
 classdiagram Reference {
   class MyClass {

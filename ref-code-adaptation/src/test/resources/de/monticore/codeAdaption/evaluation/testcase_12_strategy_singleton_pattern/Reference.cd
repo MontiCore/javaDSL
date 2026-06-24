@@ -1,4 +1,3 @@
-package de.monticore.codeAdaption.evaluation.testcase_12_strategy_singleton_pattern;
 
 classdiagram Reference {
   class Singleton {

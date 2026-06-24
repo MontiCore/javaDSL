@@ -1,5 +1,3 @@
-package de.monticore.codeAdaption.evaluation.testcase_6_builder_pattern;
-
 import java.lang.String;
 import java.lang.Object;
 import java.util.Date;
