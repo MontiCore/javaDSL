@@ -49,6 +49,12 @@ public class RegexUpdater implements CodeUpdater {
   }
 
   @Override
+  public void updateAssociationRole(
+      ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
+    updateElement(sourceRole, concreteRole);
+  }
+
+  @Override
   public void updateLocalVariable(
       ASTTypeDeclaration srcType,
       ASTMethodDeclaration srcMethod,

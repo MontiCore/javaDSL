@@ -1,0 +1,6 @@
+classdiagram AssociationRoleConflictRef {
+  class Observer;
+  class Observable;
+
+  association Observer -> (observes) Observable;
+}

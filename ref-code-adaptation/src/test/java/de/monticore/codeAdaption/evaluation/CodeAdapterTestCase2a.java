@@ -2,6 +2,9 @@ package de.monticore.codeAdaption.evaluation;
 
 import static de.monticore.cdconformance.CDConfParameter.*;
 import static de.monticore.codeAdaption.utils.AdapterParam.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.codeAdaption.CodeAdapter;
@@ -30,12 +33,32 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
 
   @Test
   @DisplayName("Evaluation Code Adapter Case Study 2 CD4Code")
-  public void evaluationCodeAdapterCaseStudy1Test() {
+  public void adaptsAssociationRoleUsageAndGeneratesRoleField() {
     Set<String> mappings = Set.of("stud");
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
-    adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output);
+    deleteRecursively(output);
+
+    assertDoesNotThrow(
+        () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output));
+
+    String adaptedStudent = readFileContent(output, "Student.java");
+    assertTrue(adaptedStudent.contains("package Concrete;"));
+    assertTrue(adaptedStudent.contains("class Student extends StudentTOP"));
+    assertTrue(adaptedStudent.contains("printHiwiRoles()"));
+    assertTrue(adaptedStudent.contains("for (HiwiRole hiwiRole : this.roles)"));
+    assertTrue(adaptedStudent.contains("roleNames = hiwiRole.name"));
+    assertFalse(adaptedStudent.contains("Role role"));
+    assertFalse(adaptedStudent.contains("printRoles()"));
 
     Path genCode = Path.of("target/codeAdapter/evaluation/testcase_2_cd4code/generated");
-    Generator.generate(concreteCD, output, genCode);
+    assertDoesNotThrow(() -> Generator.generate(concreteCD, output, genCode));
+
+    String generatedStudentTop = readFileContent(genCode, "StudentTOP.java");
+    assertTrue(generatedStudentTop.contains("abstract class StudentTOP"));
+    assertTrue(generatedStudentTop.contains("java.util.Set<Concrete.HiwiRole> roles"));
+    assertFalse(generatedStudentTop.contains("Set<Role>"));
+
+    assertNoAdapterMetadata(output);
+    assertGeneratedJavaCompiles(output);
   }
 }

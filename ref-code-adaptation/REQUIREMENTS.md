@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 23.06.2026
+Last updated: 26.06.2026
 
 ## Requirements
 
@@ -217,3 +217,11 @@ Last updated: 23.06.2026
   - Addressed: [ ]
   - Notes: Evaluation testcase resources may keep stable numeric identifiers
     when needed, but test class and method names should communicate intent.
+
+- [x] R-021: Evaluate association adaptation coverage and oracle strength
+  - Source/date: 26.06.2026
+  - Details: Check how well the adapter handles associations in
+    cdconcretization-backed and manual adaptation modes.
+  - Implemented: [x]
+  - Addressed: [x]
+  - Notes:

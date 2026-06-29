@@ -75,6 +75,22 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   }
 
   @Test
+  public void detectsAmbiguousAssociationDirection() {
+    assertConflict(
+        "AssociationAmbiguousDirectionRef.cd",
+        "AssociationAmbiguousDirectionConc.cd",
+        "ambiguous association direction");
+  }
+
+  @Test
+  public void detectsAssociationRoleFieldConflict() {
+    assertConflict(
+        "AssociationRoleConflictRef.cd",
+        "AssociationRoleConflictConc.cd",
+        "association role field conflict");
+  }
+
+  @Test
   public void detectsUnderspecifiedAnyWithoutIncarnation() {
     assertConflict("AnyRef.cd", "AnyConc.cd", "underspecified attribute type");
   }

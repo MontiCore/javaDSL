@@ -1,0 +1,6 @@
+classdiagram Reference {
+  class Project;
+  class Task;
+
+  association [1] Project (project) <-> (tasks) Task [1];
+}

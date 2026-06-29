@@ -14,10 +14,13 @@ import static de.monticore.codeAdaption.utils.AdapterParam.IGNORE_NON_MATCHED_TY
 import static de.monticore.codeAdaption.utils.AdapterParam.IGNORE_NON_MATCHED_VAR;
 import static de.monticore.codeAdaption.utils.AdapterParam.NAME_MATCHING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import de.monticore.cdassociation._ast.ASTCDAssocSide;
+import de.monticore.cdassociation._ast.ASTCDAssociation;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCase;
@@ -57,6 +60,16 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     return CDConcretizationTestCases.enabledCases().stream();
   }
 
+  static Stream<CDConcretizationTestCase> associationModelCases() {
+    return CDConcretizationTestCases.enabledCases().stream()
+        .filter(CDConcretizationAdapterTest::hasExplicitAssociationExpectation);
+  }
+
+  static Stream<CDConcretizationTestCase> associationAdapterOutputCases() {
+    return CDConcretizationTestCases.enabledCases().stream()
+        .filter(CDConcretizationAdapterTest::isAssociationFocusedCase);
+  }
+
   static Stream<CDConcretizationTestCase> expectedFailureCases() {
     return CDConcretizationTestCases.expectedFailureCases().stream();
   }
@@ -94,6 +107,49 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     initMills();
     GeneratedJavaOracle.assertMatchesExpectedStructure(
         materializedTestCase, confParameters, javaFiles);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("associationAdapterOutputCases")
+  void associationCasesProduceCleanAdapterOutput(CDConcretizationTestCase testCase) {
+    CDConcretizationTestCase materializedTestCase =
+        CDConcretizationFixtureWorkspace.materialize(testCase);
+    confParameters = defaultConformanceParams(materializedTestCase.strictParameterOrder());
+    CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
+    cleanPreviousOutput(materializedTestCase);
+
+    assertDoesNotThrow(
+        () ->
+            adapter.adapt(
+                materializedTestCase.refCd().toFile(),
+                materializedTestCase.concCd().toFile(),
+                materializedTestCase.mappings(),
+                materializedTestCase.adapterPath(),
+                materializedTestCase.concretePath(),
+                materializedTestCase.outputPath(),
+                true,
+                true),
+        () -> "Adaptation failed for " + materializedTestCase.displayName());
+
+    List<java.nio.file.Path> adaptedJavaFiles =
+        generatedJavaFiles(materializedTestCase, materializedTestCase.outputPath());
+    assertFalse(
+        adaptedJavaFiles.isEmpty(),
+        () -> "No adapter Java output generated for " + materializedTestCase.displayName());
+    assertNoWildcardJdkImports(materializedTestCase, adaptedJavaFiles);
+    assertNoAdaptMetadata(materializedTestCase, adaptedJavaFiles);
+    assertGeneratedJavaCompiles(adaptedJavaFiles);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("associationModelCases")
+  void concretizationProducesExpectedAssociationModel(CDConcretizationTestCase testCase) {
+    confParameters = defaultConformanceParams(testCase.strictParameterOrder());
+    ASTCDCompilationUnit expectedCD =
+        JavaLoader.parseCD(expectedOutCd(testCase).orElseThrow().toString());
+    ASTCDCompilationUnit completedCD = completeCd(testCase, confParameters);
+
+    assertAssociationsEqual(testCase, expectedCD, completedCD);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -139,6 +195,20 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     return params;
   }
 
+  private static boolean hasExplicitAssociationExpectation(CDConcretizationTestCase testCase) {
+    return expectedOutCd(testCase).isPresent() && isAssociationFocusedCase(testCase);
+  }
+
+  private static boolean isAssociationFocusedCase(CDConcretizationTestCase testCase) {
+    String relativeConc =
+        java.nio.file.Path.of(CDConcretizationTestCase.RESOURCE_ROOT)
+            .relativize(testCase.concCd())
+            .toString()
+            .replace('\\', '/');
+    return relativeConc.startsWith("associations/")
+        || relativeConc.startsWith("multipleIncarnation/BothAssocSidesMI");
+  }
+
   private static void cleanPreviousOutput(CDConcretizationTestCase testCase) {
     Path projectionPath = projectionPath(testCase);
     deleteOutputPath(testCase.outputPath());
@@ -165,6 +235,18 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     return java.nio.file.Files.exists(out) ? java.util.Optional.of(out) : java.util.Optional.empty();
   }
 
+  private static ASTCDCompilationUnit completeCd(
+      CDConcretizationTestCase testCase, Set<CDConfParameter> confParameters) {
+    ASTCDCompilationUnit completedConcreteCD = JavaLoader.parseCD(testCase.concCd().toString());
+    ASTCDCompilationUnit refCD = JavaLoader.parseCD(testCase.refCd().toString());
+    assertDoesNotThrow(
+        () ->
+            new ConcretizationCompleter(confParameters)
+                .completeCD(completedConcreteCD, refCD, new ArrayList<>(testCase.mappings())),
+        () -> "CD concretization failed for " + testCase.displayName());
+    return completedConcreteCD;
+  }
+
   private static ASTCDCompilationUnit completeProjectionCd(
       CDConcretizationTestCase testCase, Set<CDConfParameter> confParameters) {
     ASTCDCompilationUnit completedConcreteCD = JavaLoader.parseCD(testCase.concCd().toString());
@@ -184,6 +266,70 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   private static Path projectionPath(CDConcretizationTestCase testCase) {
     return testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_projection");
+  }
+
+  private static void assertAssociationsEqual(
+      CDConcretizationTestCase testCase,
+      ASTCDCompilationUnit expectedCD,
+      ASTCDCompilationUnit actualCD) {
+    List<ASTCDAssociation> expectedAssociations =
+        expectedCD.getCDDefinition().getCDAssociationsList();
+    List<ASTCDAssociation> actualAssociations = actualCD.getCDDefinition().getCDAssociationsList();
+
+    assertEquals(
+        expectedAssociations.size(),
+        actualAssociations.size(),
+        () -> "Association count differs for " + testCase.displayName());
+
+    boolean[] matchedActualAssociations = new boolean[actualAssociations.size()];
+    for (int i = 0; i < expectedAssociations.size(); i++) {
+      ASTCDAssociation expected = expectedAssociations.get(i);
+      int matchingActual = findMatchingAssociation(expected, actualAssociations, matchedActualAssociations);
+      assertTrue(
+          matchingActual >= 0,
+          () ->
+              "Missing expected association for "
+                  + testCase.displayName()
+                  + System.lineSeparator()
+                  + "expected: "
+                  + describeAssociation(expected)
+                  + System.lineSeparator()
+                  + "actual associations: "
+                  + actualAssociations.stream()
+                      .map(CDConcretizationAdapterTest::describeAssociation)
+                      .toList());
+      matchedActualAssociations[matchingActual] = true;
+    }
+  }
+
+  private static int findMatchingAssociation(
+      ASTCDAssociation expected, List<ASTCDAssociation> actualAssociations, boolean[] matched) {
+    for (int i = 0; i < actualAssociations.size(); i++) {
+      if (!matched[i] && expected.deepEquals(actualAssociations.get(i))) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private static String describeAssociation(ASTCDAssociation association) {
+    return (association.isPresentName() ? association.getName() + " " : "")
+        + association.getLeftQualifiedName().getQName()
+        + sideDescription(association.getLeft())
+        + " -> "
+        + association.getRightQualifiedName().getQName()
+        + sideDescription(association.getRight());
+  }
+
+  private static String sideDescription(ASTCDAssocSide side) {
+    List<String> parts = new ArrayList<>();
+    if (side.isPresentCDRole()) {
+      parts.add("role=" + side.getCDRole().getName());
+    }
+    if (side.isPresentCDCardinality()) {
+      parts.add("cardinality=" + side.getCDCardinality());
+    }
+    return parts.isEmpty() ? "" : " [" + String.join(", ", parts) + "]";
   }
 
   private static void deleteOutputPath(java.nio.file.Path path) {

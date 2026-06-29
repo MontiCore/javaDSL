@@ -422,6 +422,29 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   @Override
+  public void updateAssociationRole(
+      ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
+    if (sourceRole == null
+        || concreteRole == null
+        || sourceRole.equals(concreteRole)) {
+      return;
+    }
+
+    CtType<?> owner = getSpoonType(srcType);
+    List<CtFieldAccess<?>> accesses =
+        owner.getElements(new TypeFilter<>(CtFieldAccess.class));
+    for (CtFieldAccess<?> access : accesses) {
+      CtType<?> accessOwner = access.getParent(CtType.class);
+      if (accessOwner != owner
+          || access.getVariable() == null
+          || !sourceRole.equals(access.getVariable().getSimpleName())) {
+        continue;
+      }
+      access.getVariable().setSimpleName(concreteRole);
+    }
+  }
+
+  @Override
   public void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName) {
     String srcName = JavaLoader.print(supertype);
     CtType<?> spoonType = getSpoonType(type);

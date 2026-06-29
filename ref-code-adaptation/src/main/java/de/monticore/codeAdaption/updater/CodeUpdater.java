@@ -56,6 +56,16 @@ public interface CodeUpdater {
    */
   void updateField(ASTTypeDeclaration srcType, ASTFieldDeclaration srcField, String newName);
 
+  /**
+   * Change accesses to a field generated from an association role. Association fields do not have
+   * declarations in handwritten reference code, so they cannot be handled by {@link #updateField}.
+   * The source type scopes the rewrite and prevents changes to same-named roles on other owners.
+   */
+  default void updateAssociationRole(
+      ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
+    throw unsupported("updateAssociationRole");
+  }
+
   /***
    * change the name of a local-variable in the reference code. By its declaration
    * an all its references an uses.
