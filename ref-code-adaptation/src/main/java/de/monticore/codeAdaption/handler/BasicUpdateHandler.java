@@ -2,7 +2,6 @@ package de.monticore.codeAdaption.handler;
 
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cd4codebasis._ast.ASTCDParameter;
-import de.monticore.cdassociation._ast.ASTCDAssociation;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
@@ -115,7 +114,8 @@ public class BasicUpdateHandler {
     typeElements.forEach(this::handleTMemberUpdate);
 
     // update accesses to fields generated from navigable association roles
-    typeElements.forEach(this::handleAssociationRoleUpdate);
+    AssociationRoleUpdateService associationRoleUpdates = new AssociationRoleUpdateService(this);
+    typeElements.forEach(associationRoleUpdates::handleAssociationRoleUpdate);
 
     // update types
     typeElements.forEach(this::handleTypeUpdate);
@@ -125,93 +125,6 @@ public class BasicUpdateHandler {
 
     updater.printCode();
   }
-
-  protected void handleAssociationRoleUpdate(JavaAstElemCollector collector) {
-    for (ASTTypeDeclaration javaType : collector.getAllTypeDeclarations()) {
-      Map<String, String> roleRewrites = new LinkedHashMap<>();
-      for (ASTCDAssociation referenceAssociation : refIndex.associations()) {
-        for (AssociationRole referenceRole : associationRoles(referenceAssociation)) {
-          if (!adaptsReferenceType(javaType, referenceRole.ownerType())) {
-            continue;
-          }
-
-          String concreteOwner = resolveConcreteAssociationType(referenceRole.ownerType());
-          String concreteTarget = resolveConcreteAssociationType(referenceRole.targetType());
-          Set<String> concreteRoles = new LinkedHashSet<>();
-          for (ASTCDAssociation concreteAssociation : conIndex.associations()) {
-            for (AssociationRole concreteRole : associationRoles(concreteAssociation)) {
-              if (concreteOwner.equals(concreteRole.ownerType())
-                  && concreteTarget.equals(concreteRole.targetType())) {
-                concreteRoles.add(concreteRole.roleName());
-              }
-            }
-          }
-
-          if (concreteRoles.size() > 1) {
-            throw new IllegalStateException(
-                "Ambiguous concrete association roles for "
-                    + referenceRole.ownerType()
-                    + "."
-                    + referenceRole.roleName()
-                    + ": "
-                    + concreteRoles);
-          }
-          if (concreteRoles.size() == 1) {
-            String concreteRole = concreteRoles.iterator().next();
-            String previous = roleRewrites.putIfAbsent(referenceRole.roleName(), concreteRole);
-            if (previous != null && !previous.equals(concreteRole)) {
-              throw new IllegalStateException(
-                  "Conflicting concrete association roles for "
-                      + referenceRole.ownerType()
-                      + "."
-                      + referenceRole.roleName());
-            }
-          }
-        }
-      }
-      roleRewrites.forEach(
-          (sourceRole, concreteRole) ->
-              updater.updateAssociationRole(javaType, sourceRole, concreteRole));
-    }
-  }
-
-  private boolean adaptsReferenceType(ASTTypeDeclaration javaType, String referenceType) {
-    Optional<CodeMatching> matching = validator.getMatchedType(javaType);
-    if (matching.isPresent()
-        && matching.get().getReferences().stream()
-            .filter(CDTypeSymbol.class::isInstance)
-            .map(ISymbol::getName)
-            .anyMatch(referenceType::equals)) {
-      return true;
-    }
-    return referenceType.equals(javaType.getName());
-  }
-
-  private String resolveConcreteAssociationType(String referenceType) {
-    Optional<ASTCDType> type = refIndex.type(referenceType);
-    if (type.isEmpty()) {
-      return referenceType;
-    }
-    Optional<ISymbol> fromContext = getSymbolFromContext(type.get().getSymbol());
-    ISymbol concrete =
-        fromContext.orElseGet(() -> getConTypeSymbol(type.get().getSymbol()));
-    return JavaSourceNames.simpleName(concrete.getName());
-  }
-
-  private List<AssociationRole> associationRoles(ASTCDAssociation association) {
-    String left = JavaSourceNames.simpleName(association.getLeftQualifiedName().getQName());
-    String right = JavaSourceNames.simpleName(association.getRightQualifiedName().getQName());
-    List<AssociationRole> roles = new ArrayList<>();
-    if (association.getLeft().isPresentCDRole()) {
-      roles.add(new AssociationRole(right, left, association.getLeft().getCDRole().getName()));
-    }
-    if (association.getRight().isPresentCDRole()) {
-      roles.add(new AssociationRole(left, right, association.getRight().getCDRole().getName()));
-    }
-    return roles;
-  }
-
-  private record AssociationRole(String ownerType, String targetType, String roleName) {}
 
   protected void handleTypeUpdate(JavaAstElemCollector collector) {
     // update type present in the reference code

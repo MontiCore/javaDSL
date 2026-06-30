@@ -1,27 +1,22 @@
 package de.monticore.codeAdaption;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
-import de.monticore.cd4codebasis._ast.ASTCDMethod;
-import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
-import de.monticore.cdbasis._ast.ASTCDType;
-import de.monticore.symboltable.ISymbol;
+import de.monticore.codeAdaption.context.AdaptationContextFactory;
+import de.monticore.codeAdaption.context.ConcretizationService;
+import de.monticore.codeAdaption.context.GroupingMappingService;
+import de.monticore.codeAdaption.context.MappingConformanceService;
 import de.monticore.codeAdaption.handler.BasicUpdateHandler;
 import de.monticore.codeAdaption.handler.multiIncarnation.*;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdaterFactory;
 import de.monticore.codeAdaption.utils.AdapterParam;
-import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaLoader;
-import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.validator.CodeValidator;
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
-import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
-import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
+import de.monticore.symboltable.ISymbol;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.io.IOException;
@@ -141,15 +136,19 @@ public class CodeAdapter {
     // load CD models
     ASTCDCompilationUnit conCD = JavaLoader.parseCD(concreteCD.getPath());
     ASTCDCompilationUnit refCD = JavaLoader.parseCD(referenceCD.getPath());
+    MappingConformanceService conformanceService = new MappingConformanceService(confParams);
 
     if (useConcretization) {
-      concretizeConcreteCD(conCD, refCD, mappings);
+      new ConcretizationService(confParams).completeConcreteCD(conCD, refCD, mappings);
     }
     CDModelIndex conIndex = CDModelIndex.of(conCD);
+    AdaptedCodeMerger codeMerger = new AdaptedCodeMerger();
+    OutputCodeService outputCode = new OutputCodeService();
 
     // Build incarnation contexts for all mappings upfront
     Map<String, IncarnationContext> mappingContexts =
-        buildIncarnationContexts(refCD, conCD, mappings, useConcretization);
+        new AdaptationContextFactory(confParams, conformanceService)
+            .buildContexts(refCD, conCD, mappings, useConcretization);
 
     if (!useConcretization) {
       AdaptationConflictDetector.validate(
@@ -164,7 +163,7 @@ public class CodeAdapter {
     // Compute aggregated concrete->grouping mappings so updaters can apply replacements in the AST
     Map<String, String> groupingAgg =
         useCommonParentForMultipleIncarnations
-            ? computeGroupingMappings(mappingContexts)
+            ? new GroupingMappingService().compute(mappingContexts)
             : Collections.emptyMap();
 
     // Validate all mappings
@@ -179,8 +178,8 @@ public class CodeAdapter {
     } else if (mappings.size() == 1) {
       // Single mapping - check conformance individually
       String mapping = mappings.iterator().next();
-      CDConformanceChecker checker = new CDConformanceChecker(confParams);
-      boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
+      CDConformanceChecker checker = conformanceService.newChecker();
+      boolean mappingValid = conformanceService.checkOrFalse(checker, conCD, refCD, mapping);
 
       if (!mappingValid) {
         // Adaptation should continue using the stereotype-based fallback to construct
@@ -208,8 +207,8 @@ public class CodeAdapter {
       // The CDConformanceChecker now handles adapter pattern method ambiguity correctly
       // by matching interface methods only with interface methods and class methods only with class methods
       for (String mapping : mappings) {
-        CDConformanceChecker checker = new CDConformanceChecker(confParams);
-        boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
+        CDConformanceChecker checker = conformanceService.newChecker();
+        boolean mappingValid = conformanceService.checkOrFalse(checker, conCD, refCD, mapping);
 
         if (mappingValid) {
           Log.info("Mapping '" + mapping + "' passed conformance check", "CodeAdapter");
@@ -258,7 +257,9 @@ public class CodeAdapter {
         for (ASTOrdinaryCompilationUnit unit : refCode) {
           mappingRefCode.add(unit.deepClone());
         }
-        mappingRefCode = filterCodeForMapping(mappingRefCode, validators.get(mapping), mappingContexts.get(mapping));
+        mappingRefCode =
+            codeMerger.filterCodeForMapping(
+                mappingRefCode, validators.get(mapping), mappingContexts.get(mapping));
         if (mappingRefCode.isEmpty()) {
           continue;
         }
@@ -292,10 +293,10 @@ public class CodeAdapter {
           // Read the processed output back from temp directory
           Set<ASTOrdinaryCompilationUnit> processedCode = JavaLoader.readJavaCode(tempPath);
           // Split compilation units that contain multiple top-level types into one file per type
-          processedCode = splitCompilationUnitsByType(processedCode);
+          processedCode = codeMerger.splitCompilationUnitsByType(processedCode);
 
           // Merge with accumulated result
-          adaptedCode = mergeAdaptedCode(adaptedCode, processedCode);
+          adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, processedCode);
 
           // Clean up temp directory
           FileUtils.deleteQuietly(tempPath.toFile());
@@ -318,7 +319,9 @@ public class CodeAdapter {
           for (ASTOrdinaryCompilationUnit unit : refCode) {
             mappingRefCode.add(unit.deepClone());
           }
-          mappingRefCode = filterCodeForMapping(mappingRefCode, validators.get(mapping), mappingContexts.get(mapping));
+          mappingRefCode =
+              codeMerger.filterCodeForMapping(
+                  mappingRefCode, validators.get(mapping), mappingContexts.get(mapping));
           if (mappingRefCode.isEmpty()) {
             continue;
           }
@@ -385,10 +388,10 @@ public class CodeAdapter {
             // Read the processed output back from temp directory
             Set<ASTOrdinaryCompilationUnit> processedCode = JavaLoader.readJavaCode(tempPath);
             // Split compilation units that contain multiple top-level types into one file per type
-            processedCode = splitCompilationUnitsByType(processedCode);
+            processedCode = codeMerger.splitCompilationUnitsByType(processedCode);
 
             // Merge with accumulated result
-            adaptedCode = mergeAdaptedCode(adaptedCode, processedCode);
+            adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, processedCode);
 
             // Clean up temp directory
             FileUtils.deleteQuietly(tempPath.toFile());
@@ -406,13 +409,13 @@ public class CodeAdapter {
       Set<ASTOrdinaryCompilationUnit> concreteCode =
           Files.exists(conHwcPath) ? JavaLoader.readJavaCode(conHwcPath) : new LinkedHashSet<>();
       Set<ASTOrdinaryCompilationUnit> finalCode =
-          mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conCD);
+          codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conCD);
 
       JavaLoader.printAST(finalCode, outputPath);
       // Clean up @Adapt annotations and invalid imports in both adaptation modes.
-      cleanCode(outputPath, updaterFactory);
+      outputCode.cleanCode(outputPath, updaterFactory);
     }
-    copyConcreteFiles(conHwcPath, outputPath);
+    outputCode.copyConcreteFiles(conHwcPath, outputPath);
   }
 
   private CodeUpdater prepareUpdater(
@@ -425,419 +428,6 @@ public class CodeAdapter {
     return updater;
   }
 
-  private Map<String, IncarnationContext> buildIncarnationContexts(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
-      Set<String> mappings,
-      boolean useConcretizationMappings) {
-
-    Map<String, IncarnationContext> contexts = new HashMap<>();
-
-    if (!useConcretizationMappings) {
-      ManualIncarnationContextBuilder builder =
-          new ManualIncarnationContextBuilder(refCD, conCD, confParams);
-      for (String mapping : mappings) {
-        contexts.put(mapping, builder.buildContextForMapping(mapping));
-      }
-      return contexts;
-    }
-
-    for (String mapping : mappings) {
-      // For multi-mapping, skip conformance checks since they may be partial
-      // For single mapping, use standard checker
-      CDConformanceChecker checker = new CDConformanceChecker(confParams);
-
-      // Run conformance check for this mapping (works for both single and multi-mapping)
-      // The CDConformanceChecker now handles adapter pattern method ambiguity correctly
-      boolean mappingValid = checkConformanceOrFalse(checker, conCD, refCD, mapping);
-
-        if (!mappingValid) {
-          // Attempt to build an IncarnationContext. The builder will use stereotypes as a fallback
-          // if the conformance checker did not produce an incarnation mapping.
-          Log.warn("Mapping '" + mapping + "' failed conformance check - will use stereotype-based fallback for this mapping");
-        } else {
-          Log.info("Mapping '" + mapping + "' passed conformance check with incarnation mapping: " +
-              (checker.getIncarnationMapping() != null ? checker.getIncarnationMapping().getClass().getSimpleName() : "null"), "CodeAdapter");
-        }
-
-      IncarnationContext context;
-      if (!mappingValid || checker.getIncarnationMapping() == null) {
-        context =
-            new ManualIncarnationContextBuilder(refCD, conCD, confParams)
-                .buildContextForMapping(mapping);
-      } else {
-        IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
-        context = builder.buildContextForMapping(mapping, false);
-      }
-      contexts.put(mapping, context);
-    }
-
-    return contexts;
-  }
-
-  private void concretizeConcreteCD(
-      ASTCDCompilationUnit conCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
-    ConcretizationCompleter completer = new ConcretizationCompleter(confParams);
-    boolean failQuickEnabled = Log.isFailQuickEnabled();
-    boolean completed = false;
-    try {
-      Log.enableFailQuick(false);
-      completer.completeCD(conCD, refCD, new ArrayList<>(mappings));
-      completed = true;
-      Log.info("Concretized concrete CD before code adaptation", "CodeAdapter");
-    } catch (Throwable t) {
-      Log.warn(
-          "CD concretization failed before code adaptation: "
-              + t.getMessage()
-              + " - continuing with available conformance mappings");
-    } finally {
-      if (completed) {
-        Log.enableFailQuick(failQuickEnabled);
-      }
-    }
-  }
-
-  private boolean checkConformanceOrFalse(
-      CDConformanceChecker checker,
-      ASTCDCompilationUnit conCD,
-      ASTCDCompilationUnit refCD,
-      String mapping) {
-    boolean failQuickEnabled = Log.isFailQuickEnabled();
-    boolean mappingValid = false;
-    try {
-      Log.enableFailQuick(false);
-      mappingValid = checker.checkConformance(conCD, refCD, mapping);
-      return mappingValid;
-    } catch (Throwable t) {
-      Log.warn(
-          "Conformance checker threw during check for mapping '"
-              + mapping
-              + "': "
-              + t.getMessage()
-              + " - will use stereotype-based fallback");
-      return false;
-    } finally {
-      if (mappingValid) {
-        Log.enableFailQuick(failQuickEnabled);
-      }
-    }
-  }
-
-  // TODO: Do I still neeed this?
-  private boolean hasMethodToMethodForEach(ASTCDCompilationUnit refCD) {
-    CDModelIndex index = CDModelIndex.of(refCD);
-    for (ASTCDType type : index.types()) {
-      for (ASTCDMethod method : type.getCDMethodList()) {
-        Optional<String> target = getStereotypeValue(method, "forEach");
-        if (target.isPresent() && referencesMethod(index, type, target.get())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private boolean referencesMethod(CDModelIndex index, ASTCDType owner, String referenceName) {
-    String trimmed = referenceName.trim();
-    String simpleName = JavaSourceNames.simpleName(trimmed);
-    if (trimmed.contains(".")) {
-      String ownerName = trimmed.substring(0, trimmed.lastIndexOf('.'));
-      String simpleOwnerName = JavaSourceNames.simpleName(ownerName);
-      return index.methods(simpleOwnerName).stream()
-          .anyMatch(method -> method.getName().equals(simpleName));
-    }
-    return owner.getCDMethodList().stream().anyMatch(method -> method.getName().equals(simpleName));
-  }
-
-  private Optional<String> getStereotypeValue(ASTCDMethod method, String name) {
-    if (method.getModifier() == null || !method.getModifier().isPresentStereotype()) {
-      return Optional.empty();
-    }
-    for (var stereotype : method.getModifier().getStereotype().getValuesList()) {
-      if (name.equals(stereotype.getName())) {
-        try {
-          return Optional.ofNullable(stereotype.getValue());
-        } catch (Exception ignored) {
-          return Optional.empty();
-        }
-      }
-    }
-    return Optional.empty();
-  }
-
-  /**
-   * Compute aggregated mapping from concrete simple-name -> grouping simple-name
-   * by consulting each IncarnationContext. This does not modify files; it only
-   * prepares a map that can be applied to Spoon models.
-   */
-  private Map<String, String> computeGroupingMappings(Map<String, IncarnationContext> mappingContexts) {
-    Map<String, String> agg = new HashMap<>();
-    for (IncarnationContext ctx : mappingContexts.values()) {
-      for (Map.Entry<ISymbol, List<ISymbol>> e : ctx.getReferenceToIncarnations().entrySet()) {
-        List<ISymbol> incs = e.getValue();
-        if (incs == null) continue;
-        for (ISymbol s : incs) {
-          if (s == null) continue;
-          var g = ctx.findGroupingTypeForImplementer(s.getName());
-          if (g.isPresent() && !g.get().equals(s.getName())) {
-            agg.put(s.getName(), g.get());
-          }
-        }
-      }
-    }
-    return agg;
-  }
-
-  private Set<ASTOrdinaryCompilationUnit> mergeAdaptedCode(
-      Set<ASTOrdinaryCompilationUnit> actualCode, Set<ASTOrdinaryCompilationUnit> newAdaptedCode) {
-    if (actualCode.isEmpty()) {
-      // First mapping - deduplicate files with same simple name
-      return deduplicateBySimpleName(newAdaptedCode);
-    }
-
-    // Deduplicate new files first (same simple name, prefer package subdir)
-    Set<ASTOrdinaryCompilationUnit> deduplicatedNew = deduplicateBySimpleName(newAdaptedCode);
-
-    for (ASTOrdinaryCompilationUnit newAdapted : deduplicatedNew) {
-      String newSimpleName = AdapterUtils.getSimpleFileName(newAdapted);
-
-      Optional<ASTOrdinaryCompilationUnit> actual =
-          actualCode.stream()
-              .filter(f -> AdapterUtils.getSimpleFileName(f).equals(newSimpleName))
-              .findAny();
-
-      if (actual.isEmpty()) {
-        // New file - add it
-        actualCode.add(newAdapted);
-      } else {
-        // Existing file - merge ASTs (first mapping wins for conflicts)
-        actualCode.remove(actual.get());
-        actualCode.add(AdapterUtils.mergeAsts(actual.get(), newAdapted));
-      }
-    }
-    return actualCode;
-  }
-
-  private Set<ASTOrdinaryCompilationUnit> filterCodeForMapping(
-      Set<ASTOrdinaryCompilationUnit> javaFiles,
-      CodeValidator validator,
-      IncarnationContext context) {
-    validator.initializeTypeMatcher(javaFiles);
-    Set<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>();
-    for (ASTOrdinaryCompilationUnit unit : javaFiles) {
-      JavaAstElemCollector collector = new JavaAstElemCollector();
-      JavaDSLTraverser traverser = JavaDSLMill.traverser();
-      traverser.add4JavaDSL(collector);
-      unit.accept(traverser);
-
-      boolean mappedTopLevel =
-          collector.getAllTypeDeclarations().stream()
-              .map(validator::getMatchedType)
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .flatMap(matching -> matching.getReferences().stream())
-              .anyMatch(ref -> {
-                List<ISymbol> incarnations = context.getIncarnations(ref);
-                return incarnations != null && !incarnations.isEmpty();
-              });
-      boolean ignoredTopLevel =
-          collector.getAllTypeDeclarations().stream()
-              .map(validator::getMatchedType)
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .anyMatch(matching -> !matching.mustBePerform());
-      if (mappedTopLevel || ignoredTopLevel) {
-        result.add(unit);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Builds the final generated code on top of the concrete handwritten classes. Adapted pattern
-   * types with the same simple file name are merged into the concrete class, while reference-only
-   * template artifacts such as Builder, OSubject, or OObserver are filtered out.
-   */
-  private Set<ASTOrdinaryCompilationUnit> mergeAdaptedCodeIntoConcreteBase(
-      Set<ASTOrdinaryCompilationUnit> concreteCode,
-      Set<ASTOrdinaryCompilationUnit> adaptedCode,
-      ASTCDCompilationUnit conCD) {
-
-    Set<String> concreteTypeNames =
-        CDModelIndex.of(conCD).types().stream()
-            .map(ASTCDType::getName)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-
-    Set<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>(deduplicateBySimpleName(concreteCode));
-
-    for (ASTOrdinaryCompilationUnit adaptedUnit : deduplicateBySimpleName(adaptedCode)) {
-      String adaptedTypeName = getPrimaryTypeName(adaptedUnit).orElse("");
-      if (!shouldKeepAdaptedUnit(adaptedTypeName, concreteTypeNames)) {
-        continue;
-      }
-
-      String adaptedFileName = AdapterUtils.getSimpleFileName(adaptedUnit);
-      Optional<ASTOrdinaryCompilationUnit> concreteMatch =
-          result.stream()
-              .filter(unit -> AdapterUtils.getSimpleFileName(unit).equals(adaptedFileName))
-              .findFirst();
-
-      if (concreteMatch.isPresent()) {
-        result.remove(concreteMatch.get());
-        result.add(AdapterUtils.mergeAsts(concreteMatch.get(), adaptedUnit));
-      } else {
-        result.add(adaptedUnit);
-      }
-    }
-
-    return deduplicateBySimpleName(result);
-  }
-
-  private boolean shouldKeepAdaptedUnit(String typeName, Set<String> concreteTypeNames) {
-    if (typeName == null || typeName.isEmpty()) {
-      return false;
-    }
-    if (concreteTypeNames.contains(typeName)) {
-      return true;
-    }
-    // Keep generated companion types that are named from a concrete type like
-    // StudentRepository, PersonBuilder.
-    return concreteTypeNames.stream()
-        .anyMatch(concreteName -> typeName.startsWith(concreteName) || typeName.endsWith(concreteName));
-  }
-
-  private Optional<String> getPrimaryTypeName(ASTOrdinaryCompilationUnit unit) {
-    JavaAstElemCollector collector = new JavaAstElemCollector();
-    JavaDSLTraverser traverser = JavaDSLMill.traverser();
-    traverser.add4JavaDSL(collector);
-    unit.accept(traverser);
-    return collector.getAllTypeDeclarations().stream().map(ASTTypeDeclaration::getName).findFirst();
-  }
-
-  private static void copyConcreteFiles(Path conHwcPath, Path outputPath) {
-    if (!Files.exists(conHwcPath)) {
-      try {
-        Files.createDirectories(outputPath);
-      } catch (IOException e) {
-        throw new IllegalStateException("Failed to create output directory " + outputPath, e);
-      }
-      return;
-    }
-    try (var paths = Files.walk(conHwcPath)) {
-      paths
-          .filter(Files::isRegularFile)
-          .forEach(
-              p -> {
-                try {
-                  Path target = concreteCopyTarget(conHwcPath, p, outputPath);
-                  Files.createDirectories(target.getParent());
-                  if (!Files.exists(target)) {
-                    Files.copy(p, target);
-                  }
-                } catch (IOException e) {
-                  throw new IllegalStateException(
-                      "Failed to copy concrete file '" + p + "' to output", e);
-                }
-              });
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to include concrete handwritten code", e);
-    }
-  }
-
-  private static Path concreteCopyTarget(Path conHwcPath, Path source, Path outputPath) {
-    if (!source.toString().endsWith(".java")) {
-      return outputPath.resolve(conHwcPath.relativize(source));
-    }
-    try {
-      ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(source.toFile());
-      if (ast.isPresentPackageDeclaration()) {
-        Path packagePath =
-            Path.of(
-                ast.getPackageDeclaration()
-                    .getMCQualifiedName()
-                    .getQName()
-                    .replace('.', File.separatorChar));
-        return outputPath.resolve(packagePath).resolve(source.getFileName());
-      }
-    } catch (RuntimeException | AssertionError ignored) {
-    }
-    return outputPath.resolve(conHwcPath.relativize(source));
-  }
-
-  /**
-   * Split compilation units that contain multiple top-level type declarations into separate
-   * compilation units, one per type. This also sets the SourcePositionStart file name so that
-   * JavaLoader.printAST will write each type into its own file named <TypeName>.java.
-   */
-  private Set<ASTOrdinaryCompilationUnit> splitCompilationUnitsByType(Set<ASTOrdinaryCompilationUnit> units) {
-    Set<ASTOrdinaryCompilationUnit> res = new LinkedHashSet<>();
-    for (ASTOrdinaryCompilationUnit unit : units) {
-      // collect type declarations using the Java AST collector
-      JavaAstElemCollector collector = new JavaAstElemCollector();
-      JavaDSLTraverser traverser = JavaDSLMill.traverser();
-      traverser.add4JavaDSL(collector);
-      unit.accept(traverser);
-
-      List<ASTTypeDeclaration> types = new ArrayList<>(collector.getAllTypeDeclarations());
-      if (types.size() <= 1) {
-        res.add(unit);
-        continue;
-      }
-
-      // create one compilation unit per contained type
-      for (ASTTypeDeclaration t : types) {
-        ASTOrdinaryCompilationUnit copy = unit.deepClone();
-        // remove all types except the one we want
-        // remove by iterating current type declarations on the copy and removing those that
-        // don't match the desired type name
-        JavaAstElemCollector copyCollector = new JavaAstElemCollector();
-        JavaDSLTraverser copyTraverser = JavaDSLMill.traverser();
-        copyTraverser.add4JavaDSL(copyCollector);
-        copy.accept(copyTraverser);
-        for (ASTTypeDeclaration ct : copyCollector.getAllTypeDeclarations()) {
-          if (!ct.getName().equals(t.getName())) {
-            copy.removeTypeDeclaration(ct);
-          }
-        }
-
-        // set a sensible source filename so JavaLoader.printAST writes <TypeName>.java
-        String fileName = t.getName() + ".java";
-        copy.get_SourcePositionStart().setFileName(fileName);
-        Log.info("splitCompilationUnitsByType -> created unit: " + fileName, "CodeAdapter");
-        res.add(copy);
-      }
-    }
-    return res;
-  }
-
-  /**
-   * Deduplicate files by simple filename, preferring files in package subdirectories.
-   * Removes duplicates like "MyClass.java" at root when "de/foo/MyClass.java" exists.
-   */
-  private Set<ASTOrdinaryCompilationUnit> deduplicateBySimpleName(
-      Set<ASTOrdinaryCompilationUnit> files) {
-    Map<String, ASTOrdinaryCompilationUnit> bySimpleName = new LinkedHashMap<>();
-
-    for (ASTOrdinaryCompilationUnit file : files) {
-      String simpleName = AdapterUtils.getSimpleFileName(file);
-      String fullPath = AdapterUtils.getFileName(file);
-
-      ASTOrdinaryCompilationUnit existing = bySimpleName.get(simpleName);
-      if (existing == null) {
-        // First occurrence
-        bySimpleName.put(simpleName, file);
-      } else {
-        // Prefer file in deeper directory
-        String existingPath = AdapterUtils.getFileName(existing);
-        if (JavaSourceNames.pathDepth(fullPath) > JavaSourceNames.pathDepth(existingPath)) {
-          bySimpleName.put(simpleName, file);
-        }
-      }
-    }
-
-    return new LinkedHashSet<>(bySimpleName.values());
-  }
-
   /**
    * Removes adapter-only metadata from generated Java and lets Spoon perform the formatting pass.
    * Text post-processing is intentionally limited to import lines so comments, literals, generics,
@@ -846,12 +436,6 @@ public class CodeAdapter {
    * @param codePath generated Java directory
    */
   static void cleanCode(Path codePath) {
-    cleanCode(codePath, CodeUpdaterFactory.spoon());
-  }
-
-  private static void cleanCode(Path codePath, CodeUpdaterFactory updaterFactory) {
-    CodeUpdater updater =
-        Objects.requireNonNull(updaterFactory.createUpdater(), "updaterFactory.createUpdater()");
-    updater.cleanCode(codePath);
+    new OutputCodeService().cleanCode(codePath, CodeUpdaterFactory.spoon());
   }
 }
