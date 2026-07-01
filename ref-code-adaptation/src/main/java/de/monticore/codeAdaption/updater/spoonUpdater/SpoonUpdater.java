@@ -1,7 +1,5 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
-import static de.monticore.codeAdaption.utils.JavaLoader.print;
-
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.updater.CodeUpdater;
@@ -10,9 +8,9 @@ import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.JavaSourcePostProcessor;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
-import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.File;
@@ -44,8 +42,7 @@ public class SpoonUpdater implements CodeUpdater {
   private Map<String, String> groupingMappings = Collections.emptyMap();
   private final Map<String, List<String>> concreteMethodSignatures = new LinkedHashMap<>();
   private final Map<StableElementKey, StableElementKey> methodRewrites = new LinkedHashMap<>();
-  private final Map<ASTTypeDeclaration, CtType<?>> typeMap = new LinkedHashMap<>();
-  private final Map<ASTMethodDeclaration, CtMethod<?>> methodMap = new LinkedHashMap<>();
+  private final SpoonElementResolver elementResolver = new SpoonElementResolver(() -> spoonModel);
 
   @Override
   public void setCodePath(Path path) {
@@ -584,7 +581,7 @@ public class SpoonUpdater implements CodeUpdater {
     }
 
     // Register mapping so subsequent lookups for this template type will return the newly created clone
-    typeMap.put(templateType, clone);
+    elementResolver.cacheType(templateType, clone);
   }
 
   @Override
@@ -887,116 +884,19 @@ public class SpoonUpdater implements CodeUpdater {
     return launcher.getFactory();
   }
 
-  /***
-   * Retrieves the spoonType from the Spoon Model based on the provided mcType.
-   * Saves the found spoonType in the type map.
-   *
-   * @param mcType The ASTTypeDeclaration representing the type to be searched
-   *               for in the Spoon model.
-   * @return The corresponding CtType<?> found in the Spoon model for the
-   *         given mcType.
-   * @throws AssertionError if no matching CtType<?> is found in the Spoon
-   *         model (assert will fail).
-   */
   private CtType<?> getSpoonType(ASTTypeDeclaration mcType) {
-    // cas already found
-    if (typeMap.containsKey(mcType)) {
-      return typeMap.get(mcType);
-    }
-    // search in the spoon model
-    Optional<CtType<?>> type =
-        spoonModel.getAllTypes().stream().filter(t -> compare(mcType, t)).findFirst();
-    assert type.isPresent();
-    typeMap.put(mcType, type.get());
-    return type.get();
+    return elementResolver.getSpoonType(mcType);
   }
 
-  /***
-   * Retrieves the spoonMethod from the Spoon Model based on the provided
-   * mcType and mcMethod. Saves the found spoonMethod in the method map.
-   *
-   * @param mcType The ASTTypeDeclaration representing the type to which
-   *               the method belongs.
-   * @param mcMethod The ASTMethodDeclaration representing the method to be
-   *                 searched for in the Spoon model.
-   * @return The corresponding CtMethod found in the Spoon model for the
-   *         given mcType and mcMethod.
-   * @throws AssertionError if no matching CtMethod is found in the
-   *                        Spoon model (assert will fail).
-   */
   public CtMethod<?> getSpoonMethod(ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
-    // cas method was already found
-    if (methodMap.containsKey(mcMethod)) {
-      return methodMap.get(mcMethod);
-    }
-
-    // search method in the spoonType
-    CtType<?> spoonType = getSpoonType(mcType);
-    Optional<CtMethod<?>> method =
-        spoonType.getAllMethods().stream()
-            .filter(spMethod -> compare(mcMethod, spMethod))
-            .findFirst();
-
-    assert method.isPresent();
-    methodMap.put(mcMethod, method.get());
-    return method.get();
+    return elementResolver.getSpoonMethod(mcType, mcMethod);
   }
 
-  /**
-   * Compares a mcType and spoonType and returns true if both are identical.
-   *
-   * @param type The ASTTypeDeclaration representing the type to be compared.
-   * @param spoonType The CtType representing the spoon type to be compared.
-   * @return True if the file name of the mcType ends with the simple name of the spoonType followed
-   *     by ".java", or if the type names match; otherwise false.
-   */
   protected boolean compare(ASTTypeDeclaration type, CtType<?> spoonType) {
-    String fileName = type.get_SourcePositionStart().getFileName().orElse(type.getName());
-    String mcName = type.getName();
-    String spoonName = spoonType.getSimpleName();
-
-    String normalizedFileName = fileName.replace('\\', '/');
-    int lastSlash = normalizedFileName.lastIndexOf('/');
-    String leafFileName =
-        lastSlash >= 0 ? normalizedFileName.substring(lastSlash + 1) : normalizedFileName;
-    if ((spoonName + ".java").equals(leafFileName)) {
-      return true;
-    }
-    // Fallback: compare by type name (for multi-incarnation temp directory scenarios)
-    return mcName.equals(spoonName);
+    return elementResolver.compare(type, spoonType);
   }
 
-  /**
-   * Compares a spoonMethod and mcMethod and returns true if both are identical.
-   *
-   * @param mcMethod The ASTMethodDeclaration representing the method to be compared.
-   * @param spoonMethod The CtMethod representing the spoon method to be compared.
-   * @return True if the names, parameter count, and parameter types of both methods match;
-   *     otherwise false.
-   */
   protected boolean compare(ASTMethodDeclaration mcMethod, CtMethod<?> spoonMethod) {
-    // compare names
-    if (!mcMethod.getName().endsWith(spoonMethod.getSimpleName())) {
-      return false;
-    }
-    // is present parameters ?
-    if (!mcMethod.getFormalParameters().isPresentFormalParameterListing()) {
-      return spoonMethod.getParameters().isEmpty();
-    }
-    // same number of parameters ?
-    List<ASTFormalParameter> mcParams =
-        mcMethod.getFormalParameters().getFormalParameterListing().getFormalParameterList();
-    if (spoonMethod.getParameters().size() != mcParams.size()) {
-      return false;
-    }
-    // parameters have the same type ?
-    for (int i = 0; i < spoonMethod.getParameters().size(); i++) {
-      if (!(spoonMethod.getParameters().get(i).getType().getSimpleName())
-          .equals(print(mcParams.get(i).getMCType()))) {
-        return false;
-      }
-    }
-
-    return true;
+    return elementResolver.compare(mcMethod, spoonMethod);
   }
 }
