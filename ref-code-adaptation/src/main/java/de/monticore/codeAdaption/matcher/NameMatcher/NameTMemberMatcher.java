@@ -10,6 +10,7 @@ import de.monticore.codeAdaption.matcher.TMemberMatcher;
 import de.monticore.codeAdaption.matcher.TypeMatcher;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -27,14 +28,16 @@ import java.util.stream.Collectors;
 public class NameTMemberMatcher implements TMemberMatcher {
   protected TypeMatcher typeMatcher;
   protected ASTCDCompilationUnit cd;
+  private List<ASTCDType> referenceTypes;
 
   public NameTMemberMatcher(ASTCDCompilationUnit cd) {
-    this.cd = cd;
+    setReferenceCD(cd);
   }
 
   @Override
   public void setReferenceCD(ASTCDCompilationUnit cd) {
     this.cd = cd;
+    this.referenceTypes = List.copyOf(AdapterUtils.getAllCDTypes(cd));
   }
 
   @Override
@@ -65,7 +68,7 @@ public class NameTMemberMatcher implements TMemberMatcher {
       return new ArrayList<>();
     }
     return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().stream()
-        .map(p -> JavaLoader.print(p.getMCType()))
+        .map(p -> JavaSourceNames.normalizeType(JavaLoader.print(p.getMCType())))
         .collect(Collectors.toList());
   }
 
@@ -87,6 +90,7 @@ public class NameTMemberMatcher implements TMemberMatcher {
             List<String> cdParameterTypes = cdMethod.getCDParameterList().stream()
                 .map(ASTCDParameter::getMCType)
                 .map(JavaLoader::print)
+                .map(JavaSourceNames::normalizeType)
                 .collect(Collectors.toList());
 
             if (parameterTypes.equals(cdParameterTypes)) {
@@ -128,7 +132,7 @@ public class NameTMemberMatcher implements TMemberMatcher {
     List<ISymbol> references = new ArrayList<>();
     String srcName = JavaLoader.print(supertype);
     // collect type reference in the class diagram
-    for (ASTCDType astcdType : AdapterUtils.getAllCDTypes(cd)) {
+    for (ASTCDType astcdType : referenceTypes) {
       if (srcName.toLowerCase().contains(astcdType.getName().toLowerCase())) {
         references.add(astcdType.getSymbol());
       }

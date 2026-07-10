@@ -3,6 +3,7 @@ package de.monticore.codeAdaption.context;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.Set;
@@ -13,26 +14,47 @@ public final class ConcretizationService {
   private final Set<CDConfParameter> confParams;
 
   public ConcretizationService(Set<CDConfParameter> confParams) {
-    this.confParams = confParams;
+    this.confParams = Set.copyOf(confParams);
   }
 
-  public void completeConcreteCD(
+  public ASTCDCompilationUnit completeConcreteCD(
       ASTCDCompilationUnit conCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
     ConcretizationCompleter completer = new ConcretizationCompleter(confParams);
-    boolean failQuickEnabled = Log.isFailQuickEnabled();
-    boolean completed = false;
-    try {
-      Log.enableFailQuick(false);
-      completer.completeCD(conCD, refCD, new ArrayList<>(mappings));
-      completed = true;
-      Log.info("Concretized concrete CD before code adaptation", "CodeAdapter");
-    } catch (Throwable throwable) {
-      Log.warn(
-          "CD concretization failed before code adaptation: "
-              + throwable.getMessage()
-              + " - continuing with available conformance mappings");
-    } finally {
-      if (completed) {
+    ASTCDCompilationUnit completedCD = conCD.deepClone();
+    JavaLoader.initializeCDSymbolTable(completedCD);
+    synchronized (Log.class) {
+      boolean failQuickEnabled = Log.isFailQuickEnabled();
+      int findingsBefore = Log.getFindings().size();
+      long errorsBefore = Log.getErrorCount();
+      try {
+        Log.enableFailQuick(false);
+        ArrayList<String> orderedMappings = new ArrayList<>(mappings);
+        orderedMappings.sort(String::compareTo);
+        completer.completeCD(completedCD, refCD, orderedMappings);
+        if (Log.getErrorCount() > errorsBefore) {
+          String diagnostics =
+              Log.getFindings().subList(findingsBefore, Log.getFindings().size()).stream()
+                  .map(finding -> finding.getMsg())
+                  .distinct()
+                  .reduce((left, right) -> left + "; " + right)
+                  .orElse("unknown concretization error");
+          throw new IllegalStateException(
+              "CD concretization reported errors; adaptation cannot continue safely: "
+                  + diagnostics);
+        }
+        Log.info("Concretized concrete CD before code adaptation", "CodeAdapter");
+        return completedCD;
+      } catch (Exception | AssertionError throwable) {
+        throw new IllegalStateException(
+            "CD concretization failed before code adaptation; the concrete CD was not modified",
+            throwable);
+      } finally {
+        // Log.enableFailQuick(true) terminates the process when error findings exist. The errors
+        // produced by this guarded dependency call are represented by the exception above, so
+        // remove only those new findings before restoring the caller's global logging policy.
+        if (Log.getErrorCount() > errorsBefore && Log.getFindings().size() > findingsBefore) {
+          Log.getFindings().subList(findingsBefore, Log.getFindings().size()).clear();
+        }
         Log.enableFailQuick(failQuickEnabled);
       }
     }

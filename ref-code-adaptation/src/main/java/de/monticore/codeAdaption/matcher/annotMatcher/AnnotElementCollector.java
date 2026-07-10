@@ -1,8 +1,6 @@
 package de.monticore.codeAdaption.matcher.annotMatcher;
 
 import de.monticore.codeAdaption.utils.Constants;
-import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
-import de.monticore.expressions.expressionsbasis._ast.ASTLiteralExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTElementValueOrExpr;
@@ -29,33 +27,65 @@ public class AnnotElementCollector implements JavaLightVisitor2 {
   public void visit(ASTElementValuePair node) {
 
     if (node.getName().equals(Constants.TEMPLATE)) {
-      ASTExpression val = node.getElementValueOrExpr().getExpression();
-      template = ((ASTStringLiteral) ((ASTLiteralExpression) val).getLiteral()).getValue();
+      template = readSingleString(node.getElementValueOrExpr(), Constants.TEMPLATE);
     }
 
     if (node.getName().equals(Constants.IGNORE)) {
-      ASTExpression val = node.getElementValueOrExpr().getExpression();
-      ignore = ((ASTBooleanLiteral) ((ASTLiteralExpression) val).getLiteral()).getValue();
+      ignore = readSingleBoolean(node.getElementValueOrExpr(), Constants.IGNORE);
     }
 
     if (node.getName().equals(Constants.REFERENCE)) {
-      ASTElementValueOrExpr val = node.getElementValueOrExpr();
-      MCCommonLiteralsVisitor2 visitor =
-          new MCCommonLiteralsVisitor2() {
-            @Override
-            public void visit(ASTStringLiteral node) {
-              references.add(node.getValue());
-            }
-          };
-      JavaDSLTraverser traverser = JavaDSLMill.traverser();
-      traverser.add4MCCommonLiterals(visitor);
-      val.accept(traverser);
+      references.addAll(readStrings(node.getElementValueOrExpr()));
     }
 
     if (node.getName().equals(Constants.GENERATE_TEMPLATE)) {
-      ASTExpression val = node.getElementValueOrExpr().getExpression();
-      genTemplate = ((ASTStringLiteral) ((ASTLiteralExpression) val).getLiteral()).getValue();
+      genTemplate = readSingleString(node.getElementValueOrExpr(), Constants.GENERATE_TEMPLATE);
     }
+  }
+
+  private static String readSingleString(ASTElementValueOrExpr value, String attribute) {
+    List<String> strings = readStrings(value);
+    if (strings.size() != 1) {
+      throw new IllegalArgumentException(
+          "@Adapt attribute '" + attribute + "' requires exactly one string literal");
+    }
+    return strings.get(0);
+  }
+
+  private static boolean readSingleBoolean(ASTElementValueOrExpr value, String attribute) {
+    List<Boolean> booleans = new ArrayList<>();
+    MCCommonLiteralsVisitor2 visitor =
+        new MCCommonLiteralsVisitor2() {
+          @Override
+          public void visit(ASTBooleanLiteral node) {
+            booleans.add(node.getValue());
+          }
+        };
+    traverse(value, visitor);
+    if (booleans.size() != 1) {
+      throw new IllegalArgumentException(
+          "@Adapt attribute '" + attribute + "' requires exactly one boolean literal");
+    }
+    return booleans.get(0);
+  }
+
+  private static List<String> readStrings(ASTElementValueOrExpr value) {
+    List<String> strings = new ArrayList<>();
+    MCCommonLiteralsVisitor2 visitor =
+        new MCCommonLiteralsVisitor2() {
+          @Override
+          public void visit(ASTStringLiteral node) {
+            strings.add(node.getValue());
+          }
+        };
+    traverse(value, visitor);
+    return strings;
+  }
+
+  private static void traverse(ASTElementValueOrExpr value, MCCommonLiteralsVisitor2 visitor) {
+    JavaDSLTraverser traverser = JavaDSLMill.traverser();
+    traverser.add4MCCommonLiterals(visitor);
+    value.accept(traverser);
   }
 
   public List<String> getReferences() {

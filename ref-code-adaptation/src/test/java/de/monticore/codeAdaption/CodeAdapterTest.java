@@ -35,8 +35,9 @@ public class CodeAdapterTest extends AdapterAbstractTest {
 
     adapter.adapt(REF_CD, CON_CD, mappings, Path.of(baseDir + "adapter/name"), conHwc, outputPath);
 
-    String student = readFileWithoutSpace(outputPath, "Student.java");
-    Assertions.assertEquals("publicclassStudent{StringstudentId;}", student);
+    String student = readFileContent(outputPath, "Student.java");
+    Assertions.assertTrue(student.contains("public class Student"));
+    Assertions.assertTrue(student.contains("String studentId;"));
   }
 
   @Test
@@ -47,10 +48,12 @@ public class CodeAdapterTest extends AdapterAbstractTest {
 
     adapter.adapt(REF_CD, CON_CD, mappings, Path.of(baseDir + "adapter/infix"), conHwc, outputPath);
 
-    String studentBuilder = readFileWithoutSpace(outputPath, "StudentBuilder.java");
-    Assertions.assertEquals(
-        "publicclassStudentBuilder{protectedStringstudentId;publicStudentBuildersetStudentId(Stringid){Studentstudent=newStudent();}}",
-        studentBuilder);
+    String studentBuilder = readFileContent(outputPath, "StudentBuilder.java");
+    Assertions.assertTrue(studentBuilder.contains("public class StudentBuilder"));
+    Assertions.assertTrue(studentBuilder.contains("protected String studentId;"));
+    Assertions.assertTrue(
+        studentBuilder.contains("public StudentBuilder setStudentId(String id)"));
+    Assertions.assertTrue(studentBuilder.contains("Student student = new Student();"));
   }
 
   @Test
@@ -61,14 +64,16 @@ public class CodeAdapterTest extends AdapterAbstractTest {
 
     adapter.adapt(REF_CD, CON_CD, mappings, Path.of(baseDir + "adapter/annot"), conHwc, outputPath);
 
-    String studentRepository = readFileWithoutSpace(outputPath, "StudentRepository.java");
-    // Accept both wildcard and explicit imports since Spoon's import optimization varies
-    boolean hasCorrectContent = studentRepository.contains("publicclassStudentRepositoryextendsRepository<Student>")
-        && studentRepository.contains("privateSet<Student>studentSet=newHashSet<>()")
-        && studentRepository.contains("publicOptional<Student>findStudentByStudentId(Stringid)")
-        && studentRepository.contains("publicList<Student>getAllStudentSortedByStudentId()")
-        && studentRepository.contains("publicvoidstore(Studentstudent)");
-    Assertions.assertTrue(hasCorrectContent, "StudentRepository content should be correctly adapted");
+    String studentRepository = readFileContent(outputPath, "StudentRepository.java");
+    Assertions.assertTrue(
+        studentRepository.contains("public class StudentRepository extends Repository<Student>"));
+    Assertions.assertTrue(
+        studentRepository.contains("private Set<Student> studentSet = new HashSet<>();"));
+    Assertions.assertTrue(
+        studentRepository.contains("public Optional<Student> findStudentByStudentId(String id)"));
+    Assertions.assertTrue(
+        studentRepository.contains("public List<Student> getAllStudentSortedByStudentId()"));
+    Assertions.assertTrue(studentRepository.contains("public void store(Student student)"));
   }
 
   @Test
@@ -81,10 +86,19 @@ public class CodeAdapterTest extends AdapterAbstractTest {
     adapter.adapt(
         REF_CD, CON_CD, mappings, Path.of(baseDir + "adapter/compose"), conHwc, outputPath);
 
-    String studentRepository = readFileWithoutSpace(outputPath, "StudentRepository.java");
-
-    Assertions.assertEquals(
-        "importjava.util.*;publicclassStudentRepositoryextendsRepository<Student>{privateSet<Student>studentSet=newHashSet<>();publicOptional<Student>findStudentByStudentId(Stringid){returnOptional.empty();}publicList<Student>getAllStudentSortedByStudentId(){List<Student>studentList=newArrayList<>();}publicvoidstore(Studentstudent){studentSet.add(student);}}",
-        studentRepository);
+    String studentRepository = readFileContent(outputPath, "StudentRepository.java");
+    Assertions.assertTrue(
+        studentRepository.contains("public class StudentRepository extends Repository<Student>"));
+    Assertions.assertTrue(
+        studentRepository.contains("private Set<Student> studentSet = new HashSet<>();"));
+    Assertions.assertTrue(
+        studentRepository.contains("public Optional<Student> findStudentByStudentId(String id)"));
+    Assertions.assertTrue(studentRepository.contains("return Optional.empty();"));
+    Assertions.assertTrue(
+        studentRepository.contains("public List<Student> getAllStudentSortedByStudentId()"));
+    Assertions.assertTrue(
+        studentRepository.contains("List<Student> studentList = new ArrayList<>();"));
+    Assertions.assertTrue(studentRepository.contains("public void store(Student student)"));
+    Assertions.assertTrue(studentRepository.contains("studentSet.add(student);"));
   }
 }

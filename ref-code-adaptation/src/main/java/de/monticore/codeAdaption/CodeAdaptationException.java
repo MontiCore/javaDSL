@@ -7,4 +7,8 @@ public class CodeAdaptationException extends RuntimeException {
   public CodeAdaptationException(String message) {
     super(message);
   }
+
+  public CodeAdaptationException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

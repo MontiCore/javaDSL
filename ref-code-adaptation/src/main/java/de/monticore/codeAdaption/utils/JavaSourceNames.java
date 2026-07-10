@@ -73,6 +73,10 @@ public final class JavaSourceNames {
     return method.getName() + "(" + String.join(",", parameters) + ")";
   }
 
+  public static String normalizeMethodSignature(String signature) {
+    return JavaMethodSignatures.normalize(signature);
+  }
+
   public static String capitalize(String value) {
     if (value == null || value.isEmpty()) {
       return value;

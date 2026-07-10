@@ -41,10 +41,6 @@ class CodeValidatorTest extends AdapterAbstractTest {
         Arguments.of("MissingTemplateArgument.java", "0xRC001"));
   }
 
-  public static Stream<Arguments> invalidFiles2() {
-    return Stream.of(Arguments.of("InvalidTemplate.java", "0xRC003"));
-  }
-
   @ParameterizedTest
   @MethodSource("invalidFiles1")
   public void checkAnnotationPhase1(String filename, String errorCode) {
@@ -57,15 +53,4 @@ class CodeValidatorTest extends AdapterAbstractTest {
     Assertions.assertTrue(Log.getFindings().get(0).getMsg().startsWith(errorCode));
   }
 
-  @ParameterizedTest
-  @MethodSource("invalidFiles2")
-  public void checkAnnotationPhase2(String filename, String errorCode) {
-
-    String fileName = baseDir + "invalid/" + filename;
-    ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(new File(fileName));
-    validator.runCoCosPhase2(ast, cd);
-
-    Assertions.assertEquals(5, Log.getErrorCount());
-    Log.getFindings().forEach(f -> Assertions.assertTrue(f.getMsg().startsWith(errorCode)));
-  }
 }

@@ -4,6 +4,7 @@ methods/multiIncarnation/ParameterAndReturnTypeMIConc.cd	adapter	_shared/java/gr
 methods/multiIncarnation/ParameterTypeMIConc.cd	adapter	_shared/java/group-0001/Account.java	Account.java	package de.monticore.codeAdaption.cdconcretization.methods.multiincarnation;
 methods/multiIncarnation/ParameterTypeMIOneExistsConc.cd	adapter	_shared/java/group-0001/Account.java	Account.java	package de.monticore.codeAdaption.cdconcretization.methods.multiincarnation;
 methods/multiIncarnation/ReturnTypeMIConc.cd	adapter	_shared/java/group-0001/Account.java	Account.java	package de.monticore.codeAdaption.cdconcretization.methods.multiincarnation;
+methods/multiIncarnation/ReturnTypeMIOneExistsConc.cd	adapter	_shared/java/group-0001/Account.java	Account.java	package de.monticore.codeAdaption.cdconcretization.methods.multiincarnation;
 associations/AssociationInSuperTypeConc.cd	adapter	_shared/java/group-0002/Person.java	Person.java	package de.monticore.codeAdaption.cdconcretization.associations.adapter.associationinsupertype;
 inheritance/MissingInheritanceConc.cd	adapter	_shared/java/group-0002/Person.java	Person.java	package de.monticore.codeAdaption.cdconcretization.inheritance.adapter.missinginheritance;
 associations/AssociationMissingCardinalityConc.cd	adapter	_shared/java/group-0003/A.java	A.java	package de.monticore.codeAdaption.cdconcretization.associations.adapter.associationmissingcardinality;

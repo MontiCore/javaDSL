@@ -29,7 +29,6 @@ import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.cocos.OneVarInDeclaration;
 import de.monticore.codeAdaption.validator.cocos.ValidAnnotation;
-import de.monticore.codeAdaption.validator.cocos.ValidTemplate;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
@@ -39,10 +38,9 @@ import de.monticore.java.javadsl._cocos.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._cocos.JavaLightASTAnnotationCoCo;
-import de.monticore.javalight._cocos.JavaLightASTMethodDeclarationCoCo;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.statements.mccommonstatements._cocos.MCCommonStatementsASTFormalParameterCoCo;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
+import de.se_rwth.commons.logging.Log;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -103,28 +101,49 @@ public class CodeValidator {
   }
 
   public boolean isValid(ASTCDCompilationUnit refCD, Path refCode) {
-    Set<ASTOrdinaryCompilationUnit> asts = readJavaCode(refCode);
+    synchronized (Log.class) {
+      boolean failQuickEnabled = Log.isFailQuickEnabled();
+      int findingsBefore = Log.getFindings().size();
+      long errorsBefore = Log.getErrorCount();
+      boolean valid;
+      List<String> diagnostics = List.of();
+      try {
+        Log.enableFailQuick(false);
+        Set<ASTOrdinaryCompilationUnit> asts = readJavaCode(refCode);
 
-    // check cocos phase 1
-    asts.forEach(ast -> runCoCosPhase1(ast, refCD));
+      // check cocos phase 1
+      asts.forEach(ast -> runCoCosPhase1(ast, refCD));
 
-    // cocos phase 2
-    asts.forEach(ast -> runCoCosPhase2(ast, refCD));
+      // check that all elements matched
+      Set<ASTTypeDeclaration> allType = new LinkedHashSet<>();
+      for (ASTOrdinaryCompilationUnit ast : asts) {
+        JavaAstElemCollector collector = new JavaAstElemCollector();
+        JavaDSLTraverser traverser = JavaDSLMill.traverser();
+        traverser.add4JavaDSL(collector);
+        ast.accept(traverser);
 
-    // check that all elements matched
-    Set<ASTTypeDeclaration> allType = new LinkedHashSet<>();
-    for (ASTOrdinaryCompilationUnit ast : asts) {
-      JavaAstElemCollector collector = new JavaAstElemCollector();
-      JavaDSLTraverser traverser = JavaDSLMill.traverser();
-      traverser.add4JavaDSL(collector);
-      ast.accept(traverser);
+        allType.addAll(collector.getAllTypeDeclarations());
+        checkAllMatching(collector);
+      }
 
-      allType.addAll(collector.getAllTypeDeclarations());
-      checkAllMatching(collector);
+        typeMatcher.setAllTypeDeclarations(allType);
+        valid = Log.getErrorCount() == errorsBefore;
+        if (!valid) {
+          diagnostics =
+              Log.getFindings().subList(findingsBefore, Log.getFindings().size()).stream()
+                  .map(finding -> finding.getMsg())
+                  .distinct()
+                  .toList();
+        }
+      } finally {
+        if (Log.getErrorCount() > errorsBefore && Log.getFindings().size() > findingsBefore) {
+          Log.getFindings().subList(findingsBefore, Log.getFindings().size()).clear();
+        }
+        Log.enableFailQuick(failQuickEnabled);
+      }
+      diagnostics.forEach(message -> Log.warn("Reference-code validation: " + message));
+      return valid;
     }
-
-    typeMatcher.setAllTypeDeclarations(allType);
-    return true;
   }
 
   /**
@@ -205,12 +224,4 @@ public class CodeValidator {
     checker.checkAll(ast);
   }
 
-  protected void runCoCosPhase2(ASTOrdinaryCompilationUnit ast, ASTCDCompilationUnit refCD) {
-    JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    // implicitly also adds CoCo to JavaDSLASTLocalVariableDeclaration
-    checker.addCoCo((JavaDSLASTTypeDeclarationCoCo) new ValidTemplate(refCD));
-    checker.addCoCo((JavaLightASTMethodDeclarationCoCo) new ValidTemplate(refCD));
-    checker.addCoCo((MCCommonStatementsASTFormalParameterCoCo) new ValidTemplate(refCD));
-    checker.checkAll(ast);
-  }
 }

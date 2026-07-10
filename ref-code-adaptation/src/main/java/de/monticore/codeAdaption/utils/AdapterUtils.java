@@ -1,7 +1,5 @@
 package de.monticore.codeAdaption.utils;
 
-import static de.monticore.codeAdaption.utils.JavaLoader.print;
-
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
@@ -37,9 +35,11 @@ public class AdapterUtils {
       return Optional.empty();
     }
 
-    // TODO: Rework inm next iteration, prone to errors
     // normalize - strip trailing parentheses used in some annotations like "update()"
-    String n = name.trim().replaceAll("\\(\\)$", "");
+    String n = name.trim();
+    if (n.endsWith("()")) {
+      n = n.substring(0, n.length() - 2);
+    }
     Log.debug("AdapterUtils.resolveCDSymbol: resolving '" + name + "' -> '" + n + "'", "AdapterUtils");
 
     // handle qualified references like "Type.member" -> resolve member symbol from type AST
@@ -51,6 +51,15 @@ public class AdapterUtils {
 
       // Try to find the referenced type in the reference CD AST
       CDModelIndex index = CDModelIndex.of(refCD);
+      if (memberName.contains("(")) {
+        Optional<ISymbol> exactMethod =
+            index.method(typeName, JavaSourceNames.normalizeMethodSignature(memberName))
+                .map(ASTCDMethod::getSymbol)
+                .map(symbol -> (ISymbol) symbol);
+        if (exactMethod.isPresent()) {
+          return exactMethod;
+        }
+      }
       Optional<ISymbol> attribute =
           index.attribute(typeName, memberName)
               .map(ASTCDAttribute::getSymbol)
@@ -59,14 +68,25 @@ public class AdapterUtils {
         Log.debug("AdapterUtils.resolveCDSymbol: resolved to attribute '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
         return attribute;
       }
+      List<ASTCDMethod> methods = index.methods(typeName, memberName);
       Optional<ISymbol> method =
-          index.methods(typeName, memberName).stream()
-              .findFirst()
-              .map(ASTCDMethod::getSymbol)
-              .map(symbol -> (ISymbol) symbol);
+          methods.size() == 1
+              ? Optional.of(methods.get(0).getSymbol())
+              : Optional.empty();
       if (method.isPresent()) {
         Log.debug("AdapterUtils.resolveCDSymbol: resolved to method '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
         return method;
+      }
+      if (methods.size() > 1) {
+        Log.warn(
+            "Adapter reference '"
+                + name
+                + "' is ambiguous because method '"
+                + typeName
+                + "."
+                + memberName
+                + "' is overloaded; include a signature-aware mapping");
+        return Optional.empty();
       }
       // not found as qualified member -> fallthrough to global lookup below
       n = memberName; // try resolving member name globally as a fallback
@@ -74,9 +94,13 @@ public class AdapterUtils {
 
     // try resolve as a field in the enclosing scope
     List<FieldSymbol> fields = refCD.getEnclosingScope().resolveFieldMany(n);
-    if (!fields.isEmpty()) {
+    if (fields.size() == 1) {
       Log.debug("AdapterUtils.resolveCDSymbol: resolved to field '" + n + "' in enclosing scope", "AdapterUtils");
       return Optional.of(fields.iterator().next());
+    }
+    if (fields.size() > 1) {
+      Log.warn("Adapter reference '" + name + "' resolves to multiple fields");
+      return Optional.empty();
     }
 
     // try resolving a top-level CD type by name
@@ -160,6 +184,34 @@ public class AdapterUtils {
 
   public static ASTOrdinaryCompilationUnit mergeAsts(
       ASTOrdinaryCompilationUnit leftAST, ASTOrdinaryCompilationUnit rightAST) {
+    return mergeAsts(leftAST, rightAST, false);
+  }
+
+  /** Merges adapted members into authoritative concrete handwritten code. */
+  public static ASTOrdinaryCompilationUnit mergeAstsPreferringLeft(
+      ASTOrdinaryCompilationUnit leftAST, ASTOrdinaryCompilationUnit rightAST) {
+    return mergeAsts(leftAST, rightAST, true);
+  }
+
+  private static ASTOrdinaryCompilationUnit mergeAsts(
+      ASTOrdinaryCompilationUnit leftAST,
+      ASTOrdinaryCompilationUnit rightAST,
+      boolean preferLeftOnConflict) {
+
+    String leftPackage = packageName(leftAST);
+    String rightPackage = packageName(rightAST);
+    if (!leftPackage.equals(rightPackage)) {
+      throw new IllegalArgumentException(
+          "Cannot merge Java compilation units from different packages: '"
+              + leftPackage
+              + "' ("
+              + getFileName(leftAST)
+              + ") and '"
+              + rightPackage
+              + "' ("
+              + getFileName(rightAST)
+              + ")");
+    }
 
     mergeImports(leftAST, rightAST);
 
@@ -173,21 +225,34 @@ public class AdapterUtils {
     rightTraverser.add4JavaDSL(rCollector);
     rightAST.accept(rightTraverser);
 
-    for (ASTTypeDeclaration right : rCollector.getAllTypeDeclarations()) {
+    // Only compilation-unit declarations participate here. Nested types belong to their enclosing
+    // declaration and must never be promoted to top-level declarations during a merge.
+    for (ASTTypeDeclaration right : rightAST.getTypeDeclarationList()) {
       Optional<ASTTypeDeclaration> lType =
-          lCollector.getAllTypeDeclarations().stream()
+          leftAST.getTypeDeclarationList().stream()
               .filter(t -> t.getName().equals(right.getName()))
-              .findAny();
+              .findFirst();
       if (lType.isEmpty()) {
-        leftAST.addTypeDeclaration(right);
+        leftAST.addTypeDeclaration(right.deepClone());
       } else {
-        leftAST.removeTypeDeclaration(lType.get());
-        leftAST.addTypeDeclaration(
-            mergeTypeDeclaration(lCollector, lType.get(), rCollector, right));
+        mergeTypeDeclaration(
+            lCollector,
+            lType.get(),
+            rCollector,
+            right,
+            getFileName(leftAST),
+            getFileName(rightAST),
+            preferLeftOnConflict);
       }
     }
 
     return leftAST;
+  }
+
+  private static String packageName(ASTOrdinaryCompilationUnit unit) {
+    return unit.isPresentPackageDeclaration()
+        ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+        : "";
   }
 
   private static void mergeImports(
@@ -209,7 +274,10 @@ public class AdapterUtils {
       JavaAstElemCollector lCollector,
       ASTTypeDeclaration lefType,
       JavaAstElemCollector rCollector,
-      ASTTypeDeclaration rightType) {
+      ASTTypeDeclaration rightType,
+      String leftSource,
+      String rightSource,
+      boolean preferLeftOnConflict) {
 
     // Get ordered lists of fields and methods from both sides
     List<ASTFieldDeclaration> lFields = lCollector.getAllFieldDeclarations(lefType);
@@ -219,37 +287,60 @@ public class AdapterUtils {
 
     String typeName = lefType.getName();
 
-    // merge methods - compare by signature for conflict detection
-    // Same signature = same method (possibly renamed differently by different patterns)
+    if (!lefType.getClass().equals(rightType.getClass())) {
+      if (preferLeftOnConflict) {
+        return lefType;
+      }
+      throw new IllegalStateException(
+          String.format(
+              "Cannot merge type '%s': declaration kinds differ in '%s' and '%s'",
+              typeName, leftSource, rightSource));
+    }
+
+    // Java overload identity is the method name plus normalized parameter types. A same-name
+    // method with different parameters is a valid overload and must be retained.
+    Map<String, ASTMethodDeclaration> leftMethodsBySignature = new LinkedHashMap<>();
+    for (ASTMethodDeclaration method : lMethods) {
+      leftMethodsBySignature.put(getMethodSignature(method), method);
+    }
     for (ASTMethodDeclaration rMeth : rMethods) {
       String rSignature = getMethodSignature(rMeth);
-      String rName = rMeth.getName();
+      ASTMethodDeclaration existingMethod = leftMethodsBySignature.get(rSignature);
 
-      Optional<ASTMethodDeclaration> existingMethod = lMethods.stream()
-          .filter(m -> getMethodSignature(m).equals(rSignature))
-          .findAny();
-
-      if (existingMethod.isEmpty()) {
-        boolean concreteMethodWithSameNameExists =
-            lMethods.stream().anyMatch(m -> m.getName().equals(rName));
-        if (concreteMethodWithSameNameExists) {
-          continue;
-        }
-        // No conflict - add method from right
+      if (existingMethod == null) {
         if (lefType instanceof ASTClassDeclaration) {
-          ((ASTClassDeclaration) lefType).getClassBody().addClassBodyDeclaration(rMeth);
-        } else if (rightType instanceof ASTInterfaceDeclaration) {
-          ((ASTInterfaceDeclaration) lefType).getInterfaceBody().addInterfaceBodyDeclaration(rMeth);
+          ((ASTClassDeclaration) lefType)
+              .getClassBody()
+              .addClassBodyDeclaration(rMeth.deepClone());
+        } else if (lefType instanceof ASTInterfaceDeclaration) {
+          ((ASTInterfaceDeclaration) lefType)
+              .getInterfaceBody()
+              .addInterfaceBodyDeclaration(rMeth.deepClone());
         }
-      } else {
-        // Conflict detected: same method signature but possibly different names
-        String lName = existingMethod.get().getName();
-        if (!lName.equals(rName)) {
-          throw new IllegalStateException(
-              String.format("Conflict detected in type '%s': method with signature '%s' " +
-                  "was renamed to '%s' by first mapping and '%s' by second mapping. " +
-                  "Conflicting renames are not allowed.",
-                  typeName, rSignature, lName, rName));
+        leftMethodsBySignature.put(rSignature, rMeth);
+      } else if (!normalizedReturnType(existingMethod).equals(normalizedReturnType(rMeth))
+          && !preferLeftOnConflict) {
+        throw new IllegalStateException(
+            String.format(
+                "Conflicting method '%s' in type '%s': return types differ between '%s' and '%s'",
+                rSignature, typeName, leftSource, rightSource));
+      }
+    }
+
+    // A nested type remains a member of its enclosing type. Add missing direct nested types, but
+    // never expose them through the compilation-unit collector.
+    if (lefType instanceof ASTClassDeclaration leftClass
+        && rightType instanceof ASTClassDeclaration rightClass) {
+      Set<String> leftNestedNames = new LinkedHashSet<>();
+      for (var declaration : leftClass.getClassBody().getClassBodyDeclarationList()) {
+        if (declaration instanceof ASTTypeDeclaration nested) {
+          leftNestedNames.add(nested.getName());
+        }
+      }
+      for (var declaration : rightClass.getClassBody().getClassBodyDeclarationList()) {
+        if (declaration instanceof ASTTypeDeclaration nested
+            && leftNestedNames.add(nested.getName())) {
+          leftClass.getClassBody().addClassBodyDeclaration(declaration.deepClone());
         }
       }
     }
@@ -264,10 +355,18 @@ public class AdapterUtils {
     for (ASTFieldDeclaration rf : rFields) {
       String rFieldName = rf.getVariableDeclarator(0).getDeclarator().getName();
       if (!leftFieldsByName.containsKey(rFieldName)) {
-        // Field does not exist in left - add it
         if (lefType instanceof ASTClassDeclaration) {
-          ((ASTClassDeclaration) lefType).getClassBody().addClassBodyDeclaration(rf);
+          ((ASTClassDeclaration) lefType)
+              .getClassBody()
+              .addClassBodyDeclaration(rf.deepClone());
         }
+      } else if (!normalizedFieldType(leftFieldsByName.get(rFieldName))
+              .equals(normalizedFieldType(rf))
+          && !preferLeftOnConflict) {
+        throw new IllegalStateException(
+            String.format(
+                "Conflicting field '%s' in type '%s': types differ between '%s' and '%s'",
+                rFieldName, typeName, leftSource, rightSource));
       }
     }
 
@@ -280,14 +379,20 @@ public class AdapterUtils {
    * Uses method name + parameter types (not return type) for comparison.
    */
   private static String getMethodSignature(ASTMethodDeclaration method) {
-    StringBuilder sig = new StringBuilder();
-    sig.append(method.getName()).append("(");
+    List<String> parameterTypes = new ArrayList<>();
     if (method.getFormalParameters().isPresentFormalParameterListing()) {
       method.getFormalParameters().getFormalParameterListing().getFormalParameterList()
-          .forEach(p -> sig.append(JavaLoader.print(p.getMCType())).append(","));
+          .forEach(p -> parameterTypes.add(JavaSourceNames.printNormalizedType(p.getMCType())));
     }
-    sig.append(")");
-    return sig.toString();
+    return method.getName() + "(" + String.join(",", parameterTypes) + ")";
+  }
+
+  private static String normalizedReturnType(ASTMethodDeclaration method) {
+    return JavaSourceNames.normalizeType(JavaLoader.print(method.getMCReturnType()));
+  }
+
+  private static String normalizedFieldType(ASTFieldDeclaration field) {
+    return JavaSourceNames.printNormalizedType(field.getMCType());
   }
 
   /***
@@ -320,7 +425,8 @@ public class AdapterUtils {
 
     // parameters have the same type ?
     for (int i = 0; i < leftParams.size(); i++) {
-      if (!print(leftParams.get(i).getMCType()).equals(print(rightParams.get(i).getMCType()))) {
+      if (!JavaSourceNames.printNormalizedType(leftParams.get(i).getMCType())
+          .equals(JavaSourceNames.printNormalizedType(rightParams.get(i).getMCType()))) {
         return false;
       }
     }

@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 26.06.2026
+Last updated: 03.07.2026
 
 ## Requirements
 
@@ -40,8 +40,8 @@ Last updated: 26.06.2026
     whole-file `replaceAll` updates.
   - Implemented: [x]
   - Addressed: [x]
-  - Notes: New code should depend on `SpoonUpdater` or the `CodeUpdater`
-    interface.
+  - Notes: New code depends on `SpoonUpdater` or the `CodeUpdater` interface.
+    The compatibility class must never perform source-wide regex rewriting.
 
 - [x] R-005: Keep updater implementations interchangeable
   - Source/date: 18.06.2026
@@ -51,10 +51,9 @@ Last updated: 26.06.2026
     another updater implementation without changing the adapter orchestration.
   - Implemented: [x]
   - Addressed: [x]
-  - Notes: Spoon remains the default implementation. `CodeAdapter` now accepts a
-    `CodeUpdaterFactory` through its `adapt` entry points, and every isolated
-    mapping/incarnation run receives a fresh updater instance. The factory-based
-    API is superseded by R-015, which requires a mill-style updater lifecycle.
+  - Notes: Spoon remains the default implementation. R-015 moved updater
+    interchangeability to `CodeUpdaterMill.init(Supplier)`. Every isolated
+    mapping/incarnation run receives a fresh updater after a mill reset.
 
 - [x] R-006: Document evaluation test cases
   - Source/date: 15.06.2026
@@ -74,9 +73,8 @@ Last updated: 26.06.2026
     conflict should be resolved so the case can run successfully.
   - Implemented: [x]
   - Addressed: [x]
-  - Notes: Current analysis target: testcase 1 reports an association-role field
-    conflict because role-derived fields from the Observer/Observable mappings
-    are ambiguous for the manual adaptation path.
+  - Notes: Testcase 1 executes the `stud` and `prof` mappings as a successful
+    multi-pattern adaptation scenario.
 
 - [x] R-008: Introduce a central CD lookup/index structure
   - Source/date: 15.06.2026
@@ -91,13 +89,13 @@ Last updated: 26.06.2026
     or resolving through utility methods such as `CDUtil`/`CDDiffUtil` at every
     use site.
 
-- [ ] R-009: Document and preserve the package architecture
+- [x] R-009: Document and preserve the package architecture
   - Source/date: 15.06.2026
   - Details: Add `architecture.md` that explains the intention of each package
     in more detail and records the desired separation between adapter
     orchestration, handlers, matchers, validators, utilities, and updaters.
-  - Implemented: [ ]
-  - Addressed: [ ]
+  - Implemented: [x]
+  - Addressed: [x]
   - Notes: Updater implementations must not be integrated into
     `BasicUpdateHandler` or `CodeAdapter`; the architecture should remain
     well-structured and cleanly separated.
@@ -159,31 +157,39 @@ Last updated: 26.06.2026
     The mill should own updater initialization and provide the current updater
     to the adaptation workflow without leaking concrete Spoon construction into
     orchestration code.
-  - Implemented: [ ]
+  - Implemented: [x]
   - Addressed: [ ]
-  - Notes: The mill should preserve updater interchangeability from R-005 while
-    making lifecycle boundaries explicit for single-shot and isolated
-    multi-incarnation adaptation runs.
+  - Notes: `CodeUpdaterMill` now owns the configured provider and a thread-local updater.
+    `CodeAdapter` resets the mill around every isolated pass and final cleanup;
+    the factory API and factory-based `adapt` overloads were removed. Production
+    compilation passes; the complete regression suite still needs to be rerun.
 
-- [ ] R-016: Update the adaptation workflow
+- [x] R-016: Update the adaptation workflow
   - Source/date: 23.06.2026
   - Details: Rework the documented and implemented adaptation workflow so it
     reflects the last changes.
-  - Implemented: [ ]
-  - Addressed: [ ]
-  - Notes:
+  - Implemented: [x]
+  - Addressed: [x]
+  - Notes: The documented and implemented workflow now includes preflight
+    validation, safe mapping workspaces, staging, cleanup, and transactional
+    publication.
 
-- [ ] R-017: Refactor classes larger than 500 lines
+- [x] R-017: Refactor classes larger than 500 lines
   - Source/date: 23.06.2026
   - Details: Refactor classes that exceed 500 lines, especially `CodeAdapter`,
     `AdaptationConflictDetector`, `BasicUpdateHandler`, and `SpoonUpdater`.
     Split responsibilities into logical categories, helper classes, or dedicated
     strategy objects.
-  - Implemented: [ ]
+  - Implemented: [x]
   - Addressed: [ ]
-  - Notes: `AdaptationConflictDetector` is a strong candidate for pluggable
-    conflict-check strategies. `SpoonUpdater` should separate Spoon model setup,
-    member/type updates, cleanup, and formatting concerns where practical.
+  - Notes: All production Java classes are below 500 physical lines. The four
+    remaining hotspots are coordinators backed by coarse-grained collaborators:
+    handler symbol/member/type services, Spoon workspace/transformation/generation
+    services, and one shared incarnation-context support class. All production
+    sources compile against the project classpath. Focused regressions were
+    added for path safety, logger state, package identity, nested types, Spoon
+    resolution, and validation outcomes. A new full-suite result is pending
+    after strengthening the concretization oracle to inspect actual output.
 
 - [ ] R-018: Clarify multi-incarnation mapping versus multi-pattern cases
   - Source/date: 23.06.2026

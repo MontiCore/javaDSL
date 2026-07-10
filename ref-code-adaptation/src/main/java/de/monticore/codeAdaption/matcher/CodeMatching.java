@@ -14,6 +14,7 @@ public class CodeMatching {
    * is true when the code element has to be ignored during the adaptation.
    */
   private boolean ignore = false;
+  private boolean explicitAnnotation;
 
   /***
    * CD-references of the element
@@ -62,5 +63,13 @@ public class CodeMatching {
 
   public boolean mustBePerform() {
     return !ignore;
+  }
+
+  public void setExplicitAnnotation(boolean explicitAnnotation) {
+    this.explicitAnnotation = explicitAnnotation;
+  }
+
+  public boolean isExplicitAnnotation() {
+    return explicitAnnotation;
   }
 }

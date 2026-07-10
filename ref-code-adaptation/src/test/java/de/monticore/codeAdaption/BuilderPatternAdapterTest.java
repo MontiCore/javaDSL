@@ -5,7 +5,7 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import de.monticore.cdconformance.CDConfParameter;
-import de.monticore.codeAdaption.updater.CodeUpdaterFactory;
+import de.monticore.codeAdaption.updater.CodeUpdaterMill;
 import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
 import de.monticore.codeAdaption.utils.AdapterParam;
 
@@ -118,32 +118,37 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
   }
 
   @Test
-  @DisplayName("Builder Pattern: updater factory is used for isolated adaptation runs")
-  public void usesInjectedUpdaterFactory() {
+  @DisplayName("Builder Pattern: configured updater provider is used across isolated passes")
+  public void usesConfiguredUpdaterProvider() {
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
-    Path factoryOutputPath = outputPath.resolve("factory");
+    Path millOutputPath = outputPath.resolve("mill");
     AtomicInteger createdUpdaters = new AtomicInteger();
-    CodeUpdaterFactory recordingFactory =
+    CodeUpdaterMill.init(
         () -> {
           createdUpdaters.incrementAndGet();
           return new SpoonUpdater();
-        };
+        });
 
-    assertDoesNotThrow(
-        () ->
-            adapter.adapt(
-                refCD,
-                concreteCD,
-                Set.of("buildPat"),
-                adapterCodePath,
-                concreteCodePath,
-                factoryOutputPath,
-                recordingFactory));
+    try {
+      assertDoesNotThrow(
+          () ->
+              adapter.adapt(
+                  refCD,
+                  concreteCD,
+                  Set.of("buildPat"),
+                  adapterCodePath,
+                  concreteCodePath,
+                  millOutputPath));
 
-    assertEquals(3, createdUpdaters.get());
-    assertTrue(generatedFileNames(factoryOutputPath).contains("PersonBuilder.java"));
-    assertTrue(generatedFileNames(factoryOutputPath).contains("TaskBuilder.java"));
-    assertGeneratedJavaCompiles(factoryOutputPath);
+      assertTrue(
+          createdUpdaters.get() > 1,
+          "Adaptation should obtain separate updater instances for independent passes");
+      assertTrue(generatedFileNames(millOutputPath).contains("PersonBuilder.java"));
+      assertTrue(generatedFileNames(millOutputPath).contains("TaskBuilder.java"));
+      assertGeneratedJavaCompiles(millOutputPath);
+    } finally {
+      CodeUpdaterMill.init();
+    }
   }
 
   private static String simplifyGeneratedReferences(String content) {

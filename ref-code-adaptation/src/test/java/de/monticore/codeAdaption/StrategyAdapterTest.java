@@ -42,6 +42,16 @@ public class StrategyAdapterTest extends AdapterAbstractTest {
         () ->
             adapter.adapt(
                 refCD, concreteCD, Set.of("strategy"), adapterCodePath, refCodePath, outputPath));
+    assertFalse(generatedJavaFilesRecursively(outputPath).isEmpty());
+    assertNoAdapterMetadata(outputPath);
+    assertGeneratedJavaCompiles(generatedJavaFilesRecursively(outputPath));
+
+    String strategy = readFileContent(outputPath, "PaymentStrategy.java");
+    String processor = readFileContent(outputPath, "PaymentProcessor.java");
+    assertTrue(strategy.contains("interface PaymentStrategy"));
+    assertTrue(strategy.contains("void pay(double amount)"));
+    assertTrue(processor.contains("class PaymentProcessor"));
+    assertTrue(processor.contains("void processPayment(double amount)"));
   }
 }
 

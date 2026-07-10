@@ -1,14 +1,13 @@
 package de.monticore.codeAdaption;
 
 import de.monticore.codeAdaption.updater.CodeUpdater;
-import de.monticore.codeAdaption.updater.CodeUpdaterFactory;
+import de.monticore.codeAdaption.updater.CodeUpdaterMill;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 /** Handles final generated-source cleanup and concrete handwritten-file inclusion. */
 final class OutputCodeService {
@@ -25,6 +24,7 @@ final class OutputCodeService {
     try (var paths = Files.walk(conHwcPath)) {
       paths
           .filter(Files::isRegularFile)
+          .sorted(java.util.Comparator.comparing(Path::toString))
           .forEach(
               path -> {
                 try {
@@ -43,10 +43,14 @@ final class OutputCodeService {
     }
   }
 
-  void cleanCode(Path codePath, CodeUpdaterFactory updaterFactory) {
-    CodeUpdater updater =
-        Objects.requireNonNull(updaterFactory.createUpdater(), "updaterFactory.createUpdater()");
-    updater.cleanCode(codePath);
+  void cleanCode(Path codePath) {
+    CodeUpdaterMill.reset();
+    try {
+      CodeUpdater updater = CodeUpdaterMill.getUpdater();
+      updater.cleanCode(codePath);
+    } finally {
+      CodeUpdaterMill.reset();
+    }
   }
 
   private Path concreteCopyTarget(Path conHwcPath, Path source, Path outputPath) {
@@ -64,8 +68,9 @@ final class OutputCodeService {
                     .replace('.', File.separatorChar));
         return outputPath.resolve(packagePath).resolve(source.getFileName());
       }
-    } catch (RuntimeException | AssertionError ignored) {
-
+    } catch (RuntimeException | AssertionError parseFailure) {
+      throw new IllegalStateException(
+          "Failed to determine package for concrete Java file " + source, parseFailure);
     }
     return outputPath.resolve(conHwcPath.relativize(source));
   }

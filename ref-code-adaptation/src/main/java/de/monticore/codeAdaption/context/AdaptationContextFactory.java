@@ -7,7 +7,7 @@ import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContextBuilder;
 import de.monticore.codeAdaption.handler.multiIncarnation.ManualIncarnationContextBuilder;
 import de.se_rwth.commons.logging.Log;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,28 +19,34 @@ public final class AdaptationContextFactory {
 
   public AdaptationContextFactory(
       Set<CDConfParameter> confParams, MappingConformanceService conformanceService) {
-    this.confParams = confParams;
+    this.confParams = Set.copyOf(confParams);
     this.conformanceService = conformanceService;
   }
 
-  public Map<String, IncarnationContext> buildContexts(
+  /** Builds the context and retains the checker that produced it for downstream handlers. */
+  public Map<String, AdaptationContextResult> buildResults(
       ASTCDCompilationUnit refCD,
       ASTCDCompilationUnit conCD,
       Set<String> mappings,
       boolean useConcretizationMappings) {
 
-    Map<String, IncarnationContext> contexts = new HashMap<>();
+    Map<String, AdaptationContextResult> results = new LinkedHashMap<>();
 
     if (!useConcretizationMappings) {
       ManualIncarnationContextBuilder builder =
           new ManualIncarnationContextBuilder(refCD, conCD, confParams);
-      for (String mapping : mappings) {
-        contexts.put(mapping, builder.buildContextForMapping(mapping));
-      }
-      return contexts;
+      mappings.stream()
+          .sorted()
+          .forEach(
+              mapping ->
+                  results.put(
+                      mapping,
+                      new AdaptationContextResult(
+                          builder.buildContextForMapping(mapping), null, false)));
+      return results;
     }
 
-    for (String mapping : mappings) {
+    for (String mapping : mappings.stream().sorted().toList()) {
       CDConformanceChecker checker = conformanceService.newChecker();
       boolean mappingValid = conformanceService.checkOrFalse(checker, conCD, refCD, mapping);
 
@@ -69,9 +75,12 @@ public final class AdaptationContextFactory {
         IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
         context = builder.buildContextForMapping(mapping, false);
       }
-      contexts.put(mapping, context);
+      results.put(mapping, new AdaptationContextResult(context, checker, mappingValid));
     }
 
-    return contexts;
+    return results;
   }
+
+  public record AdaptationContextResult(
+      IncarnationContext context, CDConformanceChecker checker, boolean conformanceValid) {}
 }

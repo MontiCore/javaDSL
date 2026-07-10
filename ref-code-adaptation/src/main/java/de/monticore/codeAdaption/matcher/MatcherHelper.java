@@ -46,6 +46,7 @@ public class MatcherHelper {
 
     // build matching
     CodeMatching matching = new CodeMatching();
+    matching.setExplicitAnnotation(true);
     matching.setTemplate(collector.getTemplate());
     matching.setGenerateTemplate(collector.getGenTemplate());
     matching.setIgnore(collector.isIgnore());
@@ -98,27 +99,43 @@ public class MatcherHelper {
   }
 
   public static List<ISymbol> cleanReferences(String name, List<ISymbol> infixList) {
-    List<String> refs =
-        infixList.stream().map(ref -> ref.getName().toLowerCase()).collect(Collectors.toList());
-    Map<Integer, ISymbol> refMap = new LinkedHashMap<>();
-
-    for (int i = 0; i < refs.size(); i++) {
-      refMap.put(name.toLowerCase().indexOf(refs.get(i)), infixList.get(i));
-    }
-
-    List<ISymbol> result = new ArrayList<>();
-    for (int i = 0; i < name.length(); i++) {
-      if (refMap.containsKey(i)) {
-        result.add(refMap.get(i));
+    String lowerName = name.toLowerCase(Locale.ROOT);
+    Map<Integer, List<ISymbol>> refsByPosition = new TreeMap<>();
+    List<ISymbol> longestFirst = new ArrayList<>(infixList);
+    longestFirst.sort(
+        Comparator.comparingInt((ISymbol symbol) -> symbol.getName().length()).reversed());
+    boolean[] occupied = new boolean[name.length()];
+    for (ISymbol reference : longestFirst) {
+      String infix = reference.getName().toLowerCase(Locale.ROOT);
+      if (infix.isEmpty()) {
+        continue;
+      }
+      int from = 0;
+      while (from <= lowerName.length() - infix.length()) {
+        int index = lowerName.indexOf(infix, from);
+        if (index < 0) {
+          break;
+        }
+        boolean overlaps = false;
+        for (int i = index; i < index + infix.length(); i++) {
+          overlaps |= occupied[i];
+        }
+        if (!overlaps) {
+          refsByPosition.computeIfAbsent(index, ignored -> new ArrayList<>()).add(reference);
+          Arrays.fill(occupied, index, index + infix.length(), true);
+        }
+        from = index + infix.length();
       }
     }
+    List<ISymbol> result = new ArrayList<>();
+    refsByPosition.values().forEach(result::addAll);
     return result;
   }
 
   public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
     for (ASTJavaModifier mod : mods) {
       if (mod instanceof ASTJavaAnnotation
-          && ((ASTJavaAnnotation) mod).getAnnotationName().getQName().equals(ANNOT_NAME)) {
+          && isAdaptAnnotationName(((ASTJavaAnnotation) mod).getAnnotationName().getQName())) {
         return Optional.of((ASTJavaAnnotation) mod);
       }
     }
@@ -129,7 +146,7 @@ public class MatcherHelper {
 
     for (ASTMCModifier mod : mods) {
       if (mod instanceof ASTAnnotation
-          && ((ASTAnnotation) mod).getAnnotationName().getQName().equals(ANNOT_NAME)) {
+          && isAdaptAnnotationName(((ASTAnnotation) mod).getAnnotationName().getQName())) {
         return Optional.of((ASTAnnotation) mod);
       }
     }
@@ -196,18 +213,25 @@ public class MatcherHelper {
 
   public static List<ISymbol> cleanReferences(List<ISymbol> references) {
     if (references.isEmpty() || references.size() == 1) {
-      return references;
+      return new ArrayList<>(references);
     }
 
-    Set<ISymbol> temps = new LinkedHashSet<>(references);
-    for (ISymbol symbol : temps) {
-      for (ISymbol symbol1 : temps) {
-        if (!symbol.equals(symbol1) && (matchInfix(symbol.getName(), symbol1.getName()))) {
-          references.remove(symbol1);
+    List<ISymbol> result = new ArrayList<>(new LinkedHashSet<>(references));
+    List<ISymbol> snapshot = new ArrayList<>(result);
+    for (ISymbol symbol : snapshot) {
+      for (ISymbol other : snapshot) {
+        if (!symbol.equals(other)
+            && symbol.getName().length() > other.getName().length()
+            && matchInfix(symbol.getName(), other.getName())) {
+          result.remove(other);
         }
       }
     }
-    return references;
+    return result;
+  }
+
+  private static boolean isAdaptAnnotationName(String qualifiedName) {
+    return ANNOT_NAME.equals(qualifiedName) || ANNOT_PACKAGE.equals(qualifiedName);
   }
 
   public static boolean matchInfix(String element, String infix) {

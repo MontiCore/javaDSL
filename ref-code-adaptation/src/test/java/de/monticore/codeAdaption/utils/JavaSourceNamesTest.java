@@ -2,10 +2,18 @@ package de.monticore.codeAdaption.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import de.se_rwth.commons.logging.LogStub;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JavaSourceNamesTest {
+
+  @BeforeEach
+  void setUp() {
+    LogStub.init();
+    LogStub.enableFailQuick(false);
+  }
 
   @Test
   void normalizesQualifiedGenericArrayAndAnyTypes() {
@@ -46,5 +54,24 @@ class JavaSourceNamesTest {
     assertEquals("Entry", JavaSourceNames.simpleName("java.util.Map.Entry"));
     assertEquals("List", JavaSourceNames.simpleName("java.util.List<java.lang.String>[]"));
     assertEquals("update", JavaSourceNames.simpleName("update()"));
+  }
+
+  @Test
+  void normalizesMethodParametersThroughTheTypeParser() {
+    assertEquals(
+        "update(Map<String,List<Object[]>>,int[],long)",
+        JavaMethodSignatures.normalize(
+            " update(java.util.Map<java.lang.String, java.util.List<any[]>>, int[], long) "));
+    assertEquals("update()", JavaMethodSignatures.normalize(" update( ) "));
+  }
+
+  @Test
+  void leavesMalformedMethodSignaturesUnchanged() {
+    assertEquals(
+        "update(Map<String,List<Integer>,int)",
+        JavaMethodSignatures.normalize("update(Map<String,List<Integer>,int)"));
+    assertEquals(
+        "update(String) trailing",
+        JavaMethodSignatures.normalize("update(String) trailing"));
   }
 }

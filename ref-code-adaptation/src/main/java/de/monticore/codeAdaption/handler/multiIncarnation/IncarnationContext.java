@@ -1,6 +1,10 @@
 package de.monticore.codeAdaption.handler.multiIncarnation;
 
+import de.monticore.cd4codebasis._ast.ASTCDMethod;
+import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.symboltable.ISymbol;
+import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -79,7 +83,42 @@ public class IncarnationContext {
   }
 
   public Optional<StableElementKey> getStableKey(ISymbol symbol) {
-    return Optional.ofNullable(symbolKeys.get(symbol));
+    StableElementKey registered = symbolKeys.get(symbol);
+    if (registered != null) {
+      return Optional.of(registered);
+    }
+    // Matchers may hold symbols from a separately initialized AST. Type identity is still stable
+    // across those loads and must not fall back to reference names during multi-incarnation runs.
+    if (symbol != null && symbol.getAstNode() instanceof ASTCDType type) {
+      return Optional.of(StableElementKey.type(type));
+    }
+    if (symbol != null && symbol.getAstNode() instanceof ASTCDAttribute attribute) {
+      List<StableElementKey> matches =
+          resolvedContext.getFieldMappings().keySet().stream()
+              .filter(key -> key.getName().equals(attribute.getName()))
+              .filter(
+                  key ->
+                      key.getFieldKind()
+                          .map(JavaSourceNames.printNormalizedFieldType(attribute)::equals)
+                          .orElse(false))
+              .toList();
+      return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();
+    }
+    if (symbol != null && symbol.getAstNode() instanceof ASTCDMethod method) {
+      List<String> parameterTypes =
+          method.getCDParameterList().stream()
+              .map(parameter -> JavaSourceNames.printNormalizedType(parameter.getMCType()))
+              .toList();
+      String returnType = JavaSourceNames.printNormalizedReturnType(method);
+      List<StableElementKey> matches =
+          resolvedContext.getMethodMappings().keySet().stream()
+              .filter(key -> key.getName().equals(method.getName()))
+              .filter(key -> key.getParameterTypes().equals(parameterTypes))
+              .filter(key -> key.getReturnType().map(returnType::equals).orElse(true))
+              .toList();
+      return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();
+    }
+    return Optional.empty();
   }
 
   public ResolvedIncarnationContext getResolvedContext() {

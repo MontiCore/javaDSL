@@ -65,10 +65,6 @@ public abstract class AdapterAbstractTest {
     }
   }
 
-  protected static String readFileWithoutSpace(Path dir, String filename) {
-    return readFileContent(dir, filename).replaceAll("\\s+", "");
-  }
-
   protected static Set<String> generatedFileNames(Path outputPath) {
     try (Stream<Path> files = Files.walk(outputPath)) {
       return files
@@ -108,7 +104,7 @@ public abstract class AdapterAbstractTest {
   }
 
   protected static void assertNoAdapterMetadata(Path outputPath) {
-    for (Path file : generatedJavaFiles(outputPath)) {
+    for (Path file : generatedJavaFilesRecursively(outputPath)) {
       try {
         String content = Files.readString(file, StandardCharsets.UTF_8);
         assertFalse(content.contains("@Adapt"), () -> "Adapter annotation leaked into " + file);

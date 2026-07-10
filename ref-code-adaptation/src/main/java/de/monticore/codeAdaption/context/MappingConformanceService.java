@@ -12,7 +12,7 @@ public final class MappingConformanceService {
   private final Set<CDConfParameter> confParams;
 
   public MappingConformanceService(Set<CDConfParameter> confParams) {
-    this.confParams = confParams;
+    this.confParams = Set.copyOf(confParams);
   }
 
   public CDConformanceChecker newChecker() {
@@ -24,22 +24,20 @@ public final class MappingConformanceService {
       ASTCDCompilationUnit conCD,
       ASTCDCompilationUnit refCD,
       String mapping) {
-    boolean failQuickEnabled = Log.isFailQuickEnabled();
-    boolean mappingValid = false;
-    try {
-      Log.enableFailQuick(false);
-      mappingValid = checker.checkConformance(conCD, refCD, mapping);
-      return mappingValid;
-    } catch (Throwable throwable) {
-      Log.warn(
-          "Conformance checker threw during check for mapping '"
-              + mapping
-              + "': "
-              + throwable.getMessage()
-              + " - will use stereotype-based fallback");
-      return false;
-    } finally {
-      if (mappingValid) {
+    synchronized (Log.class) {
+      boolean failQuickEnabled = Log.isFailQuickEnabled();
+      try {
+        Log.enableFailQuick(false);
+        return checker.checkConformance(conCD, refCD, mapping);
+      } catch (RuntimeException | AssertionError throwable) {
+        Log.warn(
+            "Conformance checker threw during check for mapping '"
+                + mapping
+                + "': "
+                + throwable.getMessage()
+                + " - will use stereotype-based fallback");
+        return false;
+      } finally {
         Log.enableFailQuick(failQuickEnabled);
       }
     }

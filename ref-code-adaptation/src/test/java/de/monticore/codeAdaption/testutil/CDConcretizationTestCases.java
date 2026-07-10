@@ -73,16 +73,20 @@ public final class CDConcretizationTestCases {
               "multipleIncarnation/BothAssocSidesMIOneAssocExistsConc.cd",
               "multipleIncarnation/BothAssocSidesMIRef.cd"));
 
-  /** Not yet implemented/broken/more complex cases */
-  private static final Set<String> DISABLED_CASES =
+  private static final Set<String> EXPECTED_FAILURE_CASES =
       Set.of(
+          "attributes/underspecified/AttributeTypeUnderspecifiedNoIncConc.cd",
           "methods/underspecified/ParameterTypeUnderspecifiedNoIncConc.cd",
           "methods/underspecified/ReturnTypeUnderspecifiedNoIncConc.cd");
 
-  private static final Set<String> EXPECTED_FAILURE_CASES =
-      Set.of(
-          "methods/underspecified/ParameterTypeUnderspecifiedNoIncConc.cd",
-          "methods/underspecified/ReturnTypeUnderspecifiedNoIncConc.cd");
+  private static final Map<String, String> UNSUPPORTED_CASES =
+      Map.of(
+          "attributes/forEach/ForEachAttributeInheritanceConc.cd",
+              "Upstream cdconcretization does not derive forEach bindings across inherited attribute owners",
+          "attributes/forEach/ForEachAttributeNoTargetIncConc.cd",
+              "Upstream cdconcretization requires unimplemented matchStructure/optional-member semantics",
+          "evaluation/staticDelegator/StaticDelegatorConc.cd",
+              "Upstream cdconcretization does not implement method-target forEach completion");
 
   private static final Map<String, Boolean> STRICT_PARAMETER_ORDER =
       Map.ofEntries(
@@ -168,19 +172,40 @@ public final class CDConcretizationTestCases {
         concretePath,
         outputPath,
         STRICT_PARAMETER_ORDER.getOrDefault(concRelativePath, false),
-        !DISABLED_CASES.contains(concRelativePath));
+        !EXPECTED_FAILURE_CASES.contains(concRelativePath)
+            && !UNSUPPORTED_CASES.containsKey(concRelativePath));
   }
 
   public static List<CDConcretizationTestCase> enabledCases() {
-    return allCases().stream().filter(CDConcretizationTestCase::enabled).toList();
+    String requestedCase = System.getenv("CDCONCRETIZATION_CASE");
+    Set<String> requestedCases =
+        requestedCase == null || requestedCase.isBlank()
+            ? Set.of()
+            : Set.of(requestedCase.split(","));
+    return allCases().stream()
+        .filter(CDConcretizationTestCase::enabled)
+        .filter(
+            testCase ->
+                requestedCases.isEmpty()
+                    || requestedCases.contains(testCase.id())
+                    || requestedCases.contains(testCase.displayName()))
+        .toList();
   }
 
   public static List<CDConcretizationTestCase> expectedFailureCases() {
     return allCases().stream()
-        .filter(testCase -> EXPECTED_FAILURE_CASES.contains(testCase.concCd().toString()
-            .replace('\\', '/')
-            .replace(CDConcretizationTestCase.RESOURCE_ROOT, "")))
+        .filter(testCase -> EXPECTED_FAILURE_CASES.contains(relativeConcretePath(testCase)))
         .toList();
+  }
+
+  public static List<CDConcretizationTestCase> unsupportedCases() {
+    return allCases().stream()
+        .filter(testCase -> UNSUPPORTED_CASES.containsKey(relativeConcretePath(testCase)))
+        .toList();
+  }
+
+  public static String unsupportedReason(CDConcretizationTestCase testCase) {
+    return UNSUPPORTED_CASES.get(relativeConcretePath(testCase));
   }
 
   static String resolveRefPath(String concRelativePath) {
@@ -243,6 +268,12 @@ public final class CDConcretizationTestCases {
   private static String parent(String relativePath) {
     int slash = relativePath.lastIndexOf('/');
     return slash < 0 ? "" : relativePath.substring(0, slash);
+  }
+
+  private static String relativeConcretePath(CDConcretizationTestCase testCase) {
+    return testCase.concCd().toString()
+        .replace('\\', '/')
+        .replace(CDConcretizationTestCase.RESOURCE_ROOT, "");
   }
 
   private static Path resolveDirectory(String relativeDir) {

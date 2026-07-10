@@ -18,6 +18,37 @@ class JavaSourcePostProcessorTest {
   @TempDir Path tempDir;
 
   @Test
+  void preservesCommentsAndLiteralsWhileRemovingInvalidImports() {
+    String source =
+        """
+        package demo;
+        import Person;
+        import de.monticore.codeAdaption.utils.Adapt;
+        import java.util.HashMap;
+
+        public class Example {
+          String url = "http://example/a,b";
+          String block = "/* not a comment */";
+          java.util.Map<String,String> map = new HashMap<>();
+
+          void m() {
+            int x=1; // keep comma,a and equals=
+            /* keep generic List<String> text */
+          }
+        }
+        """;
+
+    String cleaned = JavaSourcePostProcessor.process(source);
+
+    assertFalse(cleaned.contains("import Person;"));
+    assertFalse(cleaned.contains("import de.monticore.codeAdaption.utils.Adapt;"));
+    assertTrue(cleaned.contains("import java.util.HashMap;"));
+    assertTrue(cleaned.contains("\"http://example/a,b\""));
+    assertTrue(cleaned.contains("int x=1; // keep comma,a and equals="));
+    assertTrue(cleaned.contains("/* keep generic List<String> text */"));
+  }
+
+  @Test
   void removesInvalidImportsAndPreservesExistingValidImportsWithoutAddingJdkImports() {
     String source =
         """

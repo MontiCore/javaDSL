@@ -1,11 +1,9 @@
 package de.monticore.codeAdaption;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
-import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.CDModelIndex;
-import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
@@ -13,8 +11,8 @@ import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.symboltable.ISymbol;
-import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,28 +26,13 @@ final class AdaptedCodeMerger {
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCode(
       Set<ASTOrdinaryCompilationUnit> actualCode,
       Set<ASTOrdinaryCompilationUnit> newAdaptedCode) {
-    if (actualCode.isEmpty()) {
-      return deduplicateBySimpleName(newAdaptedCode);
+    Map<String, ASTOrdinaryCompilationUnit> merged = indexAndMerge(actualCode);
+    for (ASTOrdinaryCompilationUnit newAdapted : ordered(newAdaptedCode)) {
+      String key = compilationUnitKey(newAdapted);
+        merged.compute(
+          key, (k, existing) -> existing == null ? newAdapted : AdapterUtils.mergeAsts(existing, newAdapted));
     }
-
-    Set<ASTOrdinaryCompilationUnit> deduplicatedNew = deduplicateBySimpleName(newAdaptedCode);
-
-    for (ASTOrdinaryCompilationUnit newAdapted : deduplicatedNew) {
-      String newSimpleName = AdapterUtils.getSimpleFileName(newAdapted);
-
-      Optional<ASTOrdinaryCompilationUnit> actual =
-          actualCode.stream()
-              .filter(file -> AdapterUtils.getSimpleFileName(file).equals(newSimpleName))
-              .findAny();
-
-      if (actual.isEmpty()) {
-        actualCode.add(newAdapted);
-      } else {
-        actualCode.remove(actual.get());
-        actualCode.add(AdapterUtils.mergeAsts(actual.get(), newAdapted));
-      }
-    }
-    return actualCode;
+    return new LinkedHashSet<>(merged.values());
   }
 
   Set<ASTOrdinaryCompilationUnit> filterCodeForMapping(
@@ -77,7 +60,9 @@ final class AdaptedCodeMerger {
               .map(validator::getMatchedType)
               .filter(Optional::isPresent)
               .map(Optional::get)
-              .anyMatch(matching -> !matching.mustBePerform());
+              .anyMatch(
+                  matching ->
+                      !matching.mustBePerform() && matching.isExplicitAnnotation());
       if (mappedTopLevel || ignoredTopLevel) {
         result.add(unit);
       }
@@ -86,52 +71,74 @@ final class AdaptedCodeMerger {
   }
 
   /**
-   * Builds the final generated code on top of concrete handwritten classes. Adapted pattern types
-   * with the same simple file name are merged into the concrete class, while reference-only
-   * template artifacts such are filtered out.
+   * Builds the final generated code on top of concrete handwritten classes. Adapted and concrete
+   * units with the same package-qualified top-level identity are merged.
    */
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCodeIntoConcreteBase(
       Set<ASTOrdinaryCompilationUnit> concreteCode,
       Set<ASTOrdinaryCompilationUnit> adaptedCode,
       ASTCDCompilationUnit conCD) {
 
-    Set<String> concreteTypeNames =
-        CDModelIndex.of(conCD).types().stream()
-            .map(ASTCDType::getName)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    Map<String, ASTOrdinaryCompilationUnit> result = indexAndMerge(concreteCode);
 
-    Set<ASTOrdinaryCompilationUnit> result =
-        new LinkedHashSet<>(deduplicateBySimpleName(concreteCode));
-
-    for (ASTOrdinaryCompilationUnit adaptedUnit : deduplicateBySimpleName(adaptedCode)) {
-      String adaptedTypeName = getPrimaryTypeName(adaptedUnit).orElse("");
-      if (!shouldKeepAdaptedUnit(adaptedTypeName, concreteTypeNames)) {
-        continue;
+    // Every unit in adaptedCode has already passed filterCodeForMapping. Retaining that explicit
+    // selection avoids guessing from coincidental type-name prefixes or suffixes.
+    for (ASTOrdinaryCompilationUnit adaptedUnit : indexAndMerge(adaptedCode).values()) {
+      String key = compilationUnitKey(adaptedUnit);
+      ASTOrdinaryCompilationUnit concreteMatch = result.get(key);
+      ASTOrdinaryCompilationUnit mergeableAdapted = adaptedUnit;
+      if (concreteMatch == null) {
+        Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> uniqueConcreteMatch =
+            uniqueConcreteTypeMatch(result, adaptedUnit, conCD);
+        if (uniqueConcreteMatch.isPresent()) {
+          key = uniqueConcreteMatch.get().getKey();
+          concreteMatch = uniqueConcreteMatch.get().getValue();
+          mergeableAdapted = adaptedUnit.deepClone();
+          if (concreteMatch.isPresentPackageDeclaration()) {
+            mergeableAdapted.setPackageDeclaration(
+                concreteMatch.getPackageDeclaration().deepClone());
+          } else {
+            mergeableAdapted.setPackageDeclarationAbsent();
+          }
+        }
       }
-
-      String adaptedFileName = AdapterUtils.getSimpleFileName(adaptedUnit);
-      Optional<ASTOrdinaryCompilationUnit> concreteMatch =
-          result.stream()
-              .filter(unit -> AdapterUtils.getSimpleFileName(unit).equals(adaptedFileName))
-              .findFirst();
-
-      if (concreteMatch.isPresent()) {
-        result.remove(concreteMatch.get());
-        result.add(AdapterUtils.mergeAsts(concreteMatch.get(), adaptedUnit));
-      } else {
-        result.add(adaptedUnit);
-      }
+      result.put(
+          key,
+          concreteMatch == null
+              ? mergeableAdapted
+              : AdapterUtils.mergeAstsPreferringLeft(concreteMatch, mergeableAdapted));
     }
 
-    return deduplicateBySimpleName(result);
+    return new LinkedHashSet<>(result.values());
+  }
+
+  private Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> uniqueConcreteTypeMatch(
+      Map<String, ASTOrdinaryCompilationUnit> concreteCode,
+      ASTOrdinaryCompilationUnit adaptedUnit,
+      ASTCDCompilationUnit conCD) {
+    if (adaptedUnit.getTypeDeclarationList().size() != 1) {
+      return Optional.empty();
+    }
+    String adaptedType = adaptedUnit.getTypeDeclarationList().get(0).getName();
+    boolean isConcreteType = CDModelIndex.of(conCD).hasType(adaptedType);
+    if (!isConcreteType) {
+      return Optional.empty();
+    }
+    List<Map.Entry<String, ASTOrdinaryCompilationUnit>> candidates =
+        concreteCode.entrySet().stream()
+            .filter(
+                entry ->
+                    entry.getValue().getTypeDeclarationList().stream()
+                        .anyMatch(type -> adaptedType.equals(type.getName())))
+            .toList();
+    return candidates.size() == 1 ? Optional.of(candidates.get(0)) : Optional.empty();
   }
 
   Set<ASTOrdinaryCompilationUnit> splitCompilationUnitsByType(
       Set<ASTOrdinaryCompilationUnit> units) {
     Set<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>();
-    for (ASTOrdinaryCompilationUnit unit : units) {
-      JavaAstElemCollector collector = collect(unit);
-      List<ASTTypeDeclaration> types = new ArrayList<>(collector.getAllTypeDeclarations());
+    for (ASTOrdinaryCompilationUnit unit : ordered(units)) {
+      List<ASTTypeDeclaration> types = new ArrayList<>(unit.getTypeDeclarationList());
       if (types.size() <= 1) {
         result.add(unit);
         continue;
@@ -139,8 +146,7 @@ final class AdaptedCodeMerger {
 
       for (ASTTypeDeclaration type : types) {
         ASTOrdinaryCompilationUnit copy = unit.deepClone();
-        JavaAstElemCollector copyCollector = collect(copy);
-        for (ASTTypeDeclaration copiedType : copyCollector.getAllTypeDeclarations()) {
+        for (ASTTypeDeclaration copiedType : new ArrayList<>(copy.getTypeDeclarationList())) {
           if (!copiedType.getName().equals(type.getName())) {
             copy.removeTypeDeclaration(copiedType);
           }
@@ -148,51 +154,48 @@ final class AdaptedCodeMerger {
 
         String fileName = type.getName() + ".java";
         copy.get_SourcePositionStart().setFileName(fileName);
-        Log.info("splitCompilationUnitsByType -> created unit: " + fileName, "CodeAdapter");
         result.add(copy);
       }
     }
     return result;
   }
 
-  private boolean shouldKeepAdaptedUnit(String typeName, Set<String> concreteTypeNames) {
-    if (typeName == null || typeName.isEmpty()) {
-      return false;
-    }
-    if (concreteTypeNames.contains(typeName)) {
-      return true;
-    }
-    return concreteTypeNames.stream()
-        .anyMatch(
-            concreteName -> typeName.startsWith(concreteName) || typeName.endsWith(concreteName));
-  }
-
-  private Optional<String> getPrimaryTypeName(ASTOrdinaryCompilationUnit unit) {
-    return collect(unit).getAllTypeDeclarations().stream()
-        .map(ASTTypeDeclaration::getName)
-        .findFirst();
-  }
-
-  private Set<ASTOrdinaryCompilationUnit> deduplicateBySimpleName(
+  private Map<String, ASTOrdinaryCompilationUnit> indexAndMerge(
       Set<ASTOrdinaryCompilationUnit> files) {
-    Map<String, ASTOrdinaryCompilationUnit> bySimpleName = new LinkedHashMap<>();
-
-    for (ASTOrdinaryCompilationUnit file : files) {
-      String simpleName = AdapterUtils.getSimpleFileName(file);
-      String fullPath = AdapterUtils.getFileName(file);
-
-      ASTOrdinaryCompilationUnit existing = bySimpleName.get(simpleName);
+    Map<String, ASTOrdinaryCompilationUnit> byQualifiedType = new LinkedHashMap<>();
+    for (ASTOrdinaryCompilationUnit file : ordered(files)) {
+      String key = compilationUnitKey(file);
+      ASTOrdinaryCompilationUnit existing = byQualifiedType.get(key);
       if (existing == null) {
-        bySimpleName.put(simpleName, file);
+        byQualifiedType.put(key, file);
       } else {
-        String existingPath = AdapterUtils.getFileName(existing);
-        if (JavaSourceNames.pathDepth(fullPath) > JavaSourceNames.pathDepth(existingPath)) {
-          bySimpleName.put(simpleName, file);
-        }
+        byQualifiedType.put(key, AdapterUtils.mergeAsts(existing, file));
       }
     }
+    return byQualifiedType;
+  }
 
-    return new LinkedHashSet<>(bySimpleName.values());
+  private List<ASTOrdinaryCompilationUnit> ordered(Set<ASTOrdinaryCompilationUnit> files) {
+    return files.stream()
+        .sorted(
+            Comparator.comparing(this::compilationUnitKey)
+                .thenComparing(AdapterUtils::getFileName))
+        .toList();
+  }
+
+  /** Returns the package-qualified identity of a split compilation unit. */
+  private String compilationUnitKey(ASTOrdinaryCompilationUnit unit) {
+    String packageName =
+        unit.isPresentPackageDeclaration()
+            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+            : "";
+    String typeIdentity =
+        unit.getTypeDeclarationList().stream()
+            .map(ASTTypeDeclaration::getName)
+            .sorted()
+            .reduce((left, right) -> left + "+" + right)
+            .orElseGet(() -> AdapterUtils.getSimpleFileName(unit));
+    return packageName.isEmpty() ? typeIdentity : packageName + "." + typeIdentity;
   }
 
   private JavaAstElemCollector collect(ASTOrdinaryCompilationUnit unit) {

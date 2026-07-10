@@ -47,6 +47,9 @@ public class StrategySingletonAdapterTest extends AdapterAbstractTest {
                 adapterCodePath,
                 refCodePath,
                 outputPath));
+    assertFalse(generatedJavaFilesRecursively(outputPath).isEmpty());
+    assertNoAdapterMetadata(outputPath);
+    assertGeneratedJavaCompiles(generatedJavaFilesRecursively(outputPath));
   }
 }
 

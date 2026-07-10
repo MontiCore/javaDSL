@@ -18,7 +18,6 @@ import java.util.*;
  */
 public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
   private final IncarnationSelector incarnationSelector;
-  private final Map<String, IncarnationContext> mappingContexts;
   private String currentMapping;
 
   public MultiIncarnationUpdateHandler(
@@ -62,9 +61,12 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
         validator,
         null,
         useCommonParentForMultipleIncarnations);
-    this.incarnationSelector = incarnationSelector;
-    this.mappingContexts = mappingContexts;
-    this.currentMapping = mappingContexts.keySet().iterator().next();
+    this.incarnationSelector = Objects.requireNonNull(incarnationSelector, "incarnationSelector");
+    if (mappingContexts == null || mappingContexts.isEmpty()) {
+      throw new IllegalArgumentException("At least one incarnation context is required");
+    }
+    this.currentMapping = mappingContexts.keySet().stream().sorted().findFirst().orElseThrow();
+    this.incarnationContext = mappingContexts.get(this.currentMapping);
   }
 
   /**
@@ -120,9 +122,8 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
         validator,
         incarnationContext,
         useCommonParentForMultipleIncarnations);
-    this.incarnationSelector = incarnationSelector;
-    this.mappingContexts = mappingContexts;
-    this.currentMapping = mappingName;
+    this.incarnationSelector = Objects.requireNonNull(incarnationSelector, "incarnationSelector");
+    this.currentMapping = Objects.requireNonNull(mappingName, "mappingName");
   }
 
   @Override
@@ -167,20 +168,25 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     return selected != null ? selected : super.getConAttributeSymbol(symbol);
   }
 
-  /**
-   * Collects all incarnations for a given reference symbol across all mappings.
-   */
+  /** Collects incarnations from the current mapping only. */
   private List<ISymbol> getAllIncarnations(ISymbol referenceSymbol) {
-    List<ISymbol> allIncarnations = new ArrayList<>();
-
-    for (IncarnationContext context : mappingContexts.values()) {
-      List<ISymbol> incarnations = context.getIncarnations(referenceSymbol);
-      if (incarnations != null) {
-        allIncarnations.addAll(incarnations);
-      }
+    if (incarnationContext == null) {
+      return List.of();
     }
-
-    return allIncarnations;
+    List<ISymbol> incarnations = incarnationContext.getIncarnations(referenceSymbol);
+    if (incarnations != null && !incarnations.isEmpty()) {
+      return incarnations;
+    }
+    if (referenceSymbol instanceof CDTypeSymbol) {
+      return incarnationContext.getReferenceToIncarnations().entrySet().stream()
+          .filter(entry -> entry.getKey() instanceof CDTypeSymbol)
+          .filter(entry -> entry.getKey().getName().equals(referenceSymbol.getName()))
+          .map(Map.Entry::getValue)
+          .filter(Objects::nonNull)
+          .findFirst()
+          .orElse(List.of());
+    }
+    return List.of();
   }
 
   /**
@@ -205,10 +211,21 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
       return Optional.empty();
     }
 
-    List<ISymbol> incarnations = this.incarnationContext.getIncarnations(refSymbol);
+    List<ISymbol> incarnations = getAllIncarnations(refSymbol);
     if (incarnations == null || incarnations.isEmpty()) {
       return Optional.empty();
     }
+    if (incarnations.size() == 1) {
+      return Optional.of(incarnations.get(0));
+    }
+
+    IncarnationSelector.SelectionContext ctx =
+        new IncarnationSelector.SelectionContext(getCurrentMapping(), refSymbol);
+    ISymbol selected = incarnationSelector.selectIncarnation(refSymbol, incarnations, ctx);
+    if (selected != null) {
+      return Optional.of(selected);
+    }
+
     if (refSymbol instanceof CDTypeSymbol && useCommonParentForMultipleIncarnations) {
       Optional<ISymbol> commonParent = findCommonParentInIncarnations(incarnations);
       if (commonParent.isPresent()) {
@@ -224,15 +241,6 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
         }
       }
     }
-    if (incarnations.size() == 1) {
-      return Optional.of(incarnations.get(0));
-    }
-
-    // Use selector to pick the incarnation appropriate for the current mapping/selection
-    IncarnationSelector.SelectionContext ctx = new IncarnationSelector.SelectionContext(getCurrentMapping(), refSymbol);
-    ISymbol selected = incarnationSelector.selectIncarnation(refSymbol, incarnations, ctx);
-    if (selected != null) return Optional.of(selected);
-
     // Fallback to first if selector couldn't decide
     return Optional.of(incarnations.get(0));
   }

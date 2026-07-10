@@ -20,30 +20,53 @@ import java.util.*;
 public class JavaAstElemCollector implements JavaDSLVisitor2 {
   private final List<ASTTypeDeclaration> typeDeclarations = new ArrayList<>();
   private final Map<ASTTypeDeclaration, TypeElementCollector> typeElements = new LinkedHashMap<>();
+  private int typeNestingDepth;
 
   @Override
   public void visit(ASTClassDeclaration node) {
-    TypeElementCollector collector = visitType(node);
-
-    collector.supertypesDeclarations.addAll(node.getImplementedInterfaceList());
-    if (node.isPresentSuperClass()) {
-      collector.supertypesDeclarations.add(node.getSuperClass());
+    if (typeNestingDepth == 0) {
+      TypeElementCollector collector = visitType(node);
+      collector.supertypesDeclarations.addAll(node.getImplementedInterfaceList());
+      if (node.isPresentSuperClass()) {
+        collector.supertypesDeclarations.add(node.getSuperClass());
+      }
+      typeElements.put(node, collector);
     }
+    typeNestingDepth++;
+  }
 
-    typeElements.put(node, collector);
+  @Override
+  public void endVisit(ASTClassDeclaration node) {
+    typeNestingDepth--;
   }
 
   @Override
   public void visit(ASTInterfaceDeclaration node) {
-    TypeElementCollector collector = visitType(node);
-    collector.supertypesDeclarations.addAll(node.getExtendedInterfaceList());
-    typeElements.put(node, collector);
+    if (typeNestingDepth == 0) {
+      TypeElementCollector collector = visitType(node);
+      collector.supertypesDeclarations.addAll(node.getExtendedInterfaceList());
+      typeElements.put(node, collector);
+    }
+    typeNestingDepth++;
+  }
+
+  @Override
+  public void endVisit(ASTInterfaceDeclaration node) {
+    typeNestingDepth--;
   }
 
   @Override
   public void visit(ASTEnumDeclaration node) {
-    TypeElementCollector collector = visitType(node);
-    typeElements.put(node, collector);
+    if (typeNestingDepth == 0) {
+      TypeElementCollector collector = visitType(node);
+      typeElements.put(node, collector);
+    }
+    typeNestingDepth++;
+  }
+
+  @Override
+  public void endVisit(ASTEnumDeclaration node) {
+    typeNestingDepth--;
   }
 
   private TypeElementCollector visitType(ASTTypeDeclaration node) {
@@ -112,9 +135,43 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
 
   Map<ASTMethodDeclaration, List<ASTLocalVariableDeclaration>> localVarsMap = new LinkedHashMap<>();
   Map<ASTMethodDeclaration, List<ASTFormalParameter>> formalParamsMap = new LinkedHashMap<>();
+  private int typeNestingDepth;
+
+  @Override
+  public void visit(ASTClassDeclaration node) {
+    typeNestingDepth++;
+  }
+
+  @Override
+  public void endVisit(ASTClassDeclaration node) {
+    typeNestingDepth--;
+  }
+
+  @Override
+  public void visit(ASTInterfaceDeclaration node) {
+    typeNestingDepth++;
+  }
+
+  @Override
+  public void endVisit(ASTInterfaceDeclaration node) {
+    typeNestingDepth--;
+  }
+
+  @Override
+  public void visit(ASTEnumDeclaration node) {
+    typeNestingDepth++;
+  }
+
+  @Override
+  public void endVisit(ASTEnumDeclaration node) {
+    typeNestingDepth--;
+  }
 
   @Override
   public void visit(ASTMethodDeclaration node) {
+    if (typeNestingDepth != 1) {
+      return;
+    }
     methodDeclarations.add(node);
 
     List<ASTLocalVariableDeclaration> localVars = new ArrayList<>();
@@ -169,16 +226,20 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
     ASTLocalVariableDeclaration localVar = JavaDSLMill.localVariableDeclarationBuilder()
         .setMCType(param.getMCType())
         .build();
-    localVar.getVariableDeclaratorList().add(
-        JavaDSLMill.variableDeclaratorBuilder()
-            .setDeclarator(param.getDeclarator())
-            .build()
-    );
+    localVar.set_SourcePositionStart(param.get_SourcePositionStart());
+    localVar.set_SourcePositionEnd(param.get_SourcePositionEnd());
+    var variableDeclarator =
+        JavaDSLMill.variableDeclaratorBuilder().setDeclarator(param.getDeclarator()).build();
+    variableDeclarator.set_SourcePositionStart(param.get_SourcePositionStart());
+    variableDeclarator.set_SourcePositionEnd(param.get_SourcePositionEnd());
+    localVar.getVariableDeclaratorList().add(variableDeclarator);
     return localVar;
   }
 
   @Override
   public void visit(ASTFieldDeclaration node) {
-    fieldDeclarations.add(node);
+    if (typeNestingDepth == 1) {
+      fieldDeclarations.add(node);
+    }
   }
 }

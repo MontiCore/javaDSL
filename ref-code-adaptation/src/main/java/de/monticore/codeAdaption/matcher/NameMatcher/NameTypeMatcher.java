@@ -17,6 +17,7 @@ import java.util.Set;
  */
 public class NameTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;
+  private List<ASTCDType> referenceTypes;
 
   protected Set<ASTTypeDeclaration> typeDeclarationSet;
 
@@ -31,12 +32,13 @@ public class NameTypeMatcher implements TypeMatcher {
   }
 
   public NameTypeMatcher(ASTCDCompilationUnit cd) {
-    this.cd = cd;
+    setReferenceCD(cd);
   }
 
   @Override
   public void setReferenceCD(ASTCDCompilationUnit cd) {
     this.cd = cd;
+    this.referenceTypes = List.copyOf(AdapterUtils.getAllCDTypes(cd));
   }
 
   /***
@@ -44,7 +46,7 @@ public class NameTypeMatcher implements TypeMatcher {
    */
   @Override
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration element) {
-    for (ASTCDType type : AdapterUtils.getAllCDTypes(cd)) {
+    for (ASTCDType type : referenceTypes) {
       if (element.getName().equals(type.getName())) {
         return Optional.of(MatcherHelper.mkMatching("${}", List.of(type.getSymbol())));
       }

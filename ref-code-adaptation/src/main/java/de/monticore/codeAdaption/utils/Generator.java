@@ -23,6 +23,6 @@ public class Generator {
     CD4CodeTool.main(input);
 
     // delete hook-points
-    JavaLoader.readJavaFile(Path.of("target")).forEach(AdapterUtils::removeComments);
+    JavaLoader.readJavaFile(output).forEach(AdapterUtils::removeComments);
   }
 }

@@ -1,9 +1,5 @@
 package de.monticore.codeAdaption.utils;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import de.monticore.ast.ASTNode;
 import de.monticore.cd._symboltable.BuiltInTypes;
 import de.monticore.cd4code.CD4CodeMill;
@@ -27,14 +23,13 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.Assertions;
 
 public class JavaLoader {
 
@@ -43,23 +38,25 @@ public class JavaLoader {
    *
    * @param file The class diagram file to be parsed. It must have a .cd extension.
    * @return The resulting ASTCDCompilationUnit created from the class diagram.
-   * @throws AssertionError if the provided file does not have a .cd extension, or if the AST could
-   *     not be created successfully.
+   * @throws IllegalArgumentException if the provided file is not a readable CD file
+   * @throws IllegalStateException if parsing fails
    */
   public static ASTCDCompilationUnit loadCD(File file) {
     // parse the class diagram
-    assert file.getName().endsWith(".cd");
+    requireFileExtension(file, ".cd");
     CD4CodeParser cdParser = new CD4CodeParser();
     Optional<ASTCDCompilationUnit> optCdAST = Optional.empty();
     try {
       optCdAST = cdParser.parse(file.getAbsolutePath());
     } catch (IOException e) {
-      Log.warn("Could not parse class diagram " + file.getAbsolutePath() + ": " + e.getMessage());
+      throw new IllegalStateException("Could not read class diagram " + file.getAbsolutePath(), e);
     }
-    Assertions.assertTrue(optCdAST.isPresent());
+    if (optCdAST.isEmpty()) {
+      throw new IllegalStateException("Could not parse class diagram " + file.getAbsolutePath());
+    }
 
     // create symbol table
-    createCDSymTab(optCdAST.get());
+    initializeCDSymbolTable(optCdAST.get());
 
     return optCdAST.get();
   }
@@ -74,20 +71,18 @@ public class JavaLoader {
       Optional<ASTCDCompilationUnit> cd = CD4CodeMill.parser().parseCDCompilationUnit(cdFile);
 
       if (cd.isPresent()) {
-        createCDSymTab(cd.get());
+        initializeCDSymbolTable(cd.get());
         return cd.get();
 
-      } else {
-        fail("Could not parse CDs.");
       }
-
+      throw new IllegalStateException("Could not parse class diagram " + cdFile);
     } catch (IOException e) {
-      fail(e.getMessage());
+      throw new IllegalStateException("Could not read class diagram " + cdFile, e);
     }
-    return null;
   }
 
-  private static void createCDSymTab(ASTCDCompilationUnit ast) {
+  /** Rebuilds the symbol table for a parsed or cloned class-diagram AST. */
+  public static void initializeCDSymbolTable(ASTCDCompilationUnit ast) {
     BuiltInTypes.addBuiltInTypes(CD4CodeMill.globalScope());
     ICD4CodeArtifactScope as = CD4CodeMill.scopesGenitorDelegator().createFromAST(ast);
     CD4CodeSymbolTableCompleter c =
@@ -104,16 +99,21 @@ public class JavaLoader {
    * @return The resulting ASTOrdinaryCompilationUnit created from the Java file.
    */
   public static ASTOrdinaryCompilationUnit loadJava(File javaFile) {
-    assertTrue(javaFile.getName().endsWith(".java"));
+    requireFileExtension(javaFile, ".java");
 
     // parse
     JavaDSLTool tool = new JavaDSLTool();
     Optional<ASTCompilationUnit> ast;
     ast = Optional.ofNullable(tool.parse(javaFile.getAbsolutePath()));
 
-    assertTrue(ast.isPresent());
-    ASTOrdinaryCompilationUnit ordinaryCompilationUnit =
-        assertInstanceOf(ASTOrdinaryCompilationUnit.class, ast.get());
+    if (ast.isEmpty()) {
+      throw new IllegalStateException("Could not parse Java source " + javaFile.getAbsolutePath());
+    }
+    if (!(ast.get() instanceof ASTOrdinaryCompilationUnit)) {
+      throw new IllegalStateException(
+          "Expected an ordinary Java compilation unit in " + javaFile.getAbsolutePath());
+    }
+    ASTOrdinaryCompilationUnit ordinaryCompilationUnit = (ASTOrdinaryCompilationUnit) ast.get();
 
     // create symbol table
     IJavaDSLGlobalScope globalScope = JavaDSLMill.globalScope();
@@ -149,9 +149,12 @@ public class JavaLoader {
 
   public static void writeFile(Path path, String content) {
     try {
-      FileUtils.writeStringToFile(path.toFile(), content, Charset.defaultCharset(), false);
+      if (path.getParent() != null) {
+        Files.createDirectories(path.getParent());
+      }
+      Files.writeString(path, content, StandardCharsets.UTF_8);
     } catch (IOException e) {
-      Log.error("Exception occur when writing the file " + path);
+      throw new IllegalStateException("Could not write file " + path, e);
     }
   }
 
@@ -162,9 +165,13 @@ public class JavaLoader {
    * @return A set of Java files represented as ASTOrdinaryCompilationUnit.
    */
   public static Set<ASTOrdinaryCompilationUnit> readJavaCode(Path directoryPath) {
+    // One batch owns one global JavaDSL scope. CodeAdapter serializes complete runs because the
+    // generated MontiCore mills are process-global, so clearing here prevents stale artifact
+    // scopes from accumulating across validation and isolated mapping passes.
+    JavaDSLMill.globalScope().clear();
     Set<File> res = new LinkedHashSet<>();
     readJavaCode(directoryPath, res);
-    return res.stream().map(JavaLoader::loadJava).collect(Collectors.toSet());
+    return res.stream().map(JavaLoader::loadJava).collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   /**
@@ -180,28 +187,30 @@ public class JavaLoader {
   }
 
   private static void readJavaCode(Path directoryPath, Set<File> res) {
-    File directory = directoryPath.toFile();
-    File[] files = directory.listFiles();
-
-    if (files != null) {
-      for (File file : files) {
-        if (file.isDirectory()) {
-          readJavaCode(file.toPath(), res);
-        } else if (file.isFile() && file.getName().endsWith(".java")) {
-          res.add(file);
-        }
-      }
+    Path normalized = directoryPath.toAbsolutePath().normalize();
+    if (!Files.exists(normalized)) {
+      throw new IllegalArgumentException("Java source directory does not exist: " + normalized);
+    }
+    if (!Files.isDirectory(normalized)) {
+      throw new IllegalArgumentException("Java source path is not a directory: " + normalized);
+    }
+    try (var paths = Files.walk(normalized)) {
+      paths.filter(Files::isRegularFile)
+          .filter(path -> path.getFileName().toString().endsWith(".java"))
+          .sorted(Comparator.comparing(Path::toString))
+          .map(Path::toFile)
+          .forEach(res::add);
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not read Java source directory " + normalized, e);
     }
   }
 
   public static String readFileContent(File file) {
-    byte[] bytes = new byte[0];
     try {
-      bytes = Files.readAllBytes(Path.of(file.getAbsolutePath()));
+      return Files.readString(file.toPath(), StandardCharsets.UTF_8);
     } catch (IOException e) {
-      Log.error("It was not possible to read the file " + file.getAbsolutePath());
+      throw new IllegalStateException("Could not read file " + file.getAbsolutePath(), e);
     }
-    return new String(bytes);
   }
 
   /**
@@ -213,13 +222,6 @@ public class JavaLoader {
 
       JavaDSLFullPrettyPrinter prettyPrinter = new JavaDSLFullPrettyPrinter(new IndentPrinter());
       String output = prettyPrinter.prettyprint(ast);
-      try {
-        if (targetPath.getParent() != null) {
-          Files.createDirectories(targetPath.getParent());
-        }
-      } catch (IOException e) {
-        Log.error("Exception occur when creating the directory for " + targetPath);
-      }
       JavaLoader.writeFile(targetPath, output);
     }
   }
@@ -261,11 +263,24 @@ public class JavaLoader {
    * Deletes an output directory before adaptation writes new generated code.
    */
   public static void removeDirectory(Path path) {
+    Path normalized = path.toAbsolutePath().normalize();
+    if (normalized.getParent() == null) {
+      throw new IllegalArgumentException("Refusing to delete filesystem root: " + normalized);
+    }
     try {
-      // Delete the directory and its contents
-      FileUtils.deleteDirectory(new File(path.toString()));
+      FileUtils.deleteDirectory(normalized.toFile());
     } catch (IOException e) {
-      Log.error("Failed to delete directory: " + e.getMessage());
+      throw new IllegalStateException("Failed to delete directory " + normalized, e);
+    }
+  }
+
+  private static void requireFileExtension(File file, String extension) {
+    Objects.requireNonNull(file, "file");
+    if (!file.getName().endsWith(extension)) {
+      throw new IllegalArgumentException("Expected a " + extension + " file: " + file);
+    }
+    if (!file.isFile()) {
+      throw new IllegalArgumentException("File does not exist or is not a regular file: " + file);
     }
   }
 }

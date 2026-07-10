@@ -12,8 +12,8 @@ public class Subject {
   public void unregister(Observer o) {
   }
 
-  @Adapt(ref = {"Subject.notifyAll"}, template = "${}")
-  public void notifyAll() {
+  @Adapt(ref = {"Subject.notifyObservers"}, template = "${}")
+  public void notifyObservers() {
   }
 
 }

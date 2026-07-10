@@ -7,7 +7,7 @@ classdiagram ObserverRef {
   class Subject {
     void register(Observer o);
     void unregister(Observer o);
-    void notifyAll();
+    void notifyObservers();
   }
 
   association Subject -> (observers) Observer [*] <<ordered>>;

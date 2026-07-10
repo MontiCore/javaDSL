@@ -47,6 +47,18 @@ public class SingletonAdapterTest extends AdapterAbstractTest {
                 adapterCodePath,
                 refCodePath,
                 outputPath));
+    assertFalse(generatedJavaFilesRecursively(outputPath).isEmpty());
+    assertNoAdapterMetadata(outputPath);
+    assertGeneratedJavaCompiles(generatedJavaFilesRecursively(outputPath));
+
+    String databaseConnection = readFileContent(outputPath, "DatabaseConnection.java");
+    String logger = readFileContent(outputPath, "Logger.java");
+    assertTrue(databaseConnection.contains("class DatabaseConnection"));
+    assertTrue(databaseConnection.contains("static DatabaseConnection instance"));
+    assertTrue(databaseConnection.contains("DatabaseConnection getInstance()"));
+    assertTrue(logger.contains("class Logger"));
+    assertTrue(logger.contains("static Logger instance"));
+    assertTrue(logger.contains("Logger getInstance()"));
   }
 }
 
