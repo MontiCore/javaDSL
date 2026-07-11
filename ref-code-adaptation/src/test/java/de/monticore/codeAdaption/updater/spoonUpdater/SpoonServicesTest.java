@@ -1,5 +1,7 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
+import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -104,8 +106,7 @@ class SpoonServicesTest {
         List.of("renamedValue"),
         "String",
         false,
-        null,
-        null);
+        MethodBodySpec.empty());
 
     String generated =
         resolver.getSpoonType(echo).getMethodsByName("renamedEcho").get(0).toString();
@@ -136,8 +137,7 @@ class SpoonServicesTest {
         List.of(),
         "int",
         false,
-        null,
-        null);
+        MethodBodySpec.empty());
 
     String generated = resolver.getSpoonType(type).getMethodsByName("number").get(0).toString();
     assertTrue(generated.contains("return 0"), generated);

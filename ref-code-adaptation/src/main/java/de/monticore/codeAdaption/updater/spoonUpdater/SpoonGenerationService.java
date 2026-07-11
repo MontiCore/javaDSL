@@ -81,9 +81,9 @@ final class SpoonGenerationService {
       List<String> parameterNames,
       String returnType,
       boolean isStatic,
-      MethodBodySpec methodBody,
-      String legacyBody) {
+      MethodBodySpec methodBody) {
     validateMethodInput(newName, parameterTypes, parameterNames);
+    Objects.requireNonNull(methodBody, "Method body specification must not be null");
     CtType<?> spoonType = resolver.getSpoonType(targetType);
     if (hasMethod(spoonType, newName, parameterTypes)) {
       return;
@@ -96,18 +96,13 @@ final class SpoonGenerationService {
             parameterTypes,
             parameterNames,
             returnType,
-            hasReplacementBody(methodBody, legacyBody));
+            hasReplacementBody(methodBody));
     setStatic(clone, isStatic);
-    if (legacyBody != null && !legacyBody.isBlank()) {
-      clone.setBody(workspace.factory().Core().createBlock());
-      clone.getBody().addStatement(workspace.factory().Code().createCodeSnippetStatement(legacyBody));
-    } else {
-      applyMethodBodySpec(targetType, clone, methodBody);
-    }
+    applyMethodBodySpec(targetType, clone, methodBody);
     spoonType.addMethod(clone);
   }
 
-  boolean requiresSignatureOnlyMethod(
+  private boolean requiresSignatureOnlyMethod(
       ASTTypeDeclaration targetType, ASTMethodDeclaration templateMethod) {
     CtType<?> target = resolver.getSpoonType(targetType);
     if (target.isInterface()) {
@@ -236,9 +231,8 @@ final class SpoonGenerationService {
     return body;
   }
 
-  private static boolean hasReplacementBody(MethodBodySpec methodBody, String legacyBody) {
-    return (legacyBody != null && !legacyBody.isBlank())
-        || (methodBody != null && methodBody.kind() != MethodBodySpec.Kind.EMPTY);
+  private static boolean hasReplacementBody(MethodBodySpec methodBody) {
+    return methodBody.kind() != MethodBodySpec.Kind.EMPTY;
   }
 
   private boolean hasMethod(CtType<?> type, String name, List<String> parameterTypes) {
@@ -267,7 +261,7 @@ final class SpoonGenerationService {
   @SuppressWarnings({"rawtypes", "unchecked"})
   private void applyMethodBodySpec(
       ASTTypeDeclaration targetType, CtMethod<?> clone, MethodBodySpec methodBody) {
-    if (methodBody == null || methodBody.kind() == MethodBodySpec.Kind.EMPTY) {
+    if (methodBody.kind() == MethodBodySpec.Kind.EMPTY) {
       return;
     }
     CtBlock<?> body = workspace.factory().Core().createBlock();

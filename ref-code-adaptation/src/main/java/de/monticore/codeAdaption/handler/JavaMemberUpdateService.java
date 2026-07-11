@@ -6,6 +6,7 @@ import de.monticore.cdassociation._ast.ASTCDAssociation;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.codeAdaption.matcher.CodeMatching;
+import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
@@ -163,7 +164,8 @@ final class JavaMemberUpdateService {
                   .toList(),
               symbols.resolveConcreteCdType(
                   JavaSourceNames.printNormalizedReturnType(concreteDeclaration)),
-              concreteDeclaration.getModifier().isStatic());
+              concreteDeclaration.getModifier().isStatic(),
+              MethodBodySpec.empty());
           handler.updater.removeMethod(type, method);
         } else if (!concreteMethod.get().getName().equals(referenceMethod.getName())) {
           handler.updater.updateMethod(type, method, concreteMethod.get().getName());

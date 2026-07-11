@@ -128,15 +128,6 @@ public class SpoonUpdater implements CodeUpdater {
       ASTTypeDeclaration targetType,
       ASTFieldDeclaration templateField,
       String newName,
-      String newType) {
-    generation.addField(targetType, templateField, newName, newType, false);
-  }
-
-  @Override
-  public void addField(
-      ASTTypeDeclaration targetType,
-      ASTFieldDeclaration templateField,
-      String newName,
       String newType,
       boolean isStatic) {
     generation.addField(targetType, templateField, newName, newType, isStatic);
@@ -154,70 +145,8 @@ public class SpoonUpdater implements CodeUpdater {
       String newName,
       List<String> parameterTypes,
       List<String> parameterNames,
-      String returnType) {
-    generation.addMethod(
-        targetType,
-        templateMethod,
-        newName,
-        parameterTypes,
-        parameterNames,
-        returnType,
-        false,
-        null,
-        null);
-  }
-
-  @Override
-  public void addMethod(
-      ASTTypeDeclaration targetType,
-      ASTMethodDeclaration templateMethod,
-      String newName,
-      List<String> parameterTypes,
-      List<String> parameterNames,
       String returnType,
-      boolean isStatic) {
-    generation.addMethod(
-        targetType,
-        templateMethod,
-        newName,
-        parameterTypes,
-        parameterNames,
-        returnType,
-        isStatic,
-        null,
-        null);
-  }
-
-  @Override
-  @Deprecated
-  public void addMethod(
-      ASTTypeDeclaration targetType,
-      ASTMethodDeclaration templateMethod,
-      String newName,
-      List<String> parameterTypes,
-      List<String> parameterNames,
-      String returnType,
-      String methodBody) {
-    generation.addMethod(
-        targetType,
-        templateMethod,
-        newName,
-        parameterTypes,
-        parameterNames,
-        returnType,
-        false,
-        null,
-        methodBody);
-  }
-
-  @Override
-  public void addMethod(
-      ASTTypeDeclaration targetType,
-      ASTMethodDeclaration templateMethod,
-      String newName,
-      List<String> parameterTypes,
-      List<String> parameterNames,
-      String returnType,
+      boolean isStatic,
       MethodBodySpec methodBody) {
     generation.addMethod(
         targetType,
@@ -226,15 +155,8 @@ public class SpoonUpdater implements CodeUpdater {
         parameterTypes,
         parameterNames,
         returnType,
-        false,
-        methodBody,
-        null);
-  }
-
-  @Override
-  public boolean requiresSignatureOnlyMethod(
-      ASTTypeDeclaration targetType, ASTMethodDeclaration templateMethod) {
-    return generation.requiresSignatureOnlyMethod(targetType, templateMethod);
+        isStatic,
+        methodBody);
   }
 
   @Override

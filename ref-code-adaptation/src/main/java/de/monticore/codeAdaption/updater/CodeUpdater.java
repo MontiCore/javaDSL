@@ -145,24 +145,8 @@ public interface CodeUpdater {
   }
 
   /**
-   * Register an owner-aware field rewrite. Implementations can use this to avoid global name-only
-   * field access replacements.
-   */
-  default void registerFieldRewrite(StableElementKey referenceField, StableElementKey concreteField) {
-    throw unsupported("registerFieldRewrite");
-  }
-
-  /**
-   * Add a new field to the given target type by cloning a template field
-   * and setting the provided name and type.
-   * Implementations should handle imports and type references.
-   */
-  default void addField(ASTTypeDeclaration targetType, ASTFieldDeclaration templateField, String newName, String newType) {
-    throw unsupported("addField");
-  }
-
-  /**
-   * Add a new field and optionally force the cloned field to be static.
+   * Add a new field to the target type by cloning a template field and configuring its name, type,
+   * and static modifier.
    */
   default void addField(
       ASTTypeDeclaration targetType,
@@ -170,22 +154,13 @@ public interface CodeUpdater {
       String newName,
       String newType,
       boolean isStatic) {
-    addField(targetType, templateField, newName, newType);
+    throw unsupported("addField");
   }
 
   /**
-   * Add a new method to the given target type by cloning a template method
-   * and setting the provided name, parameter types/names and return type.
+   * Add a method to the target type by cloning a template method and configuring its signature,
+   * static modifier, and structured body.
    */
-  default void addMethod(ASTTypeDeclaration targetType,
-                         ASTMethodDeclaration templateMethod,
-                         String newName,
-                         List<String> paramTypes,
-                         List<String> paramNames,
-                         String returnType) {
-    throw unsupported("addMethod");
-  }
-
   default void addMethod(
       ASTTypeDeclaration targetType,
       ASTMethodDeclaration templateMethod,
@@ -193,59 +168,8 @@ public interface CodeUpdater {
       List<String> paramTypes,
       List<String> paramNames,
       String returnType,
-      boolean isStatic) {
-    addMethod(targetType, templateMethod, newName, paramTypes, paramNames, returnType);
-  }
-
-  /**
-   * Returns whether generated methods for the target should be signature-only, e.g. interface
-   * declarations or abstract method templates in abstract classes.
-   */
-  default boolean requiresSignatureOnlyMethod(
-      ASTTypeDeclaration targetType, ASTMethodDeclaration templateMethod) {
-    return false;
-  }
-
-  /**
-   * Add a new method variant that allows specifying a method body snippet.
-   * Deprecated compatibility hook. New code should pass a structured {@link MethodBodySpec}.
-   */
-  @Deprecated
-  default void addMethod(ASTTypeDeclaration targetType,
-                         ASTMethodDeclaration templateMethod,
-                         String newName,
-                         List<String> paramTypes,
-                         List<String> paramNames,
-                         String returnType,
-                         String methodBody) {
-    if (methodBody == null || methodBody.isBlank()) {
-      addMethod(
-          targetType,
-          templateMethod,
-          newName,
-          paramTypes,
-          paramNames,
-          returnType,
-          MethodBodySpec.empty());
-      return;
-    }
-    throw new UnsupportedOperationException(
-        getClass().getName()
-            + " does not support deprecated string-body addMethod. Use MethodBodySpec for "
-            + "structured generated method bodies.");
-  }
-
-  /**
-   * Add a new method variant with a structured body. This avoids reparsing generated Java source
-   * snippets in concrete updater implementations.
-   */
-  default void addMethod(ASTTypeDeclaration targetType,
-                         ASTMethodDeclaration templateMethod,
-                         String newName,
-                         List<String> paramTypes,
-                         List<String> paramNames,
-                         String returnType,
-                         MethodBodySpec methodBody) {
+      boolean isStatic,
+      MethodBodySpec methodBody) {
     throw unsupported("addMethod");
   }
 

@@ -87,7 +87,7 @@ final class JavaTypeUpdateService {
     List<String> buildArguments = new ArrayList<>();
     for (GeneratedAttribute attribute : attributes) {
       String fieldName = attribute.name() + "Field";
-      handler.updater.addField(templateType, fieldTemplate, fieldName, attribute.type());
+      handler.updater.addField(templateType, fieldTemplate, fieldName, attribute.type(), false);
       buildArguments.add(fieldName);
       handler.updater.addMethod(
           templateType,
@@ -96,6 +96,7 @@ final class JavaTypeUpdateService {
           List.of(attribute.type()),
           List.of(attribute.name()),
           generatedTypeName,
+          false,
           MethodBodySpec.assignFieldAndReturnThis(fieldName, attribute.name()));
     }
     handler.updater.addMethod(
@@ -105,6 +106,7 @@ final class JavaTypeUpdateService {
         Collections.emptyList(),
         Collections.emptyList(),
         concreteName,
+        false,
         MethodBodySpec.returnNew(concreteName, buildArguments));
     removeTemplateMembers(templateType, templateFields, templateMethods);
   }
@@ -251,7 +253,8 @@ final class JavaTypeUpdateService {
                     .toList(),
                 symbols.resolveConcreteCdType(
                     JavaSourceNames.printNormalizedReturnType(concreteMethod)),
-                concreteMethod.getModifier().isStatic());
+                concreteMethod.getModifier().isStatic(),
+                MethodBodySpec.empty());
           }
         }
       }
