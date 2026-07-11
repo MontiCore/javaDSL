@@ -119,6 +119,9 @@ assignments are rewritten only inside that owning Java type.
   superclasses, modifiers, and type-reference printing. Runtime Java reflection
   is not used by the adapter.
 - `ManualIncarnationContextBuilder` is the non-mutating context builder for `useConcretization=false`.
+- `IncarnationContext` owns one immutable stable-key mapping. MontiCore symbols
+  are retained only as mapped-element payload for AST operations; symbol object
+  identity is not used for incarnation lookup.
 - `AdaptationConflictDetector` validates manual mappings before Java output is written.
 - `JavaTypeUpdateService` fills Java-expressible gaps only after
   cdconcretization, such as missing fields, methods, types, enum constants,

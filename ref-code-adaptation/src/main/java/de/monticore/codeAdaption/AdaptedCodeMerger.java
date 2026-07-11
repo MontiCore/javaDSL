@@ -2,6 +2,7 @@ package de.monticore.codeAdaption;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
@@ -12,7 +13,6 @@ import de.monticore.java.javadsl._ast.ASTImportDeclaration;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
-import de.monticore.symboltable.ISymbol;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,7 +41,8 @@ final class AdaptedCodeMerger {
   Set<ASTOrdinaryCompilationUnit> filterCodeForMapping(
       Set<ASTOrdinaryCompilationUnit> javaFiles,
       CodeValidator validator,
-      IncarnationContext context) {
+      IncarnationContext context,
+      CDModelIndex referenceIndex) {
     validator.initializeTypeMatcher(javaFiles);
     Set<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>();
     for (ASTOrdinaryCompilationUnit unit : javaFiles) {
@@ -54,10 +55,10 @@ final class AdaptedCodeMerger {
               .map(Optional::get)
               .flatMap(matching -> matching.getReferences().stream())
               .anyMatch(
-                  reference -> {
-                    List<ISymbol> incarnations = context.getIncarnations(reference);
-                    return incarnations != null && !incarnations.isEmpty();
-                  });
+                  reference -> StableElementKey.fromSymbol(reference, referenceIndex)
+                      .map(context::getIncarnations)
+                      .filter(incarnations -> !incarnations.isEmpty())
+                      .isPresent());
       boolean ignoredTopLevel =
           collector.getAllTypeDeclarations().stream()
               .map(validator::getMatchedType)

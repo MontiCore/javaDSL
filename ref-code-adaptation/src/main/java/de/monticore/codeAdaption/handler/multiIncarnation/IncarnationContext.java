@@ -1,196 +1,72 @@
 package de.monticore.codeAdaption.handler.multiIncarnation;
 
-import de.monticore.cd4codebasis._ast.ASTCDMethod;
-import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.symboltable.ISymbol;
-import de.monticore.cdbasis._ast.ASTCDType;
-import de.monticore.codeAdaption.utils.JavaSourceNames;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 /**
- * Context information for handling multiple incarnations of the same pattern.
- * Tracks which incarnations are available for each reference element and which mapping they belong to.
+ * Immutable incarnation mappings for one adaptation mapping. Stable keys are the only lookup
+ * identity; MontiCore symbols are retained only as payload for AST operations.
  */
 public class IncarnationContext {
+  public record MappedElement(StableElementKey key, ISymbol symbol) {
+    public MappedElement {
+      Objects.requireNonNull(key);
+      Objects.requireNonNull(symbol);
+    }
+  }
+
   private final String mappingName;
-  private final Map<ISymbol, List<ISymbol>> referenceToIncarnations;
-  private final Map<ISymbol, List<ISymbol>> interfaceToImplementers;
-  private final Map<ISymbol, StableElementKey> symbolKeys;
-  private final ResolvedIncarnationContext resolvedContext;
-  // concrete simple-name to grouping simple-name
-  private Map<String, String> concreteToGroupingType = new HashMap<>();
-
-  public IncarnationContext(String mappingName, Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    this(mappingName, referenceToIncarnations, Map.of());
-  }
-
-  public IncarnationContext(String mappingName, Map<ISymbol, List<ISymbol>> referenceToIncarnations,
-      Map<ISymbol, List<ISymbol>> interfaceToImplementers) {
-    this(mappingName, referenceToIncarnations, interfaceToImplementers, Map.of(), null);
-  }
+  private final Map<StableElementKey, List<MappedElement>> mappings;
+  private final Map<StableElementKey, MappedElement> groupingByImplementer;
 
   public IncarnationContext(
       String mappingName,
-      Map<ISymbol, List<ISymbol>> referenceToIncarnations,
-      Map<ISymbol, List<ISymbol>> interfaceToImplementers,
-      Map<ISymbol, StableElementKey> symbolKeys,
-      ResolvedIncarnationContext resolvedContext) {
-    this.mappingName = mappingName;
-    this.referenceToIncarnations = referenceToIncarnations;
-    this.interfaceToImplementers = interfaceToImplementers != null ? interfaceToImplementers : Map.of();
-    this.symbolKeys = symbolKeys != null ? new LinkedHashMap<>(symbolKeys) : Map.of();
-    this.resolvedContext =
-        resolvedContext != null ? resolvedContext : new ResolvedIncarnationContext(mappingName);
+      Map<StableElementKey, List<MappedElement>> mappings,
+      Map<StableElementKey, MappedElement> groupingByImplementer) {
+    this.mappingName = Objects.requireNonNull(mappingName);
+    this.mappings = immutableMappings(mappings);
+    this.groupingByImplementer =
+        Collections.unmodifiableMap(
+            new LinkedHashMap<>(
+                groupingByImplementer == null ? Map.of() : groupingByImplementer));
   }
 
   public String getMappingName() {
     return mappingName;
   }
 
-  public Map<ISymbol, List<ISymbol>> getReferenceToIncarnations() {
-    return referenceToIncarnations;
+  public Map<StableElementKey, List<MappedElement>> getMappings() {
+    return mappings;
   }
 
-  public List<ISymbol> getIncarnations(ISymbol referenceSymbol) {
-    if (referenceSymbol == null) {
-      return null;
-    }
-    Optional<StableElementKey> key = getStableKey(referenceSymbol);
-    if (key.isPresent()) {
-      List<ISymbol> resolved =
-          resolvedContext.getIncarnations(key.get()).stream()
-              .map(ResolvedIncarnationContext.ResolvedElement::getSymbol)
-              .filter(java.util.Objects::nonNull)
-              .toList();
-      if (!resolved.isEmpty()) {
-        return resolved;
-      }
-    }
-    List<ISymbol> incarnations = referenceToIncarnations.get(referenceSymbol);
-    if (incarnations != null) {
-      return incarnations;
-    }
-    return null;
+  public List<MappedElement> getIncarnations(StableElementKey referenceKey) {
+    return referenceKey == null ? List.of() : mappings.getOrDefault(referenceKey, List.of());
   }
 
-  public List<ResolvedIncarnationContext.ResolvedElement> getIncarnations(StableElementKey referenceKey) {
-    return resolvedContext.getIncarnations(referenceKey);
+  public Optional<MappedElement> getUniqueIncarnation(StableElementKey referenceKey) {
+    List<MappedElement> incarnations = getIncarnations(referenceKey);
+    return incarnations.size() == 1 ? Optional.of(incarnations.get(0)) : Optional.empty();
   }
 
-  public Optional<StableElementKey> getStableKey(ISymbol symbol) {
-    StableElementKey registered = symbolKeys.get(symbol);
-    if (registered != null) {
-      return Optional.of(registered);
-    }
-    // Matchers may hold symbols from a separately initialized AST. Type identity is still stable
-    // across those loads and must not fall back to reference names during multi-incarnation runs.
-    if (symbol != null && symbol.getAstNode() instanceof ASTCDType type) {
-      return Optional.of(StableElementKey.type(type));
-    }
-    if (symbol != null && symbol.getAstNode() instanceof ASTCDAttribute attribute) {
-      List<StableElementKey> matches =
-          resolvedContext.getFieldMappings().keySet().stream()
-              .filter(key -> key.getName().equals(attribute.getName()))
-              .filter(
-                  key ->
-                      key.getFieldKind()
-                          .map(JavaSourceNames.printNormalizedFieldType(attribute)::equals)
-                          .orElse(false))
-              .toList();
-      return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();
-    }
-    if (symbol != null && symbol.getAstNode() instanceof ASTCDMethod method) {
-      List<String> parameterTypes =
-          method.getCDParameterList().stream()
-              .map(parameter -> JavaSourceNames.printNormalizedType(parameter.getMCType()))
-              .toList();
-      String returnType = JavaSourceNames.printNormalizedReturnType(method);
-      List<StableElementKey> matches =
-          resolvedContext.getMethodMappings().keySet().stream()
-              .filter(key -> key.getName().equals(method.getName()))
-              .filter(key -> key.getParameterTypes().equals(parameterTypes))
-              .filter(key -> key.getReturnType().map(returnType::equals).orElse(true))
-              .toList();
-      return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();
-    }
-    return Optional.empty();
+  public Optional<MappedElement> getGroupingFor(StableElementKey implementer) {
+    return Optional.ofNullable(groupingByImplementer.get(implementer));
   }
 
-  public ResolvedIncarnationContext getResolvedContext() {
-    return resolvedContext;
+  public Map<StableElementKey, MappedElement> getGroupingMappings() {
+    return groupingByImplementer;
   }
 
-  public boolean hasMultipleIncarnations(ISymbol referenceSymbol) {
-    List<ISymbol> incarnations = getIncarnations(referenceSymbol);
-    return incarnations != null && incarnations.size() > 1;
-  }
-
-  /**
-   * Set the computed concrete->grouping mapping (simple names).
-   */
-  public void setConcreteToGroupingType(Map<String, String> map) {
-    if (map == null) this.concreteToGroupingType = new HashMap<>();
-    else this.concreteToGroupingType = new HashMap<>(map);
-    for (Map.Entry<String, String> entry : this.concreteToGroupingType.entrySet()) {
-      resolvedContext.setGroupingMapping(
-          StableElementKey.type(entry.getKey()), StableElementKey.type(entry.getValue()));
+  private static Map<StableElementKey, List<MappedElement>> immutableMappings(
+      Map<StableElementKey, List<MappedElement>> source) {
+    Map<StableElementKey, List<MappedElement>> copy = new LinkedHashMap<>();
+    if (source != null) {
+      source.forEach((key, value) -> copy.put(key, value == null ? List.of() : List.copyOf(value)));
     }
-  }
-
-  /**
-   * Find a grouping type simple name for the given concrete implementer simple name.
-   * Returns Optional.empty() if no grouping was computed.
-   */
-  public Optional<String> findGroupingTypeForImplementer(String concreteSimpleName) {
-    if (concreteSimpleName == null) return Optional.empty();
-    String v = concreteToGroupingType.get(concreteSimpleName);
-    return v == null ? Optional.empty() : Optional.of(v);
-  }
-
-  public Map<ISymbol, List<ISymbol>> getInterfaceToImplementers() {
-    return interfaceToImplementers;
-  }
-
-  /**
-   * Look up the concrete type name for a reference type name.
-   * Returns the first incarnation's name if found.
-   */
-  public Optional<String> getConcreteTypeName(String refTypeName) {
-    List<ResolvedIncarnationContext.ResolvedElement> typeIncarnations =
-        resolvedContext.getIncarnations(StableElementKey.type(refTypeName));
-    if (!typeIncarnations.isEmpty()) {
-      return Optional.of(typeIncarnations.get(0).getKey().getName());
-    }
-    return Optional.empty();
-  }
-
-  public Map<StableElementKey, List<StableElementKey>> getStableMappings() {
-    Map<StableElementKey, List<StableElementKey>> result = new LinkedHashMap<>();
-    for (Map.Entry<StableElementKey, List<ResolvedIncarnationContext.ResolvedElement>> entry :
-        resolvedContext.getTypeMappings().entrySet()) {
-      result.put(entry.getKey(), toKeys(entry.getValue()));
-    }
-    for (Map.Entry<StableElementKey, List<ResolvedIncarnationContext.ResolvedElement>> entry :
-        resolvedContext.getFieldMappings().entrySet()) {
-      result.put(entry.getKey(), toKeys(entry.getValue()));
-    }
-    for (Map.Entry<StableElementKey, List<ResolvedIncarnationContext.ResolvedElement>> entry :
-        resolvedContext.getMethodMappings().entrySet()) {
-      result.put(entry.getKey(), toKeys(entry.getValue()));
-    }
-    return result;
-  }
-
-  private List<StableElementKey> toKeys(List<ResolvedIncarnationContext.ResolvedElement> elements) {
-    List<StableElementKey> keys = new ArrayList<>();
-    for (ResolvedIncarnationContext.ResolvedElement element : elements) {
-      keys.add(element.getKey());
-    }
-    return keys;
+    return Collections.unmodifiableMap(copy);
   }
 }

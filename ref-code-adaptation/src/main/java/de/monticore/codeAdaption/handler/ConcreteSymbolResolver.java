@@ -6,12 +6,11 @@ import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
+import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.MatcherHelper;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
-import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
-import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
@@ -64,8 +63,11 @@ final class ConcreteSymbolResolver {
     if (handler.incarnationContext == null) {
       return Optional.empty();
     }
-    List<ISymbol> incarnations = handler.incarnationContext.getIncarnations(reference);
-    if (incarnations == null || incarnations.isEmpty()) {
+    List<ISymbol> incarnations =
+        handler.mappedIncarnations(reference).stream()
+            .map(IncarnationContext.MappedElement::symbol)
+            .toList();
+    if (incarnations.isEmpty()) {
       return Optional.empty();
     }
     if (reference instanceof CDTypeSymbol && handler.useCommonParentForMultipleIncarnations) {
@@ -74,8 +76,7 @@ final class ConcreteSymbolResolver {
         return commonParent;
       }
       for (ISymbol incarnation : incarnations) {
-        Optional<String> grouping =
-            handler.incarnationContext.findGroupingTypeForImplementer(incarnation.getName());
+        Optional<String> grouping = groupingName(incarnation.getName());
         if (grouping.isPresent()) {
           Optional<ISymbol> groupingSymbol = findContextSymbolByName(grouping.get());
           if (groupingSymbol.isPresent()) {
@@ -158,8 +159,8 @@ final class ConcreteSymbolResolver {
       return;
     }
     if (handler.incarnationContext != null) {
-      Optional<StableElementKey> referenceKey = handler.incarnationContext.getStableKey(reference);
-      Optional<StableElementKey> concreteKey = handler.incarnationContext.getStableKey(concrete);
+      Optional<StableElementKey> referenceKey = handler.referenceKey(reference);
+      Optional<StableElementKey> concreteKey = handler.concreteKey(concrete);
       if (referenceKey.isPresent() && concreteKey.isPresent()) {
         handler.updater.registerMethodRewrite(referenceKey.get(), concreteKey.get());
       }
@@ -213,19 +214,15 @@ final class ConcreteSymbolResolver {
               .orElseGet(() -> handler.getConTypeSymbol(referenceType.get().getSymbol()));
       if (resolved.getName().equals(referenceType.get().getName())
           && handler.incarnationContext != null) {
-        List<ISymbol> alternatives =
-            handler.incarnationContext.getIncarnations(referenceType.get().getSymbol());
-        if (alternatives != null) {
-          Optional<String> concreteAlternative =
-              alternatives.stream()
-                  .map(ISymbol::getName)
-                  .filter(name -> !name.equals(referenceType.get().getName()))
-                  .filter(handler.conIndex::hasType)
-                  .sorted()
-                  .findFirst();
-          if (concreteAlternative.isPresent()) {
-            return concreteAlternative.get();
-          }
+        Optional<String> concreteAlternative =
+            handler.mappedIncarnations(referenceType.get().getSymbol()).stream()
+                .map(element -> element.key().getName())
+                .filter(name -> !name.equals(referenceType.get().getName()))
+                .filter(handler.conIndex::hasType)
+                .sorted()
+                .findFirst();
+        if (concreteAlternative.isPresent()) {
+          return concreteAlternative.get();
         }
       }
       return resolved.getName();
@@ -265,18 +262,14 @@ final class ConcreteSymbolResolver {
     return JavaSourceNames.replaceSimpleTypeNames(
         rawType,
         simple -> {
-          Optional<String> direct =
-              handler.incarnationContext.findGroupingTypeForImplementer(simple);
+          Optional<String> direct = groupingName(simple);
           if (direct.isPresent()) {
             return direct;
           }
-          for (Map.Entry<ISymbol, List<ISymbol>> entry :
-              handler.incarnationContext.getReferenceToIncarnations().entrySet()) {
-            if (entry.getKey().getName().equals(simple)
-                && entry.getValue() != null
-                && !entry.getValue().isEmpty()) {
-              return handler.incarnationContext.findGroupingTypeForImplementer(
-                  entry.getValue().get(0).getName());
+          for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+              handler.incarnationContext.getMappings().entrySet()) {
+            if (entry.getKey().getName().equals(simple) && !entry.getValue().isEmpty()) {
+              return groupingName(entry.getValue().get(0).key().getName());
             }
           }
           return Optional.empty();
@@ -302,41 +295,56 @@ final class ConcreteSymbolResolver {
   private Optional<ISymbol> findCommonParent(List<ISymbol> incarnations) {
     Set<String> names = new HashSet<>();
     incarnations.forEach(symbol -> names.add(symbol.getName()));
-    for (Map.Entry<ISymbol, List<ISymbol>> entry :
-        handler.incarnationContext.getInterfaceToImplementers().entrySet()) {
-      if (!names.contains(entry.getKey().getName())) {
+    for (String possibleGrouping : names) {
+      Optional<IncarnationContext.MappedElement> groupingElement =
+              handler.incarnationContext.getGroupingMappings().values().stream()
+                  .filter(element -> element.key().getName().equals(possibleGrouping))
+                  .findFirst();
+      if (groupingElement.isEmpty()) {
         continue;
       }
-      Set<String> implementers = new HashSet<>();
-      entry.getValue().forEach(symbol -> implementers.add(symbol.getName()));
+      Set<String> implementers =
+          handler.incarnationContext.getGroupingMappings().entrySet().stream()
+              .filter(entry -> entry.getValue().key().getName().equals(possibleGrouping))
+              .map(entry -> entry.getKey().getName())
+              .filter(name -> !name.equals(possibleGrouping))
+              .collect(java.util.stream.Collectors.toSet());
       Set<String> remaining = new HashSet<>(names);
-      remaining.remove(entry.getKey().getName());
+      remaining.remove(possibleGrouping);
       if (remaining.equals(implementers)) {
-        return Optional.of(entry.getKey());
+        return Optional.of(groupingElement.get().symbol());
       }
     }
     return Optional.empty();
   }
 
   private Optional<ISymbol> findContextSymbolByName(String name) {
-    for (Map.Entry<ISymbol, List<ISymbol>> entry :
-        handler.incarnationContext.getInterfaceToImplementers().entrySet()) {
-      if (entry.getKey().getName().equals(name)) {
-        return Optional.of(entry.getKey());
-      }
+    Optional<ISymbol> grouping =
+        handler.incarnationContext.getGroupingMappings().values().stream()
+            .filter(element -> element.key().getName().equals(name))
+            .map(element -> element.symbol())
+            .findFirst();
+    if (grouping.isPresent()) {
+      return grouping;
     }
-    for (Map.Entry<ISymbol, List<ISymbol>> entry :
-        handler.incarnationContext.getReferenceToIncarnations().entrySet()) {
-      if (entry.getKey().getName().equals(name)) {
-        return Optional.of(entry.getKey());
-      }
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+        handler.incarnationContext.getMappings().entrySet()) {
       Optional<ISymbol> incarnation =
-          entry.getValue().stream().filter(symbol -> symbol.getName().equals(name)).findFirst();
+          entry.getValue().stream()
+              .filter(element -> element.key().getName().equals(name))
+              .map(element -> element.symbol())
+              .findFirst();
       if (incarnation.isPresent()) {
         return incarnation;
       }
     }
     return Optional.empty();
+  }
+
+  private Optional<String> groupingName(String concreteTypeName) {
+    return handler.incarnationContext
+        .getGroupingFor(StableElementKey.type(concreteTypeName))
+        .map(grouping -> grouping.key().getName());
   }
 
   private static Map<String, String> importedTypes(ASTCDCompilationUnit cd) {

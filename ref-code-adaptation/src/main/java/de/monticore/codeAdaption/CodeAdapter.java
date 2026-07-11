@@ -183,7 +183,8 @@ public class CodeAdapter {
       Set<ASTOrdinaryCompilationUnit> mappingCode = cloneUnits(refCode);
       mappingCode = codeMerger.splitCompilationUnitsByType(mappingCode);
       mappingCode =
-          codeMerger.filterCodeForMapping(mappingCode, validators.get(mapping), ctx);
+          codeMerger.filterCodeForMapping(
+              mappingCode, validators.get(mapping), ctx, referenceIndex);
 
       for (AdaptationPass pass :
           buildAdaptationPasses(
@@ -222,7 +223,7 @@ public class CodeAdapter {
                     checkers.get(mapping),
                     updater,
                     validators.get(mapping),
-                    createSelector(pass.typeSelection(), ctx),
+                    createSelector(pass.typeSelection(), ctx, referenceIndex, conIndex),
                     Map.of(mapping, ctx),
                     ctx,
                     mapping,
@@ -309,12 +310,14 @@ public class CodeAdapter {
             validator.getMatchedType(type),
             context,
             relevantTypes,
+            referenceIndex,
             useCommonParentForMultipleIncarnations);
         for (var field : collector.getAllFieldDeclarations(type)) {
           addRelevantTypeReferences(
               validator.getMatchedField(type, field),
               context,
               relevantTypes,
+              referenceIndex,
               useCommonParentForMultipleIncarnations);
         }
         for (var supertype : collector.getAllFSuperTypeDeclarations(type)) {
@@ -322,6 +325,7 @@ public class CodeAdapter {
               validator.getMatchedSupertype(type, supertype),
               context,
               relevantTypes,
+              referenceIndex,
               useCommonParentForMultipleIncarnations);
         }
         for (var method : collector.getAllMethodDeclarations(type)) {
@@ -329,12 +333,14 @@ public class CodeAdapter {
               validator.getMatchedMethod(type, method),
               context,
               relevantTypes,
+              referenceIndex,
               useCommonParentForMultipleIncarnations);
           for (var parameter : collector.getAllParameters(type, method)) {
             addRelevantTypeReferences(
                 validator.getMatchedParameter(type, method, parameter),
                 context,
                 relevantTypes,
+                referenceIndex,
                 useCommonParentForMultipleIncarnations);
           }
           for (var local : collector.getAllLocVariables(type, method)) {
@@ -342,6 +348,7 @@ public class CodeAdapter {
                 validator.getMatchedLocalVariable(type, method, local),
                 context,
                 relevantTypes,
+                referenceIndex,
                 useCommonParentForMultipleIncarnations);
           }
         }
@@ -355,7 +362,7 @@ public class CodeAdapter {
         Map<ISymbol, ISymbol> selection = Map.of();
         defaultUnits.add(unit);
         defaultOutputTypeNames.addAll(
-            expectedOutputTypeNames(unit, validator, context, selection));
+            expectedOutputTypeNames(unit, validator, context, selection, referenceIndex));
       } else {
         for (Map<ISymbol, ISymbol> selection :
             buildCompleteTypeSelections(
@@ -368,7 +375,7 @@ public class CodeAdapter {
               new AdaptationPass(
                   Set.of(unit),
                   selection,
-                  expectedOutputTypeNames(unit, validator, context, selection)));
+                  expectedOutputTypeNames(unit, validator, context, selection, referenceIndex)));
         }
       }
     }
@@ -393,6 +400,7 @@ public class CodeAdapter {
       Optional<de.monticore.codeAdaption.matcher.CodeMatching> matching,
       IncarnationContext context,
       Map<StableElementKey, ISymbol> relevantTypes,
+      CDModelIndex referenceIndex,
       boolean useCommonParentForMultipleIncarnations) {
     if (matching.isEmpty() || !matching.get().mustBePerform()) {
       return;
@@ -401,24 +409,29 @@ public class CodeAdapter {
       if (!(reference instanceof de.monticore.cdbasis._symboltable.CDTypeSymbol)) {
         continue;
       }
-      List<ISymbol> incarnations = context.getIncarnations(reference);
-      if (incarnations == null
-          || incarnations.size() < 2
+      List<IncarnationContext.MappedElement> incarnations =
+          StableElementKey.fromSymbol(reference, referenceIndex)
+              .map(context::getIncarnations)
+              .orElseGet(List::of);
+      if (incarnations.size() < 2
           || (useCommonParentForMultipleIncarnations
               && isExactGroupingSet(context, incarnations))) {
         continue;
       }
-      context.getStableKey(reference).ifPresent(key -> relevantTypes.put(key, reference));
+      StableElementKey.fromSymbol(reference, referenceIndex)
+          .ifPresent(key -> relevantTypes.put(key, reference));
     }
   }
 
   private static boolean isExactGroupingSet(
-      IncarnationContext context, List<ISymbol> incarnations) {
+      IncarnationContext context, List<IncarnationContext.MappedElement> incarnations) {
     Set<String> incarnationNames =
-        incarnations.stream().map(ISymbol::getName).collect(java.util.stream.Collectors.toSet());
+        incarnations.stream()
+            .map(element -> element.key().getName())
+            .collect(java.util.stream.Collectors.toSet());
     Set<String> derivedGroupings =
         incarnationNames.stream()
-            .map(context::findGroupingTypeForImplementer)
+            .map(name -> groupingName(context, name))
             .flatMap(Optional::stream)
             .collect(java.util.stream.Collectors.toSet());
     if (derivedGroupings.size() == 1) {
@@ -428,8 +441,7 @@ public class CodeAdapter {
               .allMatch(
                   incarnation ->
                       grouping.equals(incarnation)
-                          || context
-                              .findGroupingTypeForImplementer(incarnation)
+                          || groupingName(context, incarnation)
                               .filter(grouping::equals)
                               .isPresent());
       if (everyIncarnationBelongsToGrouping) {
@@ -443,7 +455,7 @@ public class CodeAdapter {
         if (possibleGrouping.equals(incarnation)) {
           continue;
         }
-        Optional<String> grouping = context.findGroupingTypeForImplementer(incarnation);
+        Optional<String> grouping = groupingName(context, incarnation);
         foundImplementer |= grouping.isPresent();
         if (grouping.isEmpty() || !possibleGrouping.equals(grouping.get())) {
           exact = false;
@@ -461,7 +473,8 @@ public class CodeAdapter {
       ASTOrdinaryCompilationUnit unit,
       CodeValidator validator,
       IncarnationContext context,
-      Map<ISymbol, ISymbol> selection) {
+      Map<ISymbol, ISymbol> selection,
+      CDModelIndex referenceIndex) {
     Set<String> result = new LinkedHashSet<>();
     for (var type : unit.getTypeDeclarationList()) {
       Optional<CodeMatching> matching = validator.getMatchedType(type);
@@ -472,7 +485,8 @@ public class CodeAdapter {
       boolean resolved = false;
       List<ISymbol> concreteReferences = new ArrayList<>();
       for (ISymbol reference : matching.get().getReferences()) {
-        ISymbol selected = selectedIncarnation(reference, selection, context);
+        ISymbol selected =
+            selectedIncarnation(reference, selection, context, referenceIndex);
         concreteReferences.add(selected == null ? reference : selected);
         resolved |= selected != null;
       }
@@ -493,13 +507,18 @@ public class CodeAdapter {
   private static ISymbol selectedIncarnation(
       ISymbol reference,
       Map<ISymbol, ISymbol> selection,
-      IncarnationContext context) {
+      IncarnationContext context,
+      CDModelIndex referenceIndex) {
     ISymbol selected = selection.get(reference);
+    Optional<StableElementKey> referenceKey =
+        StableElementKey.fromSymbol(reference, referenceIndex);
     if (selected == null) {
-      Optional<StableElementKey> referenceKey = context.getStableKey(reference);
       selected =
           selection.entrySet().stream()
-              .filter(entry -> referenceKey.equals(context.getStableKey(entry.getKey())))
+              .filter(
+                  entry ->
+                      referenceKey.equals(
+                          StableElementKey.fromSymbol(entry.getKey(), referenceIndex)))
               .map(Map.Entry::getValue)
               .findFirst()
               .orElse(null);
@@ -507,12 +526,16 @@ public class CodeAdapter {
     if (selected != null) {
       return selected;
     }
-    List<ISymbol> incarnations = context.getIncarnations(reference);
-    return incarnations != null && incarnations.size() == 1 ? incarnations.get(0) : null;
+    List<IncarnationContext.MappedElement> incarnations =
+        referenceKey.map(context::getIncarnations).orElseGet(List::of);
+    return incarnations.size() == 1 ? incarnations.get(0).symbol() : null;
   }
 
   private static IncarnationSelector createSelector(
-      Map<ISymbol, ISymbol> typeSelection, IncarnationContext context) {
+      Map<ISymbol, ISymbol> typeSelection,
+      IncarnationContext context,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex) {
     return (referenceSymbol, availableIncarnations, ignored) -> {
       if (availableIncarnations == null || availableIncarnations.isEmpty()) {
         return null;
@@ -522,14 +545,15 @@ public class CodeAdapter {
         return selectedType;
       }
       Optional<String> referenceOwner =
-          context.getStableKey(referenceSymbol).flatMap(StableElementKey::getOwnerType);
+          StableElementKey.fromSymbol(referenceSymbol, referenceIndex)
+              .flatMap(StableElementKey::getOwnerType);
       if (referenceOwner.isPresent()) {
         Optional<ISymbol> selectedOwner =
             typeSelection.entrySet().stream()
                 .filter(
                     entry ->
-                        context
-                            .getStableKey(entry.getKey())
+                        StableElementKey
+                            .fromSymbol(entry.getKey(), referenceIndex)
                             .filter(key -> key.getKind() == StableElementKey.Kind.TYPE)
                             .map(StableElementKey::getName)
                             .filter(referenceOwner.get()::equals)
@@ -541,8 +565,8 @@ public class CodeAdapter {
               availableIncarnations.stream()
                   .filter(
                       candidate ->
-                          context
-                              .getStableKey(candidate)
+                          StableElementKey
+                              .fromSymbol(candidate, concreteIndex)
                               .flatMap(StableElementKey::getOwnerType)
                               .filter(selectedOwner.get().getName()::equals)
                               .isPresent())
@@ -556,8 +580,8 @@ public class CodeAdapter {
       Map<ISymbol, Integer> scores = new IdentityHashMap<>();
       for (ISymbol candidate : availableIncarnations) {
         String identity =
-            context
-                .getStableKey(candidate)
+            StableElementKey
+                .fromSymbol(candidate, concreteIndex)
                 .map(StableElementKey::toString)
                 .orElse(candidate.getName())
                 .toLowerCase(Locale.ROOT);
@@ -613,12 +637,16 @@ public class CodeAdapter {
     selections.add(new IdentityHashMap<>());
     for (ISymbol referenceType : referenceTypes) {
       List<ISymbol> incarnations =
-          new ArrayList<>(
-              Objects.requireNonNull(context.getIncarnations(referenceType), "incarnations"));
+          context
+              .getIncarnations(
+                  StableElementKey.fromSymbol(referenceType, referenceIndex).orElseThrow())
+              .stream()
+              .map(IncarnationContext.MappedElement::symbol)
+              .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
       incarnations.removeIf(incarnation -> !concreteIndex.hasType(incarnation.getName()));
       String referenceName =
-          context
-              .getStableKey(referenceType)
+          StableElementKey
+              .fromSymbol(referenceType, referenceIndex)
               .map(StableElementKey::getName)
               .orElse(referenceType.getName());
       if (incarnations.size() > 1 && !inputConcreteIndex.hasType(referenceName)) {
@@ -670,6 +698,13 @@ public class CodeAdapter {
                 instanceof de.monticore.cdinterfaceandenum._ast.ASTCDInterface)
         || (reference instanceof de.monticore.cdinterfaceandenum._ast.ASTCDEnum
             && incarnation instanceof de.monticore.cdinterfaceandenum._ast.ASTCDEnum);
+  }
+
+  private static Optional<String> groupingName(
+      IncarnationContext context, String concreteTypeName) {
+    return context
+        .getGroupingFor(StableElementKey.type(concreteTypeName))
+        .map(grouping -> grouping.key().getName());
   }
 
   private static String describeSelection(Map<ISymbol, ISymbol> selection) {

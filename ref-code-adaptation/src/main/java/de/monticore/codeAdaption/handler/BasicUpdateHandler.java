@@ -4,6 +4,7 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.utils.CDModelIndex;
@@ -14,11 +15,11 @@ import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
-import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -136,6 +137,23 @@ public class BasicUpdateHandler {
   /** Resolves a reference symbol from the optional incarnation context. */
   protected Optional<ISymbol> getSymbolFromContext(ISymbol refSymbol) {
     return symbolResolver.getSymbolFromContext(refSymbol);
+  }
+
+  protected Optional<StableElementKey> referenceKey(ISymbol symbol) {
+    return StableElementKey.fromSymbol(symbol, refIndex);
+  }
+
+  protected Optional<StableElementKey> concreteKey(ISymbol symbol) {
+    return StableElementKey.fromSymbol(symbol, conIndex);
+  }
+
+  protected List<IncarnationContext.MappedElement> mappedIncarnations(ISymbol reference) {
+    if (incarnationContext == null) {
+      return List.of();
+    }
+    return referenceKey(reference)
+        .map(incarnationContext::getIncarnations)
+        .orElseGet(List::of);
   }
 
   /** Default conformance-based type resolution; subclasses may select another incarnation. */

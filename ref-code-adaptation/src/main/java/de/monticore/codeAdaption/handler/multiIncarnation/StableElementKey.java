@@ -4,8 +4,9 @@ import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDType;
-import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
+import de.monticore.symboltable.ISymbol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -80,6 +81,23 @@ public final class StableElementKey {
   public static StableElementKey method(
       String ownerType, String methodName, List<String> parameterTypes, String returnType) {
     return new StableElementKey(Kind.METHOD, ownerType, methodName, null, parameterTypes, returnType);
+  }
+
+  /** Builds a stable key for a symbol using the owning CD index for member ownership. */
+  public static Optional<StableElementKey> fromSymbol(ISymbol symbol, CDModelIndex index) {
+    if (symbol == null || index == null) {
+      return Optional.empty();
+    }
+    if (symbol.getAstNode() instanceof ASTCDType type) {
+      return Optional.of(type(type));
+    }
+    if (symbol.getAstNode() instanceof ASTCDAttribute attribute) {
+      return index.ownerOf(attribute).map(owner -> field(owner, attribute));
+    }
+    if (symbol.getAstNode() instanceof ASTCDMethod method) {
+      return index.ownerOf(method).map(owner -> method(owner, method));
+    }
+    return Optional.empty();
   }
 
   public Kind getKind() {

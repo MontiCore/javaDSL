@@ -173,20 +173,9 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     if (incarnationContext == null) {
       return List.of();
     }
-    List<ISymbol> incarnations = incarnationContext.getIncarnations(referenceSymbol);
-    if (incarnations != null && !incarnations.isEmpty()) {
-      return incarnations;
-    }
-    if (referenceSymbol instanceof CDTypeSymbol) {
-      return incarnationContext.getReferenceToIncarnations().entrySet().stream()
-          .filter(entry -> entry.getKey() instanceof CDTypeSymbol)
-          .filter(entry -> entry.getKey().getName().equals(referenceSymbol.getName()))
-          .map(Map.Entry::getValue)
-          .filter(Objects::nonNull)
-          .findFirst()
-          .orElse(List.of());
-    }
-    return List.of();
+    return mappedIncarnations(referenceSymbol).stream()
+        .map(IncarnationContext.MappedElement::symbol)
+        .toList();
   }
 
   /**
@@ -212,7 +201,7 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     }
 
     List<ISymbol> incarnations = getAllIncarnations(refSymbol);
-    if (incarnations == null || incarnations.isEmpty()) {
+    if (incarnations.isEmpty()) {
       return Optional.empty();
     }
     if (incarnations.size() == 1) {
@@ -232,7 +221,7 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
         return commonParent;
       }
       for (ISymbol incarnation : incarnations) {
-        var grouping = this.incarnationContext.findGroupingTypeForImplementer(incarnation.getName());
+        var grouping = groupingName(incarnation.getName());
         if (grouping.isPresent()) {
           Optional<ISymbol> groupingSymbol = findContextSymbolByName(grouping.get());
           if (groupingSymbol.isPresent()) {
@@ -249,18 +238,19 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     if (name == null || incarnationContext == null) {
       return Optional.empty();
     }
-    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getInterfaceToImplementers().entrySet()) {
-      if (e.getKey().getName().equals(name)) {
-        return Optional.of(e.getKey());
-      }
+    Optional<ISymbol> grouping =
+        incarnationContext.getGroupingMappings().values().stream()
+            .filter(element -> element.key().getName().equals(name))
+            .map(IncarnationContext.MappedElement::symbol)
+            .findFirst();
+    if (grouping.isPresent()) {
+      return grouping;
     }
-    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getReferenceToIncarnations().entrySet()) {
-      if (e.getKey().getName().equals(name)) {
-        return Optional.of(e.getKey());
-      }
-      for (ISymbol incarnation : e.getValue()) {
-        if (incarnation.getName().equals(name)) {
-          return Optional.of(incarnation);
+    for (List<IncarnationContext.MappedElement> incarnations :
+        incarnationContext.getMappings().values()) {
+      for (IncarnationContext.MappedElement incarnation : incarnations) {
+        if (incarnation.key().getName().equals(name)) {
+          return Optional.of(incarnation.symbol());
         }
       }
     }
@@ -272,19 +262,24 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     for (ISymbol incarnation : incarnations) {
       incarnationNames.add(incarnation.getName());
     }
-    for (Map.Entry<ISymbol, List<ISymbol>> e : incarnationContext.getInterfaceToImplementers().entrySet()) {
-      String parentName = e.getKey().getName();
-      if (!incarnationNames.contains(parentName)) {
+    for (String parentName : incarnationNames) {
+      Optional<IncarnationContext.MappedElement> grouping =
+          incarnationContext.getGroupingMappings().values().stream()
+              .filter(element -> element.key().getName().equals(parentName))
+              .findFirst();
+      if (grouping.isEmpty()) {
         continue;
       }
-      Set<String> implementerNames = new HashSet<>();
-      for (ISymbol implementer : e.getValue()) {
-        implementerNames.add(implementer.getName());
-      }
+      Set<String> implementerNames =
+          incarnationContext.getGroupingMappings().entrySet().stream()
+              .filter(entry -> entry.getValue().key().getName().equals(parentName))
+              .map(entry -> entry.getKey().getName())
+              .filter(name -> !name.equals(parentName))
+              .collect(java.util.stream.Collectors.toSet());
       Set<String> withoutParent = new HashSet<>(incarnationNames);
       withoutParent.remove(parentName);
       if (withoutParent.equals(implementerNames)) {
-        return Optional.of(e.getKey());
+        return Optional.of(grouping.get().symbol());
       }
     }
     return Optional.empty();
@@ -303,12 +298,12 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
     if (incarnationContext == null) {
       return;
     }
-    for (Map.Entry<StableElementKey, List<StableElementKey>> entry :
-        incarnationContext.getStableMappings().entrySet()) {
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+        incarnationContext.getMappings().entrySet()) {
       if (entry.getKey().getKind() == StableElementKey.Kind.METHOD && entry.getValue().size() > 1) {
         Set<String> signatures = new LinkedHashSet<>();
-        for (StableElementKey target : entry.getValue()) {
-          signatures.add(target.signature());
+        for (IncarnationContext.MappedElement target : entry.getValue()) {
+          signatures.add(target.key().signature());
         }
         if (signatures.size() != entry.getValue().size()) {
           throw new IllegalStateException(
@@ -317,7 +312,8 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
       }
       if (entry.getKey().getKind() == StableElementKey.Kind.FIELD && entry.getValue().size() > 1) {
         Map<String, String> ownersAndTypes = new LinkedHashMap<>();
-        for (StableElementKey target : entry.getValue()) {
+        for (IncarnationContext.MappedElement mapped : entry.getValue()) {
+          StableElementKey target = mapped.key();
           String fieldName = target.getName();
           String fieldKind = target.getFieldKind().orElse("");
           String previous = ownersAndTypes.putIfAbsent(target.getOwnerType().orElse("") + "." + fieldName, fieldKind);
@@ -328,6 +324,12 @@ public class MultiIncarnationUpdateHandler extends BasicUpdateHandler {
         }
       }
     }
+  }
+
+  private Optional<String> groupingName(String concreteTypeName) {
+    return incarnationContext
+        .getGroupingFor(StableElementKey.type(concreteTypeName))
+        .map(grouping -> grouping.key().getName());
   }
 
 }

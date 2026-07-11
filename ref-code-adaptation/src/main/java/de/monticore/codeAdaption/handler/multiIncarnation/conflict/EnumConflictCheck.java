@@ -13,8 +13,8 @@ final class EnumConflictCheck implements AdaptationConflictCheck {
   @Override
   public void check(ConflictDetectionContext context, ConflictCollector conflicts) {
     for (IncarnationContext incarnationContext : context.contexts().values()) {
-      for (Map.Entry<StableElementKey, List<StableElementKey>> entry :
-          incarnationContext.getStableMappings().entrySet()) {
+      for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+          incarnationContext.getMappings().entrySet()) {
         if (entry.getKey().getKind() != StableElementKey.Kind.TYPE) {
           continue;
         }
@@ -22,8 +22,8 @@ final class EnumConflictCheck implements AdaptationConflictCheck {
         if (!(reference instanceof ASTCDEnum referenceEnum)) {
           continue;
         }
-        for (StableElementKey target : entry.getValue()) {
-          ASTCDType concrete = context.concreteTypes().get(target.getName());
+        for (IncarnationContext.MappedElement target : entry.getValue()) {
+          ASTCDType concrete = context.concreteTypes().get(target.key().getName());
           if (concrete instanceof ASTCDEnum concreteEnum) {
             validateEnumOrder(context, conflicts, incarnationContext.getMappingName(), referenceEnum, concreteEnum);
           }

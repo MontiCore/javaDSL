@@ -87,7 +87,7 @@ public final class ConflictDetectionContext {
   public Set<String> concreteTypeNamesFor(IncarnationContext context, String referenceTypeName) {
     Set<String> result = new LinkedHashSet<>();
     for (var incarnation : context.getIncarnations(StableElementKey.type(referenceTypeName))) {
-      result.add(incarnation.getKey().getName());
+      result.add(incarnation.key().getName());
     }
     if (result.isEmpty() && concreteTypes.containsKey(referenceTypeName)) {
       result.add(referenceTypeName);

@@ -10,27 +10,24 @@ import de.monticore.codeAdaption.utils.JavaMethodSignatures;
 import de.monticore.symboltable.ISymbol;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/** Shared, identity-aware infrastructure for the two incarnation-context construction modes. */
+/** Shared stable-key infrastructure for the two incarnation-context construction modes. */
 final class IncarnationContextSupport {
   private final CDModelIndex referenceIndex;
   private final CDModelIndex concreteIndex;
-  private final Map<ISymbol, StableElementKey> symbolKeys = new IdentityHashMap<>();
   private final ReferenceElementIndex referenceElements;
 
   IncarnationContextSupport(
       ASTCDCompilationUnit referenceCD, ASTCDCompilationUnit concreteCD) {
     this.referenceIndex = CDModelIndex.of(referenceCD);
     this.concreteIndex = CDModelIndex.of(concreteCD);
-    registerSymbolKeys(referenceIndex);
-    registerSymbolKeys(concreteIndex);
     this.referenceElements = new ReferenceElementIndex(referenceIndex);
   }
 
@@ -42,62 +39,44 @@ final class IncarnationContextSupport {
     return concreteIndex;
   }
 
-  Map<ISymbol, List<ISymbol>> newMapping() {
+  Map<StableElementKey, List<IncarnationContext.MappedElement>> newMapping() {
     return new LinkedHashMap<>();
   }
 
   void addMapping(
-      Map<ISymbol, List<ISymbol>> target, ISymbol reference, ISymbol concrete) {
-    if (reference == null || concrete == null) {
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> target,
+      StableElementKey reference,
+      ISymbol concrete) {
+    Optional<StableElementKey> concreteKey = StableElementKey.fromSymbol(concrete, concreteIndex);
+    if (reference == null || concreteKey.isEmpty()) {
       return;
     }
-    List<ISymbol> incarnations = target.computeIfAbsent(reference, ignored -> new ArrayList<>());
-    StableElementKey candidateKey = symbolKeys.get(concrete);
+    List<IncarnationContext.MappedElement> incarnations =
+        target.computeIfAbsent(reference, ignored -> new ArrayList<>());
     boolean duplicate =
-        incarnations.stream()
-            .anyMatch(existing -> sameElement(existing, concrete, candidateKey));
+        incarnations.stream().anyMatch(existing -> existing.key().equals(concreteKey.get()));
     if (!duplicate) {
-      incarnations.add(concrete);
+      incarnations.add(new IncarnationContext.MappedElement(concreteKey.get(), concrete));
     }
   }
 
   void mergeMappings(
-      Map<ISymbol, List<ISymbol>> target, Map<ISymbol, List<ISymbol>> additions) {
-    for (Map.Entry<ISymbol, List<ISymbol>> entry : additions.entrySet()) {
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> target,
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> additions) {
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry : additions.entrySet()) {
       if (entry.getValue() == null) {
         continue;
       }
-      for (ISymbol incarnation : entry.getValue()) {
-        addMapping(target, entry.getKey(), incarnation);
+      for (IncarnationContext.MappedElement incarnation : entry.getValue()) {
+        addMapping(target, entry.getKey(), incarnation.symbol());
       }
     }
   }
 
   IncarnationContext assembleContext(
-      String mapping, Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    Map<ISymbol, List<ISymbol>> interfaceToImplementers = interfaceImplementers();
-    ResolvedIncarnationContext resolved = new ResolvedIncarnationContext(mapping);
-    for (Map.Entry<ISymbol, List<ISymbol>> entry : referenceToIncarnations.entrySet()) {
-      StableElementKey referenceKey = symbolKeys.get(entry.getKey());
-      if (referenceKey == null || entry.getValue() == null) {
-        continue;
-      }
-      for (ISymbol incarnation : entry.getValue()) {
-        StableElementKey incarnationKey = symbolKeys.get(incarnation);
-        if (incarnationKey != null) {
-          resolved.addMapping(referenceKey, incarnationKey, incarnation);
-        }
-      }
-    }
-    IncarnationContext context =
-        new IncarnationContext(
-            mapping,
-            referenceToIncarnations,
-            interfaceToImplementers,
-            new IdentityHashMap<>(symbolKeys),
-            resolved);
-    context.setConcreteToGroupingType(groupingTypes(referenceToIncarnations));
-    return context;
+      String mapping,
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
+    return new IncarnationContext(mapping, mappings, groupingTypes(mappings));
   }
 
   Optional<String> stereotypeValue(ASTCDType type, String name) {
@@ -152,39 +131,39 @@ final class IncarnationContextSupport {
     return Optional.empty();
   }
 
-  Optional<ISymbol> findReferenceType(String name) {
+  Optional<StableElementKey> findReferenceType(String name) {
     return referenceElements.findType(name);
   }
 
-  Optional<ISymbol> findReferenceField(List<ASTCDType> owners, String name) {
+  Optional<StableElementKey> findReferenceField(List<ASTCDType> owners, String name) {
     return referenceElements.findField(owners, name);
   }
 
-  Optional<ISymbol> findReferenceMethod(List<ASTCDType> owners, String name) {
+  Optional<StableElementKey> findReferenceMethod(List<ASTCDType> owners, String name) {
     return referenceElements.findMethod(owners, name);
   }
 
-  Optional<ISymbol> findSameNameField(
+  Optional<StableElementKey> findSameNameField(
       List<ASTCDType> owners, ASTCDAttribute concreteAttribute) {
-    List<ISymbol> matches = new ArrayList<>();
+    List<StableElementKey> matches = new ArrayList<>();
     for (ASTCDType owner : owners) {
       for (ASTCDAttribute candidate : owner.getCDAttributeList()) {
         if (candidate.getName().equals(concreteAttribute.getName())) {
-          matches.add(candidate.getSymbol());
+          matches.add(StableElementKey.field(owner, candidate));
         }
       }
     }
     return unique(matches);
   }
 
-  Optional<ISymbol> findSameSignatureMethod(
+  Optional<StableElementKey> findSameSignatureMethod(
       List<ASTCDType> owners, ASTCDMethod concreteMethod) {
     String signature = JavaSourceNames.methodSignature(concreteMethod);
-    List<ISymbol> matches = new ArrayList<>();
+    List<StableElementKey> matches = new ArrayList<>();
     for (ASTCDType owner : owners) {
       for (ASTCDMethod candidate : owner.getCDMethodList()) {
         if (JavaSourceNames.methodSignature(candidate).equals(signature)) {
-          matches.add(candidate.getSymbol());
+          matches.add(StableElementKey.method(owner, candidate));
         }
       }
     }
@@ -192,16 +171,17 @@ final class IncarnationContextSupport {
   }
 
   List<ASTCDType> mappedReferenceOwners(
-      Map<ISymbol, List<ISymbol>> mappings, ASTCDType concreteType) {
-    StableElementKey concreteKey = symbolKeys.get(concreteType.getSymbol());
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings,
+      ASTCDType concreteType) {
+    StableElementKey concreteKey = StableElementKey.type(concreteType);
     List<ASTCDType> owners = new ArrayList<>();
-    for (Map.Entry<ISymbol, List<ISymbol>> entry : mappings.entrySet()) {
-      if (!(entry.getKey().getAstNode() instanceof ASTCDType referenceType)) {
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry : mappings.entrySet()) {
+      if (entry.getKey().getKind() != StableElementKey.Kind.TYPE) {
         continue;
       }
       if (entry.getValue().stream()
-          .anyMatch(symbol -> sameElement(symbol, concreteType.getSymbol(), concreteKey))) {
-        owners.add(referenceType);
+          .anyMatch(element -> element.key().equals(concreteKey))) {
+        referenceIndex.type(entry.getKey().getName()).ifPresent(owners::add);
       }
     }
     return owners;
@@ -221,61 +201,23 @@ final class IncarnationContextSupport {
     return Optional.empty();
   }
 
-  private void registerSymbolKeys(CDModelIndex index) {
-    for (ASTCDType type : index.types()) {
-      symbolKeys.put(type.getSymbol(), StableElementKey.type(type));
-      for (ASTCDAttribute attribute : type.getCDAttributeList()) {
-        symbolKeys.put(attribute.getSymbol(), StableElementKey.field(type, attribute));
-      }
-      for (ASTCDMethod method : type.getCDMethodList()) {
-        symbolKeys.put(method.getSymbol(), StableElementKey.method(type, method));
-      }
-    }
-  }
-
-  private boolean sameElement(
-      ISymbol existing, ISymbol candidate, StableElementKey candidateKey) {
-    if (existing == candidate) {
-      return true;
-    }
-    StableElementKey existingKey = symbolKeys.get(existing);
-    return existingKey != null
-        && candidateKey != null
-        && (existingKey.equals(candidateKey)
-            || (existingKey.getKind() == StableElementKey.Kind.METHOD
-                && existingKey.sameSignatureIgnoringReturn(candidateKey)));
-  }
-
-  private Optional<ISymbol> unique(List<ISymbol> candidates) {
+  private <T> Optional<T> unique(List<T> candidates) {
     if (candidates.isEmpty()) {
       return Optional.empty();
     }
-    ISymbol first = candidates.get(0);
-    StableElementKey firstKey = symbolKeys.get(first);
+    T first = candidates.get(0);
     for (int i = 1; i < candidates.size(); i++) {
-      if (!sameElement(candidates.get(i), first, firstKey)) {
+      if (!Objects.equals(candidates.get(i), first)) {
         return Optional.empty();
       }
     }
     return Optional.of(first);
   }
 
-  private Map<ISymbol, List<ISymbol>> interfaceImplementers() {
-    Map<ISymbol, List<ISymbol>> result = new LinkedHashMap<>();
-    for (ASTCDType iface : concreteIndex.interfaces()) {
-      for (ASTCDType type : concreteIndex.classes()) {
-        if (concreteIndex.isSubtypeOf(type.getName(), iface.getName())) {
-          addMapping(result, iface.getSymbol(), type.getSymbol());
-        }
-      }
-    }
-    return result;
-  }
-
-  private Map<String, String> groupingTypes(
-      Map<ISymbol, List<ISymbol>> referenceToIncarnations) {
-    Map<String, String> result = new LinkedHashMap<>();
-    for (List<ISymbol> incarnations : referenceToIncarnations.values()) {
+  private Map<StableElementKey, IncarnationContext.MappedElement> groupingTypes(
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
+    Map<StableElementKey, IncarnationContext.MappedElement> result = new LinkedHashMap<>();
+    for (List<IncarnationContext.MappedElement> incarnations : mappings.values()) {
       Set<String> targets = typeNames(incarnations);
       if (targets.size() < 2) {
         continue;
@@ -302,21 +244,25 @@ final class IncarnationContextSupport {
         }
       }
       if (best != null) {
+        ASTCDType groupingType = concreteIndex.type(best).orElseThrow();
+        IncarnationContext.MappedElement grouping =
+            new IncarnationContext.MappedElement(
+                StableElementKey.type(groupingType), groupingType.getSymbol());
         for (String target : targets) {
-          result.put(target, best);
+          result.put(StableElementKey.type(target), grouping);
         }
       }
     }
     return result;
   }
 
-  private Set<String> typeNames(List<ISymbol> symbols) {
+  private Set<String> typeNames(List<IncarnationContext.MappedElement> elements) {
     Set<String> result = new LinkedHashSet<>();
-    if (symbols == null) {
+    if (elements == null) {
       return result;
     }
-    for (ISymbol symbol : symbols) {
-      StableElementKey key = symbolKeys.get(symbol);
+    for (IncarnationContext.MappedElement element : elements) {
+      StableElementKey key = element.key();
       if (key != null && key.getKind() == StableElementKey.Kind.TYPE) {
         result.add(key.getName());
       }
@@ -372,11 +318,11 @@ final class IncarnationContextSupport {
       this.index = index;
     }
 
-    Optional<ISymbol> findType(String requested) {
-      return index.type(requested).map(ASTCDType::getSymbol);
+    Optional<StableElementKey> findType(String requested) {
+      return index.type(requested).map(StableElementKey::type);
     }
 
-    Optional<ISymbol> findField(List<ASTCDType> owners, String requested) {
+    Optional<StableElementKey> findField(List<ASTCDType> owners, String requested) {
       String normalized = requested == null ? "" : requested.trim();
       List<ASTCDAttribute> matches = new ArrayList<>();
       String fieldName = JavaSourceNames.simpleName(normalized);
@@ -384,10 +330,14 @@ final class IncarnationContextSupport {
       for (ASTCDType owner : searchOwners(owners, explicitOwner)) {
         index.attribute(owner.getName(), fieldName).ifPresent(matches::add);
       }
-      return matches.size() == 1 ? Optional.of(matches.get(0).getSymbol()) : Optional.empty();
+      if (matches.size() != 1) {
+        return Optional.empty();
+      }
+      ASTCDAttribute match = matches.get(0);
+      return index.ownerOf(match).map(owner -> StableElementKey.field(owner, match));
     }
 
-    Optional<ISymbol> findMethod(List<ASTCDType> owners, String requested) {
+    Optional<StableElementKey> findMethod(List<ASTCDType> owners, String requested) {
       String normalized = requested == null ? "" : requested.trim();
       String explicitOwner = ownerPart(normalized);
       String methodReference = explicitOwner.isEmpty() ? normalized : memberPart(normalized);
@@ -402,7 +352,11 @@ final class IncarnationContextSupport {
           }
         }
       }
-      return matches.size() == 1 ? Optional.of(matches.get(0).getSymbol()) : Optional.empty();
+      if (matches.size() != 1) {
+        return Optional.empty();
+      }
+      ASTCDMethod match = matches.get(0);
+      return index.ownerOf(match).map(owner -> StableElementKey.method(owner, match));
     }
 
     private List<ASTCDType> searchOwners(List<ASTCDType> owners, String explicitOwner) {

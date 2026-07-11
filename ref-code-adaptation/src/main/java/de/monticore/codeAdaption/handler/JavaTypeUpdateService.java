@@ -304,12 +304,9 @@ final class JavaTypeUpdateService {
       }
     }
     if (result.isEmpty() && handler.incarnationContext != null) {
-      List<ISymbol> incarnations = handler.incarnationContext.getIncarnations(reference);
-      if (incarnations != null) {
-        for (ISymbol incarnation : incarnations) {
-          if (incarnation.getAstNode() instanceof ASTCDAttribute concreteAttribute) {
-            result.add(concreteAttribute);
-          }
+      for (var incarnation : handler.mappedIncarnations(reference)) {
+        if (incarnation.symbol().getAstNode() instanceof ASTCDAttribute concreteAttribute) {
+          result.add(concreteAttribute);
         }
       }
     }
@@ -331,12 +328,9 @@ final class JavaTypeUpdateService {
       }
     }
     if (result.isEmpty() && handler.incarnationContext != null) {
-      List<ISymbol> incarnations = handler.incarnationContext.getIncarnations(reference);
-      if (incarnations != null) {
-        for (ISymbol incarnation : incarnations) {
-          if (incarnation.getAstNode() instanceof ASTCDMethod concreteMethod) {
-            result.add(concreteMethod);
-          }
+      for (var incarnation : handler.mappedIncarnations(reference)) {
+        if (incarnation.symbol().getAstNode() instanceof ASTCDMethod concreteMethod) {
+          result.add(concreteMethod);
         }
       }
     }
@@ -367,9 +361,9 @@ final class JavaTypeUpdateService {
       return false;
     }
     Optional<de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey> selectedKey =
-        handler.incarnationContext.getStableKey(selected.get());
+        handler.concreteKey(selected.get());
     Optional<de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey> concreteKey =
-        handler.incarnationContext.getStableKey(concrete);
+        handler.concreteKey(concrete);
     return selectedKey.isPresent() && selectedKey.equals(concreteKey);
   }
 

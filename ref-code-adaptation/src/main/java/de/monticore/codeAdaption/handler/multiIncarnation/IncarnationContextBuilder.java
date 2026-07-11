@@ -5,7 +5,6 @@ import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConformanceChecker;
-import de.monticore.symboltable.ISymbol;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,7 +34,7 @@ public class IncarnationContextBuilder {
   /** Builds a context, optionally disabling the stereotype overlay for checker-only operation. */
   public IncarnationContext buildContextForMapping(
       String mapping, boolean overlayStereotypeMappings) {
-    Map<ISymbol, List<ISymbol>> mappings = support.newMapping();
+    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = support.newMapping();
     if (conformanceChecker.getIncarnationMapping() != null) {
       extractCheckerMappings(mappings);
     }
@@ -57,13 +56,14 @@ public class IncarnationContextBuilder {
     return contexts;
   }
 
-  private void extractCheckerMappings(Map<ISymbol, List<ISymbol>> result) {
+  private void extractCheckerMappings(
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> result) {
     for (ASTCDType referenceType : support.referenceIndex().types()) {
       var typeIncarnations =
           conformanceChecker.getIncarnationMapping().getIncarnations(referenceType);
       if (typeIncarnations != null) {
         for (var incarnation : typeIncarnations) {
-          support.addMapping(result, referenceType.getSymbol(), incarnation.getSymbol());
+          support.addMapping(result, StableElementKey.type(referenceType), incarnation.getSymbol());
         }
       }
       for (ASTCDAttribute referenceField : referenceType.getCDAttributeList()) {
@@ -73,7 +73,8 @@ public class IncarnationContextBuilder {
           continue;
         }
         for (var incarnation : fieldIncarnations) {
-          support.addMapping(result, referenceField.getSymbol(), incarnation.getSymbol());
+          support.addMapping(
+              result, StableElementKey.field(referenceType, referenceField), incarnation.getSymbol());
         }
       }
       for (ASTCDMethod referenceMethod : referenceType.getCDMethodList()) {
@@ -83,20 +84,22 @@ public class IncarnationContextBuilder {
           continue;
         }
         for (var incarnation : methodIncarnations) {
-          support.addMapping(result, referenceMethod.getSymbol(), incarnation.getSymbol());
+          support.addMapping(
+              result, StableElementKey.method(referenceType, referenceMethod), incarnation.getSymbol());
         }
       }
     }
   }
 
-  private Map<ISymbol, List<ISymbol>> extractStereotypeMappings(String mapping) {
-    Map<ISymbol, List<ISymbol>> result = support.newMapping();
+  private Map<StableElementKey, List<IncarnationContext.MappedElement>> extractStereotypeMappings(
+      String mapping) {
+    Map<StableElementKey, List<IncarnationContext.MappedElement>> result = support.newMapping();
     for (ASTCDType concreteType : support.concreteIndex().types()) {
       Optional<String> referenceTypeName = support.stereotypeValue(concreteType, mapping);
-      Optional<ISymbol> referenceType =
+      Optional<StableElementKey> referenceType =
           referenceTypeName.flatMap(support::findReferenceType);
       referenceType.ifPresent(
-          symbol -> support.addMapping(result, symbol, concreteType.getSymbol()));
+          key -> support.addMapping(result, key, concreteType.getSymbol()));
 
       List<ASTCDType> referenceOwners = referenceOwners(concreteType, mapping, referenceTypeName);
       for (ASTCDAttribute concreteField : concreteType.getCDAttributeList()) {
@@ -104,14 +107,14 @@ public class IncarnationContextBuilder {
             .stereotypeValue(concreteField, mapping)
             .flatMap(name -> support.findReferenceField(referenceOwners, name))
             .ifPresent(
-                symbol -> support.addMapping(result, symbol, concreteField.getSymbol()));
+                key -> support.addMapping(result, key, concreteField.getSymbol()));
       }
       for (ASTCDMethod concreteMethod : concreteType.getCDMethodList()) {
         support
             .stereotypeValue(concreteMethod, mapping)
             .flatMap(name -> support.findReferenceMethod(referenceOwners, name))
             .ifPresent(
-                symbol -> support.addMapping(result, symbol, concreteMethod.getSymbol()));
+                key -> support.addMapping(result, key, concreteMethod.getSymbol()));
       }
     }
     return result;

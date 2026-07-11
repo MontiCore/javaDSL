@@ -1,9 +1,7 @@
 package de.monticore.codeAdaption.context;
 
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
-import de.monticore.symboltable.ISymbol;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /** Computes concrete-type to grouping-type replacements from incarnation contexts. */
@@ -18,23 +16,16 @@ public final class GroupingMappingService {
   /** Computes replacements for one mapping only, preventing one mapping from leaking into another. */
   public Map<String, String> compute(IncarnationContext context) {
     Map<String, String> result = new LinkedHashMap<>();
-    context.getReferenceToIncarnations().entrySet().stream()
-        .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(ISymbol::getName)))
-        .forEach(entry -> {
-        List<ISymbol> incarnations = entry.getValue();
-        if (incarnations == null) {
-          return;
-        }
-        incarnations.stream().filter(java.util.Objects::nonNull).sorted(java.util.Comparator.comparing(ISymbol::getName)).forEach(incarnation -> {
-          if (incarnation == null) {
-            return;
-          }
-          var groupingType = context.findGroupingTypeForImplementer(incarnation.getName());
-          if (groupingType.isPresent() && !groupingType.get().equals(incarnation.getName())) {
-            putUnambiguous(result, incarnation.getName(), groupingType.get());
-          }
-        });
-      });
+    context.getGroupingMappings().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(key -> key.signature())))
+        .forEach(
+            entry -> {
+              String concrete = entry.getKey().getName();
+              String grouping = entry.getValue().key().getName();
+              if (!grouping.equals(concrete)) {
+                putUnambiguous(result, concrete, grouping);
+              }
+            });
     return result;
   }
 

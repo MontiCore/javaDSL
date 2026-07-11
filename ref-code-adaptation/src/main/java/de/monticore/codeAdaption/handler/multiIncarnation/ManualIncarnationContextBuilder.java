@@ -6,7 +6,6 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
-import de.monticore.symboltable.ISymbol;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,7 +30,7 @@ public class ManualIncarnationContextBuilder {
   }
 
   public IncarnationContext buildContextForMapping(String mapping) {
-    Map<ISymbol, List<ISymbol>> mappings = support.newMapping();
+    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = support.newMapping();
     collectTypeMappings(mapping, mappings);
     collectMemberMappings(mapping, mappings);
     collectForEachMappings(mappings);
@@ -39,7 +38,7 @@ public class ManualIncarnationContextBuilder {
   }
 
   private void collectTypeMappings(
-      String mapping, Map<ISymbol, List<ISymbol>> mappings) {
+      String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType concreteType : support.concreteIndex().types()) {
       Optional<String> explicit = support.stereotypeValue(concreteType, mapping);
       if (explicit.isPresent()) {
@@ -55,7 +54,7 @@ public class ManualIncarnationContextBuilder {
   }
 
   private void collectMemberMappings(
-      String mapping, Map<ISymbol, List<ISymbol>> mappings) {
+      String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType concreteType : support.concreteIndex().types()) {
       List<ASTCDType> referenceOwners = support.mappedReferenceOwners(mappings, concreteType);
       for (ASTCDAttribute concreteField : concreteType.getCDAttributeList()) {
@@ -86,47 +85,59 @@ public class ManualIncarnationContextBuilder {
   }
 
   /** Expands manual {@code <<forEach="...">>} mappings from already-known incarnations. */
-  private void collectForEachMappings(Map<ISymbol, List<ISymbol>> mappings) {
+  private void collectForEachMappings(
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType referenceType : support.referenceIndex().types()) {
       support
           .stereotypeValue(referenceType, "forEach")
           .flatMap(support::findReferenceType)
-          .ifPresent(target -> copyIncarnations(mappings, target, referenceType.getSymbol()));
+          .ifPresent(
+              target -> copyIncarnations(mappings, target, StableElementKey.type(referenceType)));
 
       for (ASTCDAttribute referenceField : referenceType.getCDAttributeList()) {
         support
             .stereotypeValue(referenceField, "forEach")
             .flatMap(name -> support.findReferenceField(List.of(referenceType), name))
-            .ifPresent(target -> copyIncarnations(mappings, target, referenceField.getSymbol()));
+            .ifPresent(
+                target ->
+                    copyIncarnations(
+                        mappings,
+                        target,
+                        StableElementKey.field(referenceType, referenceField)));
       }
       for (ASTCDMethod referenceMethod : referenceType.getCDMethodList()) {
         Optional<String> targetName = support.stereotypeValue(referenceMethod, "forEach");
         if (targetName.isEmpty()) {
           continue;
         }
-        Optional<ISymbol> targetMethod =
+        Optional<StableElementKey> targetMethod =
             support.findReferenceMethod(List.of(referenceType), targetName.get());
         if (targetMethod.isPresent()) {
-          copyIncarnations(mappings, targetMethod.get(), referenceMethod.getSymbol());
+          copyIncarnations(
+              mappings,
+              targetMethod.get(),
+              StableElementKey.method(referenceType, referenceMethod));
           continue;
         }
         support
             .findReferenceField(List.of(referenceType), targetName.get())
-            .ifPresent(target -> collectForEachMethods(mappings, target, referenceMethod));
+            .ifPresent(
+                target -> collectForEachMethods(mappings, target, referenceType, referenceMethod));
       }
     }
   }
 
   private void collectForEachMethods(
-      Map<ISymbol, List<ISymbol>> mappings,
-      ISymbol targetField,
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings,
+      StableElementKey targetField,
+      ASTCDType referenceOwner,
       ASTCDMethod referenceMethod) {
-    List<ISymbol> targetIncarnations = mappings.get(targetField);
+    List<IncarnationContext.MappedElement> targetIncarnations = mappings.get(targetField);
     if (targetIncarnations == null) {
       return;
     }
-    for (ISymbol incarnation : targetIncarnations) {
-      if (!(incarnation.getAstNode() instanceof ASTCDAttribute concreteField)) {
+    for (IncarnationContext.MappedElement incarnation : targetIncarnations) {
+      if (!(incarnation.symbol().getAstNode() instanceof ASTCDAttribute concreteField)) {
         continue;
       }
       Optional<ASTCDType> owner = support.concreteIndex().ownerOf(concreteField);
@@ -140,20 +151,25 @@ public class ManualIncarnationContextBuilder {
         if (names.contains(concreteMethod.getName())
             && concreteMethod.getCDParameterList().size()
                 == referenceMethod.getCDParameterList().size()) {
-          support.addMapping(mappings, referenceMethod.getSymbol(), concreteMethod.getSymbol());
+          support.addMapping(
+              mappings,
+              StableElementKey.method(referenceOwner, referenceMethod),
+              concreteMethod.getSymbol());
         }
       }
     }
   }
 
   private void copyIncarnations(
-      Map<ISymbol, List<ISymbol>> mappings, ISymbol target, ISymbol reference) {
-    List<ISymbol> incarnations = mappings.get(target);
+      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings,
+      StableElementKey target,
+      StableElementKey reference) {
+    List<IncarnationContext.MappedElement> incarnations = mappings.get(target);
     if (incarnations == null) {
       return;
     }
-    for (ISymbol incarnation : incarnations) {
-      support.addMapping(mappings, reference, incarnation);
+    for (IncarnationContext.MappedElement incarnation : incarnations) {
+      support.addMapping(mappings, reference, incarnation.symbol());
     }
   }
 

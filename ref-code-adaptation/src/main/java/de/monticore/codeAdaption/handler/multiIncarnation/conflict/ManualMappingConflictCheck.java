@@ -16,19 +16,28 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
   @Override
   public void check(ConflictDetectionContext context, ConflictCollector conflicts) {
     for (IncarnationContext incarnationContext : context.contexts().values()) {
-      for (Map.Entry<StableElementKey, List<StableElementKey>> entry :
-          incarnationContext.getStableMappings().entrySet()) {
+      for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+          incarnationContext.getMappings().entrySet()) {
         StableElementKey reference = entry.getKey();
-        for (StableElementKey concrete : entry.getValue()) {
+        for (IncarnationContext.MappedElement mapped : entry.getValue()) {
+          StableElementKey concrete = mapped.key();
           if (reference.getKind() == StableElementKey.Kind.TYPE) {
             validateTypeMapping(context, conflicts, incarnationContext, reference, concrete);
           }
         }
         if (reference.getKind() == StableElementKey.Kind.FIELD && entry.getValue().size() > 1) {
-          validateFieldTargets(conflicts, incarnationContext.getMappingName(), reference, entry.getValue());
+          validateFieldTargets(
+              conflicts,
+              incarnationContext.getMappingName(),
+              reference,
+              entry.getValue().stream().map(IncarnationContext.MappedElement::key).toList());
         }
         if (reference.getKind() == StableElementKey.Kind.METHOD && entry.getValue().size() > 1) {
-          validateMethodTargets(conflicts, incarnationContext.getMappingName(), reference, entry.getValue());
+          validateMethodTargets(
+              conflicts,
+              incarnationContext.getMappingName(),
+              reference,
+              entry.getValue().stream().map(IncarnationContext.MappedElement::key).toList());
         }
       }
     }
@@ -76,12 +85,12 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
     if (!referenceInterfaceConcreteClass) {
       return false;
     }
-    if (incarnationContext.findGroupingTypeForImplementer(concrete.getName()).isPresent()) {
+    if (incarnationContext.getGroupingFor(StableElementKey.type(concrete.getName())).isPresent()) {
       return true;
     }
     Set<String> mappedConcreteTypes = new LinkedHashSet<>();
     for (var incarnation : incarnationContext.getIncarnations(referenceKey)) {
-      mappedConcreteTypes.add(incarnation.getKey().getName());
+      mappedConcreteTypes.add(incarnation.key().getName());
     }
     for (String parentName : context.concreteParentNames(concrete)) {
       if (mappedConcreteTypes.contains(parentName)) {
