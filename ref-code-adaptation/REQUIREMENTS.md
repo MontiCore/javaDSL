@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 10.07.2026
+Last updated: 11.07.2026
 
 ## Requirements
 
@@ -150,7 +150,7 @@ Last updated: 10.07.2026
   - Notes: `AssocSubtypeTarget` and `InterfaceMI` were re-enabled after
     successful isolation runs.
 
-- [ ] R-015: Replace the updater factory with an updater mill
+- [x] R-015: Replace the updater factory with an updater mill
   - Source/date: 23.06.2026
   - Details: Replace `CodeUpdaterFactory` / updater-factory usage with a
     mill-style lifecycle that exposes `init`, `getUpdater`, and `reset`.
@@ -158,11 +158,13 @@ Last updated: 10.07.2026
     to the adaptation workflow without leaking concrete Spoon construction into
     orchestration code.
   - Implemented: [x]
-  - Addressed: [ ]
-  - Notes: `CodeUpdaterMill` now owns the configured provider and a thread-local updater.
-    `CodeAdapter` resets the mill around every isolated pass and final cleanup;
-    the factory API and factory-based `adapt` overloads were removed. Production
-    compilation passes; the complete regression suite still needs to be rerun.
+  - Addressed: [x]
+  - Notes: `CodeUpdaterMill` owns one synchronized provider/current-updater
+    lifecycle. Complete adaptations are serialized because MontiCore mills and
+    symbol scopes are process-global; the updater lifecycle does not claim
+    thread isolation. Each isolated pass and final cleanup obtains a fresh
+    updater and resets it in a `finally` block. `init(Supplier)` configures an
+    alternative provider, while `init()` restores Spoon.
 
 - [x] R-016: Update the adaptation workflow
   - Source/date: 23.06.2026

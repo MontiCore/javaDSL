@@ -14,7 +14,6 @@ import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.MatcherHelper;
-import de.monticore.codeAdaption.updater.CodeUpdaterMill;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.CDImportProjector;
 import de.monticore.codeAdaption.utils.CDModelIndex;
@@ -232,7 +231,6 @@ public class CodeAdapter {
     workspace.publish(stagingPath);
     published = true;
     } finally {
-      CodeUpdaterMill.reset();
       if (!published) {
         workspace.discard(stagingPath);
       }
