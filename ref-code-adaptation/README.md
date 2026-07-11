@@ -113,8 +113,10 @@ assignments are rewritten only inside that owning Java type.
 ## Important Implementation Points
 
 - `JavaLoader.parseCD` must use the same symbol-table setup as `loadCD`, including built-in types. CDs must declare imports explicitly for Java library types such as `Object`, `String`, `List`, or `Optional`.
-- `BasicUpdateHandler` handles normal single-incarnation adaptation and builder generation.
-- `MultiIncarnationUpdateHandler` handles reference elements with multiple concrete incarnations.
+- `BasicUpdateHandler` handles ordinary and multi-incarnation adaptation through one optional,
+  immutable stable-key selection. An empty selection represents the ordinary case.
+- `MappingAdaptationRunner` owns the isolated per-pass updater lifecycle, output filtering, merge,
+  cleanup, and error wrapping.
 - `CDTypeRelations` centralizes direct generated-AST access for interfaces,
   superclasses, modifiers, and type-reference printing. Runtime Java reflection
   is not used by the adapter.

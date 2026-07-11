@@ -8,11 +8,12 @@ import de.monticore.codeAdaption.context.AdaptationContextFactory.AdaptationCont
 import de.monticore.codeAdaption.context.ConcretizationService;
 import de.monticore.codeAdaption.context.GroupingMappingService;
 import de.monticore.codeAdaption.context.MappingConformanceService;
-import de.monticore.codeAdaption.handler.BasicUpdateHandler;
-import de.monticore.codeAdaption.handler.multiIncarnation.*;
+import de.monticore.codeAdaption.MappingAdaptationRunner.AdaptationPass;
+import de.monticore.codeAdaption.handler.multiIncarnation.AdaptationConflictDetector;
+import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.MatcherHelper;
-import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdaterMill;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.CDImportProjector;
@@ -169,6 +170,15 @@ public class CodeAdapter {
     boolean published = false;
     try {
     Set<ASTOrdinaryCompilationUnit> adaptedCode = new LinkedHashSet<>();
+    MappingAdaptationRunner passRunner =
+        new MappingAdaptationRunner(
+            workspace,
+            codeMerger,
+            stagingPath,
+            refCD,
+            conCD,
+            normalizedConHwcPath,
+            useCommonParentForMultipleIncarnations);
 
     for (String mapping : orderedMappings) {
       if (!mappingContexts.containsKey(mapping)) {
@@ -186,74 +196,23 @@ public class CodeAdapter {
           codeMerger.filterCodeForMapping(
               mappingCode, validators.get(mapping), ctx, referenceIndex);
 
-      for (AdaptationPass pass :
-          buildAdaptationPasses(
+      Set<ASTOrdinaryCompilationUnit> mappingAdaptedCode =
+          passRunner.run(
+              mapping,
               mappingCode,
+              buildAdaptationPasses(
+                  mappingCode,
+                  validators.get(mapping),
+                  ctx,
+                  referenceIndex,
+                  conIndex,
+                  inputConcreteIndex,
+                  useCommonParentForMultipleIncarnations),
+              checkers.get(mapping),
               validators.get(mapping),
               ctx,
-              referenceIndex,
-              conIndex,
-              inputConcreteIndex,
-              useCommonParentForMultipleIncarnations)) {
-        // Load the complete mapping source set so Spoon can update cross-file references. The
-        // pass still controls which transformed top-level types are retained below.
-        Set<ASTOrdinaryCompilationUnit> mappingRefCode = cloneUnits(mappingCode);
-        Path tempPath = workspace.createMappingDirectory(stagingPath);
-        try {
-          JavaLoader.printAST(mappingRefCode, tempPath);
-          CodeUpdater updater = prepareUpdater(tempPath, groupingMappings);
-          BasicUpdateHandler handler;
-          if (pass.typeSelection().isEmpty()) {
-            handler =
-                new BasicUpdateHandler(
-                    refCD,
-                    conCD,
-                    normalizedConHwcPath,
-                    checkers.get(mapping),
-                    updater,
-                    validators.get(mapping),
-                    ctx,
-                    useCommonParentForMultipleIncarnations);
-          } else {
-            handler =
-                new MultiIncarnationUpdateHandler(
-                    refCD,
-                    conCD,
-                    normalizedConHwcPath,
-                    checkers.get(mapping),
-                    updater,
-                    validators.get(mapping),
-                    createSelector(pass.typeSelection(), ctx, referenceIndex, conIndex),
-                    Map.of(mapping, ctx),
-                    ctx,
-                    mapping,
-                    useCommonParentForMultipleIncarnations);
-          }
-
-          handler.handleUpdate(mappingRefCode);
-          updater.printCode();
-          Set<ASTOrdinaryCompilationUnit> processedCode =
-              codeMerger.splitCompilationUnitsByType(JavaLoader.readJavaCode(tempPath));
-          processedCode =
-              processedCode.stream()
-                  .filter(
-                      unit ->
-                          unit.getTypeDeclarationList().stream()
-                              .anyMatch(type -> pass.outputTypeNames().contains(type.getName())))
-                  .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-          adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, processedCode);
-        } catch (RuntimeException | AssertionError e) {
-          String selection =
-              pass.typeSelection().isEmpty()
-                  ? ""
-                  : " for type selection " + describeSelection(pass.typeSelection());
-          throw new CodeAdaptationException(
-              "Failed to process mapping '" + mapping + "'" + selection, e);
-        } finally {
-          CodeUpdaterMill.reset();
-          workspace.discard(tempPath);
-        }
-      }
+              groupingMappings);
+      adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, mappingAdaptedCode);
     }
 
     // Final output to destination
@@ -300,10 +259,10 @@ public class CodeAdapter {
       CDModelIndex inputConcreteIndex,
       boolean useCommonParentForMultipleIncarnations) {
     List<AdaptationPass> passes = new ArrayList<>();
-    Set<ASTOrdinaryCompilationUnit> defaultUnits = new LinkedHashSet<>();
+    boolean hasDefaultPass = false;
     Set<String> defaultOutputTypeNames = new LinkedHashSet<>();
     for (ASTOrdinaryCompilationUnit unit : units) {
-      Map<StableElementKey, ISymbol> relevantTypes = new LinkedHashMap<>();
+      Set<StableElementKey> relevantTypes = new LinkedHashSet<>();
       JavaAstElemCollector collector = collectJavaElements(unit);
       for (var type : collector.getAllTypeDeclarations()) {
         addRelevantTypeReferences(
@@ -353,18 +312,16 @@ public class CodeAdapter {
           }
         }
       }
-      List<ISymbol> orderedReferences =
-          relevantTypes.entrySet().stream()
-              .sorted(Map.Entry.comparingByKey(Comparator.comparing(StableElementKey::signature)))
-              .map(Map.Entry::getValue)
+      List<StableElementKey> orderedReferences =
+          relevantTypes.stream()
+              .sorted(Comparator.comparing(StableElementKey::signature))
               .toList();
       if (orderedReferences.isEmpty()) {
-        Map<ISymbol, ISymbol> selection = Map.of();
-        defaultUnits.add(unit);
+        hasDefaultPass = true;
         defaultOutputTypeNames.addAll(
-            expectedOutputTypeNames(unit, validator, context, selection, referenceIndex));
+            expectedOutputTypeNames(unit, validator, context, Map.of(), referenceIndex));
       } else {
-        for (Map<ISymbol, ISymbol> selection :
+        for (Map<StableElementKey, IncarnationContext.MappedElement> selection :
             buildCompleteTypeSelections(
                 orderedReferences,
                 context,
@@ -373,17 +330,13 @@ public class CodeAdapter {
                 inputConcreteIndex)) {
           passes.add(
               new AdaptationPass(
-                  Set.of(unit),
                   selection,
                   expectedOutputTypeNames(unit, validator, context, selection, referenceIndex)));
         }
       }
     }
-    if (!defaultUnits.isEmpty()) {
-      passes.add(
-          0,
-          new AdaptationPass(
-              Set.copyOf(defaultUnits), Map.of(), Set.copyOf(defaultOutputTypeNames)));
+    if (hasDefaultPass) {
+      passes.add(0, new AdaptationPass(Map.of(), Set.copyOf(defaultOutputTypeNames)));
     }
     return passes;
   }
@@ -397,9 +350,9 @@ public class CodeAdapter {
   }
 
   private static void addRelevantTypeReferences(
-      Optional<de.monticore.codeAdaption.matcher.CodeMatching> matching,
+      Optional<CodeMatching> matching,
       IncarnationContext context,
-      Map<StableElementKey, ISymbol> relevantTypes,
+      Set<StableElementKey> relevantTypes,
       CDModelIndex referenceIndex,
       boolean useCommonParentForMultipleIncarnations) {
     if (matching.isEmpty() || !matching.get().mustBePerform()) {
@@ -419,7 +372,7 @@ public class CodeAdapter {
         continue;
       }
       StableElementKey.fromSymbol(reference, referenceIndex)
-          .ifPresent(key -> relevantTypes.put(key, reference));
+          .ifPresent(relevantTypes::add);
     }
   }
 
@@ -473,7 +426,7 @@ public class CodeAdapter {
       ASTOrdinaryCompilationUnit unit,
       CodeValidator validator,
       IncarnationContext context,
-      Map<ISymbol, ISymbol> selection,
+      Map<StableElementKey, IncarnationContext.MappedElement> selection,
       CDModelIndex referenceIndex) {
     Set<String> result = new LinkedHashSet<>();
     for (var type : unit.getTypeDeclarationList()) {
@@ -485,9 +438,9 @@ public class CodeAdapter {
       boolean resolved = false;
       List<ISymbol> concreteReferences = new ArrayList<>();
       for (ISymbol reference : matching.get().getReferences()) {
-        ISymbol selected =
+        IncarnationContext.MappedElement selected =
             selectedIncarnation(reference, selection, context, referenceIndex);
-        concreteReferences.add(selected == null ? reference : selected);
+        concreteReferences.add(selected == null ? reference : selected.symbol());
         resolved |= selected != null;
       }
       String template =
@@ -504,113 +457,20 @@ public class CodeAdapter {
     return Set.copyOf(result);
   }
 
-  private static ISymbol selectedIncarnation(
+  private static IncarnationContext.MappedElement selectedIncarnation(
       ISymbol reference,
-      Map<ISymbol, ISymbol> selection,
+      Map<StableElementKey, IncarnationContext.MappedElement> selection,
       IncarnationContext context,
       CDModelIndex referenceIndex) {
-    ISymbol selected = selection.get(reference);
     Optional<StableElementKey> referenceKey =
         StableElementKey.fromSymbol(reference, referenceIndex);
-    if (selected == null) {
-      selected =
-          selection.entrySet().stream()
-              .filter(
-                  entry ->
-                      referenceKey.equals(
-                          StableElementKey.fromSymbol(entry.getKey(), referenceIndex)))
-              .map(Map.Entry::getValue)
-              .findFirst()
-              .orElse(null);
-    }
+    IncarnationContext.MappedElement selected = referenceKey.map(selection::get).orElse(null);
     if (selected != null) {
       return selected;
     }
     List<IncarnationContext.MappedElement> incarnations =
         referenceKey.map(context::getIncarnations).orElseGet(List::of);
-    return incarnations.size() == 1 ? incarnations.get(0).symbol() : null;
-  }
-
-  private static IncarnationSelector createSelector(
-      Map<ISymbol, ISymbol> typeSelection,
-      IncarnationContext context,
-      CDModelIndex referenceIndex,
-      CDModelIndex concreteIndex) {
-    return (referenceSymbol, availableIncarnations, ignored) -> {
-      if (availableIncarnations == null || availableIncarnations.isEmpty()) {
-        return null;
-      }
-      ISymbol selectedType = typeSelection.get(referenceSymbol);
-      if (selectedType != null) {
-        return selectedType;
-      }
-      Optional<String> referenceOwner =
-          StableElementKey.fromSymbol(referenceSymbol, referenceIndex)
-              .flatMap(StableElementKey::getOwnerType);
-      if (referenceOwner.isPresent()) {
-        Optional<ISymbol> selectedOwner =
-            typeSelection.entrySet().stream()
-                .filter(
-                    entry ->
-                        StableElementKey
-                            .fromSymbol(entry.getKey(), referenceIndex)
-                            .filter(key -> key.getKind() == StableElementKey.Kind.TYPE)
-                            .map(StableElementKey::getName)
-                            .filter(referenceOwner.get()::equals)
-                            .isPresent())
-                .map(Map.Entry::getValue)
-                .findFirst();
-        if (selectedOwner.isPresent()) {
-          List<ISymbol> ownerMatches =
-              availableIncarnations.stream()
-                  .filter(
-                      candidate ->
-                          StableElementKey
-                              .fromSymbol(candidate, concreteIndex)
-                              .flatMap(StableElementKey::getOwnerType)
-                              .filter(selectedOwner.get().getName()::equals)
-                              .isPresent())
-                  .toList();
-          if (ownerMatches.size() == 1) {
-            return ownerMatches.get(0);
-          }
-        }
-      }
-
-      Map<ISymbol, Integer> scores = new IdentityHashMap<>();
-      for (ISymbol candidate : availableIncarnations) {
-        String identity =
-            StableElementKey
-                .fromSymbol(candidate, concreteIndex)
-                .map(StableElementKey::toString)
-                .orElse(candidate.getName())
-                .toLowerCase(Locale.ROOT);
-        int score =
-            typeSelection.values().stream()
-                .map(ISymbol::getName)
-                .map(name -> name.toLowerCase(Locale.ROOT))
-                .distinct()
-                .filter(identity::contains)
-                .mapToInt(String::length)
-                .sum();
-        scores.put(candidate, score);
-      }
-      int bestScore = scores.values().stream().mapToInt(Integer::intValue).max().orElse(0);
-      if (bestScore > 0) {
-        List<ISymbol> best =
-            scores.entrySet().stream()
-                .filter(entry -> entry.getValue() == bestScore)
-                .map(Map.Entry::getKey)
-                .toList();
-        if (best.size() == 1) {
-          return best.get(0);
-        }
-      }
-      return availableIncarnations.stream()
-          .sorted(Comparator.comparing(ISymbol::getName))
-          .findFirst()
-          .orElse(null);
-    };
+    return incarnations.size() == 1 ? incarnations.get(0) : null;
   }
 
   private static SortedSet<String> validatedMappings(Set<String> mappings) {
@@ -627,43 +487,36 @@ public class CodeAdapter {
     return Collections.unmodifiableSortedSet(ordered);
   }
 
-  private static List<Map<ISymbol, ISymbol>> buildCompleteTypeSelections(
-      List<ISymbol> referenceTypes,
+  private static List<Map<StableElementKey, IncarnationContext.MappedElement>>
+      buildCompleteTypeSelections(
+      List<StableElementKey> referenceTypes,
       IncarnationContext context,
       CDModelIndex referenceIndex,
       CDModelIndex concreteIndex,
       CDModelIndex inputConcreteIndex) {
-    List<Map<ISymbol, ISymbol>> selections = new ArrayList<>();
-    selections.add(new IdentityHashMap<>());
-    for (ISymbol referenceType : referenceTypes) {
-      List<ISymbol> incarnations =
-          context
-              .getIncarnations(
-                  StableElementKey.fromSymbol(referenceType, referenceIndex).orElseThrow())
-              .stream()
-              .map(IncarnationContext.MappedElement::symbol)
+    List<Map<StableElementKey, IncarnationContext.MappedElement>> selections = new ArrayList<>();
+    selections.add(new LinkedHashMap<>());
+    for (StableElementKey referenceType : referenceTypes) {
+      List<IncarnationContext.MappedElement> incarnations =
+          context.getIncarnations(referenceType).stream()
               .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-      incarnations.removeIf(incarnation -> !concreteIndex.hasType(incarnation.getName()));
-      String referenceName =
-          StableElementKey
-              .fromSymbol(referenceType, referenceIndex)
-              .map(StableElementKey::getName)
-              .orElse(referenceType.getName());
+      incarnations.removeIf(incarnation -> !concreteIndex.hasType(incarnation.key().getName()));
+      String referenceName = referenceType.getName();
       if (incarnations.size() > 1 && !inputConcreteIndex.hasType(referenceName)) {
-        incarnations.removeIf(incarnation -> referenceName.equals(incarnation.getName()));
+        incarnations.removeIf(incarnation -> referenceName.equals(incarnation.key().getName()));
       }
-      List<ISymbol> sameKindIncarnations =
+      List<IncarnationContext.MappedElement> sameKindIncarnations =
           incarnations.stream()
               .filter(
                   incarnation ->
                       sameTypeKind(
                           referenceIndex.type(referenceName).orElse(null),
-                          concreteIndex.type(incarnation.getName()).orElse(null)))
+                          concreteIndex.type(incarnation.key().getName()).orElse(null)))
               .toList();
       if (!sameKindIncarnations.isEmpty()) {
         incarnations = new ArrayList<>(sameKindIncarnations);
       }
-      incarnations.sort(Comparator.comparing(ISymbol::getName));
+      incarnations.sort(Comparator.comparing(incarnation -> incarnation.key().signature()));
       if (incarnations.isEmpty()) {
         throw new CodeAdaptationException(
             "No incarnations available for reference type '" + referenceType.getName() + "'");
@@ -675,12 +528,14 @@ public class CodeAdapter {
                 + MAX_TYPE_SELECTIONS
                 + " runs");
       }
-      List<Map<ISymbol, ISymbol>> expanded = new ArrayList<>((int) newSize);
-      for (Map<ISymbol, ISymbol> selection : selections) {
-        for (ISymbol incarnation : incarnations) {
-          Map<ISymbol, ISymbol> copy = new IdentityHashMap<>(selection);
+      List<Map<StableElementKey, IncarnationContext.MappedElement>> expanded =
+          new ArrayList<>((int) newSize);
+      for (Map<StableElementKey, IncarnationContext.MappedElement> selection : selections) {
+        for (IncarnationContext.MappedElement incarnation : incarnations) {
+          Map<StableElementKey, IncarnationContext.MappedElement> copy =
+              new LinkedHashMap<>(selection);
           copy.put(referenceType, incarnation);
-          expanded.add(copy);
+          expanded.add(Map.copyOf(copy));
         }
       }
       selections = expanded;
@@ -705,27 +560,6 @@ public class CodeAdapter {
     return context
         .getGroupingFor(StableElementKey.type(concreteTypeName))
         .map(grouping -> grouping.key().getName());
-  }
-
-  private static String describeSelection(Map<ISymbol, ISymbol> selection) {
-    return selection.entrySet().stream()
-        .sorted(Map.Entry.comparingByKey(Comparator.comparing(ISymbol::getName)))
-        .map(entry -> entry.getKey().getName() + "=" + entry.getValue().getName())
-        .collect(java.util.stream.Collectors.joining(", ", "[", "]"));
-  }
-
-  private record AdaptationPass(
-      Set<ASTOrdinaryCompilationUnit> code,
-      Map<ISymbol, ISymbol> typeSelection,
-      Set<String> outputTypeNames) {}
-
-  private CodeUpdater prepareUpdater(Path tempPath, Map<String, String> groupingMappings) {
-    CodeUpdaterMill.reset();
-    CodeUpdater updater = CodeUpdaterMill.getUpdater();
-    updater.setCodePath(tempPath);
-    updater.setGroupingMappings(groupingMappings);
-    updater.setOutputDirectory(tempPath);
-    return updater;
   }
 
   /**

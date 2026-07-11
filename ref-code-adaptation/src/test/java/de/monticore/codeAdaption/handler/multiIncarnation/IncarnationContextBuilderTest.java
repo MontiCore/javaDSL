@@ -254,6 +254,45 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
         () -> context.getIncarnations(fieldKey).clear());
   }
 
+  @Test
+  @DisplayName("Pass selection resolves types and members by stable key across separate parses")
+  public void passSelectionUsesStableKeysAndSelectedOwner() {
+    File referenceFile =
+        new File(
+            "src/test/resources/de/monticore/codeAdaption/evaluation/testcase_6_builder_pattern/Reference.cd");
+    File concreteFile =
+        new File(
+            "src/test/resources/de/monticore/codeAdaption/evaluation/testcase_6_builder_pattern/Concrete.cd");
+    ASTCDCompilationUnit contextReference = JavaLoader.loadCD(referenceFile);
+    ASTCDCompilationUnit concrete = JavaLoader.loadCD(concreteFile);
+    IncarnationContext context = build(contextReference, concrete, "buildPat");
+
+    IncarnationContext.MappedElement selectedTask =
+        context.getIncarnations(StableElementKey.type("Builder")).stream()
+            .filter(element -> element.key().equals(StableElementKey.type("Task")))
+            .findFirst()
+            .orElseThrow();
+    ASTCDCompilationUnit separatelyParsedReference = JavaLoader.loadCD(referenceFile);
+    ASTCDType builder = findType(separatelyParsedReference, "Builder");
+    ExposingUpdateHandler handler =
+        new ExposingUpdateHandler(
+            separatelyParsedReference,
+            concrete,
+            context,
+            Map.of(StableElementKey.type("Builder"), selectedTask),
+            false);
+
+    assertEquals("Task", handler.resolve(builder.getSymbol()).orElseThrow().getName());
+    var selectedField =
+        handler.resolve(builder.getCDAttributeList().get(0).getSymbol()).orElseThrow();
+    assertEquals(
+        "Task",
+        StableElementKey.fromSymbol(selectedField, CDModelIndex.of(concrete))
+            .orElseThrow()
+            .getOwnerType()
+            .orElseThrow());
+  }
+
   private IncarnationContext build(ASTCDCompilationUnit refCD, ASTCDCompilationUnit conCD, String mapping) {
     CDConformanceChecker checker = new CDConformanceChecker(confParameters);
     try {
@@ -282,6 +321,24 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
           null,
           null,
           incarnationContext,
+          useCommonParentForMultipleIncarnations);
+    }
+
+    ExposingUpdateHandler(
+        ASTCDCompilationUnit reference,
+        ASTCDCompilationUnit concrete,
+        IncarnationContext incarnationContext,
+        Map<StableElementKey, IncarnationContext.MappedElement> selection,
+        boolean useCommonParentForMultipleIncarnations) {
+      super(
+          reference,
+          concrete,
+          null,
+          null,
+          null,
+          null,
+          incarnationContext,
+          selection,
           useCommonParentForMultipleIncarnations);
     }
 

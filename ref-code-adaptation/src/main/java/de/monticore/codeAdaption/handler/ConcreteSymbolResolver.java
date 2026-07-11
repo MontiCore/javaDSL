@@ -63,13 +63,17 @@ final class ConcreteSymbolResolver {
     if (handler.incarnationContext == null) {
       return Optional.empty();
     }
-    List<ISymbol> incarnations =
-        handler.mappedIncarnations(reference).stream()
-            .map(IncarnationContext.MappedElement::symbol)
-            .toList();
-    if (incarnations.isEmpty()) {
+    Optional<IncarnationContext.MappedElement> selected = selectedIncarnation(reference);
+    if (selected.isPresent()) {
+      return selected.map(IncarnationContext.MappedElement::symbol);
+    }
+    List<IncarnationContext.MappedElement> mappedIncarnations =
+        handler.mappedIncarnations(reference);
+    if (mappedIncarnations.isEmpty()) {
       return Optional.empty();
     }
+    List<ISymbol> incarnations =
+        mappedIncarnations.stream().map(IncarnationContext.MappedElement::symbol).toList();
     if (reference instanceof CDTypeSymbol && handler.useCommonParentForMultipleIncarnations) {
       Optional<ISymbol> commonParent = findCommonParent(incarnations);
       if (commonParent.isPresent()) {
@@ -86,6 +90,36 @@ final class ConcreteSymbolResolver {
       }
     }
     return Optional.of(incarnations.get(0));
+  }
+
+  private Optional<IncarnationContext.MappedElement> selectedIncarnation(ISymbol reference) {
+    Optional<StableElementKey> referenceKey = handler.referenceKey(reference);
+    if (referenceKey.isEmpty()) {
+      return Optional.empty();
+    }
+    IncarnationContext.MappedElement direct =
+        handler.incarnationSelection.get(referenceKey.get());
+    if (direct != null) {
+      return Optional.of(direct);
+    }
+    Optional<String> referenceOwner = referenceKey.get().getOwnerType();
+    if (referenceOwner.isEmpty()) {
+      return Optional.empty();
+    }
+    IncarnationContext.MappedElement selectedOwner =
+        handler.incarnationSelection.get(StableElementKey.type(referenceOwner.get()));
+    if (selectedOwner == null) {
+      return Optional.empty();
+    }
+    return handler.mappedIncarnations(reference).stream()
+        .filter(
+            incarnation ->
+                incarnation
+                    .key()
+                    .getOwnerType()
+                    .filter(selectedOwner.key().getName()::equals)
+                    .isPresent())
+        .findFirst();
   }
 
   ISymbol getConTypeSymbol(CDTypeSymbol symbol) {

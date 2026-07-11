@@ -147,11 +147,10 @@ public final class StableElementKey {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof StableElementKey)) {
+    if (!(obj instanceof StableElementKey other)) {
       return false;
     }
-    StableElementKey other = (StableElementKey) obj;
-    return kind == other.kind
+      return kind == other.kind
         && Objects.equals(ownerType, other.ownerType)
         && Objects.equals(name, other.name)
         && Objects.equals(fieldKind, other.fieldKind)

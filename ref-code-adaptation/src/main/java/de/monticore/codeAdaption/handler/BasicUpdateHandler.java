@@ -18,8 +18,10 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,6 +35,9 @@ public class BasicUpdateHandler {
 
   /** Optional incarnation context for stereotype-based mapping when conformance is skipped. */
   protected IncarnationContext incarnationContext;
+
+  /** Stable concrete choices for the current isolated pass. Empty for the ordinary case. */
+  final Map<StableElementKey, IncarnationContext.MappedElement> incarnationSelection;
 
   protected boolean useCommonParentForMultipleIncarnations;
 
@@ -58,7 +63,7 @@ public class BasicUpdateHandler {
       CodeUpdater updater,
       CodeValidator validator,
       IncarnationContext incarnationContext) {
-    this(refCD, conCD, conHwcPath, checker, updater, validator, incarnationContext, true);
+    this(refCD, conCD, conHwcPath, checker, updater, validator, incarnationContext, Map.of(), true);
   }
 
   public BasicUpdateHandler(
@@ -70,12 +75,36 @@ public class BasicUpdateHandler {
       CodeValidator validator,
       IncarnationContext incarnationContext,
       boolean useCommonParentForMultipleIncarnations) {
+    this(
+        refCD,
+        conCD,
+        conHwcPath,
+        checker,
+        updater,
+        validator,
+        incarnationContext,
+        Map.of(),
+        useCommonParentForMultipleIncarnations);
+  }
+
+  public BasicUpdateHandler(
+      ASTCDCompilationUnit refCD,
+      ASTCDCompilationUnit conCD,
+      Path conHwcPath,
+      CDConformanceChecker checker,
+      CodeUpdater updater,
+      CodeValidator validator,
+      IncarnationContext incarnationContext,
+      Map<StableElementKey, IncarnationContext.MappedElement> incarnationSelection,
+      boolean useCommonParentForMultipleIncarnations) {
     this.updater = updater;
     this.checker = checker;
     this.conIndex = CDModelIndex.of(conCD);
     this.refIndex = CDModelIndex.of(refCD);
     this.validator = validator;
     this.incarnationContext = incarnationContext;
+    this.incarnationSelection =
+        incarnationSelection == null ? Map.of() : Map.copyOf(incarnationSelection);
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
     this.symbolResolver = new ConcreteSymbolResolver(this, refCD, conCD);
     this.memberUpdates = new JavaMemberUpdateService(this, symbolResolver);
@@ -83,6 +112,7 @@ public class BasicUpdateHandler {
   }
 
   public void handleUpdate(Set<ASTOrdinaryCompilationUnit> javaFiles) {
+    validateIncarnationContext();
     typeUpdates.beginRun();
     validator.initializeTypeMatcher(javaFiles);
 
@@ -101,6 +131,35 @@ public class BasicUpdateHandler {
     typeElements.forEach(this::handleTypeUpdate);
     typeElements.forEach(this::projectCompletedMembers);
     updater.printCode();
+  }
+
+  private void validateIncarnationContext() {
+    if (incarnationContext == null) {
+      return;
+    }
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+        incarnationContext.getMappings().entrySet()) {
+      if (entry.getKey().getKind() == StableElementKey.Kind.METHOD
+          && entry.getValue().stream().map(value -> value.key().signature()).distinct().count()
+              != entry.getValue().size()) {
+        throw new IllegalStateException(
+            "Conflicting method incarnations for " + entry.getKey().signature());
+      }
+      if (entry.getKey().getKind() != StableElementKey.Kind.FIELD) {
+        continue;
+      }
+      Map<String, String> ownersAndTypes = new LinkedHashMap<>();
+      for (IncarnationContext.MappedElement mapped : entry.getValue()) {
+        StableElementKey target = mapped.key();
+        String ownerAndName = target.getOwnerType().orElse("") + "." + target.getName();
+        String fieldKind = target.getFieldKind().orElse("");
+        String previous = ownersAndTypes.putIfAbsent(ownerAndName, fieldKind);
+        if (previous != null && !previous.equals(fieldKind)) {
+          throw new IllegalStateException(
+              "Conflicting field incarnations for " + entry.getKey().signature());
+        }
+      }
+    }
   }
 
   /** Compatibility hook retained for specialized handlers. */
