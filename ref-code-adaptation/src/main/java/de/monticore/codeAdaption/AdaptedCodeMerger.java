@@ -7,10 +7,13 @@ import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.java.javadsl._ast.ASTCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTImportDeclaration;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.symboltable.ISymbol;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -80,26 +83,33 @@ final class AdaptedCodeMerger {
       ASTCDCompilationUnit conCD) {
 
     Map<String, ASTOrdinaryCompilationUnit> result = indexAndMerge(concreteCode);
+    Map<String, ASTOrdinaryCompilationUnit> mergedAdapted = indexAndMerge(adaptedCode);
+    Map<String, Relocation> relocations = findRelocations(result, mergedAdapted, conCD);
+    Map<String, Map<String, String>> importsByOriginalPackage =
+        adaptedTypeImports(mergedAdapted, relocations);
 
     // Every unit in adaptedCode has already passed filterCodeForMapping. Retaining that explicit
     // selection avoids guessing from coincidental type-name prefixes or suffixes.
-    for (ASTOrdinaryCompilationUnit adaptedUnit : indexAndMerge(adaptedCode).values()) {
+    for (ASTOrdinaryCompilationUnit originalAdapted : mergedAdapted.values()) {
+      String originalKey = compilationUnitKey(originalAdapted);
+      ASTOrdinaryCompilationUnit adaptedUnit = originalAdapted.deepClone();
+      Relocation relocation = relocations.get(originalKey);
+      addRelocationImports(
+          adaptedUnit,
+          importsByOriginalPackage.getOrDefault(packageName(originalAdapted), Map.of()),
+          relocation == null ? packageName(adaptedUnit) : relocation.targetPackage());
+
       String key = compilationUnitKey(adaptedUnit);
       ASTOrdinaryCompilationUnit concreteMatch = result.get(key);
       ASTOrdinaryCompilationUnit mergeableAdapted = adaptedUnit;
-      if (concreteMatch == null) {
-        Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> uniqueConcreteMatch =
-            uniqueConcreteTypeMatch(result, adaptedUnit, conCD);
-        if (uniqueConcreteMatch.isPresent()) {
-          key = uniqueConcreteMatch.get().getKey();
-          concreteMatch = uniqueConcreteMatch.get().getValue();
-          mergeableAdapted = adaptedUnit.deepClone();
-          if (concreteMatch.isPresentPackageDeclaration()) {
-            mergeableAdapted.setPackageDeclaration(
-                concreteMatch.getPackageDeclaration().deepClone());
-          } else {
-            mergeableAdapted.setPackageDeclarationAbsent();
-          }
+      if (concreteMatch == null && relocation != null) {
+        key = relocation.targetKey();
+        concreteMatch = result.get(key);
+        if (concreteMatch.isPresentPackageDeclaration()) {
+          mergeableAdapted.setPackageDeclaration(
+              concreteMatch.getPackageDeclaration().deepClone());
+        } else {
+          mergeableAdapted.setPackageDeclarationAbsent();
         }
       }
       result.put(
@@ -110,6 +120,122 @@ final class AdaptedCodeMerger {
     }
 
     return new LinkedHashSet<>(result.values());
+  }
+
+  private Map<String, Relocation> findRelocations(
+      Map<String, ASTOrdinaryCompilationUnit> concreteCode,
+      Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
+      ASTCDCompilationUnit conCD) {
+    Map<String, Relocation> relocations = new LinkedHashMap<>();
+    for (Map.Entry<String, ASTOrdinaryCompilationUnit> entry : adaptedCode.entrySet()) {
+      if (concreteCode.containsKey(entry.getKey())) {
+        continue;
+      }
+      Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> target =
+          uniqueConcreteTypeMatch(concreteCode, entry.getValue(), conCD);
+      if (target.isEmpty()) {
+        continue;
+      }
+      ASTOrdinaryCompilationUnit adaptedUnit = entry.getValue();
+      ASTOrdinaryCompilationUnit concreteUnit = target.get().getValue();
+      String simpleName = adaptedUnit.getTypeDeclarationList().get(0).getName();
+      relocations.put(
+          entry.getKey(),
+          new Relocation(
+              simpleName,
+              target.get().getKey(),
+              packageName(concreteUnit)));
+    }
+    return relocations;
+  }
+
+  private Map<String, Map<String, String>> adaptedTypeImports(
+      Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
+      Map<String, Relocation> relocations) {
+    Map<String, Map<String, String>> result = new LinkedHashMap<>();
+    for (Map.Entry<String, ASTOrdinaryCompilationUnit> entry : adaptedCode.entrySet()) {
+      ASTOrdinaryCompilationUnit unit = entry.getValue();
+      if (unit.getTypeDeclarationList().size() != 1) {
+        continue;
+      }
+      String originalPackage = packageName(unit);
+      String typeName = unit.getTypeDeclarationList().get(0).getName();
+      Relocation relocation = relocations.get(entry.getKey());
+      String qualifiedTarget =
+          relocation == null
+              ? qualify(originalPackage, typeName)
+              : qualify(relocation.targetPackage(), typeName);
+      Map<String, String> bySimpleName =
+          result.computeIfAbsent(originalPackage, ignored -> new LinkedHashMap<>());
+      String conflict = bySimpleName.putIfAbsent(typeName, qualifiedTarget);
+      if (conflict != null && !conflict.equals(qualifiedTarget)) {
+        throw new CodeAdaptationException(
+            "Ambiguous concrete package for adapted type '"
+                + typeName
+                + "': "
+                + conflict
+                + " and "
+                + qualifiedTarget);
+      }
+    }
+    return result;
+  }
+
+  private void addRelocationImports(
+      ASTOrdinaryCompilationUnit unit,
+      Map<String, String> relocatedTypes,
+      String finalPackage) {
+    Set<String> declaredTypes =
+        unit.getTypeDeclarationList().stream()
+            .map(ASTTypeDeclaration::getName)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    Map<String, String> importsBySimpleName = new LinkedHashMap<>();
+    for (ASTImportDeclaration existingImport :
+        new ArrayList<>(unit.getImportDeclarationList())) {
+      String qualifiedName = existingImport.getMCQualifiedName().getQName();
+      String importedSimpleName = simpleName(qualifiedName);
+      if (!qualifiedName.contains(".") && relocatedTypes.containsKey(importedSimpleName)) {
+        unit.removeImportDeclaration(existingImport);
+      } else {
+        importsBySimpleName.put(importedSimpleName, qualifiedName);
+      }
+    }
+    for (Map.Entry<String, String> relocatedType : relocatedTypes.entrySet()) {
+      String simpleName = relocatedType.getKey();
+      String qualifiedName = relocatedType.getValue();
+      if (declaredTypes.contains(simpleName) || packageName(qualifiedName).equals(finalPackage)) {
+        continue;
+      }
+      String conflict = importsBySimpleName.putIfAbsent(simpleName, qualifiedName);
+      if (conflict != null && !conflict.equals(qualifiedName)) {
+        throw new CodeAdaptationException(
+            "Cannot import relocated type '"
+                + qualifiedName
+                + "' because '"
+                + conflict
+                + "' already uses the simple name '"
+                + simpleName
+                + "'");
+      }
+      if (conflict == null) {
+        unit.addImportDeclaration(parseImport(qualifiedName));
+      }
+    }
+  }
+
+  private ASTImportDeclaration parseImport(String qualifiedName) {
+    try {
+      Optional<ASTCompilationUnit> parsed =
+          JavaDSLMill.parser()
+              .parse_StringCompilationUnit(
+                  "import " + qualifiedName + ";" + System.lineSeparator() + "class Holder {}");
+      if (parsed.isEmpty() || !(parsed.get() instanceof ASTOrdinaryCompilationUnit unit)) {
+        throw new CodeAdaptationException("Could not create Java import for " + qualifiedName);
+      }
+      return unit.getImportDeclaration(0).deepClone();
+    } catch (IOException exception) {
+      throw new CodeAdaptationException("Could not create Java import for " + qualifiedName, exception);
+    }
   }
 
   private Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> uniqueConcreteTypeMatch(
@@ -131,6 +257,13 @@ final class AdaptedCodeMerger {
                     entry.getValue().getTypeDeclarationList().stream()
                         .anyMatch(type -> adaptedType.equals(type.getName())))
             .toList();
+    if (candidates.size() > 1) {
+      throw new CodeAdaptationException(
+          "Cannot relocate adapted type '"
+              + adaptedType
+              + "' because concrete Java declares it in multiple packages: "
+              + candidates.stream().map(Map.Entry::getKey).sorted().toList());
+    }
     return candidates.size() == 1 ? Optional.of(candidates.get(0)) : Optional.empty();
   }
 
@@ -185,10 +318,7 @@ final class AdaptedCodeMerger {
 
   /** Returns the package-qualified identity of a split compilation unit. */
   private String compilationUnitKey(ASTOrdinaryCompilationUnit unit) {
-    String packageName =
-        unit.isPresentPackageDeclaration()
-            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
-            : "";
+    String packageName = packageName(unit);
     String typeIdentity =
         unit.getTypeDeclarationList().stream()
             .map(ASTTypeDeclaration::getName)
@@ -198,6 +328,26 @@ final class AdaptedCodeMerger {
     return packageName.isEmpty() ? typeIdentity : packageName + "." + typeIdentity;
   }
 
+  private String packageName(ASTOrdinaryCompilationUnit unit) {
+    return unit.isPresentPackageDeclaration()
+        ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+        : "";
+  }
+
+  private String packageName(String qualifiedName) {
+    int separator = qualifiedName.lastIndexOf('.');
+    return separator < 0 ? "" : qualifiedName.substring(0, separator);
+  }
+
+  private String simpleName(String qualifiedName) {
+    int separator = qualifiedName.lastIndexOf('.');
+    return separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1);
+  }
+
+  private String qualify(String packageName, String simpleName) {
+    return packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
+  }
+
   private JavaAstElemCollector collect(ASTOrdinaryCompilationUnit unit) {
     JavaAstElemCollector collector = new JavaAstElemCollector();
     JavaDSLTraverser traverser = JavaDSLMill.traverser();
@@ -205,4 +355,6 @@ final class AdaptedCodeMerger {
     unit.accept(traverser);
     return collector;
   }
+
+  private record Relocation(String simpleName, String targetKey, String targetPackage) {}
 }

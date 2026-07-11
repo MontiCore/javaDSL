@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.utils.JavaLoader;
@@ -139,6 +140,107 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
     assertEquals(
         "concrete", merged.getPackageDeclaration().getMCQualifiedName().getQName());
     assertTrue(JavaLoader.print(merged).contains("void send()"));
+  }
+
+  @Test
+  void importsRelocatedTypesIntoDependentAdaptedUnits() throws IOException {
+    ASTOrdinaryCompilationUnit adaptedAccount =
+        parse("adapter/Account.java", "package adapter; class Account {}");
+    ASTOrdinaryCompilationUnit adaptedTransaction =
+        parse(
+            "adapter/Transaction.java",
+            "package adapter; class Transaction { Account source; }");
+    ASTOrdinaryCompilationUnit concreteAccount =
+        parse("concrete/Account.java", "package concrete; class Account {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Account; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(concreteAccount),
+            linkedSet(adaptedAccount, adaptedTransaction),
+            JavaLoader.parseCD(cd.toString()));
+
+    ASTOrdinaryCompilationUnit transaction =
+        merged.stream()
+            .filter(unit -> unit.getTypeDeclarationList().get(0).getName().equals("Transaction"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        Set.of("concrete.Account"),
+        transaction.getImportDeclarationList().stream()
+            .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
+            .collect(java.util.stream.Collectors.toSet()));
+  }
+
+  @Test
+  void importsRelocatedSuperclassIntoDependentAdaptedType() throws IOException {
+    ASTOrdinaryCompilationUnit adaptedBase =
+        parse("adapter/Base.java", "package adapter; class Base {}");
+    ASTOrdinaryCompilationUnit adaptedChild =
+        parse("adapter/Child.java", "package adapter; class Child extends Base {}");
+    ASTOrdinaryCompilationUnit concreteBase =
+        parse("domain/Base.java", "package domain; class Base {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Base; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(concreteBase),
+            linkedSet(adaptedBase, adaptedChild),
+            JavaLoader.parseCD(cd.toString()));
+
+    ASTOrdinaryCompilationUnit child =
+        merged.stream()
+            .filter(unit -> unit.getTypeDeclarationList().get(0).getName().equals("Child"))
+            .findFirst()
+            .orElseThrow();
+    assertTrue(JavaLoader.print(child).contains("import domain.Base;"));
+  }
+
+  @Test
+  void rejectsConflictingImportForRelocatedType() throws IOException {
+    ASTOrdinaryCompilationUnit adaptedAccount =
+        parse("adapter/Account.java", "package adapter; class Account {}");
+    ASTOrdinaryCompilationUnit adaptedTransaction =
+        parse(
+            "adapter/Transaction.java",
+            "package adapter; import other.Account; class Transaction { Account source; }");
+    ASTOrdinaryCompilationUnit concreteAccount =
+        parse("concrete/Account.java", "package concrete; class Account {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Account; }");
+
+    assertThrows(
+        CodeAdaptationException.class,
+        () ->
+            merger.mergeAdaptedCodeIntoConcreteBase(
+                linkedSet(concreteAccount),
+                linkedSet(adaptedAccount, adaptedTransaction),
+                JavaLoader.parseCD(cd.toString())));
+  }
+
+  @Test
+  void rejectsAmbiguousConcretePackageForAdaptedType() throws IOException {
+    ASTOrdinaryCompilationUnit adapted =
+        parse("adapter/Account.java", "package adapter; class Account {}");
+    ASTOrdinaryCompilationUnit first =
+        parse("first/Account.java", "package first; class Account {}");
+    ASTOrdinaryCompilationUnit second =
+        parse("second/Account.java", "package second; class Account {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Account; }");
+
+    CodeAdaptationException exception =
+        assertThrows(
+            CodeAdaptationException.class,
+            () ->
+                merger.mergeAdaptedCodeIntoConcreteBase(
+                    linkedSet(first, second),
+                    linkedSet(adapted),
+                    JavaLoader.parseCD(cd.toString())));
+
+    assertTrue(exception.getMessage().contains("multiple packages"));
   }
 
   private ASTOrdinaryCompilationUnit parse(String relativePath, String source) throws IOException {

@@ -143,6 +143,13 @@ assignments are rewritten only inside that owning Java type.
   Spoon statements instead of parsed string snippets.
 - Concretization compatibility tests inspect and compile the adapter's real output; they do not
   substitute a synthetic CD-to-Java projection.
+- Concrete handwritten Java packages are authoritative when an adapted top-level type has one
+  unique same-name concrete declaration. The adapted declaration is merged into that package, and
+  other adapted units receive imports for types that no longer share their original package.
+  Multiple concrete package candidates or conflicting imports are rejected instead of guessed.
+- The concretization compilation oracle may stub a missing type only when it is declared by the
+  original concrete CD and one concrete Java package is unambiguous. Types introduced only from the
+  reference CD are not stubbed, so stale reference names and missing adapter output fail compilation.
 - Final generated output must not contain adapter metadata.
 - Generated Java cleanup intentionally avoids broad source-text regex formatting.
   Comments, literals, generics, operators, and method bodies should be left to

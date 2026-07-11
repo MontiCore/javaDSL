@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 03.07.2026
+Last updated: 10.07.2026
 
 ## Requirements
 
@@ -181,15 +181,14 @@ Last updated: 03.07.2026
     Split responsibilities into logical categories, helper classes, or dedicated
     strategy objects.
   - Implemented: [x]
-  - Addressed: [ ]
+  - Addressed: [x]
   - Notes: All production Java classes are below 500 physical lines. The four
     remaining hotspots are coordinators backed by coarse-grained collaborators:
     handler symbol/member/type services, Spoon workspace/transformation/generation
     services, and one shared incarnation-context support class. All production
     sources compile against the project classpath. Focused regressions were
     added for path safety, logger state, package identity, nested types, Spoon
-    resolution, and validation outcomes. A new full-suite result is pending
-    after strengthening the concretization oracle to inspect actual output.
+    resolution, and validation outcomes.
 
 - [ ] R-018: Clarify multi-incarnation mapping versus multi-pattern cases
   - Source/date: 23.06.2026
@@ -230,4 +229,67 @@ Last updated: 03.07.2026
     cdconcretization-backed and manual adaptation modes.
   - Implemented: [x]
   - Addressed: [x]
-  - Notes:
+  - Notes: Association cases run against the real adapter output. Association
+    endpoint and role-field types are no longer made compilable by copying all
+    CD types into every Java package; the stricter behavior is recorded in
+    R-022.
+
+- [x] R-022: Make generated-output compilation and package reconciliation strict
+  - Source/date: 10.07.2026
+  - Details: The concretization compatibility tests must compile the adapter's
+    real output without creating broad stubs that hide stale reference names,
+    wrong packages, or missing adapter-generated types. When adapted types are
+    merged with concrete handwritten Java in another package, dependent adapted
+    units must receive deterministic imports. Ambiguous package identities must
+    be rejected instead of guessed.
+  - Implemented: [x]
+  - Addressed: [x]
+  - Problem: The former oracle completed the concrete CD from the reference CD
+    and generated every resulting model type in every package found in the
+    compilation sources. For example, this invalid output could pass:
+
+    ```java
+    package adapted.banking;
+
+    class Transaction {
+      PrivateAccount source;
+    }
+    ```
+
+    The real handwritten type was `concrete.banking.PrivateAccount`, but the
+    oracle invented an additional `adapted.banking.PrivateAccount` stub. The
+    Java compiler therefore did not reveal the missing import. A surviving
+    reference name such as `ReferenceAccount` could be hidden in the same way
+    when it was copied from the completed reference model.
+  - Expected: Real handwritten Java and real adapter output are authoritative.
+    An original concrete-CD type may be represented by a minimal test stub only
+    when one concrete package is unambiguous. Types introduced only through 
+    reference-CD completion are not stubbed.
+    Therefore the example above must either become:
+
+    ```java
+    package adapted.banking;
+
+    import concrete.banking.PrivateAccount;
+
+    class Transaction {
+      PrivateAccount source;
+    }
+    ```
+
+    or fail compilation.
+  - Package reconciliation: `AdaptedCodeMerger` already moved an adapted
+    declaration into the package of a unique same-name handwritten concrete
+    type. It now performs this as a two-pass operation: first determine all
+    final type locations, then add JavaDSL import declarations to dependent
+    adapted units before changing packages and merging. Generated simple-name
+    placeholder imports are replaced with their qualified targets.
+  - Conflict behavior: If concrete Java declares the same model type in more
+    than one package, or an existing import uses the required simple name, 
+    adaptation fails with `CodeAdaptationException`. No package
+    is selected by path order or filename order.
+  - Oracle behavior: Compilation sources and generated stubs are indexed by
+    fully qualified type name. Stub declaration conflicts are rejected. The
+    oracle has negative regressions for stale reference types and wrong-package
+    concrete types, plus a positive regression for a legitimate original
+    concrete-CD dependency supplied by an external generation step.

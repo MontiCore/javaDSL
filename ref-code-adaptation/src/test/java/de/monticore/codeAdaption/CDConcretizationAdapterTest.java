@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
-import de.monticore.cdconcretization.CompletionException;
-import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCase;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCases;
@@ -41,6 +39,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -48,6 +48,8 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   private Set<CDConfParameter> confParameters;
   private Set<AdapterParam> adapterParams;
+
+  @TempDir Path temporaryDirectory;
 
   @BeforeEach
   public void setup() {
@@ -99,8 +101,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     assertNoWildcardJdkImports(materializedTestCase, javaFiles);
     assertNoAdaptMetadata(materializedTestCase, javaFiles);
 
-    assertGeneratedJavaCompiles(
-        compilationSources(javaFiles, materializedTestCase, confParameters));
+    assertGeneratedJavaCompiles(compilationSources(javaFiles, materializedTestCase));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -116,6 +117,75 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
       CDConcretizationTestCase testCase) throws IOException {
     assertFalse(CDConcretizationTestCases.unsupportedReason(testCase).isBlank());
     assertRejectedWithoutReplacingOutput(testCase);
+  }
+
+  @Test
+  void compilationOracleRejectsUnadaptedReferenceType() throws IOException {
+    CDConcretizationTestCase testCase = oracleTestCase("stale-reference");
+    write(testCase.refCd(), "classdiagram Reference { class ReferenceType; }");
+    write(testCase.concCd(), "classdiagram Concrete { class ConcreteType; }");
+    Path adapted =
+        write(
+            testCase.outputPath().resolve("adapted/UsesReference.java"),
+            "package adapted; public class UsesReference { ReferenceType value; }");
+
+    List<Path> sources = compilationSources(List.of(adapted), testCase);
+
+    assertFalse(
+        sources.stream()
+            .anyMatch(path -> path.getFileName().toString().equals("ReferenceType.java")));
+    assertThrows(AssertionError.class, () -> assertGeneratedJavaCompiles(sources));
+  }
+
+  @Test
+  void compilationOracleRejectsConcreteTypeInWrongPackage() throws IOException {
+    CDConcretizationTestCase testCase = oracleTestCase("wrong-package");
+    write(testCase.refCd(), "classdiagram Reference { class ReferenceType; }");
+    write(testCase.concCd(), "classdiagram Concrete { class ConcreteType; }");
+    write(
+        testCase.concretePath().resolve("Anchor.java"),
+        "package expected;\npublic class Anchor {}");
+    Path adapted =
+        write(
+            testCase.outputPath().resolve("wrong/UsesConcrete.java"),
+            "package wrong; public class UsesConcrete { ConcreteType value; }");
+
+    List<Path> sources = compilationSources(List.of(adapted), testCase);
+
+    assertTrue(
+        sources.stream()
+            .anyMatch(
+                path ->
+                    path.toString()
+                        .replace('\\', '/')
+                        .endsWith("/expected/ConcreteType.java")));
+    assertThrows(AssertionError.class, () -> assertGeneratedJavaCompiles(sources));
+  }
+
+  @Test
+  void compilationOracleAllowsOriginalConcreteTypeFromExternalGeneration()
+      throws IOException {
+    CDConcretizationTestCase testCase = oracleTestCase("external-concrete-type");
+    write(testCase.refCd(), "classdiagram Reference { class ReferenceType; }");
+    write(testCase.concCd(), "classdiagram Concrete { class ConcreteType; }");
+    write(
+        testCase.concretePath().resolve("Anchor.java"),
+        "package expected;\npublic class Anchor {}");
+    Path adapted =
+        write(
+            testCase.outputPath().resolve("expected/UsesConcrete.java"),
+            "package expected; public class UsesConcrete { ConcreteType value; }");
+
+    List<Path> sources = compilationSources(List.of(adapted), testCase);
+
+    assertTrue(
+        sources.stream()
+            .anyMatch(
+                path ->
+                    path.toString()
+                        .replace('\\', '/')
+                        .endsWith("/expected/ConcreteType.java")));
+    assertDoesNotThrow(() -> assertGeneratedJavaCompiles(sources));
   }
 
   private void assertRejectedWithoutReplacingOutput(CDConcretizationTestCase testCase)
@@ -170,76 +240,73 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
   }
 
   private static List<Path> compilationSources(
-      List<Path> adaptedJava,
-      CDConcretizationTestCase testCase,
-      Set<CDConfParameter> confParameters) {
+      List<Path> adaptedJava, CDConcretizationTestCase testCase) {
     Map<String, Path> sourcesByType = new LinkedHashMap<>();
-    adaptedJava.forEach(path -> sourcesByType.put(compilationUnitKey(path), path));
+    adaptedJava.forEach(path -> sourcesByType.put(sourceTypeName(path), path));
     Path concretePath = testCase.concretePath();
     if (Files.isDirectory(concretePath)) {
       generatedJavaFilesRecursively(concretePath).forEach(
-          path -> sourcesByType.putIfAbsent(compilationUnitKey(path), path));
+          path -> sourcesByType.putIfAbsent(sourceTypeName(path), path));
     }
-    addConcreteModelStubs(testCase, confParameters, sourcesByType);
+    addConcreteModelStubs(testCase, sourcesByType);
     return new ArrayList<>(sourcesByType.values());
   }
 
   private static void addConcreteModelStubs(
-      CDConcretizationTestCase testCase,
-      Set<CDConfParameter> confParameters,
-      Map<String, Path> sourcesByType) {
+      CDConcretizationTestCase testCase, Map<String, Path> sourcesByType) {
     Map<String, String> declarations = new LinkedHashMap<>();
-    addModelDeclarations(completedConcreteModel(testCase, confParameters), declarations);
+    initMills();
+    addModelDeclarations(JavaLoader.parseCD(testCase.concCd().toString()), declarations);
 
-    Set<String> packages =
-        sourcesByType.values().stream()
-            .map(CDConcretizationAdapterTest::packageName)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    Set<String> concretePackages =
+        Files.isDirectory(testCase.concretePath())
+            ? generatedJavaFilesRecursively(testCase.concretePath()).stream()
+                .map(CDConcretizationAdapterTest::packageName)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            : Set.of();
+    if (concretePackages.size() != 1) {
+      return;
+    }
+    String packageName = concretePackages.iterator().next();
     Path stubRoot =
         testCase
             .outputPath()
             .resolveSibling(testCase.outputPath().getFileName() + "_compile_stubs");
-    for (String packageName : packages) {
-      for (Map.Entry<String, String> declaration : declarations.entrySet()) {
-        String key = packageName + "." + declaration.getKey() + ".java";
-        if (sourcesByType.containsKey(key)) {
-          continue;
-        }
-        Path packageDirectory =
-            packageName.isBlank()
-                ? stubRoot
-                : stubRoot.resolve(packageName.replace('.', java.io.File.separatorChar));
-        Path source = packageDirectory.resolve(declaration.getKey() + ".java");
-        String body =
-            declaration.getValue().equals("enum")
-                ? "public enum " + declaration.getKey() + " {;}"
-                : "public " + declaration.getValue() + " " + declaration.getKey() + " {}";
-        String content =
-            (packageName.isBlank() ? "" : "package " + packageName + ";\n") + body + "\n";
-        try {
-          Files.createDirectories(packageDirectory);
-          Files.writeString(source, content, StandardCharsets.UTF_8);
-        } catch (IOException exception) {
-          throw new IllegalStateException("Failed to write compile stub " + source, exception);
-        }
-        sourcesByType.put(key, source);
+    Map<String, Path> generatedStubs = new LinkedHashMap<>();
+    for (Map.Entry<String, String> declaration : declarations.entrySet()) {
+      String qualifiedTypeName = qualify(packageName, declaration.getKey());
+      if (sourcesByType.containsKey(qualifiedTypeName)) {
+        continue;
       }
+      Path packageDirectory =
+          packageName.isBlank()
+              ? stubRoot
+              : stubRoot.resolve(packageName.replace('.', java.io.File.separatorChar));
+      Path source = packageDirectory.resolve(declaration.getKey() + ".java");
+      Path conflict = generatedStubs.putIfAbsent(qualifiedTypeName, source);
+      if (conflict != null && !conflict.equals(source)) {
+        throw new IllegalStateException(
+            "Conflicting compile stubs for "
+                + qualifiedTypeName
+                + ": "
+                + conflict
+                + " and "
+                + source);
+      }
+      String body =
+          declaration.getValue().equals("enum")
+              ? "public enum " + declaration.getKey() + " {;}"
+              : "public " + declaration.getValue() + " " + declaration.getKey() + " {}";
+      String content =
+          (packageName.isBlank() ? "" : "package " + packageName + ";\n") + body + "\n";
+      try {
+        Files.createDirectories(packageDirectory);
+        Files.writeString(source, content, StandardCharsets.UTF_8);
+      } catch (IOException exception) {
+        throw new IllegalStateException("Failed to write compile stub " + source, exception);
+      }
+      sourcesByType.put(qualifiedTypeName, source);
     }
-  }
-
-  private static ASTCDCompilationUnit completedConcreteModel(
-      CDConcretizationTestCase testCase, Set<CDConfParameter> confParameters) {
-    initMills();
-    ASTCDCompilationUnit concrete = JavaLoader.parseCD(testCase.concCd().toString());
-    ASTCDCompilationUnit reference = JavaLoader.parseCD(testCase.refCd().toString());
-    try {
-      new ConcretizationCompleter(confParameters)
-          .completeCD(concrete, reference, new ArrayList<>(testCase.mappings()));
-    } catch (CompletionException exception) {
-      throw new AssertionError(
-          "Could not complete concrete model for " + testCase.displayName(), exception);
-    }
-    return concrete;
   }
 
   private static void addModelDeclarations(
@@ -247,19 +314,39 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     cd
         .getCDDefinition()
         .getCDClassesList()
-        .forEach(type -> declarations.put(type.getName(), "class"));
+        .forEach(type -> addModelDeclaration(declarations, type.getName(), "class"));
     cd
         .getCDDefinition()
         .getCDInterfacesList()
-        .forEach(type -> declarations.put(type.getName(), "interface"));
+        .forEach(type -> addModelDeclaration(declarations, type.getName(), "interface"));
     cd
         .getCDDefinition()
         .getCDEnumsList()
-        .forEach(type -> declarations.put(type.getName(), "enum"));
+        .forEach(type -> addModelDeclaration(declarations, type.getName(), "enum"));
   }
 
-  private static String compilationUnitKey(Path source) {
-    return packageName(source) + "." + source.getFileName().toString();
+  private static void addModelDeclaration(
+      Map<String, String> declarations, String typeName, String kind) {
+    String conflict = declarations.putIfAbsent(typeName, kind);
+    if (conflict != null) {
+      throw new IllegalStateException(
+          "Conflicting concrete model declarations for "
+              + typeName
+              + ": "
+              + conflict
+              + " and "
+              + kind);
+    }
+  }
+
+  private static String sourceTypeName(Path source) {
+    String fileName = source.getFileName().toString();
+    String simpleName = fileName.substring(0, fileName.length() - ".java".length());
+    return qualify(packageName(source), simpleName);
+  }
+
+  private static String qualify(String packageName, String simpleName) {
+    return packageName.isBlank() ? simpleName : packageName + "." + simpleName;
   }
 
   private static String packageName(Path source) {
@@ -354,6 +441,28 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to read generated Java file " + path, e);
     }
+  }
+
+  private CDConcretizationTestCase oracleTestCase(String name) throws IOException {
+    Path root = temporaryDirectory.resolve(name);
+    Files.createDirectories(root.resolve("concrete"));
+    Files.createDirectories(root.resolve("output"));
+    return new CDConcretizationTestCase(
+        name,
+        name,
+        root.resolve("Reference.cd"),
+        root.resolve("Concrete.cd"),
+        root.resolve("adapter"),
+        root.resolve("concrete"),
+        root.resolve("output"),
+        false,
+        true);
+  }
+
+  private static Path write(Path path, String content) throws IOException {
+    Files.createDirectories(path.getParent());
+    Files.writeString(path, content + System.lineSeparator(), StandardCharsets.UTF_8);
+    return path;
   }
 
 }
