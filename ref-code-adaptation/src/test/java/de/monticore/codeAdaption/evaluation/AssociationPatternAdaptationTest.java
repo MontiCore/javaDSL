@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.utils.Generator;
+import de.monticore.codeAdaption.testutil.CD4CodeTestGenerator;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
@@ -65,7 +65,7 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     assertFalse(adaptedTeacher.contains("this.departments)"));
 
     Path generated = output.resolve("generated");
-    assertDoesNotThrow(() -> Generator.generate(concreteCD, output, generated));
+    assertDoesNotThrow(() -> CD4CodeTestGenerator.generate(concreteCD, output, generated));
 
     String generatedTeacherTop = readFileContent(generated, "TeacherTOP.java");
     assertTrue(
@@ -107,7 +107,7 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     assertFalse(adaptedTicket.contains("this.project"));
 
     Path generated = output.resolve("generated");
-    assertDoesNotThrow(() -> Generator.generate(concreteCD, output, generated));
+    assertDoesNotThrow(() -> CD4CodeTestGenerator.generate(concreteCD, output, generated));
 
     String generatedSprintTop = readFileContent(generated, "SprintTOP.java");
     assertTrue(generatedSprintTop.contains("Concrete.Ticket tickets"));

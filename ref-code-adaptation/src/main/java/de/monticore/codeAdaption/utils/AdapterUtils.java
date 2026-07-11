@@ -15,14 +15,7 @@ import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
 import de.se_rwth.commons.SourcePosition;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
-import spoon.Launcher;
-import spoon.reflect.code.CtComment;
-import spoon.reflect.visitor.filter.TypeFilter;
 
 public class AdapterUtils {
 
@@ -131,55 +124,6 @@ public class AdapterUtils {
       return fileName + " <" + pos.getLine() + "," + pos.getColumn() + ">";
     }
     return "";
-  }
-
-  /**
-   * Removes comments from a Java source file through Spoon's model instead of source regexes.
-   *
-   * @param file The Java file from which comments will be removed.
-   */
-  public static void removeComments(File file) {
-    Path tempDir = null;
-    try {
-      tempDir = Files.createTempDirectory("ref-code-adaptation-comments");
-      Launcher launcher = new Launcher();
-      launcher.getEnvironment().setNoClasspath(true);
-      launcher.addInputResource(file.getAbsolutePath());
-      launcher.buildModel();
-      List<CtComment> comments =
-          new ArrayList<>(launcher.getModel().getElements(new TypeFilter<>(CtComment.class)));
-      for (CtComment comment : comments) {
-        comment.delete();
-      }
-      launcher.setSourceOutputDirectory(tempDir.toFile());
-      launcher.prettyprint();
-
-      Optional<Path> generated;
-      try (var paths = Files.walk(tempDir)) {
-        generated =
-            paths
-                .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().equals(file.getName()))
-                .findFirst();
-      }
-      if (generated.isPresent()) {
-        Files.copy(generated.get(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-      } else {
-        Log.warn("Spoon did not produce a rewritten file for " + file.getAbsolutePath());
-      }
-    } catch (Exception e) {
-      Log.error("It was not possible to remove comments from " + file.getAbsolutePath(), e);
-    } finally {
-      if (tempDir != null) {
-        try (var paths = Files.walk(tempDir)) {
-          for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
-            Files.deleteIfExists(path);
-          }
-        } catch (IOException e) {
-          Log.warn("Could not delete temporary comment-cleanup directory " + tempDir);
-        }
-      }
-    }
   }
 
   public static ASTOrdinaryCompilationUnit mergeAsts(

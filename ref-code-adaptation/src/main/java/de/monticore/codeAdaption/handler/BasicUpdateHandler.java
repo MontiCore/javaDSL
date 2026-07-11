@@ -12,12 +12,9 @@ import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
-import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -26,20 +23,20 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Coordinates the CD-based adaptation of Java AST elements. */
-public class BasicUpdateHandler {
-  protected CDModelIndex conIndex;
-  protected CDModelIndex refIndex;
-  protected CDConformanceChecker checker;
-  protected CodeUpdater updater;
-  protected CodeValidator validator;
+public final class BasicUpdateHandler {
+  final CDModelIndex conIndex;
+  final CDModelIndex refIndex;
+  final CDConformanceChecker checker;
+  final CodeUpdater updater;
+  final CodeValidator validator;
 
   /** Optional incarnation context for stereotype-based mapping when conformance is skipped. */
-  protected IncarnationContext incarnationContext;
+  final IncarnationContext incarnationContext;
 
   /** Stable concrete choices for the current isolated pass. Empty for the ordinary case. */
   final Map<StableElementKey, IncarnationContext.MappedElement> incarnationSelection;
 
-  protected boolean useCommonParentForMultipleIncarnations;
+  final boolean useCommonParentForMultipleIncarnations;
 
   private final ConcreteSymbolResolver symbolResolver;
   private final JavaMemberUpdateService memberUpdates;
@@ -48,49 +45,6 @@ public class BasicUpdateHandler {
   public BasicUpdateHandler(
       ASTCDCompilationUnit refCD,
       ASTCDCompilationUnit conCD,
-      Path conHwcPath,
-      CDConformanceChecker checker,
-      CodeUpdater updater,
-      CodeValidator validator) {
-    this(refCD, conCD, conHwcPath, checker, updater, validator, null);
-  }
-
-  public BasicUpdateHandler(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
-      Path conHwcPath,
-      CDConformanceChecker checker,
-      CodeUpdater updater,
-      CodeValidator validator,
-      IncarnationContext incarnationContext) {
-    this(refCD, conCD, conHwcPath, checker, updater, validator, incarnationContext, Map.of(), true);
-  }
-
-  public BasicUpdateHandler(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
-      Path conHwcPath,
-      CDConformanceChecker checker,
-      CodeUpdater updater,
-      CodeValidator validator,
-      IncarnationContext incarnationContext,
-      boolean useCommonParentForMultipleIncarnations) {
-    this(
-        refCD,
-        conCD,
-        conHwcPath,
-        checker,
-        updater,
-        validator,
-        incarnationContext,
-        Map.of(),
-        useCommonParentForMultipleIncarnations);
-  }
-
-  public BasicUpdateHandler(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
-      Path conHwcPath,
       CDConformanceChecker checker,
       CodeUpdater updater,
       CodeValidator validator,
@@ -103,8 +57,7 @@ public class BasicUpdateHandler {
     this.refIndex = CDModelIndex.of(refCD);
     this.validator = validator;
     this.incarnationContext = incarnationContext;
-    this.incarnationSelection =
-        incarnationSelection == null ? Map.of() : Map.copyOf(incarnationSelection);
+    this.incarnationSelection = Map.copyOf(incarnationSelection);
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
     this.symbolResolver = new ConcreteSymbolResolver(this, refCD, conCD);
     this.memberUpdates = new JavaMemberUpdateService(this, symbolResolver);
@@ -125,11 +78,11 @@ public class BasicUpdateHandler {
       typeElements.add(collector);
     }
 
-    typeElements.forEach(this::handleVariableUpdate);
-    typeElements.forEach(this::handleTMemberUpdate);
+    typeElements.forEach(memberUpdates::handleVariableUpdate);
+    typeElements.forEach(memberUpdates::handleMemberUpdate);
     typeElements.forEach(memberUpdates::handleAssociationRoleUpdate);
-    typeElements.forEach(this::handleTypeUpdate);
-    typeElements.forEach(this::projectCompletedMembers);
+    typeElements.forEach(typeUpdates::handleTypeUpdate);
+    typeElements.forEach(typeUpdates::projectCompletedMembers);
     updater.printCode();
   }
 
@@ -162,51 +115,25 @@ public class BasicUpdateHandler {
     }
   }
 
-  /** Compatibility hook retained for specialized handlers. */
-  protected void handleTypeUpdate(JavaAstElemCollector collector) {
-    typeUpdates.handleTypeUpdate(collector);
-  }
-
-  /** Compatibility hook retained for specialized handlers. */
-  protected void handleTMemberUpdate(JavaAstElemCollector collector) {
-    memberUpdates.handleMemberUpdate(collector);
-  }
-
-  /** Compatibility hook retained for specialized handlers. */
-  protected void projectCompletedMembers(JavaAstElemCollector collector) {
-    typeUpdates.projectCompletedMembers(collector);
-  }
-
-  /** Compatibility hook retained for specialized handlers. */
-  protected void handleVariableUpdate(JavaAstElemCollector collector) {
-    memberUpdates.handleVariableUpdate(collector);
-  }
-
-  /** Compatibility hook retained for callers that explicitly request the fallback mapping. */
-  protected void updateMethodParametersFromConcreteCD(
-      ASTTypeDeclaration type, ASTMethodDeclaration method, JavaAstElemCollector collector) {
-    memberUpdates.updateMethodParametersFromConcreteCD(type, method, collector, Set.of());
-  }
-
   /** Builds the concrete name for an element from the references in its matching. */
-  protected String buildConcreteName(CodeMatching matching) {
+  String buildConcreteName(CodeMatching matching) {
     return symbolResolver.buildConcreteName(matching);
   }
 
   /** Resolves a reference symbol from the optional incarnation context. */
-  protected Optional<ISymbol> getSymbolFromContext(ISymbol refSymbol) {
+  Optional<ISymbol> getSymbolFromContext(ISymbol refSymbol) {
     return symbolResolver.getSymbolFromContext(refSymbol);
   }
 
-  protected Optional<StableElementKey> referenceKey(ISymbol symbol) {
+  Optional<StableElementKey> referenceKey(ISymbol symbol) {
     return StableElementKey.fromSymbol(symbol, refIndex);
   }
 
-  protected Optional<StableElementKey> concreteKey(ISymbol symbol) {
+  Optional<StableElementKey> concreteKey(ISymbol symbol) {
     return StableElementKey.fromSymbol(symbol, conIndex);
   }
 
-  protected List<IncarnationContext.MappedElement> mappedIncarnations(ISymbol reference) {
+  List<IncarnationContext.MappedElement> mappedIncarnations(ISymbol reference) {
     if (incarnationContext == null) {
       return List.of();
     }
@@ -215,18 +142,15 @@ public class BasicUpdateHandler {
         .orElseGet(List::of);
   }
 
-  /** Default conformance-based type resolution; subclasses may select another incarnation. */
-  protected ISymbol getConTypeSymbol(CDTypeSymbol symbol) {
+  ISymbol getConTypeSymbol(CDTypeSymbol symbol) {
     return symbolResolver.getConTypeSymbol(symbol);
   }
 
-  /** Default conformance-based field resolution; subclasses may select another incarnation. */
-  protected ISymbol getConAttributeSymbol(FieldSymbol symbol) {
+  ISymbol getConAttributeSymbol(FieldSymbol symbol) {
     return symbolResolver.getConAttributeSymbol(symbol);
   }
 
-  /** Default conformance-based method resolution. */
-  protected ISymbol getConMethodSymbol(ISymbol symbol) {
+  ISymbol getConMethodSymbol(ISymbol symbol) {
     return symbolResolver.getConMethodSymbol(symbol);
   }
 }

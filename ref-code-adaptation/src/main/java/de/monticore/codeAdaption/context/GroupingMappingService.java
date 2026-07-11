@@ -7,12 +7,6 @@ import java.util.Map;
 /** Computes concrete-type to grouping-type replacements from incarnation contexts. */
 public final class GroupingMappingService {
 
-  public Map<String, String> compute(Map<String, IncarnationContext> mappingContexts) {
-    Map<String, String> result = new LinkedHashMap<>();
-    mappingContexts.keySet().stream().sorted().forEach(mapping -> merge(result, compute(mappingContexts.get(mapping))));
-    return result;
-  }
-
   /** Computes replacements for one mapping only, preventing one mapping from leaking into another. */
   public Map<String, String> compute(IncarnationContext context) {
     Map<String, String> result = new LinkedHashMap<>();
@@ -27,10 +21,6 @@ public final class GroupingMappingService {
               }
             });
     return result;
-  }
-
-  private static void merge(Map<String, String> target, Map<String, String> additions) {
-    additions.forEach((concrete, grouping) -> putUnambiguous(target, concrete, grouping));
   }
 
   private static void putUnambiguous(Map<String, String> result, String concrete, String grouping) {

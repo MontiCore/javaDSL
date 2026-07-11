@@ -176,7 +176,6 @@ public class CodeAdapter {
             stagingPath,
             refCD,
             conCD,
-            normalizedConHwcPath,
             useCommonParentForMultipleIncarnations);
 
     for (String mapping : orderedMappings) {
@@ -560,14 +559,4 @@ public class CodeAdapter {
         .map(grouping -> grouping.key().getName());
   }
 
-  /**
-   * Removes adapter-only metadata from generated Java and lets Spoon perform the formatting pass.
-   * Text post-processing is intentionally limited to import lines so comments, literals, generics,
-   * and operators are not rewritten by hand.
-   *
-   * @param codePath generated Java directory
-   */
-  static void cleanCode(Path codePath) {
-    new OutputCodeService().cleanCode(codePath);
-  }
 }

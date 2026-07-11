@@ -7,11 +7,9 @@ import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /** Builds incarnation contexts from checker results, optionally overlaid with stereotypes. */
 public class IncarnationContextBuilder {
@@ -45,15 +43,6 @@ public class IncarnationContextBuilder {
       support.mergeMappings(mappings, extractStereotypeMappings(mapping));
     }
     return support.assembleContext(mapping, mappings);
-  }
-
-  /** Builds contexts in the iteration order supplied by the caller. */
-  public Map<String, IncarnationContext> buildAllContexts(Set<String> mappings) {
-    Map<String, IncarnationContext> contexts = new LinkedHashMap<>();
-    for (String mapping : mappings) {
-      contexts.put(mapping, buildContextForMapping(mapping));
-    }
-    return contexts;
   }
 
   private void extractCheckerMappings(

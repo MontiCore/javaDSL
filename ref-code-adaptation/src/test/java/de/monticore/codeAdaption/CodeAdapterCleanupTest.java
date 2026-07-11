@@ -27,7 +27,7 @@ class CodeAdapterCleanupTest {
         }
         """);
 
-    CodeAdapter.cleanCode(output);
+    new OutputCodeService().cleanCode(output);
 
     String cleaned = Files.readString(source);
     assertFalse(cleaned.contains("@Adapt"));

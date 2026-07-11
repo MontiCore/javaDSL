@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.utils.Generator;
+import de.monticore.codeAdaption.testutil.CD4CodeTestGenerator;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
@@ -51,7 +51,7 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
     assertFalse(adaptedStudent.contains("printRoles()"));
 
     Path genCode = Path.of("target/codeAdapter/evaluation/testcase_2_cd4code/generated");
-    assertDoesNotThrow(() -> Generator.generate(concreteCD, output, genCode));
+    assertDoesNotThrow(() -> CD4CodeTestGenerator.generate(concreteCD, output, genCode));
 
     String generatedStudentTop = readFileContent(genCode, "StudentTOP.java");
     assertTrue(generatedStudentTop.contains("abstract class StudentTOP"));

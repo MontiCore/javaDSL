@@ -16,7 +16,7 @@ import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.AdapterAbstractTest;
-import de.monticore.codeAdaption.handler.BasicUpdateHandler;
+import de.monticore.codeAdaption.handler.BasicUpdateHandlerTestAccess;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.cddiff.CDDiffUtil;
@@ -210,10 +210,10 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
 
     assertEquals(
         "PipelineObserver",
-        new ExposingUpdateHandler(context, true).resolve(observer.getSymbol()).orElseThrow().getName());
+        resolve(context, null, null, Map.of(), true, observer.getSymbol()).orElseThrow().getName());
     assertEquals(
         "LoggingObserver",
-        new ExposingUpdateHandler(context, false).resolve(observer.getSymbol()).orElseThrow().getName());
+        resolve(context, null, null, Map.of(), false, observer.getSymbol()).orElseThrow().getName());
   }
 
   @Test
@@ -274,17 +274,22 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
             .orElseThrow();
     ASTCDCompilationUnit separatelyParsedReference = JavaLoader.loadCD(referenceFile);
     ASTCDType builder = findType(separatelyParsedReference, "Builder");
-    ExposingUpdateHandler handler =
-        new ExposingUpdateHandler(
-            separatelyParsedReference,
-            concrete,
-            context,
-            Map.of(StableElementKey.type("Builder"), selectedTask),
-            false);
-
-    assertEquals("Task", handler.resolve(builder.getSymbol()).orElseThrow().getName());
+    Map<StableElementKey, IncarnationContext.MappedElement> selection =
+        Map.of(StableElementKey.type("Builder"), selectedTask);
+    assertEquals(
+        "Task",
+        resolve(context, separatelyParsedReference, concrete, selection, false, builder.getSymbol())
+            .orElseThrow()
+            .getName());
     var selectedField =
-        handler.resolve(builder.getCDAttributeList().get(0).getSymbol()).orElseThrow();
+        resolve(
+                context,
+                separatelyParsedReference,
+                concrete,
+                selection,
+                false,
+                builder.getCDAttributeList().get(0).getSymbol())
+            .orElseThrow();
     assertEquals(
         "Task",
         StableElementKey.fromSymbol(selectedField, CDModelIndex.of(concrete))
@@ -310,40 +315,19 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
         .orElseThrow();
   }
 
-  private static class ExposingUpdateHandler extends BasicUpdateHandler {
-    ExposingUpdateHandler(
-        IncarnationContext incarnationContext, boolean useCommonParentForMultipleIncarnations) {
-      super(
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          incarnationContext,
-          useCommonParentForMultipleIncarnations);
-    }
-
-    ExposingUpdateHandler(
-        ASTCDCompilationUnit reference,
-        ASTCDCompilationUnit concrete,
-        IncarnationContext incarnationContext,
-        Map<StableElementKey, IncarnationContext.MappedElement> selection,
-        boolean useCommonParentForMultipleIncarnations) {
-      super(
-          reference,
-          concrete,
-          null,
-          null,
-          null,
-          null,
-          incarnationContext,
-          selection,
-          useCommonParentForMultipleIncarnations);
-    }
-
-    Optional<de.monticore.symboltable.ISymbol> resolve(de.monticore.symboltable.ISymbol symbol) {
-      return getSymbolFromContext(symbol);
-    }
+  private static Optional<de.monticore.symboltable.ISymbol> resolve(
+      IncarnationContext incarnationContext,
+      ASTCDCompilationUnit reference,
+      ASTCDCompilationUnit concrete,
+      Map<StableElementKey, IncarnationContext.MappedElement> selection,
+      boolean useCommonParentForMultipleIncarnations,
+      de.monticore.symboltable.ISymbol symbol) {
+    return BasicUpdateHandlerTestAccess.resolve(
+        incarnationContext,
+        reference,
+        concrete,
+        selection,
+        useCommonParentForMultipleIncarnations,
+        symbol);
   }
 }

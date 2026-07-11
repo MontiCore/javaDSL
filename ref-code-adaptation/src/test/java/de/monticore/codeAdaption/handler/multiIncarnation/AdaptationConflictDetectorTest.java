@@ -17,7 +17,6 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.handler.multiIncarnation.conflict.AdaptationConflictCheck;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.LogStub;
 import java.io.IOException;
@@ -114,7 +113,9 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     }
 
     assertDoesNotThrow(
-        () -> AdaptationConflictDetector.validate(refCD, conCD, mappings, contexts, confParams));
+        () ->
+            AdaptationConflictDetector.validate(
+                refCD, conCD, mappings, contexts, confParams, false));
   }
 
   @Test
@@ -202,37 +203,6 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   }
 
   @Test
-  public void runsAdditionalConflictChecks() {
-    ASTCDCompilationUnit refCD = JavaLoader.parseCD(ROOT.resolve("ValidManualRef.cd").toString());
-    ASTCDCompilationUnit conCD = JavaLoader.parseCD(ROOT.resolve("ValidManualConc.cd").toString());
-    IncarnationContext context = context(refCD, conCD);
-    AdaptationConflictCheck firstCheck =
-        (detectionContext, conflicts) ->
-            conflicts.conflict("custom", "custom conflict", "first external rule fired");
-    AdaptationConflictCheck secondCheck =
-        (detectionContext, conflicts) ->
-            conflicts.conflict("custom", "second conflict", "second external rule fired");
-
-    CodeAdaptationException exception =
-        assertThrows(
-            CodeAdaptationException.class,
-            () ->
-                AdaptationConflictDetector.validate(
-                    refCD,
-                    conCD,
-                    MAPPINGS,
-                    Map.of("ref", context),
-                    confParams,
-                    false,
-                    List.of(firstCheck, secondCheck)));
-
-    assertTrue(exception.getMessage().contains("custom conflict"));
-    assertTrue(exception.getMessage().contains("first external rule fired"));
-    assertTrue(exception.getMessage().contains("second conflict"));
-    assertTrue(exception.getMessage().contains("second external rule fired"));
-  }
-
-  @Test
   public void codeAdapterFailsBeforeCleaningExistingOutput() throws IOException {
     Path output = Path.of("target/codeAdapter/conflictDetectorPreserve");
     Files.createDirectories(output);
@@ -273,7 +243,8 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     ASTCDCompilationUnit refCD = JavaLoader.parseCD(ROOT.resolve(reference).toString());
     ASTCDCompilationUnit conCD = JavaLoader.parseCD(ROOT.resolve(concrete).toString());
     IncarnationContext context = context(refCD, conCD);
-    AdaptationConflictDetector.validate(refCD, conCD, MAPPINGS, Map.of("ref", context), confParams);
+    AdaptationConflictDetector.validate(
+        refCD, conCD, MAPPINGS, Map.of("ref", context), confParams, false);
   }
 
   private IncarnationContext context(String reference, String concrete) {

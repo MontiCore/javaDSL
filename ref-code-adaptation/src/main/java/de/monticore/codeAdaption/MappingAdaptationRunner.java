@@ -41,7 +41,6 @@ final class MappingAdaptationRunner {
   private final Path stagingPath;
   private final ASTCDCompilationUnit referenceCD;
   private final ASTCDCompilationUnit concreteCD;
-  private final Path concreteSource;
   private final boolean useCommonParentForMultipleIncarnations;
 
   MappingAdaptationRunner(
@@ -50,14 +49,12 @@ final class MappingAdaptationRunner {
       Path stagingPath,
       ASTCDCompilationUnit referenceCD,
       ASTCDCompilationUnit concreteCD,
-      Path concreteSource,
       boolean useCommonParentForMultipleIncarnations) {
     this.workspace = workspace;
     this.codeMerger = codeMerger;
     this.stagingPath = stagingPath;
     this.referenceCD = referenceCD;
     this.concreteCD = concreteCD;
-    this.concreteSource = concreteSource;
     this.useCommonParentForMultipleIncarnations =
         useCommonParentForMultipleIncarnations;
   }
@@ -83,7 +80,6 @@ final class MappingAdaptationRunner {
             new BasicUpdateHandler(
                 referenceCD,
                 concreteCD,
-                concreteSource,
                 checker,
                 updater,
                 validator,
