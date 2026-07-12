@@ -186,8 +186,8 @@ Last updated: 11.07.2026
   - Addressed: [x]
   - Notes: All production Java classes are below 500 physical lines. The four
     remaining hotspots are coordinators backed by coarse-grained collaborators:
-    handler symbol/member/type services, Spoon workspace/transformation/generation
-    services, and one shared incarnation-context support class. All production
+    handler symbol/member/type services, Spoon workspace/transformation/executable-repair/
+    generation services, and one shared incarnation-context support class. All production
     sources compile against the project classpath. Focused regressions were
     added for path safety, logger state, package identity, nested types, Spoon
     resolution, and validation outcomes.

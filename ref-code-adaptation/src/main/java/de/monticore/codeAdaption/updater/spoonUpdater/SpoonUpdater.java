@@ -21,13 +21,16 @@ import spoon.reflect.declaration.CtType;
 public class SpoonUpdater implements CodeUpdater {
   private final SpoonWorkspace workspace;
   private final SpoonElementResolver elementResolver;
+  private final SpoonExecutableRepairService executableRepairs;
   private final SpoonTransformationService transformations;
   private final SpoonGenerationService generation;
 
   public SpoonUpdater() {
     workspace = new SpoonWorkspace();
     elementResolver = new SpoonElementResolver(workspace::model);
-    transformations = new SpoonTransformationService(workspace, elementResolver);
+    executableRepairs = new SpoonExecutableRepairService(workspace, elementResolver);
+    transformations =
+        new SpoonTransformationService(workspace, elementResolver, executableRepairs);
     generation = new SpoonGenerationService(workspace, elementResolver);
   }
 
@@ -36,6 +39,7 @@ public class SpoonUpdater implements CodeUpdater {
     workspace.load(path);
     elementResolver.reset();
     transformations.reset();
+    executableRepairs.reset();
   }
 
   @Override
@@ -56,13 +60,13 @@ public class SpoonUpdater implements CodeUpdater {
 
   @Override
   public void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
-    transformations.registerConcreteMethodSignature(methodName, parameterTypes);
+    executableRepairs.registerConcreteMethodSignature(methodName, parameterTypes);
   }
 
   @Override
   public void registerMethodRewrite(
       StableElementKey referenceMethod, StableElementKey concreteMethod) {
-    transformations.registerMethodRewrite(referenceMethod, concreteMethod);
+    executableRepairs.registerMethodRewrite(referenceMethod, concreteMethod);
   }
 
   @Override
