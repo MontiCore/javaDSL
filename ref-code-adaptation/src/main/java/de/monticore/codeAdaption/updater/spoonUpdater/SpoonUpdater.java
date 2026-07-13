@@ -14,8 +14,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.declaration.CtType;
 
 /** Spoon-backed facade for loading, transforming, generating and printing Java source code. */
 public class SpoonUpdater implements CodeUpdater {
@@ -143,6 +141,18 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   @Override
+  public void addSuperType(
+      ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
+    generation.addSuperType(targetType, superTypeName, interfaceType);
+  }
+
+  @Override
+  public void addEnumConstant(
+      ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
+    generation.addEnumConstant(targetType, constantName, expectedIndex);
+  }
+
+  @Override
   public void addMethod(
       ASTTypeDeclaration targetType,
       ASTMethodDeclaration templateMethod,
@@ -173,16 +183,4 @@ public class SpoonUpdater implements CodeUpdater {
     generation.removeMethod(targetType, method);
   }
 
-  public CtMethod<?> getSpoonMethod(
-      ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
-    return elementResolver.getSpoonMethod(mcType, mcMethod);
-  }
-
-  protected boolean compare(ASTTypeDeclaration type, CtType<?> spoonType) {
-    return elementResolver.compare(type, spoonType);
-  }
-
-  protected boolean compare(ASTMethodDeclaration mcMethod, CtMethod<?> spoonMethod) {
-    return elementResolver.compare(mcMethod, spoonMethod);
-  }
 }

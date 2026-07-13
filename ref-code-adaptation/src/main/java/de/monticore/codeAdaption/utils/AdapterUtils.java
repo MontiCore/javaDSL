@@ -10,7 +10,7 @@ import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
-import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
 import de.se_rwth.commons.SourcePosition;
@@ -201,18 +201,54 @@ public class AdapterUtils {
 
   private static void mergeImports(
       ASTOrdinaryCompilationUnit leftAST, ASTOrdinaryCompilationUnit rightAST) {
-    Set<String> existingImports = new LinkedHashSet<>();
+    Set<ImportIdentity> existingImports = new LinkedHashSet<>();
+    Map<ImportSimpleName, String> explicitImportsBySimpleName = new LinkedHashMap<>();
     for (ASTImportDeclaration leftImport : leftAST.getImportDeclarationList()) {
-      existingImports.add(leftImport.getMCQualifiedName().getQName());
+      registerImport(leftImport, existingImports, explicitImportsBySimpleName);
     }
 
     for (ASTImportDeclaration rightImport : rightAST.getImportDeclarationList()) {
-      String importName = rightImport.getMCQualifiedName().getQName();
-      if (existingImports.add(importName)) {
+      if (registerImport(rightImport, existingImports, explicitImportsBySimpleName)) {
         leftAST.addImportDeclaration(rightImport.deepClone());
       }
     }
   }
+
+  private static boolean registerImport(
+      ASTImportDeclaration importDeclaration,
+      Set<ImportIdentity> existingImports,
+      Map<ImportSimpleName, String> explicitImportsBySimpleName) {
+    String qualifiedName = importDeclaration.getMCQualifiedName().getQName();
+    ImportIdentity identity =
+        new ImportIdentity(qualifiedName, importDeclaration.isStatic(), importDeclaration.isSTAR());
+    if (!existingImports.add(identity)) {
+      return false;
+    }
+    if (identity.star()) {
+      return true;
+    }
+
+    String simpleName = JavaSourceNames.simpleName(qualifiedName);
+    ImportSimpleName key = new ImportSimpleName(simpleName, identity.isStatic());
+    String conflict = explicitImportsBySimpleName.putIfAbsent(key, qualifiedName);
+    if (conflict != null && !conflict.equals(qualifiedName)) {
+      throw new IllegalStateException(
+          "Cannot merge imports '"
+              + conflict
+              + "' and '"
+              + qualifiedName
+              + "' because both use the "
+              + (identity.isStatic() ? "static member" : "type")
+              + " name '"
+              + simpleName
+              + "'");
+    }
+    return true;
+  }
+
+  private record ImportIdentity(String qualifiedName, boolean isStatic, boolean star) {}
+
+  private record ImportSimpleName(String name, boolean isStatic) {}
 
   private static ASTTypeDeclaration mergeTypeDeclaration(
       JavaAstElemCollector lCollector,
@@ -240,6 +276,8 @@ public class AdapterUtils {
               "Cannot merge type '%s': declaration kinds differ in '%s' and '%s'",
               typeName, leftSource, rightSource));
     }
+
+    mergeTypeRelationships(lefType, rightType);
 
     // Java overload identity is the method name plus normalized parameter types. A same-name
     // method with different parameters is a valid overload and must be retained.
@@ -317,6 +355,48 @@ public class AdapterUtils {
     return lefType;
   }
 
+  private static void mergeTypeRelationships(
+      ASTTypeDeclaration leftType, ASTTypeDeclaration rightType) {
+    if (leftType instanceof ASTClassDeclaration leftClass
+        && rightType instanceof ASTClassDeclaration rightClass) {
+      if (!leftClass.isPresentSuperClass() && rightClass.isPresentSuperClass()) {
+        leftClass.setSuperClass(rightClass.getSuperClass().deepClone());
+      }
+      mergeTypes(
+          leftClass.getImplementedInterfaceList(), rightClass.getImplementedInterfaceList());
+    } else if (leftType instanceof ASTInterfaceDeclaration leftInterface
+        && rightType instanceof ASTInterfaceDeclaration rightInterface) {
+      mergeTypes(
+          leftInterface.getExtendedInterfaceList(), rightInterface.getExtendedInterfaceList());
+    } else if (leftType instanceof ASTEnumDeclaration leftEnum
+        && rightType instanceof ASTEnumDeclaration rightEnum) {
+      mergeTypes(leftEnum.getImplementedInterfaceList(), rightEnum.getImplementedInterfaceList());
+      Set<String> constants =
+          leftEnum.getEnumConstantDeclarationList().stream()
+              .map(constant -> constant.getName())
+              .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+      for (int index = 0; index < rightEnum.getEnumConstantDeclarationList().size(); index++) {
+        var constant = rightEnum.getEnumConstantDeclaration(index);
+        if (constants.add(constant.getName())) {
+          leftEnum
+              .getEnumConstantDeclarationList()
+              .add(Math.min(index, leftEnum.sizeEnumConstantDeclarations()), constant.deepClone());
+        }
+      }
+    }
+  }
+
+  private static void mergeTypes(List<ASTMCType> left, List<ASTMCType> right) {
+    Set<String> existing =
+        left.stream()
+            .map(JavaSourceNames::printNormalizedType)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    right.stream()
+        .filter(type -> existing.add(JavaSourceNames.printNormalizedType(type)))
+        .map(ASTMCType::deepClone)
+        .forEach(left::add);
+  }
+
   /**
    * Get a method signature string for comparison.
    * Format: "methodName(paramType1,paramType2)"
@@ -339,42 +419,4 @@ public class AdapterUtils {
     return JavaSourceNames.printNormalizedType(field.getMCType());
   }
 
-  /***
-   * Compare two method (names and types) and return true when the method are the same.
-   * @param leftMethod the left method.
-   * @param rightMethod the right method.
-   * @return true if both method are the same.
-   */
-  protected static boolean compare(
-      ASTMethodDeclaration leftMethod, ASTMethodDeclaration rightMethod) {
-    // compare names
-    if (!leftMethod.getName().equals(rightMethod.getName())) {
-      return false;
-    }
-
-    // is present parameters ?
-    if (!leftMethod.getFormalParameters().isPresentFormalParameterListing()) {
-      return !rightMethod.getFormalParameters().isPresentFormalParameterListing();
-    }
-
-    List<ASTFormalParameter> leftParams =
-        leftMethod.getFormalParameters().getFormalParameterListing().getFormalParameterList();
-    List<ASTFormalParameter> rightParams =
-        rightMethod.getFormalParameters().getFormalParameterListing().getFormalParameterList();
-
-    // same number of parameters ?
-    if (leftParams.size() != rightParams.size()) {
-      return false;
-    }
-
-    // parameters have the same type ?
-    for (int i = 0; i < leftParams.size(); i++) {
-      if (!JavaSourceNames.printNormalizedType(leftParams.get(i).getMCType())
-          .equals(JavaSourceNames.printNormalizedType(rightParams.get(i).getMCType()))) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }

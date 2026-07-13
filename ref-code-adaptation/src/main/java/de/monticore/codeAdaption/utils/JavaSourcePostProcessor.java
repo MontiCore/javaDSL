@@ -103,29 +103,123 @@ public final class JavaSourcePostProcessor {
   }
 
   private static String removeParameterizedImports(String content) {
-    SourceDocument document = new SourceDocument(content);
-    StringBuilder cleaned = new StringBuilder();
-    String[] lines = content.split("\\R", -1);
-    boolean endsWithLineBreak = content.endsWith("\n") || content.endsWith("\r");
-    for (int i = 0; i < lines.length; i++) {
-      if (i == lines.length - 1 && lines[i].isEmpty() && endsWithLineBreak) {
-        continue;
+    StringBuilder cleaned = new StringBuilder(content.length());
+    LexicalState state = LexicalState.NORMAL;
+    int lineStart = 0;
+    while (lineStart < content.length()) {
+      int lineEnd = lineStart;
+      while (lineEnd < content.length()
+          && content.charAt(lineEnd) != '\r'
+          && content.charAt(lineEnd) != '\n') {
+        lineEnd++;
       }
-      String line = lines[i];
-      String trimmed = line.trim();
-      boolean parameterizedImport =
-          trimmed.startsWith("import ")
-              && !trimmed.startsWith("import static ")
-              && trimmed.endsWith(";")
-              && trimmed.substring("import ".length(), trimmed.length() - 1).contains("<");
-      if (!parameterizedImport) {
-        cleaned.append(line).append(document.lineSeparator());
+      int nextLine = lineEnd;
+      if (nextLine < content.length() && content.charAt(nextLine) == '\r') {
+        nextLine++;
       }
-    }
-    if (!endsWithLineBreak && cleaned.length() >= document.lineSeparator().length()) {
-      cleaned.setLength(cleaned.length() - document.lineSeparator().length());
+      if (nextLine < content.length() && content.charAt(nextLine) == '\n') {
+        nextLine++;
+      }
+
+      String line = content.substring(lineStart, lineEnd);
+      if (!(state == LexicalState.NORMAL && isParameterizedImportLine(line))) {
+        cleaned.append(content, lineStart, nextLine);
+      }
+      state = advanceLexicalState(content, lineStart, nextLine, state);
+      lineStart = nextLine;
     }
     return cleaned.toString();
+  }
+
+  private static boolean isParameterizedImportLine(String line) {
+    String trimmed = line.trim();
+    return trimmed.startsWith("import ")
+        && !trimmed.startsWith("import static ")
+        && trimmed.endsWith(";")
+        && trimmed.substring("import ".length(), trimmed.length() - 1).contains("<");
+  }
+
+  private static LexicalState advanceLexicalState(
+      String content, int start, int end, LexicalState initialState) {
+    LexicalState state = initialState;
+    for (int index = start; index < end; index++) {
+      char current = content.charAt(index);
+      char next = index + 1 < end ? content.charAt(index + 1) : '\0';
+      switch (state) {
+        case NORMAL -> {
+          if (current == '/' && next == '/') {
+            state = LexicalState.LINE_COMMENT;
+            index++;
+          } else if (current == '/' && next == '*') {
+            state = LexicalState.BLOCK_COMMENT;
+            index++;
+          } else if (current == '"'
+              && index + 2 < end
+              && content.charAt(index + 1) == '"'
+              && content.charAt(index + 2) == '"') {
+            state = LexicalState.TEXT_BLOCK;
+            index += 2;
+          } else if (current == '"') {
+            state = LexicalState.STRING;
+          } else if (current == '\'') {
+            state = LexicalState.CHARACTER;
+          }
+        }
+        case LINE_COMMENT -> {
+          if (current == '\r' || current == '\n') {
+            state = LexicalState.NORMAL;
+          }
+        }
+        case BLOCK_COMMENT -> {
+          if (current == '*' && next == '/') {
+            state = LexicalState.NORMAL;
+            index++;
+          }
+        }
+        case STRING -> {
+          if (current == '\\') {
+            index++;
+          } else if (current == '"' || current == '\r' || current == '\n') {
+            state = LexicalState.NORMAL;
+          }
+        }
+        case CHARACTER -> {
+          if (current == '\\') {
+            index++;
+          } else if (current == '\'' || current == '\r' || current == '\n') {
+            state = LexicalState.NORMAL;
+          }
+        }
+        case TEXT_BLOCK -> {
+          if (current == '"'
+              && index + 2 < end
+              && content.charAt(index + 1) == '"'
+              && content.charAt(index + 2) == '"'
+              && !isEscaped(content, index)) {
+            state = LexicalState.NORMAL;
+            index += 2;
+          }
+        }
+      }
+    }
+    return state;
+  }
+
+  private static boolean isEscaped(String content, int index) {
+    int backslashes = 0;
+    for (int cursor = index - 1; cursor >= 0 && content.charAt(cursor) == '\\'; cursor--) {
+      backslashes++;
+    }
+    return backslashes % 2 != 0;
+  }
+
+  private enum LexicalState {
+    NORMAL,
+    LINE_COMMENT,
+    BLOCK_COMMENT,
+    STRING,
+    CHARACTER,
+    TEXT_BLOCK
   }
 
   private static List<ASTImportDeclaration> knownInvalidImports(ASTOrdinaryCompilationUnit ast) {

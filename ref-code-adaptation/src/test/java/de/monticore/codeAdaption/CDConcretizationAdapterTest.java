@@ -24,6 +24,7 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCase;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCases;
 import de.monticore.codeAdaption.testutil.CDConcretizationFixtureWorkspace;
+import de.monticore.codeAdaption.testutil.GeneratedJavaStructureOracle;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.LogStub;
@@ -100,6 +101,15 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
         () -> "No Java output generated for " + materializedTestCase.displayName());
     assertNoWildcardJdkImports(materializedTestCase, javaFiles);
     assertNoAdaptMetadata(materializedTestCase, javaFiles);
+    CDConcretizationTestCases.expectedOutputModel(testCase)
+        .ifPresentOrElse(
+            expected ->
+                GeneratedJavaStructureOracle.assertMatches(
+                    testCase.concCd(), expected, javaFiles),
+            () ->
+                assertTrue(
+                    CDConcretizationTestCases.noExpectedOutputReason(testCase).isPresent(),
+                    () -> "No expected-output model or documented reason for " + testCase));
 
     assertGeneratedJavaCompiles(compilationSources(javaFiles, materializedTestCase));
   }
@@ -186,6 +196,22 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
                         .replace('\\', '/')
                         .endsWith("/expected/ConcreteType.java")));
     assertDoesNotThrow(() -> assertGeneratedJavaCompiles(sources));
+  }
+
+  @Test
+  void structuralOracleRejectsCompilableOutputWithMissingExpectedMember() throws IOException {
+    Path original = temporaryDirectory.resolve("Original.cd");
+    Path expected = temporaryDirectory.resolve("ExpectedOut.cd");
+    write(original, "classdiagram Original { class Sample { int present; } }");
+    write(expected, "classdiagram Expected { class Sample { int present; int missing; } }");
+    Path generated =
+        write(
+            temporaryDirectory.resolve("generated/Sample.java"),
+            "public class Sample { int present; }");
+
+    assertThrows(
+        AssertionError.class,
+        () -> GeneratedJavaStructureOracle.assertMatches(original, expected, List.of(generated)));
   }
 
   private void assertRejectedWithoutReplacingOutput(CDConcretizationTestCase testCase)

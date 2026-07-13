@@ -1,8 +1,11 @@
 package de.monticore.codeAdaption;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.utils.JavaLoader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,5 +61,23 @@ class CodeAdapterSafetyTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> JavaLoader.readJavaCode(tempDir.resolve("does-not-exist")));
+  }
+
+  @Test
+  void rejectsDifferentConcreteFilesWithTheSamePackageTarget() throws IOException {
+    Path concrete = tempDir.resolve("concrete");
+    Path first = concrete.resolve("first/User.java");
+    Path second = concrete.resolve("second/User.java");
+    Files.createDirectories(first.getParent());
+    Files.createDirectories(second.getParent());
+    Files.writeString(first, "package p; class User { int first; }");
+    Files.writeString(second, "package p; class User { int second; }");
+
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () -> new OutputCodeService().copyConcreteFiles(concrete, tempDir.resolve("output")));
+
+    assertTrue(exception.getMessage().contains("both target"));
   }
 }

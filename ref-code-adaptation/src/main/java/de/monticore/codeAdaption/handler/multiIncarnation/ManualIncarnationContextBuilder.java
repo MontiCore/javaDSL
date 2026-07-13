@@ -2,9 +2,9 @@ package de.monticore.codeAdaption.handler.multiIncarnation;
 
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -22,11 +22,11 @@ public class ManualIncarnationContextBuilder {
   private final IncarnationContextSupport support;
 
   public ManualIncarnationContextBuilder(
-      ASTCDCompilationUnit referenceCD,
-      ASTCDCompilationUnit concreteCD,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex,
       Set<CDConfParameter> confParams) {
     this.confParams = confParams;
-    this.support = new IncarnationContextSupport(referenceCD, concreteCD);
+    this.support = new IncarnationContextSupport(referenceIndex, concreteIndex);
   }
 
   public IncarnationContext buildContextForMapping(String mapping) {
@@ -95,15 +95,17 @@ public class ManualIncarnationContextBuilder {
               target -> copyIncarnations(mappings, target, StableElementKey.type(referenceType)));
 
       for (ASTCDAttribute referenceField : referenceType.getCDAttributeList()) {
-        support
-            .stereotypeValue(referenceField, "forEach")
-            .flatMap(name -> support.findReferenceField(List.of(referenceType), name))
-            .ifPresent(
-                target ->
-                    copyIncarnations(
-                        mappings,
-                        target,
-                        StableElementKey.field(referenceType, referenceField)));
+        support.stereotypeValue(referenceField, "forEach").ifPresent(
+            name -> {
+              Optional<StableElementKey> target =
+                  support.findReferenceField(List.of(referenceType), name);
+              if (target.isEmpty()) {
+                target = support.findReferenceMethod(List.of(referenceType), name);
+              }
+              target.ifPresent(
+                  key -> copyIncarnations(
+                      mappings, key, StableElementKey.field(referenceType, referenceField)));
+            });
       }
       for (ASTCDMethod referenceMethod : referenceType.getCDMethodList()) {
         Optional<String> targetName = support.stereotypeValue(referenceMethod, "forEach");

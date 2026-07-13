@@ -145,8 +145,8 @@ public interface CodeUpdater {
   }
 
   /**
-   * Add a new field to the target type by cloning a template field and configuring its name, type,
-   * and static modifier.
+   * Add or complete a field on the target type. Implementations may clone the template field when
+   * present; completed-CD projection passes {@code null} when no Java template owns the member.
    */
   default void addField(
       ASTTypeDeclaration targetType,
@@ -158,8 +158,8 @@ public interface CodeUpdater {
   }
 
   /**
-   * Add a method to the target type by cloning a template method and configuring its signature,
-   * static modifier, and structured body.
+   * Add or complete a method on the target type. Implementations may clone the template method when
+   * present; completed-CD projection passes {@code null} when no Java template owns the member.
    */
   default void addMethod(
       ASTTypeDeclaration targetType,
@@ -178,6 +178,18 @@ public interface CodeUpdater {
    */
   default void addType(ASTTypeDeclaration templateType, String newName) {
     throw unsupported("addType");
+  }
+
+  /** Adds a completed-CD superclass or interface relationship to an existing Java type. */
+  default void addSuperType(
+      ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
+    throw unsupported("addSuperType");
+  }
+
+  /** Adds an enum constant introduced by completed-CD projection. */
+  default void addEnumConstant(
+      ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
+    throw unsupported("addEnumConstant");
   }
 
   /**

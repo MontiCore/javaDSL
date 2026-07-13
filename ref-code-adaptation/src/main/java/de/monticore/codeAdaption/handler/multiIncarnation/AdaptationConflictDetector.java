@@ -1,12 +1,12 @@
 package de.monticore.codeAdaption.handler.multiIncarnation;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.handler.multiIncarnation.conflict.AdaptationConflictCheck;
 import de.monticore.codeAdaption.handler.multiIncarnation.conflict.ConflictCollector;
 import de.monticore.codeAdaption.handler.multiIncarnation.conflict.ConflictDetectionContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.conflict.DefaultConflictChecks;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,16 +27,16 @@ public final class AdaptationConflictDetector {
    * unsupported forEach mappings.
    */
   public static void validate(
-      ASTCDCompilationUnit referenceCD,
-      ASTCDCompilationUnit concreteCD,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex,
       Set<String> mappings,
       Map<String, IncarnationContext> contexts,
       Set<CDConfParameter> confParams,
       boolean useCommonParentForMultipleIncarnations) {
     ConflictDetectionContext context =
         new ConflictDetectionContext(
-            referenceCD,
-            concreteCD,
+            referenceIndex,
+            concreteIndex,
             mappings,
             contexts,
             confParams,

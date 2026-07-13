@@ -1,6 +1,5 @@
 package de.monticore.codeAdaption;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.utils.AdapterUtils;
@@ -81,11 +80,11 @@ final class AdaptedCodeMerger {
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCodeIntoConcreteBase(
       Set<ASTOrdinaryCompilationUnit> concreteCode,
       Set<ASTOrdinaryCompilationUnit> adaptedCode,
-      ASTCDCompilationUnit conCD) {
+      CDModelIndex concreteIndex) {
 
     Map<String, ASTOrdinaryCompilationUnit> result = indexAndMerge(concreteCode);
     Map<String, ASTOrdinaryCompilationUnit> mergedAdapted = indexAndMerge(adaptedCode);
-    Map<String, Relocation> relocations = findRelocations(result, mergedAdapted, conCD);
+    Map<String, Relocation> relocations = findRelocations(result, mergedAdapted, concreteIndex);
     Map<String, Map<String, String>> importsByOriginalPackage =
         adaptedTypeImports(mergedAdapted, relocations);
 
@@ -126,14 +125,14 @@ final class AdaptedCodeMerger {
   private Map<String, Relocation> findRelocations(
       Map<String, ASTOrdinaryCompilationUnit> concreteCode,
       Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
-      ASTCDCompilationUnit conCD) {
+      CDModelIndex concreteIndex) {
     Map<String, Relocation> relocations = new LinkedHashMap<>();
     for (Map.Entry<String, ASTOrdinaryCompilationUnit> entry : adaptedCode.entrySet()) {
       if (concreteCode.containsKey(entry.getKey())) {
         continue;
       }
       Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> target =
-          uniqueConcreteTypeMatch(concreteCode, entry.getValue(), conCD);
+          uniqueConcreteTypeMatch(concreteCode, entry.getValue(), concreteIndex);
       if (target.isEmpty()) {
         continue;
       }
@@ -242,12 +241,12 @@ final class AdaptedCodeMerger {
   private Optional<Map.Entry<String, ASTOrdinaryCompilationUnit>> uniqueConcreteTypeMatch(
       Map<String, ASTOrdinaryCompilationUnit> concreteCode,
       ASTOrdinaryCompilationUnit adaptedUnit,
-      ASTCDCompilationUnit conCD) {
+      CDModelIndex concreteIndex) {
     if (adaptedUnit.getTypeDeclarationList().size() != 1) {
       return Optional.empty();
     }
     String adaptedType = adaptedUnit.getTypeDeclarationList().get(0).getName();
-    boolean isConcreteType = CDModelIndex.of(conCD).hasType(adaptedType);
+    boolean isConcreteType = concreteIndex.hasType(adaptedType);
     if (!isConcreteType) {
       return Optional.empty();
     }

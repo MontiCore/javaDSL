@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
@@ -133,7 +134,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
             .mergeAdaptedCodeIntoConcreteBase(
                 linkedSet(concrete),
                 linkedSet(adapted),
-                JavaLoader.parseCD(cd.toString()))
+                CDModelIndex.of(JavaLoader.parseCD(cd.toString())))
             .iterator()
             .next();
 
@@ -159,7 +160,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
         merger.mergeAdaptedCodeIntoConcreteBase(
             linkedSet(concreteAccount),
             linkedSet(adaptedAccount, adaptedTransaction),
-            JavaLoader.parseCD(cd.toString()));
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
 
     ASTOrdinaryCompilationUnit transaction =
         merged.stream()
@@ -188,7 +189,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
         merger.mergeAdaptedCodeIntoConcreteBase(
             linkedSet(concreteBase),
             linkedSet(adaptedBase, adaptedChild),
-            JavaLoader.parseCD(cd.toString()));
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
 
     ASTOrdinaryCompilationUnit child =
         merged.stream()
@@ -217,7 +218,70 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
             merger.mergeAdaptedCodeIntoConcreteBase(
                 linkedSet(concreteAccount),
                 linkedSet(adaptedAccount, adaptedTransaction),
-                JavaLoader.parseCD(cd.toString())));
+                CDModelIndex.of(JavaLoader.parseCD(cd.toString()))));
+  }
+
+  @Test
+  void rejectsConflictingImportsFromSeparateMappingPasses() throws IOException {
+    ASTOrdinaryCompilationUnit first =
+        parse("first/Service.java", "package p; import a.User; class Service {}");
+    ASTOrdinaryCompilationUnit second =
+        parse("second/Service.java", "package p; import b.User; class Service {}");
+
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () -> merger.mergeAdaptedCode(linkedSet(first), linkedSet(second)));
+
+    assertTrue(exception.getMessage().contains("both use the type name 'User'"));
+  }
+
+  @Test
+  void keepsStaticAndWildcardImportsInSeparateNamespaces() throws IOException {
+    ASTOrdinaryCompilationUnit first =
+        parse(
+            "first/Service.java",
+            "package p; import a.User; import a.*; class Service {}");
+    ASTOrdinaryCompilationUnit second =
+        parse(
+            "second/Service.java",
+            "package p; import static b.User; import b.*; class Service {}");
+
+    ASTOrdinaryCompilationUnit merged =
+        merger.mergeAdaptedCode(linkedSet(first), linkedSet(second)).iterator().next();
+
+    assertEquals(4, merged.getImportDeclarationList().size());
+  }
+
+  @Test
+  void rejectsConflictingImportsWhenMergingIntoConcreteCode() throws IOException {
+    ASTOrdinaryCompilationUnit concrete =
+        parse("concrete/Service.java", "package p; import a.User; class Service {}");
+    ASTOrdinaryCompilationUnit adapted =
+        parse("adapted/Service.java", "package p; import b.User; class Service { void run() {} }");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Service; }");
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            merger.mergeAdaptedCodeIntoConcreteBase(
+                linkedSet(concrete),
+                linkedSet(adapted),
+                CDModelIndex.of(JavaLoader.parseCD(cd.toString()))));
+  }
+
+  @Test
+  void mergesEnumConstantsFromAdaptedAndConcreteSources() throws IOException {
+    ASTOrdinaryCompilationUnit concrete =
+        parse("concrete/Colour.java", "package p; enum Colour { RED, BLUE }");
+    ASTOrdinaryCompilationUnit adapted =
+        parse("adapted/Colour.java", "package p; enum Colour { RED, GREEN }");
+
+    ASTOrdinaryCompilationUnit merged =
+        merger.mergeAdaptedCode(linkedSet(concrete), linkedSet(adapted)).iterator().next();
+
+    assertTrue(JavaLoader.print(merged).replaceAll("\\s+", "").contains("RED,GREEN,BLUE"));
   }
 
   @Test
@@ -238,7 +302,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
                 merger.mergeAdaptedCodeIntoConcreteBase(
                     linkedSet(first, second),
                     linkedSet(adapted),
-                    JavaLoader.parseCD(cd.toString())));
+                    CDModelIndex.of(JavaLoader.parseCD(cd.toString()))));
 
     assertTrue(exception.getMessage().contains("multiple packages"));
   }

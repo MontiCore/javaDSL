@@ -18,6 +18,7 @@ import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.CodeAdapter;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.se_rwth.commons.logging.LogStub;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -109,13 +110,22 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     Set<String> mappings = Set.of("stud", "prof");
     Map<String, IncarnationContext> contexts = new java.util.LinkedHashMap<>();
     for (String mapping : mappings) {
-      contexts.put(mapping, new ManualIncarnationContextBuilder(refCD, conCD, confParams).buildContextForMapping(mapping));
+      contexts.put(
+          mapping,
+          new ManualIncarnationContextBuilder(
+                  CDModelIndex.of(refCD), CDModelIndex.of(conCD), confParams)
+              .buildContextForMapping(mapping));
     }
 
     assertDoesNotThrow(
         () ->
             AdaptationConflictDetector.validate(
-                refCD, conCD, mappings, contexts, confParams, false));
+                CDModelIndex.of(refCD),
+                CDModelIndex.of(conCD),
+                mappings,
+                contexts,
+                confParams,
+                false));
   }
 
   @Test
@@ -244,7 +254,12 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     ASTCDCompilationUnit conCD = JavaLoader.parseCD(ROOT.resolve(concrete).toString());
     IncarnationContext context = context(refCD, conCD);
     AdaptationConflictDetector.validate(
-        refCD, conCD, MAPPINGS, Map.of("ref", context), confParams, false);
+        CDModelIndex.of(refCD),
+        CDModelIndex.of(conCD),
+        MAPPINGS,
+        Map.of("ref", context),
+        confParams,
+        false);
   }
 
   private IncarnationContext context(String reference, String concrete) {
@@ -255,7 +270,8 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
   private IncarnationContext context(ASTCDCompilationUnit refCD, ASTCDCompilationUnit conCD) {
     ManualIncarnationContextBuilder builder =
-        new ManualIncarnationContextBuilder(refCD, conCD, confParams);
+        new ManualIncarnationContextBuilder(
+            CDModelIndex.of(refCD), CDModelIndex.of(conCD), confParams);
     return builder.buildContextForMapping("ref");
   }
 }

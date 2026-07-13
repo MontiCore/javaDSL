@@ -25,7 +25,11 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
         }
         for (ASTCDAttribute attribute : referenceType.getCDAttributeList()) {
           if (context.isAny(JavaLoader.print(attribute.getMCType()))
-              && incarnationContext.getIncarnations(StableElementKey.field(referenceType, attribute)).isEmpty()) {
+              && incarnationContext
+                  .getIncarnations(StableElementKey.field(referenceType, attribute))
+                  .isEmpty()
+              && !hasMappedForEachDerivative(
+                  context, incarnationContext, referenceType, attribute)) {
             conflicts.conflict(
                 mapping,
                 "underspecified attribute type",
@@ -36,7 +40,9 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
         for (ASTCDMethod method : referenceType.getCDMethodList()) {
           boolean methodMapped =
               !incarnationContext.getIncarnations(StableElementKey.method(referenceType, method)).isEmpty();
-          if (context.isAny(JavaLoader.print(method.getMCReturnType())) && !methodMapped) {
+          if (context.isAny(JavaLoader.print(method.getMCReturnType()))
+              && !methodMapped
+              && !hasMappedForEachDerivative(context, incarnationContext, referenceType, method)) {
             conflicts.conflict(
                 mapping,
                 "underspecified method return type",
@@ -57,5 +63,43 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
         }
       }
     }
+  }
+
+  private boolean hasMappedForEachDerivative(
+      ConflictDetectionContext context,
+      IncarnationContext incarnationContext,
+      ASTCDType owner,
+      ASTCDMethod target) {
+    String qualifiedTarget = owner.getName() + "." + target.getName();
+    for (ASTCDAttribute attribute : owner.getCDAttributeList()) {
+      if (context.forEachValue(attribute)
+              .filter(value -> value.equals(target.getName()) || value.endsWith(qualifiedTarget))
+              .isPresent()
+          && !incarnationContext
+              .getIncarnations(StableElementKey.field(owner, attribute))
+              .isEmpty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean hasMappedForEachDerivative(
+      ConflictDetectionContext context,
+      IncarnationContext incarnationContext,
+      ASTCDType owner,
+      ASTCDAttribute target) {
+    String qualifiedTarget = owner.getName() + "." + target.getName();
+    for (ASTCDAttribute attribute : owner.getCDAttributeList()) {
+      if (context.forEachValue(attribute)
+              .filter(value -> value.equals(target.getName()) || value.equals(qualifiedTarget))
+              .isPresent()
+          && !incarnationContext
+              .getIncarnations(StableElementKey.field(owner, attribute))
+              .isEmpty()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

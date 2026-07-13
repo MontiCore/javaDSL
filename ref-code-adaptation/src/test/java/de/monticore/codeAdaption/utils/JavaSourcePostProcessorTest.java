@@ -179,6 +179,34 @@ class JavaSourcePostProcessorTest {
   }
 
   @Test
+  void malformedImportRecoveryPreservesCommentsAndTextBlocks() {
+    String source =
+        String.join(
+            System.lineSeparator(),
+            "package demo;",
+            "",
+            "/*",
+            " import Commented<Type>;",
+            "*/",
+            "import Optional<long>;",
+            "",
+            "public class Sample {",
+            "  String text = \"\"\"",
+            "      import TextBlock<Type>;",
+            "      \"\"\";",
+            "  String literal = \"import Literal<Type>;\";",
+            "}",
+            "");
+
+    String cleaned = JavaSourcePostProcessor.process(source, "Sample.java");
+
+    assertFalse(cleaned.contains("import Optional<long>;"));
+    assertTrue(cleaned.contains("import Commented<Type>;"));
+    assertTrue(cleaned.contains("import TextBlock<Type>;"));
+    assertTrue(cleaned.contains("\"import Literal<Type>;\""));
+  }
+
+  @Test
   void normalizesPrimitiveGenericArgumentsWhenRenderingTypes() {
     assertTrue(JavaSourceNames.normalizeType("Optional<long>").contains("Optional<Long>"));
     assertTrue(JavaSourceNames.normalizeType("List<int>").contains("List<Integer>"));

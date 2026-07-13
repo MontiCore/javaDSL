@@ -133,7 +133,7 @@ public class CodeAdapter {
     // Build each context and checker once, then reuse that exact checker state in handlers.
     Map<String, AdaptationContextResult> contextResults =
         new AdaptationContextFactory(confParams, conformanceService)
-            .buildResults(refCD, conCD, orderedMappings, useConcretization);
+            .buildResults(referenceIndex, conIndex, orderedMappings, useConcretization);
     Map<String, IncarnationContext> mappingContexts = new LinkedHashMap<>();
     Map<String, CDConformanceChecker> checkers = new LinkedHashMap<>();
     Map<String, CodeValidator> validators = new LinkedHashMap<>();
@@ -144,12 +144,23 @@ public class CodeAdapter {
       validators.put(mapping, new CodeValidator(refCD, adapterParams));
     }
 
-    if (!useConcretization) {
+    SortedSet<String> fallbackMappings =
+        contextResults.entrySet().stream()
+            .filter(entry -> !entry.getValue().conformanceValid())
+            .map(Map.Entry::getKey)
+            .collect(
+                java.util.stream.Collectors.toCollection(TreeSet::new));
+    if (!useConcretization || !fallbackMappings.isEmpty()) {
+      Set<String> mappingsToValidate =
+          useConcretization ? fallbackMappings : orderedMappings;
+      Map<String, IncarnationContext> contextsToValidate = new LinkedHashMap<>();
+      mappingsToValidate.forEach(
+          mapping -> contextsToValidate.put(mapping, mappingContexts.get(mapping)));
       AdaptationConflictDetector.validate(
-          refCD,
-          conCD,
-          orderedMappings,
-          mappingContexts,
+          referenceIndex,
+          conIndex,
+          mappingsToValidate,
+          contextsToValidate,
           confParams,
           useCommonParentForMultipleIncarnations);
     }
@@ -174,8 +185,9 @@ public class CodeAdapter {
             workspace,
             codeMerger,
             stagingPath,
-            refCD,
-            conCD,
+            referenceIndex,
+            conIndex,
+            inputConcreteIndex,
             useCommonParentForMultipleIncarnations);
 
     for (String mapping : orderedMappings) {
@@ -220,7 +232,7 @@ public class CodeAdapter {
               ? JavaLoader.readJavaCode(normalizedConHwcPath)
               : new LinkedHashSet<>();
       Set<ASTOrdinaryCompilationUnit> finalCode =
-          codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conCD);
+          codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conIndex);
 
       JavaLoader.printAST(finalCode, stagingPath);
       // Clean up @Adapt annotations and invalid imports in both adaptation modes.

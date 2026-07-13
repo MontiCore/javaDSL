@@ -1,12 +1,12 @@
 package de.monticore.codeAdaption;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.handler.BasicUpdateHandler;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdaterMill;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
@@ -39,22 +39,25 @@ final class MappingAdaptationRunner {
   private final AdaptationWorkspace workspace;
   private final AdaptedCodeMerger codeMerger;
   private final Path stagingPath;
-  private final ASTCDCompilationUnit referenceCD;
-  private final ASTCDCompilationUnit concreteCD;
+  private final CDModelIndex referenceIndex;
+  private final CDModelIndex concreteIndex;
+  private final CDModelIndex inputConcreteIndex;
   private final boolean useCommonParentForMultipleIncarnations;
 
   MappingAdaptationRunner(
       AdaptationWorkspace workspace,
       AdaptedCodeMerger codeMerger,
       Path stagingPath,
-      ASTCDCompilationUnit referenceCD,
-      ASTCDCompilationUnit concreteCD,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex,
+      CDModelIndex inputConcreteIndex,
       boolean useCommonParentForMultipleIncarnations) {
     this.workspace = workspace;
     this.codeMerger = codeMerger;
     this.stagingPath = stagingPath;
-    this.referenceCD = referenceCD;
-    this.concreteCD = concreteCD;
+    this.referenceIndex = referenceIndex;
+    this.concreteIndex = concreteIndex;
+    this.inputConcreteIndex = inputConcreteIndex;
     this.useCommonParentForMultipleIncarnations =
         useCommonParentForMultipleIncarnations;
   }
@@ -78,8 +81,9 @@ final class MappingAdaptationRunner {
         CodeUpdater updater = prepareUpdater(tempPath, groupingMappings);
         BasicUpdateHandler handler =
             new BasicUpdateHandler(
-                referenceCD,
-                concreteCD,
+                referenceIndex,
+                concreteIndex,
+                inputConcreteIndex,
                 checker,
                 updater,
                 validator,

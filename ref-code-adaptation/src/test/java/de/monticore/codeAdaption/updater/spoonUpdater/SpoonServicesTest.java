@@ -148,6 +148,55 @@ class SpoonServicesTest {
   }
 
   @Test
+  void completedModelProjectionCreatesAndRepairsDeclarationsWithoutTemplates()
+      throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("completion-delta"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Child",
+            "class Parent {} interface Contract {} enum Colour { RED, BLUE } "
+                + "class Child { Object value; }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration child = loadType(source, "Child");
+    ASTTypeDeclaration colour = loadType(source, "Colour");
+
+    generation.addField(child, null, "value", "int", false);
+    generation.addField(child, null, "added", "String", false);
+    generation.addMethod(
+        child,
+        null,
+        "number",
+        List.of(),
+        List.of(),
+        "int",
+        false,
+        MethodBodySpec.empty());
+    generation.addSuperType(child, "Parent", false);
+    generation.addSuperType(child, "Contract", true);
+    generation.addEnumConstant(colour, "GREEN", 1);
+
+    var spoonChild = resolver.getSpoonType(child);
+    assertEquals("int", spoonChild.getField("value").getType().getSimpleName());
+    assertEquals("String", spoonChild.getField("added").getType().getSimpleName());
+    assertTrue(spoonChild.getMethodsByName("number").get(0).toString().contains("return 0"));
+    assertEquals("Parent", spoonChild.getSuperclass().getSimpleName());
+    assertTrue(
+        spoonChild.getSuperInterfaces().stream()
+            .anyMatch(type -> "Contract".equals(type.getSimpleName())));
+    assertEquals(
+        List.of("RED", "GREEN", "BLUE"),
+        ((spoon.reflect.declaration.CtEnum<?>) resolver.getSpoonType(colour))
+            .getEnumValues().stream()
+            .map(value -> value.getSimpleName())
+            .toList());
+  }
+
+  @Test
   void typeRewriteDoesNotTouchResolvedLibraryTypesWithTheSameSimpleName() throws IOException {
     Path sources = Files.createDirectory(temporaryDirectory.resolve("library-type"));
     javaSource(

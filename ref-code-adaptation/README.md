@@ -137,9 +137,9 @@ assignments are rewritten only inside that owning Java type.
   method names and parameter lists through the JavaDSL grammar rather than
   splitting them manually; invalid signatures remain unmatched. Callers should
   use these utilities instead of open-coded name or signature parsing.
-- `SpoonUpdater` is the supported code updater. `RegexUpdater` remains only as a
-  deprecated compatibility wrapper and must not reintroduce whole-file
-  `replaceAll` behavior.
+- `SpoonUpdater` is the supported code updater. `RegexUpdater` is preserved
+  unchanged as deprecated legacy source for compatibility and is outside the
+  supported adaptation path.
 - `CodeUpdaterMill` owns updater initialization and isolation. Use `init()` for
   Spoon, `init(Supplier)` for an alternative updater, `getUpdater()` for the
   current pass, and `reset()` between isolated passes.
@@ -191,7 +191,9 @@ oracle input. A correct case means:
 - final Java files exist
 - no final Java file contains `@Adapt` or the `Adapt` import
 - generated Java compiles
-- generated Java structure matches the expected `*Out.cd` for Java-expressible elements
+- generated Java structure matches the Java-expressible `*Conc.cd` to `*Out.cd`
+  completion delta for every type materialized in adapter output, except for the
+  explicitly registered model boundaries described below
 
 Exact Java source text is not the main oracle, but generated Java should still be readable and consistently spaced.
 
@@ -209,3 +211,11 @@ explicitly does not implement. They remain executable rejection/rollback tests:
 - attribute `forEach` without a target incarnation (requires optional-member or
   `matchStructure` semantics)
 - method-target `forEach`
+
+Six otherwise supported fixtures still compile and run, but do not use their
+complete model as a structural oracle. Each is registered by path and
+reason in `CDConcretizationTestCases`: one golden CD attaches a non-marker
+interface without satisfying its Java contract, while five rely on upstream
+multi-incarnation/`forEach` expansions that the completed CD returned by the
+current dependency does not contain. These cases are not disabled; metadata
+cleanup and strict Java compilation remain mandatory.

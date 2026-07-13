@@ -6,6 +6,7 @@ import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContextBuilder;
 import de.monticore.codeAdaption.handler.multiIncarnation.ManualIncarnationContextBuilder;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.se_rwth.commons.logging.Log;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,16 +26,19 @@ public final class AdaptationContextFactory {
 
   /** Builds the context and retains the checker that produced it for downstream handlers. */
   public Map<String, AdaptationContextResult> buildResults(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex,
       Set<String> mappings,
       boolean useConcretizationMappings) {
+
+    ASTCDCompilationUnit refCD = referenceIndex.cd();
+    ASTCDCompilationUnit conCD = concreteIndex.cd();
 
     Map<String, AdaptationContextResult> results = new LinkedHashMap<>();
 
     if (!useConcretizationMappings) {
       ManualIncarnationContextBuilder builder =
-          new ManualIncarnationContextBuilder(refCD, conCD, confParams);
+          new ManualIncarnationContextBuilder(referenceIndex, concreteIndex, confParams);
       mappings.stream()
           .sorted()
           .forEach(
@@ -54,7 +58,7 @@ public final class AdaptationContextFactory {
         Log.warn(
             "Mapping '"
                 + mapping
-                + "' failed conformance check - will use stereotype-based fallback for this mapping");
+                + "' failed conformance check - will use conflict-checked stereotype-based fallback for this mapping");
       } else {
         Log.info(
             "Mapping '"
@@ -66,16 +70,24 @@ public final class AdaptationContextFactory {
             "CodeAdapter");
       }
 
+      boolean conformanceMappingAvailable =
+          mappingValid && checker.getIncarnationMapping() != null;
       IncarnationContext context;
-      if (!mappingValid || checker.getIncarnationMapping() == null) {
+      if (!conformanceMappingAvailable) {
         context =
-            new ManualIncarnationContextBuilder(refCD, conCD, confParams)
+            new ManualIncarnationContextBuilder(referenceIndex, concreteIndex, confParams)
                 .buildContextForMapping(mapping);
       } else {
-        IncarnationContextBuilder builder = new IncarnationContextBuilder(checker, refCD, conCD);
+        IncarnationContextBuilder builder =
+            new IncarnationContextBuilder(checker, referenceIndex, concreteIndex);
         context = builder.buildContextForMapping(mapping, false);
       }
-      results.put(mapping, new AdaptationContextResult(context, checker, mappingValid));
+      results.put(
+          mapping,
+          new AdaptationContextResult(
+              context,
+              conformanceMappingAvailable ? checker : null,
+              conformanceMappingAvailable));
     }
 
     return results;

@@ -4,7 +4,6 @@ import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdassociation._ast.ASTCDAssociation;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDClass;
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
@@ -36,8 +35,8 @@ public final class ConflictDetectionContext {
   private final Map<String, ASTCDType> concreteTypes = new LinkedHashMap<>();
 
   public ConflictDetectionContext(
-      ASTCDCompilationUnit referenceCD,
-      ASTCDCompilationUnit concreteCD,
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex,
       Set<String> mappings,
       Map<String, IncarnationContext> contexts,
       Set<CDConfParameter> confParams,
@@ -46,8 +45,8 @@ public final class ConflictDetectionContext {
     this.contexts = contexts;
     this.confParams = confParams;
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
-    this.referenceIndex = CDModelIndex.of(referenceCD);
-    this.concreteIndex = CDModelIndex.of(concreteCD);
+    this.referenceIndex = referenceIndex;
+    this.concreteIndex = concreteIndex;
     referenceIndex.types().forEach(type -> referenceTypes.put(type.getName(), type));
     concreteIndex.types().forEach(type -> concreteTypes.put(type.getName(), type));
   }

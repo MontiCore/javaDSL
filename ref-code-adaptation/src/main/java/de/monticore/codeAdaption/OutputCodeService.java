@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** Handles final generated-source cleanup and concrete handwritten-file inclusion. */
 final class OutputCodeService {
@@ -22,22 +24,33 @@ final class OutputCodeService {
       return;
     }
     try (var paths = Files.walk(conHwcPath)) {
-      paths
-          .filter(Files::isRegularFile)
-          .sorted(java.util.Comparator.comparing(Path::toString))
-          .forEach(
-              path -> {
-                try {
-                  Path target = concreteCopyTarget(conHwcPath, path, outputPath);
-                  Files.createDirectories(target.getParent());
-                  if (!Files.exists(target)) {
-                    Files.copy(path, target);
-                  }
-                } catch (IOException e) {
-                  throw new IllegalStateException(
-                      "Failed to copy concrete file '" + path + "' to output", e);
-                }
-              });
+      Map<Path, Path> sourcesByTarget = new LinkedHashMap<>();
+      for (Path source :
+          paths
+              .filter(Files::isRegularFile)
+              .sorted(java.util.Comparator.comparing(Path::toString))
+              .toList()) {
+        Path target = concreteCopyTarget(conHwcPath, source, outputPath).toAbsolutePath().normalize();
+        Path existingSource = sourcesByTarget.putIfAbsent(target, source);
+        if (existingSource != null && Files.mismatch(existingSource, source) != -1L) {
+          throw new IllegalStateException(
+              "Concrete files '"
+                  + existingSource
+                  + "' and '"
+                  + source
+                  + "' both target '"
+                  + target
+                  + "' but have different content");
+        }
+      }
+      for (Map.Entry<Path, Path> entry : sourcesByTarget.entrySet()) {
+        Path target = entry.getKey();
+        Path source = entry.getValue();
+        Files.createDirectories(target.getParent());
+        if (!Files.exists(target)) {
+          Files.copy(source, target);
+        }
+      }
     } catch (IOException e) {
       throw new IllegalStateException("Failed to include concrete handwritten code", e);
     }

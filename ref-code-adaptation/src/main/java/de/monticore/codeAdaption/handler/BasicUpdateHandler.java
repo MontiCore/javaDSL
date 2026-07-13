@@ -1,6 +1,5 @@
 package de.monticore.codeAdaption.handler;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
@@ -25,6 +24,7 @@ import java.util.Set;
 /** Coordinates the CD-based adaptation of Java AST elements. */
 public final class BasicUpdateHandler {
   final CDModelIndex conIndex;
+  final CDModelIndex inputConIndex;
   final CDModelIndex refIndex;
   final CDConformanceChecker checker;
   final CodeUpdater updater;
@@ -43,8 +43,9 @@ public final class BasicUpdateHandler {
   private final JavaTypeUpdateService typeUpdates;
 
   public BasicUpdateHandler(
-      ASTCDCompilationUnit refCD,
-      ASTCDCompilationUnit conCD,
+      CDModelIndex refIndex,
+      CDModelIndex conIndex,
+      CDModelIndex inputConIndex,
       CDConformanceChecker checker,
       CodeUpdater updater,
       CodeValidator validator,
@@ -53,13 +54,15 @@ public final class BasicUpdateHandler {
       boolean useCommonParentForMultipleIncarnations) {
     this.updater = updater;
     this.checker = checker;
-    this.conIndex = CDModelIndex.of(conCD);
-    this.refIndex = CDModelIndex.of(refCD);
+    this.conIndex = conIndex;
+    this.inputConIndex = inputConIndex;
+    this.refIndex = refIndex;
     this.validator = validator;
     this.incarnationContext = incarnationContext;
     this.incarnationSelection = Map.copyOf(incarnationSelection);
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
-    this.symbolResolver = new ConcreteSymbolResolver(this, refCD, conCD);
+    this.symbolResolver =
+        new ConcreteSymbolResolver(this, refIndex.cd(), conIndex.cd());
     this.memberUpdates = new JavaMemberUpdateService(this, symbolResolver);
     this.typeUpdates = new JavaTypeUpdateService(this, symbolResolver, memberUpdates);
   }

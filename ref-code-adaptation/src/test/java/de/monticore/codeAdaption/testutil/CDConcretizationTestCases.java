@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -110,6 +111,64 @@ public final class CDConcretizationTestCases {
           Map.entry("evaluation/transitiveDependencies/TransitiveDependenciesConc.cd", true),
           Map.entry("evaluation/crud-backend/CRUDBackendConc.cd", true));
 
+  private static final Map<String, String> EXPECTED_OUTPUT_OVERRIDES =
+      Map.of(
+          "evaluation/builder/DataModelConc.cd", "evaluation/builder/BuilderAndMillOut.cd",
+          "evaluation/getter-setter/DataModelConc.cd", "evaluation/getter-setter/GetterOut.cd",
+          "evaluation/macoco/EmptyConc.cd", "evaluation/macoco/EmptyConcOut.cd",
+          "evaluation/mill/LanguageInfrastructureConc.cd", "evaluation/mill/MillOut.cd");
+
+  private static final Map<String, String> NO_EXPECTED_OUTPUT_REASONS =
+      Map.ofEntries(
+          Map.entry(
+              "attributes/valid/AttributesMissingConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "attributes/valid/TwoAttributesMissingConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "attributes/valid/TwoAttributesMissingOneMatchConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "inheritance/AttributeTypeMismatchConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "inheritance/MissingInheritanceConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "methods/basic/valid/ClassEmptyConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "methods/basic/valid/ClassMissingConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "methods/basic/valid/MethodMissingConc.cd",
+              "Upstream fixture provides no expected output model"),
+          Map.entry(
+              "methods/basic/valid/MultipleMethodsMissingConc.cd",
+              "Upstream fixture provides no expected output model"));
+
+  private static final Map<String, String> STRUCTURAL_ORACLE_EXCLUSIONS =
+      Map.ofEntries(
+          Map.entry(
+              "evaluation/banking2/BankingConc.cd",
+              "The golden CD adds a non-marker interface without implementing its abstract Java contract"),
+          Map.entry(
+              "evaluation/banking/multiInc/BankingConc.cd",
+              "The current upstream completer does not materialize the golden multi-incarnation account aliases"),
+          Map.entry(
+              "evaluation/cross-references/MicroserviceConc.cd",
+              "The current upstream completer does not materialize method-forEach-type Cartesian expansions"),
+          Map.entry(
+              "evaluation/observer/mutualObservers/MutualObserversConc.cd",
+              "The current upstream completer does not materialize members inherited from both mapped reference roles"),
+          Map.entry(
+              "evaluation/staticDelegator/attrWorkaround/StaticExistsConc.cd",
+              "The current upstream completer does not materialize reverse method-to-attribute forEach expansions"),
+          Map.entry(
+              "evaluation/visitor/VisitorConc.cd",
+              "The current upstream completer does not materialize the golden visitor forEach overloads"));
+
   private CDConcretizationTestCases() {}
 
   public static List<CDConcretizationTestCase> allCases() {
@@ -206,6 +265,24 @@ public final class CDConcretizationTestCases {
 
   public static String unsupportedReason(CDConcretizationTestCase testCase) {
     return UNSUPPORTED_CASES.get(relativeConcretePath(testCase));
+  }
+
+  public static Optional<Path> expectedOutputModel(CDConcretizationTestCase testCase) {
+    String concretePath = relativeConcretePath(testCase);
+    if (STRUCTURAL_ORACLE_EXCLUSIONS.containsKey(concretePath)) {
+      return Optional.empty();
+    }
+    String expectedPath =
+        EXPECTED_OUTPUT_OVERRIDES.getOrDefault(
+            concretePath, concretePath.replace("Conc.cd", "Out.cd"));
+    Path expected = RESOURCE_ROOT.resolve(expectedPath);
+    return Files.isRegularFile(expected) ? Optional.of(expected) : Optional.empty();
+  }
+
+  public static Optional<String> noExpectedOutputReason(CDConcretizationTestCase testCase) {
+    String path = relativeConcretePath(testCase);
+    return Optional.ofNullable(
+        STRUCTURAL_ORACLE_EXCLUSIONS.getOrDefault(path, NO_EXPECTED_OUTPUT_REASONS.get(path)));
   }
 
   static String resolveRefPath(String concRelativePath) {

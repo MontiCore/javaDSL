@@ -1,6 +1,6 @@
 # Requirements Protocol
 
-Last updated: 11.07.2026
+Last updated: 13.07.2026
 
 ## Requirements
 
@@ -36,12 +36,14 @@ Last updated: 11.07.2026
 - [x] R-004: Keep `RegexUpdater` only for compatibility
   - Source/date: 12.06.2026
   - Details: Existing references to `RegexUpdater` should continue to compile,
-    but the class must delegate to the Spoon implementation instead of doing
-    whole-file `replaceAll` updates.
+    but the protected deprecated source is outside the supported adaptation
+    path. New and production updater work must use the Spoon-backed implementation.
   - Implemented: [x]
   - Addressed: [x]
   - Notes: New code depends on `SpoonUpdater` or the `CodeUpdater` interface.
-    The compatibility class must never perform source-wide regex rewriting.
+    `RegexUpdater.java` is intentionally preserved unchanged and still contains
+    its historical source-wide replacement behavior; it must not be configured
+    as the production updater.
 
 - [x] R-005: Keep updater implementations interchangeable
   - Source/date: 18.06.2026
@@ -176,16 +178,17 @@ Last updated: 11.07.2026
     validation, safe mapping workspaces, staging, cleanup, and transactional
     publication.
 
-- [x] R-017: Refactor classes larger than 500 lines
+- [ ] R-017: Refactor classes larger than 500 lines
   - Source/date: 23.06.2026
   - Details: Refactor classes that exceed 500 lines, especially `CodeAdapter`,
     `AdaptationConflictDetector`, `BasicUpdateHandler`, and `SpoonUpdater`.
     Split responsibilities into logical categories, helper classes, or dedicated
     strategy objects.
-  - Implemented: [x]
-  - Addressed: [x]
-  - Notes: All production Java classes are below 500 physical lines. The four
-    remaining hotspots are coordinators backed by coarse-grained collaborators:
+  - Implemented: [ ]
+  - Addressed: [ ]
+  - Notes: `AdaptationConflictDetector`, `BasicUpdateHandler`, and `SpoonUpdater`
+    were split by responsibility. `CodeAdapter` remains the one deferred class
+    above 500 physical lines. The remaining hotspots are coordinators backed by coarse-grained collaborators:
     handler symbol/member/type services, Spoon workspace/transformation/executable-repair/
     generation services, and one shared incarnation-context support class. All production
     sources compile against the project classpath. Focused regressions were
@@ -267,7 +270,7 @@ Last updated: 11.07.2026
     An original concrete-CD type may be represented by a minimal test stub only
     when one concrete package is unambiguous. Types introduced only through 
     reference-CD completion are not stubbed.
-    Therefore the example above must either become:
+    Therefore, the example above must either become:
 
     ```java
     package adapted.banking;
@@ -295,3 +298,84 @@ Last updated: 11.07.2026
     oracle has negative regressions for stale reference types and wrong-package
     concrete types, plus a positive regression for a legitimate original
     concrete-CD dependency supplied by an external generation step.
+
+- [x] R-023: Perform final pre-feature hardening and structural verification
+  - Source/date: 12.07.2026
+  - Details: Before adding further functionality, verify that everything works.
+  - Implemented: [x]
+  - Addressed: [x]
+  - Fixes:
+
+    1. **Compare the completion delta, not the complete golden CD.**
+       `*Out.cd` is the golden CD because it describes the expected CD
+       after completion. It contains both the original concrete model and the
+       elements added by completion. Comparing all of it with adapter output was
+       too broad because the adapter does not necessarily generate Java for
+       every pre-existing concrete model element.
+
+       ```text
+       Conc.cd: class Person; class ExistingInfrastructure;
+       Out.cd:  class Person { int age; } class ExistingInfrastructure;
+       ```
+
+       The oracle now checks additions and changes from `Conc.cd` to `Out.cd`.
+
+    2. **Project completed declarations into Java.**
+       cdconcretization changes the CD AST; it does not automatically edit the
+       Java AST or Spoon model. Previously, Java changes were driven mainly by
+       existing `@Adapt`-annotated Java declarations. A member introduced only
+       by CD completion had no Java template and could therefore disappear even
+       though the generated files still compiled.
+
+       ```text
+       Conc.cd before completion: class Teacher;
+       completed CD:             class Teacher extends Person { String room; }
+       old Java output:          class Teacher {}
+       corrected Java output:    class Teacher extends Person { String room; }
+       ```
+
+       `JavaTypeUpdateService` now computes the input-CD to completed-CD delta
+       and asks the updater to create or repair fields, methods, enum constants,
+       superclasses, and marker interfaces. Spoon can create these declarations
+       without requiring an existing Java declaration as a template.
+
+    3. **Handle declaration creation without a Java template.**
+       The first projection implementation passed `null` to mean "there is no
+       source method to clone", but method generation still tried to resolve
+       that nonexistent template. This caused one null-pointer root cause to
+       appear in many test cases. The generator now creates a fresh Spoon method
+       and a type-correct safe body when the template is absent.
+
+    4. **Preserve structural information during Java merges.**
+       Merging adapted and handwritten Java formerly combined fields and methods
+       but could discard inheritance, implemented interfaces, or enum constants.
+
+       The same merge now preserves a missing superclass and unions compatible
+       interfaces. A non-marker interface is not attached to a concrete Java
+       class if the completed CD does not provide implementations for its
+       abstract methods, because that would turn valid Java into uncompilable
+       Java.
+
+    5. **Rebuild indexes only when the CD actually changes.**
+       Completion mutates the cloned concrete CD, so its symbol table and index
+       must be rebuilt once after completion. Pattern applications then mutate
+       Java/Spoon models, not the CD, so they reuse that completed index.
+
+       ```text
+       input concrete CD -> input index
+       completion mutates CD -> rebuild symbols -> completed index
+       pattern A/B/C edit Java -> reuse completed index
+       ```
+
+    6. **Protect Java source boundaries.**
+       Malformed-import recovery now recognizes actual Java lexical regions. A
+       line resembling `import List<String>;` inside a block comment, string,
+       character literal, or text block is preserved; only a real malformed
+       import declaration is removed. Merge paths reject conflicting explicit
+       imports such as `a.User` and `b.User`. Concrete-file copying rejects two
+       different files that resolve to the same output path, while identical
+       duplicate content may be accepted deterministically.
+
+    7. **CDCompleter generates false outputs.**
+       Six supported fixtures have golden CDs containing expansion behavior not
+       produced by the current cdconcretization dependency.

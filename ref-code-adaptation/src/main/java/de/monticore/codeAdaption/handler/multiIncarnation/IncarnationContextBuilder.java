@@ -2,9 +2,9 @@ package de.monticore.codeAdaption.handler.multiIncarnation;
 
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconformance.CDConformanceChecker;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +18,10 @@ public class IncarnationContextBuilder {
 
   public IncarnationContextBuilder(
       CDConformanceChecker conformanceChecker,
-      ASTCDCompilationUnit referenceCD,
-      ASTCDCompilationUnit concreteCD) {
+      CDModelIndex referenceIndex,
+      CDModelIndex concreteIndex) {
     this.conformanceChecker = conformanceChecker;
-    this.support = new IncarnationContextSupport(referenceCD, concreteCD);
+    this.support = new IncarnationContextSupport(referenceIndex, concreteIndex);
   }
 
   /** Builds a checker context and fills checker gaps from explicit stereotypes. */

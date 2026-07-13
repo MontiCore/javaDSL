@@ -5,9 +5,11 @@ import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
+import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
@@ -76,7 +78,9 @@ final class JavaTypeUpdateService {
     List<ASTFieldDeclaration> templateFields = collector.getAllFieldDeclarations(templateType);
     List<ASTMethodDeclaration> templateMethods = collector.getAllMethodDeclarations(templateType);
     if (templateFields.isEmpty() || templateMethods.isEmpty()) {
-      removeTemplateMembers(templateType, templateFields, templateMethods);
+      // A plain type template (for example Observer -> Attacker) is still a complete source
+      // template. Builder expansion needs both a field and a method prototype, but the absence of
+      // either prototype must not erase the declarations that the renamed type already owns.
       return;
     }
 
@@ -180,7 +184,106 @@ final class JavaTypeUpdateService {
       }
       projectFields(type, concreteType.get(), collector);
       projectMethods(type, concreteType.get(), collector);
+      projectCompletionDelta(type, concreteType.get());
     }
+  }
+
+  private void projectCompletionDelta(ASTTypeDeclaration javaType, ASTCDType completedType) {
+    Optional<ASTCDType> inputType = handler.inputConIndex.type(completedType.getName());
+
+    for (ASTCDAttribute completedField : completedType.getCDAttributeList()) {
+      Optional<ASTCDAttribute> inputField =
+          inputType.flatMap(
+              type -> handler.inputConIndex.attribute(type.getName(), completedField.getName()));
+      String completedFieldType = JavaSourceNames.printNormalizedFieldType(completedField);
+      boolean unchanged =
+          inputField
+              .map(JavaSourceNames::printNormalizedFieldType)
+              .filter(completedFieldType::equals)
+              .isPresent();
+      if (!unchanged) {
+        handler.updater.addField(
+            javaType,
+            null,
+            completedField.getName(),
+            symbols.resolveConcreteCdType(completedFieldType),
+            completedField.getModifier().isStatic());
+      }
+    }
+
+    for (ASTCDMethod completedMethod : completedType.getCDMethodList()) {
+      String signature = JavaSourceNames.methodSignature(completedMethod);
+      Optional<ASTCDMethod> inputMethod =
+          inputType.flatMap(type -> handler.inputConIndex.method(type.getName(), signature));
+      String completedReturnType = JavaSourceNames.printNormalizedReturnType(completedMethod);
+      boolean unchanged =
+          inputMethod
+              .map(JavaSourceNames::printNormalizedReturnType)
+              .filter(completedReturnType::equals)
+              .isPresent();
+      if (!unchanged) {
+        handler.updater.addMethod(
+            javaType,
+            null,
+            completedMethod.getName(),
+            completedMethod.getCDParameterList().stream()
+                .map(ASTCDParameter::getMCType)
+                .map(JavaSourceNames::printNormalizedType)
+                .map(symbols::resolveConcreteCdType)
+                .toList(),
+            completedMethod.getCDParameterList().stream().map(ASTCDParameter::getName).toList(),
+            symbols.resolveConcreteCdType(completedReturnType),
+            completedMethod.getModifier().isStatic(),
+            MethodBodySpec.empty());
+      }
+    }
+
+    String inputSuperclass =
+        inputType.flatMap(CDTypeRelations::firstSuperclassName)
+            .map(JavaSourceNames::simpleName)
+            .orElse(null);
+    String completedSuperclass =
+        CDTypeRelations.firstSuperclassName(completedType)
+            .map(JavaSourceNames::simpleName)
+            .orElse(null);
+    if (completedSuperclass != null && !completedSuperclass.equals(inputSuperclass)) {
+      handler.updater.addSuperType(javaType, completedSuperclass, false);
+    }
+
+    Set<String> inputInterfaces =
+        inputType.stream()
+            .flatMap(type -> CDTypeRelations.interfaceNames(type).stream())
+            .map(JavaSourceNames::simpleName)
+            .collect(java.util.stream.Collectors.toSet());
+    CDTypeRelations.interfaceNames(completedType).stream()
+        .map(JavaSourceNames::simpleName)
+        .filter(interfaceName -> !inputInterfaces.contains(interfaceName))
+        // A class diagram may attach an interface without supplying its abstract contract. Adding
+        // such an interface to a concrete Java class would make otherwise valid output fail to
+        // compile. Contract-bearing interfaces remain an upstream completion responsibility.
+        .filter(this::isMarkerInterface)
+        .forEach(interfaceName -> handler.updater.addSuperType(javaType, interfaceName, true));
+
+    if (completedType instanceof ASTCDEnum completedEnum) {
+      Set<String> inputConstants =
+          inputType
+              .filter(ASTCDEnum.class::isInstance)
+              .map(ASTCDEnum.class::cast)
+              .stream()
+              .flatMap(type -> type.getCDEnumConstantList().stream())
+              .map(constant -> constant.getName())
+              .collect(java.util.stream.Collectors.toSet());
+      for (int index = 0; index < completedEnum.getCDEnumConstantList().size(); index++) {
+        String name = completedEnum.getCDEnumConstant(index).getName();
+        if (!inputConstants.contains(name)) {
+          handler.updater.addEnumConstant(javaType, name, index);
+        }
+      }
+    }
+  }
+
+  private boolean isMarkerInterface(String interfaceName) {
+    return handler.conIndex.type(interfaceName).map(type -> type.getCDMethodList().isEmpty()).orElse(false);
   }
 
   private void projectFields(

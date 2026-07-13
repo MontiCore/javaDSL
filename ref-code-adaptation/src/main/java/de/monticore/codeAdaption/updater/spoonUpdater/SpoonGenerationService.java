@@ -5,6 +5,7 @@ import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import spoon.reflect.code.CtAssignment;
@@ -17,6 +18,8 @@ import spoon.reflect.code.CtThisAccess;
 import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtField;
+import spoon.reflect.declaration.CtEnum;
+import spoon.reflect.declaration.CtEnumValue;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
@@ -45,11 +48,17 @@ final class SpoonGenerationService {
     requireName(newName, "Field name");
     requireName(newType, "Field type");
     CtType<?> spoonType = resolver.getSpoonType(targetType);
-    if (spoonType.getField(newName) != null) {
+    CtField<?> existingField = spoonType.getField(newName);
+    if (existingField != null) {
+      existingField.setType(workspace.createTypeReference(newType));
+      setStatic(existingField, isStatic);
       return;
     }
-    String templateName = templateField.getVariableDeclarator(0).getDeclarator().getName();
-    CtField<?> sourceField = spoonType.getField(templateName);
+    String templateName =
+        templateField == null
+            ? null
+            : templateField.getVariableDeclarator(0).getDeclarator().getName();
+    CtField<?> sourceField = templateName == null ? null : spoonType.getField(templateName);
     CtField<?> clone =
         sourceField == null ? workspace.factory().Core().createField() : sourceField.clone();
     clone.setSimpleName(newName);
@@ -73,6 +82,45 @@ final class SpoonGenerationService {
     resolver.cacheType(templateType, source);
   }
 
+  void addSuperType(
+      ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
+    requireName(superTypeName, "Supertype name");
+    CtType<?> target = resolver.getSpoonType(targetType);
+    CtTypeReference<?> reference = workspace.createTypeReference(superTypeName);
+    if (interfaceType || target.isInterface()) {
+      boolean present =
+          target.getSuperInterfaces().stream()
+              .anyMatch(
+                  existing ->
+                      JavaSourceNames.simpleName(existing.getQualifiedName())
+                          .equals(JavaSourceNames.simpleName(superTypeName)));
+      if (!present) {
+        target.addSuperInterface(reference);
+      }
+    } else {
+      target.setSuperclass(reference);
+    }
+  }
+
+  void addEnumConstant(
+      ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
+    requireName(constantName, "Enum constant name");
+    CtType<?> target = resolver.getSpoonType(targetType);
+    if (!(target instanceof CtEnum<?> enumType)) {
+      throw new IllegalStateException(target.getQualifiedName() + " is not an enum");
+    }
+    boolean present =
+        enumType.getEnumValues().stream()
+            .anyMatch(value -> constantName.equals(value.getSimpleName()));
+    if (!present) {
+      CtEnumValue value = workspace.factory().Core().createEnumValue();
+      value.setSimpleName(constantName);
+      List<CtEnumValue<?>> values = new ArrayList<>(enumType.getEnumValues());
+      values.add(Math.min(Math.max(expectedIndex, 0), values.size()), value);
+      enumType.setEnumValues(values);
+    }
+  }
+
   void addMethod(
       ASTTypeDeclaration targetType,
       ASTMethodDeclaration templateMethod,
@@ -85,7 +133,10 @@ final class SpoonGenerationService {
     validateMethodInput(newName, parameterTypes, parameterNames);
     Objects.requireNonNull(methodBody, "Method body specification must not be null");
     CtType<?> spoonType = resolver.getSpoonType(targetType);
-    if (hasMethod(spoonType, newName, parameterTypes)) {
+    CtMethod<?> existingMethod = findMethod(spoonType, newName, parameterTypes);
+    if (existingMethod != null) {
+      existingMethod.setType(workspace.createTypeReference(returnType));
+      setStatic(existingMethod, isStatic);
       return;
     }
     CtMethod<?> clone =
@@ -107,6 +158,9 @@ final class SpoonGenerationService {
     CtType<?> target = resolver.getSpoonType(targetType);
     if (target.isInterface()) {
       return true;
+    }
+    if (templateMethod == null) {
+      return false;
     }
     return resolver
         .findSpoonMethod(targetType, templateMethod)
@@ -136,10 +190,12 @@ final class SpoonGenerationService {
       boolean replacementBody) {
     CtType<?> target = resolver.getSpoonType(targetType);
     CtMethod<?> clone =
-        resolver
-            .findSpoonMethod(targetType, templateMethod)
-            .map(CtMethod::clone)
-            .orElseGet(() -> workspace.factory().Core().createMethod());
+        templateMethod == null
+            ? workspace.factory().Core().createMethod()
+            : resolver
+                .findSpoonMethod(targetType, templateMethod)
+                .map(CtMethod::clone)
+                .orElseGet(() -> workspace.factory().Core().createMethod());
     clone.setSimpleName(newName);
     boolean signatureArityChanged = clone.getParameters().size() != parameterNames.size();
     int sharedParameters = Math.min(clone.getParameters().size(), parameterNames.size());
@@ -235,7 +291,7 @@ final class SpoonGenerationService {
     return methodBody.kind() != MethodBodySpec.Kind.EMPTY;
   }
 
-  private boolean hasMethod(CtType<?> type, String name, List<String> parameterTypes) {
+  private CtMethod<?> findMethod(CtType<?> type, String name, List<String> parameterTypes) {
     for (CtMethod<?> method : type.getMethods()) {
       if (!name.equals(method.getSimpleName())
           || method.getParameters().size() != parameterTypes.size()) {
@@ -252,10 +308,10 @@ final class SpoonGenerationService {
         }
       }
       if (same) {
-        return true;
+        return method;
       }
     }
-    return false;
+    return null;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

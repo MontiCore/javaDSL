@@ -2,7 +2,6 @@ package de.monticore.codeAdaption.handler.multiIncarnation;
 
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -24,10 +23,9 @@ final class IncarnationContextSupport {
   private final CDModelIndex concreteIndex;
   private final ReferenceElementIndex referenceElements;
 
-  IncarnationContextSupport(
-      ASTCDCompilationUnit referenceCD, ASTCDCompilationUnit concreteCD) {
-    this.referenceIndex = CDModelIndex.of(referenceCD);
-    this.concreteIndex = CDModelIndex.of(concreteCD);
+  IncarnationContextSupport(CDModelIndex referenceIndex, CDModelIndex concreteIndex) {
+    this.referenceIndex = Objects.requireNonNull(referenceIndex, "referenceIndex");
+    this.concreteIndex = Objects.requireNonNull(concreteIndex, "concreteIndex");
     this.referenceElements = new ReferenceElementIndex(referenceIndex);
   }
 

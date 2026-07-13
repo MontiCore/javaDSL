@@ -31,6 +31,10 @@ public final class ConcretizationService {
         ArrayList<String> orderedMappings = new ArrayList<>(mappings);
         orderedMappings.sort(String::compareTo);
         completer.completeCD(completedCD, refCD, orderedMappings);
+        // Completion mutates the cloned AST by adding and repairing model elements. Rebuild its
+        // symbols before conformance/context construction so added fields, methods, types and
+        // inheritance relationships are visible through the same completed snapshot.
+        JavaLoader.initializeCDSymbolTable(completedCD);
         if (Log.getErrorCount() > errorsBefore) {
           String diagnostics =
               Log.getFindings().subList(findingsBefore, Log.getFindings().size()).stream()

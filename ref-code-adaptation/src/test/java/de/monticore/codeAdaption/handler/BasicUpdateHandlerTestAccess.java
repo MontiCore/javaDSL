@@ -3,6 +3,7 @@ package de.monticore.codeAdaption.handler;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.symboltable.ISymbol;
 import java.util.Map;
 import java.util.Optional;
@@ -21,8 +22,9 @@ public final class BasicUpdateHandlerTestAccess {
       ISymbol symbol) {
     BasicUpdateHandler handler =
         new BasicUpdateHandler(
-            reference,
-            concrete,
+            CDModelIndex.of(reference),
+            CDModelIndex.of(concrete),
+            CDModelIndex.of(concrete),
             null,
             null,
             null,

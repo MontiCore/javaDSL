@@ -19,6 +19,7 @@ import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.handler.BasicUpdateHandlerTestAccess;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.cddiff.CDDiffUtil;
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -136,7 +137,8 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
     assertTrue(checker.checkConformance(conCD, refCD, "ref"));
 
     IncarnationContext context =
-        new IncarnationContextBuilder(checker, refCD, conCD).buildContextForMapping("ref", false);
+        new IncarnationContextBuilder(checker, CDModelIndex.of(refCD), CDModelIndex.of(conCD))
+            .buildContextForMapping("ref", false);
 
     ASTCDType referenceCourse = findType(refCD, "Course");
     List<String> incarnations =
@@ -161,9 +163,11 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
     CDConformanceChecker checker = new CDConformanceChecker(confParameters);
 
     IncarnationContext checkerOnly =
-        new IncarnationContextBuilder(checker, refCD, conCD).buildContextForMapping("observer", false);
+        new IncarnationContextBuilder(checker, CDModelIndex.of(refCD), CDModelIndex.of(conCD))
+            .buildContextForMapping("observer", false);
     IncarnationContext manualFallback =
-        new IncarnationContextBuilder(checker, refCD, conCD).buildContextForMapping("observer", true);
+        new IncarnationContextBuilder(checker, CDModelIndex.of(refCD), CDModelIndex.of(conCD))
+            .buildContextForMapping("observer", true);
 
     assertTrue(checkerOnly.getMappings().isEmpty());
     assertFalse(manualFallback.getMappings().isEmpty());
@@ -305,7 +309,8 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
     } catch (Throwable ignored) {
       // The context builder must still overlay stereotypes when conformance is partial.
     }
-    return new IncarnationContextBuilder(checker, refCD, conCD).buildContextForMapping(mapping);
+    return new IncarnationContextBuilder(checker, CDModelIndex.of(refCD), CDModelIndex.of(conCD))
+        .buildContextForMapping(mapping);
   }
 
   private ASTCDType findType(ASTCDCompilationUnit cd, String name) {
