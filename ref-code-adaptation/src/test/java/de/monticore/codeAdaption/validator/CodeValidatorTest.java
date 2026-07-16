@@ -47,7 +47,7 @@ class CodeValidatorTest extends AdapterAbstractTest {
 
     String fileName = baseDir + "invalid/" + filename;
     ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(new File(fileName));
-    validator.runCoCosPhase1(ast, cd);
+    validator.runAdapterCoCos(ast, cd);
 
     Assertions.assertEquals(1, Log.getErrorCount());
     Assertions.assertTrue(Log.getFindings().get(0).getMsg().startsWith(errorCode));

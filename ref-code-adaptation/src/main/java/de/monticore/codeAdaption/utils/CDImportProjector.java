@@ -12,11 +12,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Projects external type imports declared by class diagrams into handwritten Java adapters. */
+/**
+ * Projects explicit non-{@code java.lang} imports from reference and concrete class diagrams into
+ * handwritten Java adapters.
+ *
+ * <p>This covers JDK and third-party/library types that Java adaptation cannot infer from a simple
+ * CD type name; it is not limited to Class2MC-generated imports.
+ */
 public final class CDImportProjector {
 
   private CDImportProjector() {}
 
+  /**
+   * Adds missing CD imports to every Java compilation unit without duplicating existing imports.
+   *
+   * @param javaUnits handwritten adapter compilation units to update
+   * @param classDiagrams class diagrams whose explicit imports are projected
+   */
   public static void project(
       Set<ASTOrdinaryCompilationUnit> javaUnits, ASTCDCompilationUnit... classDiagrams) {
     Map<String, ASTImportDeclaration> imports = parseImports(classDiagrams);

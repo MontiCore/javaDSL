@@ -17,13 +17,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/** Shared stable-key infrastructure for the two incarnation-context construction modes. */
-final class IncarnationContextSupport {
+/**
+ * Shared reference indexing, stereotype interpretation, mapping merge, and grouping selection for
+ * the two incarnation-context construction modes.
+ */
+final class IncarnationMappingSupport {
   private final CDModelIndex referenceIndex;
   private final CDModelIndex concreteIndex;
   private final ReferenceElementIndex referenceElements;
 
-  IncarnationContextSupport(CDModelIndex referenceIndex, CDModelIndex concreteIndex) {
+  IncarnationMappingSupport(CDModelIndex referenceIndex, CDModelIndex concreteIndex) {
     this.referenceIndex = Objects.requireNonNull(referenceIndex, "referenceIndex");
     this.concreteIndex = Objects.requireNonNull(concreteIndex, "concreteIndex");
     this.referenceElements = new ReferenceElementIndex(referenceIndex);

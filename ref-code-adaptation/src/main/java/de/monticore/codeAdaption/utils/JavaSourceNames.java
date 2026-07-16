@@ -20,11 +20,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-/** Shared Java/CD naming and type helpers used by the adapter pipeline. */
+/**
+ * Shared Java/CD naming and type operations with parser-first handling of qualified names,
+ * generics, arrays, primitives, wildcards, and the CD placeholder type {@code any}.
+ */
 public final class JavaSourceNames {
 
   private JavaSourceNames() {}
 
+  /**
+   * Extracts the simple leaf name from a Java type, qualified name, or method-like value.
+   *
+   * @return an empty string for {@code null}; otherwise the parser-derived or conservative fallback
+   *     simple name
+   */
   public static String simpleName(String name) {
     if (name == null) {
       return "";
@@ -38,10 +47,15 @@ public final class JavaSourceNames {
         .orElseGet(() -> fallbackSimpleName(trimmed));
   }
 
+  /** Alias for {@link #simpleName(String)} used when the input is known to be a type. */
   public static String simpleTypeName(String typeName) {
     return simpleName(typeName);
   }
 
+  /**
+   * Normalizes a printed Java/CD type to simple type names while preserving generic and array
+   * structure and translating {@code any} to {@code Object}.
+   */
   public static String normalizeType(String type) {
     String normalized = type == null ? "" : type.trim();
     if (normalized.isBlank()) {
@@ -53,18 +67,22 @@ public final class JavaSourceNames {
     return rendered;
   }
 
+  /** Renders and normalizes a non-void MontiCore type AST. */
   public static String printNormalizedType(ASTMCType type) {
     return TypeKey.from(type).normalized();
   }
 
+  /** Renders the normalized type of a CD attribute. */
   public static String printNormalizedFieldType(ASTCDAttribute attribute) {
     return printNormalizedType(attribute.getMCType());
   }
 
+  /** Renders the normalized return type, including {@code void}, of a CD method. */
   public static String printNormalizedReturnType(ASTCDMethod method) {
     return TypeKey.from(method.getMCReturnType()).normalized();
   }
 
+  /** Returns an owner-independent {@code name(type,...)} lookup key for a CD method. */
   public static String methodSignature(ASTCDMethod method) {
     List<String> parameters = new ArrayList<>();
     for (ASTCDParameter parameter : method.getCDParameterList()) {
@@ -73,10 +91,12 @@ public final class JavaSourceNames {
     return method.getName() + "(" + String.join(",", parameters) + ")";
   }
 
+  /** Delegates parser-based method-key normalization to {@link JavaMethodSignatures}. */
   public static String normalizeMethodSignature(String signature) {
     return JavaMethodSignatures.normalize(signature);
   }
 
+  /** Uppercases the first character without changing the remainder. */
   public static String capitalize(String value) {
     if (value == null || value.isEmpty()) {
       return value;
@@ -84,6 +104,7 @@ public final class JavaSourceNames {
     return Character.toUpperCase(value.charAt(0)) + value.substring(1);
   }
 
+  /** Lowercases the first character without changing the remainder. */
   public static String uncapitalize(String value) {
     if (value == null || value.isEmpty()) {
       return value;
@@ -91,6 +112,7 @@ public final class JavaSourceNames {
     return Character.toLowerCase(value.charAt(0)) + value.substring(1);
   }
 
+  /** Returns the number of path segments in a normalized source file name. */
   public static int pathDepth(String fileName) {
     if (fileName == null || fileName.isBlank()) {
       return 0;
@@ -156,6 +178,10 @@ public final class JavaSourceNames {
     return fallbackSimpleName(compact);
   }
 
+  /**
+   * Boxes primitive generic type arguments through the type parser while preserving malformed input
+   * unchanged.
+   */
   public static String boxPrimitiveTypeArguments(String rendered) {
     return parseTypeKey(rendered == null ? "" : rendered.trim())
         .map(TypeKey::normalized)
@@ -163,6 +189,7 @@ public final class JavaSourceNames {
   }
 
   private static String fallbackSimpleName(String value) {
+    // This path is deliberately conservative and runs only when JavaDSL cannot parse the input.
     String simple = value.trim();
     while (simple.endsWith("[]")) {
       simple = simple.substring(0, simple.length() - 2).trim();

@@ -29,7 +29,13 @@ import spoon.reflect.reference.CtParameterReference;
 import spoon.reflect.reference.CtVariableReference;
 import spoon.refactoring.Refactoring;
 
-/** Generates, clones and removes Spoon declarations. */
+/**
+ * Creates, clones, completes, and removes Spoon declarations and constructs supported method
+ * bodies.
+ *
+ * <p>It does not rename existing declarations or rewrite references; those mutations belong to
+ * {@link SpoonTransformationService}.
+ */
 final class SpoonGenerationService {
   private final SpoonWorkspace workspace;
   private final SpoonElementResolver resolver;

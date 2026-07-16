@@ -5,12 +5,8 @@ import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtMethod;
@@ -20,41 +16,49 @@ import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 
-/** Repairs executable references and signatures after declaration and type transformations. */
+/**
+ * Repairs executable references and signatures after declaration and type transformations.
+ *
+ * <p>This service runs after grouping and declaration rewrites. It resolves overloads by stable
+ * owner/signature keys and uses guarded no-classpath fallbacks where Spoon cannot resolve a
+ * declaration.
+ */
 final class SpoonExecutableRepairService {
   private final SpoonWorkspace workspace;
   private final SpoonElementResolver resolver;
-  private final Map<String, Set<List<String>>> legacyMethodSignatures = new LinkedHashMap<>();
-  private final Map<StableElementKey, StableElementKey> methodRewrites = new LinkedHashMap<>();
+  private final ExecutableRewriteRegistry rewriteRegistry = new ExecutableRewriteRegistry();
 
+  /** Creates an executable repair phase over the currently loaded Spoon workspace. */
   SpoonExecutableRepairService(SpoonWorkspace workspace, SpoonElementResolver resolver) {
     this.workspace = workspace;
     this.resolver = resolver;
   }
 
+  /** Clears all method signatures and stable-key rewrites registered for the previous pass. */
   void reset() {
-    legacyMethodSignatures.clear();
-    methodRewrites.clear();
+    rewriteRegistry.clear();
   }
 
+  /**
+   * Registers an owner-independent concrete signature used by legacy update calls. Duplicate
+   * normalized signatures are collapsed by the registry.
+   */
   void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
     if (methodName != null && !methodName.isBlank() && parameterTypes != null) {
-      legacyMethodSignatures
-          .computeIfAbsent(methodName, ignored -> new LinkedHashSet<>())
-          .add(normalizedTypes(parameterTypes));
+      rewriteRegistry.registerConcreteSignature(methodName, parameterTypes);
     }
   }
 
+  /** Registers an owner- and signature-aware reference-method to concrete-method rewrite. */
   void registerMethodRewrite(StableElementKey reference, StableElementKey concrete) {
-    if (reference == null
-        || concrete == null
-        || reference.getKind() != StableElementKey.Kind.METHOD
-        || concrete.getKind() != StableElementKey.Kind.METHOD) {
-      throw new IllegalArgumentException("Method rewrites require two method keys");
-    }
-    methodRewrites.put(reference, concrete);
+    rewriteRegistry.registerRewrite(reference, concrete);
   }
 
+  /**
+   * Resolves a source method to its Spoon declaration and captures only the invocations that target
+   * that declaration. Capturing happens before the declaration is renamed so unresolved invocation
+   * names can be updated afterward without affecting unrelated overloads.
+   */
   MethodRename planMethodRename(
       ASTTypeDeclaration sourceType, ASTMethodDeclaration sourceMethod) {
     CtMethod<?> target = resolver.getSpoonMethod(sourceType, sourceMethod);
@@ -72,15 +76,25 @@ final class SpoonExecutableRepairService {
     return new MethodRename(target, List.copyOf(invocations));
   }
 
+  /** Applies a planned new name to the captured invocation executable references. */
   void renameInvocations(MethodRename rename, String newName) {
     rename.invocations().forEach(invocation -> invocation.getExecutable().setSimpleName(newName));
   }
 
+  /**
+   * Performs the final executable repair phase before printing: concrete invocation signatures are
+   * applied first, then illegal bodies are removed from abstract interface methods.
+   */
   void prepareForPrint(Map<String, String> groupingMappings) {
     applyConcreteMethodSignatures(groupingMappings);
     enforceInterfaceMethodBodies();
   }
 
+  /**
+   * Tests whether an invocation targets a selected method using, in order, resolved declaration
+   * identity, executable declaring-type identity, and a lexical owner/superclass fallback for
+   * Spoon's no-classpath mode.
+   */
   private boolean invokesMethodOn(
       CtInvocation<?> invocation, CtMethod<?> target, CtType<?> owner) {
     try {
@@ -111,8 +125,12 @@ final class SpoonExecutableRepairService {
         && sameTypeName(superclass.getQualifiedName(), owner.getQualifiedName());
   }
 
+  /**
+   * Reconciles every invocation with its registered concrete method signature. It renames resolved
+   * targets and adds missing arguments, but rejects calls that already supply too many arguments.
+   */
   private void applyConcreteMethodSignatures(Map<String, String> groupingMappings) {
-    if (legacyMethodSignatures.isEmpty() && methodRewrites.isEmpty()) {
+    if (rewriteRegistry.isEmpty()) {
       return;
     }
     for (CtInvocation<?> invocation :
@@ -139,6 +157,10 @@ final class SpoonExecutableRepairService {
     }
   }
 
+  /**
+   * Supplies a missing concrete argument from the unique compatible enclosing parameter, or uses
+   * the Java default value when no unique parameter is available.
+   */
   @SuppressWarnings({"rawtypes", "unchecked"})
   private CtExpression<?> missingArgument(CtInvocation<?> invocation, String parameterType) {
     CtMethod<?> enclosingMethod = invocation.getParent(CtMethod.class);
@@ -157,19 +179,23 @@ final class SpoonExecutableRepairService {
     return workspace.defaultExpression(parameterType);
   }
 
+  /**
+   * Selects the unique stable-key rewrite matching invocation name, owner, and argument types.
+   * Null-literal argument types act as wildcards because Spoon cannot infer their target type.
+   */
   private StableElementKey findConcreteRewriteTarget(
       CtInvocation<?> invocation,
       String methodName,
       Map<String, String> groupingMappings) {
-    if (methodName == null || methodRewrites.isEmpty()) {
+    if (methodName == null || !rewriteRegistry.hasRewrites()) {
       return null;
     }
     String owner = ownerName(invocation);
     List<String> invocationTypes = invocationArgumentTypes(invocation);
     List<StableElementKey> matches = new ArrayList<>();
-    for (Map.Entry<StableElementKey, StableElementKey> rewrite : methodRewrites.entrySet()) {
-      StableElementKey reference = rewrite.getKey();
-      StableElementKey concrete = rewrite.getValue();
+    for (ExecutableRewriteRegistry.MethodRewrite rewrite : rewriteRegistry.rewrites()) {
+      StableElementKey reference = rewrite.reference();
+      StableElementKey concrete = rewrite.concrete();
       if ((!methodName.equals(reference.getName()) && !methodName.equals(concrete.getName()))
           || !ownerMatches(owner, reference, concrete, groupingMappings)) {
         continue;
@@ -194,6 +220,7 @@ final class SpoonExecutableRepairService {
     return null;
   }
 
+  /** Returns whether an invocation owner matches the reference, concrete, or grouping owner. */
   private static boolean ownerMatches(
       String owner,
       StableElementKey reference,
@@ -211,6 +238,7 @@ final class SpoonExecutableRepairService {
         || sameTypeName(owner, groupedOwner);
   }
 
+  /** Compares normalized parameter types, treating unknown actual argument types as compatible. */
   private static boolean signatureMatches(List<String> expected, List<String> actual) {
     if (expected.size() != actual.size()) {
       return false;
@@ -225,6 +253,10 @@ final class SpoonExecutableRepairService {
     return true;
   }
 
+  /**
+   * Returns normalized invocation argument types; unresolved and Spoon {@code <nulltype>} values
+   * are represented as {@code null}.
+   */
   private static List<String> invocationArgumentTypes(CtInvocation<?> invocation) {
     List<String> result = new ArrayList<>();
     for (CtExpression<?> argument : invocation.getArguments()) {
@@ -239,16 +271,22 @@ final class SpoonExecutableRepairService {
     return result;
   }
 
+  /**
+   * Returns legacy parameters only when one signature and at most one concrete target use the
+   * method name.
+   */
   private List<String> unambiguousLegacyParameters(String methodName) {
-    Set<List<String>> signatures = legacyMethodSignatures.get(methodName);
-    if (signatures == null || signatures.size() != 1) {
+    List<String> parameters = rewriteRegistry.unambiguousLegacyParameters(methodName);
+    if (parameters == null) {
       return null;
     }
-    long count =
-        methodRewrites.values().stream().filter(key -> methodName.equals(key.getName())).count();
-    return count <= 1 ? signatures.iterator().next() : null;
+    return rewriteRegistry.concreteTargetsNamed(methodName) <= 1 ? parameters : null;
   }
 
+  /**
+   * Resolves an invocation owner from its executable, its explicit target, or finally the lexical
+   * enclosing type.
+   */
   private static String ownerName(CtInvocation<?> invocation) {
     try {
       if (invocation.getExecutable() != null
@@ -269,6 +307,7 @@ final class SpoonExecutableRepairService {
     return parent == null ? null : parent.getQualifiedName();
   }
 
+  /** Removes bodies from non-default, non-static, non-private interface methods. */
   private void enforceInterfaceMethodBodies() {
     for (CtType<?> type : workspace.model().getAllTypes()) {
       if (!type.isInterface()) {
@@ -284,10 +323,7 @@ final class SpoonExecutableRepairService {
     }
   }
 
-  private static List<String> normalizedTypes(List<String> types) {
-    return types.stream().map(JavaSourceNames::normalizeType).collect(Collectors.toList());
-  }
-
+  /** Compares qualified names when available and otherwise accepts equal simple type names. */
   private static boolean sameTypeName(String first, String second) {
     if (first == null || second == null) {
       return false;
@@ -296,5 +332,6 @@ final class SpoonExecutableRepairService {
         || JavaSourceNames.simpleName(first).equals(JavaSourceNames.simpleName(second));
   }
 
+  /** Method declaration and invocations resolved to it before the rename. */
   record MethodRename(CtMethod<?> target, List<CtInvocation<?>> invocations) {}
 }

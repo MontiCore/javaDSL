@@ -14,42 +14,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/***
- * this class execute the update operation in the reference code.
+/**
+ * Technology-neutral mutation facade used to transform one loaded handwritten Java model.
+ *
+ * <p>Implementations must update declarations and their uses consistently. Default methods fail
+ * explicitly when an implementation does not support a generation or cleanup capability.
  */
 public interface CodeUpdater {
-  /***
-   * set the path to the referenceCode.
-   * @param path the path.
+  /**
+   * Loads the Java source tree that subsequent operations mutate.
+   *
+   * @param path source directory
    */
   void setCodePath(Path path);
 
-  /***
-   * print the current state of the reference code as set of files.
-   * @return the code as files
+  /**
+   * Prints the current model into the configured output directory.
+   *
+   * @return generated Java files
    */
   Set<File> printCode();
 
-  /***
-   * change the name of a type in the reference code. By the declaration
-   * an all its reference an uses.
+  /**
+   * Renames a type declaration and all resolvable references and uses.
+   *
    * @param srcType the source type to replace.
    * @param newName the new name of the type.
    */
   void updateType(ASTTypeDeclaration srcType, String newName);
 
-  /***
-   * change the name of a method in the reference code. By the declaration
-   * an all its reference an uses.
+  /**
+   * Renames a method declaration and the invocations resolved to that method.
+   *
    * @param srcType the source-type  that contains the method-declaration.
    * @param srcMethod the source method.
-   * @param newName the new name of the type.
+   * @param newName the new name of the method
    */
   void updateMethod(ASTTypeDeclaration srcType, ASTMethodDeclaration srcMethod, String newName);
 
-  /***
-   * change the name of a field in the reference code. By its declaration
-   * an all its references an uses.
+  /**
+   * Renames a field declaration and all resolvable accesses.
+   *
    * @param srcType the source-type that contains the field-declaration
    * @param srcField the source Field.
    * @param newName the new name of the field.
@@ -66,9 +71,9 @@ public interface CodeUpdater {
     throw unsupported("updateAssociationRole");
   }
 
-  /***
-   * change the name of a local-variable in the reference code. By its declaration
-   * an all its references an uses.
+  /**
+   * Renames a local variable declaration and all resolvable uses in its method.
+   *
    * @param srcType the source-type that contains the local variable.
    * @param srcMethod the source method tha contains le local variable.
    * @param sourceVar the source local variable.
@@ -80,9 +85,9 @@ public interface CodeUpdater {
       ASTLocalVariableDeclaration sourceVar,
       String newName);
 
-  /***
-   * change the name of a local-variable in the reference code. By it declaration
-   * and all its references an uses
+  /**
+   * Renames a method parameter declaration and all resolvable uses.
+   *
    * @param srcType the source type that contains the local parameter
    * @param srcMethod the source method that contains le the parameter
    * @param srcParam the source parameter
@@ -94,18 +99,27 @@ public interface CodeUpdater {
       ASTFormalParameter srcParam,
       String newName);
 
-  /***
-   * Update all types that are not present in the reference code.
+  /**
+   * Rewrites references to a CD type that has no Java declaration in the handwritten model.
+   *
    * @param cdType type  in the reference class diagram to update in the reference code.
    * @param newName new name of the type.
    */
   void updateCDType(ASTCDType cdType, String newName);
-  /***
-   * set the output directory of the code by printing.
+  /**
+   * Sets the destination used by {@link #printCode()}.
+   *
    * @param outputPath the output directory
    */
   void setOutputDirectory(Path outputPath);
 
+  /**
+   * Renames one declared superclass or interface reference on a Java type.
+   *
+   * @param type Java type that owns the relationship
+   * @param supertype source supertype AST
+   * @param newName concrete supertype name
+   */
   void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName);
 
   /**
@@ -211,10 +225,15 @@ public interface CodeUpdater {
         getClass().getName() + " does not support updater operation: " + operation);
   }
 
+  /** Immutable description of the small generated method-body forms supported by the updater. */
   final class MethodBodySpec {
+    /** Supported generated method-body shapes. */
     public enum Kind {
+      /** Preserve a cloned body or synthesize a safe empty/default body. */
       EMPTY,
+      /** Assign one parameter to a field and return {@code this}. */
       ASSIGN_FIELD_AND_RETURN_THIS,
+      /** Return a newly constructed value using selected fields as arguments. */
       RETURN_NEW
     }
 
@@ -240,15 +259,18 @@ public interface CodeUpdater {
               : java.util.List.copyOf(constructorFieldArguments);
     }
 
+    /** Returns a specification that requests no structured replacement body. */
     public static MethodBodySpec empty() {
       return new MethodBodySpec(Kind.EMPTY, null, null, null, java.util.List.of());
     }
 
+    /** Returns a builder-style field-assignment specification. */
     public static MethodBodySpec assignFieldAndReturnThis(String fieldName, String parameterName) {
       return new MethodBodySpec(
           Kind.ASSIGN_FIELD_AND_RETURN_THIS, fieldName, parameterName, null, java.util.List.of());
     }
 
+    /** Returns a specification that constructs and returns the requested type. */
     public static MethodBodySpec returnNew(
         String constructorType, java.util.List<String> fieldArguments) {
       return new MethodBodySpec(Kind.RETURN_NEW, null, null, constructorType, fieldArguments);

@@ -19,16 +19,32 @@ import java.util.Set;
  */
 public class ManualIncarnationContextBuilder {
   private final Set<CDConfParameter> confParams;
-  private final IncarnationContextSupport support;
+  private final IncarnationMappingSupport support;
 
+  /**
+   * Creates a manual builder for one reference/concrete model pair.
+   *
+   * @param referenceIndex index used to resolve referenced types and members
+   * @param concreteIndex index whose elements become concrete incarnations
+   * @param confParams mapping policies; {@link CDConfParameter#NAME_MAPPING} enables deterministic
+   *     same-name fallback when no explicit stereotype is present
+   */
   public ManualIncarnationContextBuilder(
       CDModelIndex referenceIndex,
       CDModelIndex concreteIndex,
       Set<CDConfParameter> confParams) {
     this.confParams = confParams;
-    this.support = new IncarnationContextSupport(referenceIndex, concreteIndex);
+    this.support = new IncarnationMappingSupport(referenceIndex, concreteIndex);
   }
 
+  /**
+   * Builds one immutable mapping context without invoking conformance or concretization.
+   * Resolution order is explicit type/member stereotypes, optional same-name mapping, and finally
+   * expansion of reference-side {@code forEach} stereotypes.
+   *
+   * @param mapping stereotype name to read from concrete CD elements
+   * @return assembled incarnation and grouping context
+   */
   public IncarnationContext buildContextForMapping(String mapping) {
     Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = support.newMapping();
     collectTypeMappings(mapping, mappings);
@@ -37,6 +53,7 @@ public class ManualIncarnationContextBuilder {
     return support.assembleContext(mapping, mappings);
   }
 
+  /** Collects explicit or same-name mappings from reference type keys to concrete types. */
   private void collectTypeMappings(
       String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType concreteType : support.concreteIndex().types()) {
@@ -53,6 +70,10 @@ public class ManualIncarnationContextBuilder {
     }
   }
 
+  /**
+   * Collects field and method mappings inside the reference owners already selected for each
+   * concrete type. Explicit stereotypes take precedence over same-name/signature matching.
+   */
   private void collectMemberMappings(
       String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType concreteType : support.concreteIndex().types()) {
@@ -84,7 +105,11 @@ public class ManualIncarnationContextBuilder {
     }
   }
 
-  /** Expands manual {@code <<forEach="...">>} mappings from already-known incarnations. */
+  /**
+   * Expands manual {@code <<forEach="...">>} mappings from already-known incarnations. A
+   * {@code forEach} reference may copy a type/member mapping directly or derive concrete accessor
+   * method names from a mapped field.
+   */
   private void collectForEachMappings(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType referenceType : support.referenceIndex().types()) {
@@ -129,6 +154,10 @@ public class ManualIncarnationContextBuilder {
     }
   }
 
+  /**
+   * Finds concrete methods corresponding to a {@code forEach} method whose target is a mapped
+   * field, accepting the supported exact and camel-case name substitutions.
+   */
   private void collectForEachMethods(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings,
       StableElementKey targetField,
@@ -162,6 +191,7 @@ public class ManualIncarnationContextBuilder {
     }
   }
 
+  /** Copies all concrete incarnations of one stable reference key to another reference key. */
   private void copyIncarnations(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings,
       StableElementKey target,
@@ -175,6 +205,10 @@ public class ManualIncarnationContextBuilder {
     }
   }
 
+  /**
+   * Produces candidate concrete method names by replacing a complete reference-name segment while
+   * preserving its capitalization form.
+   */
   private Set<String> forEachMethodNames(
       String methodName, String referenceTarget, String concreteTarget) {
     Set<String> result = new LinkedHashSet<>();
@@ -198,6 +232,10 @@ public class ManualIncarnationContextBuilder {
     return result;
   }
 
+  /**
+   * Replaces only a complete camel-case name segment. For example, replacing {@code User} in
+   * {@code findUserById} yields {@code findCustomerById}, but replacing {@code Us} yields no match.
+   */
   private static Optional<String> replaceNameSegment(
       String name, String referenceSegment, String concreteSegment) {
     if (name == null
@@ -221,6 +259,7 @@ public class ManualIncarnationContextBuilder {
     return changed ? Optional.of(rewritten.toString()) : Optional.empty();
   }
 
+  /** Splits a camel-case or acronym-containing Java identifier into capitalization segments. */
   private static List<String> splitNameSegments(String name) {
     List<String> result = new ArrayList<>();
     int start = 0;

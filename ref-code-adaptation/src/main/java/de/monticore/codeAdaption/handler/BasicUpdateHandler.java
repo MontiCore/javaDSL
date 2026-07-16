@@ -63,7 +63,8 @@ public final class BasicUpdateHandler {
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
     this.symbolResolver =
         new ConcreteSymbolResolver(this, refIndex.cd(), conIndex.cd());
-    this.memberUpdates = new JavaMemberUpdateService(this, symbolResolver);
+    this.memberUpdates =
+        new JavaMemberUpdateService(validator, updater, refIndex, conIndex, symbolResolver);
     this.typeUpdates = new JavaTypeUpdateService(this, symbolResolver, memberUpdates);
   }
 

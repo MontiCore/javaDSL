@@ -290,11 +290,9 @@ cannot implement Spoon-backed generation behavior.
 `CodeUpdaterMill` owns one synchronized updater provider and one current updater
 instance. `init()` restores Spoon, `init(Supplier)` configures an interchangeable
 implementation, `getUpdater()` lazily creates the updater for one pass, and
-`reset()` discards that instance while retaining its provider. The mill does not
-use thread-local state because complete adaptations are serialized around the
-process-global MontiCore mills and symbol scopes. `MappingAdaptationRunner` and
-`OutputCodeService` own exception-safe reset boundaries for isolated passes and
-final cleanup respectively.
+`reset()` discards that instance while retaining its provider.
+`MappingAdaptationRunner` and `OutputCodeService` own exception-safe reset
+boundaries for isolated passes and final cleanup respectively.
 
 ### `de.monticore.codeAdaption.updater.spoonUpdater`
 
@@ -315,7 +313,8 @@ Spoon-specific responsibilities stay in this package:
 - `SpoonWorkspace` owns model/factory lifecycle, printing, cleanup, and shared
   type-reference construction.
 - `SpoonTransformationService` owns declaration and variable renames, grouping, and
-  type-reference transformations.
+  type-reference mutations. It uses the workspace's type-reference factory but owns replacement
+  policy because replacement changes an existing model.
 - `SpoonExecutableRepairService` owns invocation renames, overload-aware method rewrites,
   concrete signature repair, and interface executable validity.
 - `SpoonGenerationService` owns type/member creation, method bodies, and removal.
@@ -408,8 +407,7 @@ The main workflow has these phases:
 
 The workflow protects user output by performing conflict detection before
 staging and replacing output only after every mapping and cleanup phase
-succeeds. Complete `CodeAdapter.adapt(...)` calls are serialized because the
-MontiCore mills and symbol scopes used throughout a run are process-global.
+succeeds.
 
 ## Manual Mode and Concretization Mode
 
@@ -489,9 +487,9 @@ line slicing. The current refactoring state is:
 | `SpoonTransformationService` | Spoon declaration/variable renames, grouping rewrites, and type-reference transformations | About 376 lines after executable repair was separated. It retains the lazy type-reference indexes and resolved-library safeguards. |
 | `SpoonExecutableRepairService` | Invocation and concrete-signature repair | About 300 lines. It shares the workspace/resolver, treats resolved overload declarations as authoritative, and owns no duplicate type or grouping cache. |
 | `IncarnationContext` | Immutable stable-key incarnation and grouping lookup | About 70 lines. Owns the only runtime incarnation representation; MontiCore symbols are mapped-element payload only. |
-| `IncarnationContextBuilder` | Conformance mappings with optional stereotype overlay | About 140 lines. Populates the stable-key context directly through `IncarnationContextSupport`. |
+| `IncarnationContextBuilder` | Conformance mappings with optional stereotype overlay | About 140 lines. Populates the stable-key context directly through `IncarnationMappingSupport`. |
 | `ManualIncarnationContextBuilder` | Non-mutating manual and `forEach` mapping construction | About 240 lines. Uses stable-key lookups throughout, including `forEach` expansion. |
-| `IncarnationContextSupport` | Shared stable-key mapping, stereotype, reference-index, and grouping infrastructure | About 380 lines. It builds one canonical map and one immutable implementer-to-grouping index; it has no symbol-identity registry. |
+| `IncarnationMappingSupport` | Shared stable-key mapping, stereotype, reference-index, and grouping infrastructure | About 380 lines. It builds one canonical map and one immutable implementer-to-grouping index; it has no symbol-identity registry. |
 
 Most production Java classes are below the 500-physical-line target. R-017 remains
 open because `CodeAdapter` is the known deferred exception; its next split should

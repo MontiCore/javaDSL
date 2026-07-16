@@ -20,13 +20,19 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-/***
- * helper functions of the matcher.
- */
-public class MatcherHelper {
+/** Creates matching results and applies the naming templates shared by matcher strategies. */
+public final class MatcherHelper {
 
+  private MatcherHelper() {}
+
+  /**
+   * Creates an executable matching from a name template and its ordered reference symbols.
+   *
+   * @param template template later expanded with concrete incarnation names
+   * @param references symbols consumed by the template in encounter order
+   * @return non-ignored matching ready for name generation
+   */
   public static CodeMatching mkMatching(String template, List<ISymbol> references) {
     CodeMatching matching = new CodeMatching();
 
@@ -36,6 +42,10 @@ public class MatcherHelper {
     return matching;
   }
 
+  /**
+   * Decodes one {@code @Adapt} annotation into a matching and resolves its textual references in
+   * the supplied reference CD. Unresolvable references are warned about and omitted.
+   */
   public static CodeMatching mkMatchingFromAnnotation(
       ASTMCModifier annotation, ASTCDCompilationUnit cd) {
     // init visitor and traverser
@@ -64,6 +74,11 @@ public class MatcherHelper {
     return matching;
   }
 
+  /**
+   * Creates an infix-based matching when at least one candidate symbol occurs in the source name.
+   * Redundant references are removed before the replacement template and positional symbol order
+   * are calculated.
+   */
   public static Optional<CodeMatching> mkMatchingFromInfixRef(
       List<ISymbol> references, String srcName) {
 
@@ -77,6 +92,13 @@ public class MatcherHelper {
     return Optional.empty();
   }
 
+  /**
+   * Replaces occurrences of reference names in a source identifier with matcher placeholders while
+   * preserving whether the occurrence starts with upper or lower case.
+   *
+   * <p>For example, reference {@code Person} turns {@code PersonRepository} into
+   * {@code ${}Repository} and {@code personRepository} into {@code ${uncap_first}Repository}.
+   */
   public static String mkTemplateFormInfix(String name, List<ISymbol> infixList) {
     String template = name;
 
@@ -98,12 +120,22 @@ public class MatcherHelper {
     return template;
   }
 
+  /**
+   * Selects non-overlapping reference-name occurrences and returns their symbols in source order.
+   * Longer candidate names win when two candidates overlap.
+   *
+   * <p>For {@code UserRepositoryFactory} with candidates {@code User}, {@code Repository}, and
+   * {@code UserRepository}, the result starts with {@code UserRepository}; the overlapping
+   * {@code User} and {@code Repository} candidates are omitted.
+   */
   public static List<ISymbol> cleanReferences(String name, List<ISymbol> infixList) {
     String lowerName = name.toLowerCase(Locale.ROOT);
     Map<Integer, List<ISymbol>> refsByPosition = new TreeMap<>();
     List<ISymbol> longestFirst = new ArrayList<>(infixList);
     longestFirst.sort(
         Comparator.comparingInt((ISymbol symbol) -> symbol.getName().length()).reversed());
+    // Prefer longer symbols and reserve their character ranges. Ordinary substring helpers can
+    // locate occurrences, but they do not provide this deterministic non-overlap policy.
     boolean[] occupied = new boolean[name.length()];
     for (ISymbol reference : longestFirst) {
       String infix = reference.getName().toLowerCase(Locale.ROOT);
@@ -132,6 +164,7 @@ public class MatcherHelper {
     return result;
   }
 
+  /** Returns the adapter annotation among JavaDSL Java modifiers, if present. */
   public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
     for (ASTJavaModifier mod : mods) {
       if (mod instanceof ASTJavaAnnotation
@@ -142,6 +175,7 @@ public class MatcherHelper {
     return Optional.empty();
   }
 
+  /** Returns the adapter annotation among JavaLight modifiers, if present. */
   public static Optional<ASTAnnotation> getInfoAnnotation(List<ASTMCModifier> mods) {
 
     for (ASTMCModifier mod : mods) {
@@ -153,11 +187,16 @@ public class MatcherHelper {
     return Optional.empty();
   }
 
-  /***
-   * fill template with the reference.
-   * @param template the template.
-   * @param refSymbol the template arguments
-   * @return the generated String.
+  /**
+   * Replaces matcher placeholders with reference-symbol names from left to right.
+   *
+   * <p>{@code ${}} inserts the symbol name, {@code ${cap_first}} capitalizes its first character,
+   * and {@code ${uncap_first}} lowercases its first character. Every placeholder consumes one
+   * symbol. Placeholders without a corresponding symbol remain unchanged.
+   *
+   * @param template the validation or generation name template
+   * @param refSymbol reference symbols consumed in placeholder order
+   * @return the expanded template, or the original value for null/empty inputs
    */
   public static String fillTemplate(String template, List<ISymbol> refSymbol) {
     if (template == null || template.isEmpty() || refSymbol == null || refSymbol.isEmpty()) {
@@ -188,14 +227,20 @@ public class MatcherHelper {
     return result.toString();
   }
 
+  /** Returns {@code str} with its first character upper-cased, preserving null and empty values. */
   public static String capFirst(String str) {
     return JavaSourceNames.capitalize(str);
   }
 
+  /** Returns {@code str} with its first character lower-cased, preserving null and empty values. */
   public static String uncapFirst(String str) {
     return JavaSourceNames.uncapitalize(str);
   }
 
+  /**
+   * Resolves CD type symbols whose names occur both in a variable name and its declared Java type.
+   * This avoids treating a type mentioned only in a generic declaration as a variable-name match.
+   */
   public static List<ISymbol> resolveReferencesFromType(
       String varName, ASTMCType type, ASTCDCompilationUnit cd) {
 
@@ -211,11 +256,17 @@ public class MatcherHelper {
     return refList;
   }
 
+  /**
+   * Removes duplicate symbols and shorter names contained in longer reference names. The returned
+   * list is a copy and the input collection is never mutated.
+   */
   public static List<ISymbol> cleanReferences(List<ISymbol> references) {
     if (references.isEmpty() || references.size() == 1) {
       return new ArrayList<>(references);
     }
 
+    // Remove duplicates first, then remove shorter reference names embedded in longer references;
+    // for example, User is redundant when UserRepository is already a reference.
     List<ISymbol> result = new ArrayList<>(new LinkedHashSet<>(references));
     List<ISymbol> snapshot = new ArrayList<>(result);
     for (ISymbol symbol : snapshot) {
@@ -230,11 +281,13 @@ public class MatcherHelper {
     return result;
   }
 
+  /** Accepts both the annotation's simple and fully qualified names. */
   private static boolean isAdaptAnnotationName(String qualifiedName) {
     return ANNOT_NAME.equals(qualifiedName) || ANNOT_PACKAGE.equals(qualifiedName);
   }
 
+  /** Performs a locale-independent, case-insensitive infix test. */
   public static boolean matchInfix(String element, String infix) {
-    return element.toLowerCase().contains(infix.toLowerCase());
+    return element.toLowerCase(Locale.ROOT).contains(infix.toLowerCase(Locale.ROOT));
   }
 }

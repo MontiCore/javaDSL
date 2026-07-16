@@ -31,10 +31,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 
+/**
+ * File-system and parser utilities for the JavaDSL and CD4Code models used during adaptation.
+ *
+ * <p>Loading creates the symbol tables required by the matching and update phases. Semantic
+ * validation is deliberately owned by the caller: this utility does not select or execute a
+ * CD4Code CoCo set because different adaptation inputs permit different degrees of
+ * underspecification.
+ */
 public class JavaLoader {
 
   /**
-   * Parses a class diagram, builds the symbol table, and checks the consistency conditions (CoCos).
+   * Parses a class diagram and builds the symbol table required for name and type resolution.
+   *
+   * <p>No CD4Code CoCos are executed. Callers that require a particular semantic profile must run
+   * its checker explicitly after loading.
    *
    * @param file The class diagram file to be parsed. It must have a .cd extension.
    * @return The resulting ASTCDCompilationUnit created from the class diagram.
@@ -163,11 +174,9 @@ public class JavaLoader {
    *
    * @param directoryPath The root directory to read.
    * @return A set of Java files represented as ASTOrdinaryCompilationUnit.
-   */
+  */
   public static Set<ASTOrdinaryCompilationUnit> readJavaCode(Path directoryPath) {
-    // One batch owns one global JavaDSL scope. CodeAdapter serializes complete runs because the
-    // generated MontiCore mills are process-global, so clearing here prevents stale artifact
-    // scopes from accumulating across validation and isolated mapping passes.
+    // Clear stale artifact scopes before loading a new source batch.
     JavaDSLMill.globalScope().clear();
     Set<File> res = new LinkedHashSet<>();
     readJavaCode(directoryPath, res);

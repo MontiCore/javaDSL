@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.AdapterAbstractTest;
@@ -51,6 +52,20 @@ class SpoonServicesTest {
 
     workspace.load(second);
     assertEquals("Second", workspace.model().getAllTypes().iterator().next().getSimpleName());
+  }
+
+  @Test
+  void executableRewriteRegistryNormalizesSignaturesAndValidatesMethodKeys() {
+    ExecutableRewriteRegistry registry = new ExecutableRewriteRegistry();
+    registry.registerConcreteSignature("run", List.of("java.lang.String", "any[]"));
+
+    assertEquals(List.of("String", "Object[]"), registry.unambiguousLegacyParameters("run"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            registry.registerRewrite(
+                StableElementKey.type("NotAMethod"),
+                StableElementKey.method("Owner", "run", List.of())));
   }
 
   @Test

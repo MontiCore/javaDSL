@@ -3,20 +3,31 @@ package de.monticore.codeAdaption.utils;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTMCBasicGenericType;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
-import de.monticore.types.mccollectiontypes._ast.ASTMCGenericType;
 import de.monticore.types.mccollectiontypes._ast.ASTMCTypeArgument;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** Creates method lookup keys without manually splitting Java type syntax. */
+/**
+ * Creates method lookup keys by parsing Java type syntax instead of manually splitting nested
+ * generic parameter lists.
+ */
 public final class JavaMethodSignatures {
 
   private static final String PARAMETER_CONTAINER = "__MethodParameters";
 
   private JavaMethodSignatures() {}
 
+  /**
+   * Normalizes a method name and its parameter types for owner-aware lookup.
+   *
+   * <p>Malformed or unsupported signatures are returned trimmed but otherwise unchanged so an
+   * invalid key cannot accidentally match a different method.
+   *
+   * @param signature textual method signature
+   * @return normalized lookup key, an empty string for {@code null}, or unchanged malformed input
+   */
   public static String normalize(String signature) {
     if (signature == null) {
       return "";
@@ -52,6 +63,14 @@ public final class JavaMethodSignatures {
     }
   }
 
+  /**
+   * Parses a comma-separated parameter list by embedding it as the type arguments of a synthetic
+   * generic type. This lets the JavaDSL grammar, rather than string splitting, distinguish commas
+   * between parameters from commas inside nested generic types.
+   *
+   * <p>The arbitrary container name is parsed by JavaDSL as {@link ASTMCBasicGenericType}; its type
+   * arguments are the original method parameter types.
+   */
   private static Optional<List<String>> parseParameterTypes(String parameters) {
     try {
       Optional<ASTMCType> parsed =
@@ -59,14 +78,10 @@ public final class JavaMethodSignatures {
       if (parsed.isEmpty()) {
         return Optional.empty();
       }
-      List<ASTMCTypeArgument> arguments;
-      if (parsed.get() instanceof ASTMCBasicGenericType basicGeneric) {
-        arguments = basicGeneric.getMCTypeArgumentList();
-      } else if (parsed.get() instanceof ASTMCGenericType generic) {
-        arguments = generic.getMCTypeArgumentList();
-      } else {
+      if (!(parsed.get() instanceof ASTMCBasicGenericType basicGeneric)) {
         return Optional.empty();
       }
+      List<ASTMCTypeArgument> arguments = basicGeneric.getMCTypeArgumentList();
       List<String> types = new ArrayList<>();
       for (ASTMCTypeArgument argument : arguments) {
         if (argument.getMCTypeOpt().isEmpty()) {

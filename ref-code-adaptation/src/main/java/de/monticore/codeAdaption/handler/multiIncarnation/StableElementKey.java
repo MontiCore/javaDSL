@@ -18,9 +18,13 @@ import java.util.Optional;
  * use these keys so independently loaded ASTs can resolve the same mapped element.
  */
 public final class StableElementKey {
+  /** Supported CD element identity kinds. */
   public enum Kind {
+    /** CD class, interface, or enum identity. */
     TYPE,
+    /** Owner, name, and normalized type identity. */
     FIELD,
+    /** Owner, name, normalized parameters, and optional return type identity. */
     METHOD
   }
 
@@ -49,22 +53,27 @@ public final class StableElementKey {
     this.returnType = normalizeType(returnType);
   }
 
+  /** Creates a stable key for a CD type AST. */
   public static StableElementKey type(ASTCDType type) {
     return type(type.getName());
   }
 
+  /** Creates a stable key for a type name. */
   public static StableElementKey type(String typeName) {
     return new StableElementKey(Kind.TYPE, null, typeName, null, List.of(), null);
   }
 
+  /** Creates an owner-aware stable key for a CD attribute AST. */
   public static StableElementKey field(ASTCDType owner, ASTCDAttribute attribute) {
     return field(owner.getName(), attribute.getName(), JavaSourceNames.printNormalizedFieldType(attribute));
   }
 
+  /** Creates an owner-aware field key from normalized identity components. */
   public static StableElementKey field(String ownerType, String fieldName, String fieldKind) {
     return new StableElementKey(Kind.FIELD, ownerType, fieldName, fieldKind, List.of(), null);
   }
 
+  /** Creates an owner- and signature-aware stable key for a CD method AST. */
   public static StableElementKey method(ASTCDType owner, ASTCDMethod method) {
     List<String> parameters = new ArrayList<>();
     for (ASTCDParameter parameter : method.getCDParameterList()) {
@@ -74,10 +83,12 @@ public final class StableElementKey {
     return method(owner.getName(), method.getName(), parameters, returnType);
   }
 
+  /** Creates a method key without return-type identity. */
   public static StableElementKey method(String ownerType, String methodName, List<String> parameterTypes) {
     return method(ownerType, methodName, parameterTypes, null);
   }
 
+  /** Creates a method key with optional return-type identity. */
   public static StableElementKey method(
       String ownerType, String methodName, List<String> parameterTypes, String returnType) {
     return new StableElementKey(Kind.METHOD, ownerType, methodName, null, parameterTypes, returnType);
@@ -124,6 +135,7 @@ public final class StableElementKey {
     return Optional.ofNullable(returnType);
   }
 
+  /** Returns whether both keys identify the same element without considering method return type. */
   public boolean sameSignatureIgnoringReturn(StableElementKey other) {
     return other != null
         && kind == other.kind
@@ -132,6 +144,7 @@ public final class StableElementKey {
         && Objects.equals(parameterTypes, other.parameterTypes);
   }
 
+  /** Returns the deterministic owner/name/type signature used in diagnostics and sorting. */
   public String signature() {
     if (kind == Kind.TYPE) {
       return name;

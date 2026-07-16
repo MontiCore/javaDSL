@@ -2,6 +2,7 @@ package de.monticore.codeAdaption.updater.spoonUpdater;
 
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
@@ -30,7 +31,14 @@ import spoon.reflect.declaration.CtVariable;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 
-/** Applies all mutations to declarations and references in an already loaded Spoon model. */
+/**
+ * Applies declaration, variable, grouping, and type-reference mutations to an already loaded Spoon
+ * model.
+ *
+ * <p>Creation/removal remains in {@link SpoonGenerationService}; executable overload and invocation
+ * repair remains in {@link SpoonExecutableRepairService}. Keeping these phases separate avoids one
+ * stateful catch-all service and makes their ordering explicit.
+ */
 final class SpoonTransformationService {
   private final SpoonWorkspace workspace;
   private final SpoonElementResolver resolver;
@@ -116,12 +124,12 @@ final class SpoonTransformationService {
     CtType<?> spoonType = resolver.getSpoonType(type);
     CtTypeReference<?> superclass = spoonType.getSuperclass();
     if (superclass != null && superclass.getSimpleName().equals(sourceName)) {
-      workspace.rewriteTypeReferenceName(superclass, newName);
+      rewriteTypeReferenceName(superclass, newName);
       return;
     }
     for (CtTypeReference<?> superInterface : spoonType.getSuperInterfaces()) {
       if (superInterface.getSimpleName().equals(sourceName)) {
-        workspace.rewriteTypeReferenceName(superInterface, newName);
+        rewriteTypeReferenceName(superInterface, newName);
       }
     }
   }
@@ -238,7 +246,7 @@ final class SpoonTransformationService {
       }
     }
     for (CtTypeReference<?> reference : selected) {
-      workspace.rewriteTypeReferenceName(reference, newName);
+      rewriteTypeReferenceName(reference, newName);
     }
   }
 
@@ -283,7 +291,7 @@ final class SpoonTransformationService {
         continue;
       }
       if (!replacement.equals(reference.getSimpleName())) {
-        workspace.rewriteTypeReferenceName(reference, replacement);
+        rewriteTypeReferenceName(reference, replacement);
       }
     }
   }
@@ -327,6 +335,23 @@ final class SpoonTransformationService {
       }
     }
     return groupingMappings.get(simpleName);
+  }
+
+  /** Rewrites a type reference while retaining valid package identity for simple replacements. */
+  private void rewriteTypeReferenceName(CtTypeReference<?> reference, String newName) {
+    if (reference == null || newName == null || newName.isBlank()) {
+      throw new IllegalArgumentException("Type reference and new name must be present");
+    }
+    String simpleName = JavaSourceNames.simpleName(newName);
+    if (newName.contains(".")) {
+      CtTypeReference<?> replacement = workspace.createTypeReference(newName);
+      reference.setPackage(replacement.getPackage());
+      reference.setDeclaringType(replacement.getDeclaringType());
+    }
+    // For a simple replacement, retain the original package identity. Turning entity.User into
+    // an unresolved simple Professor produces an invalid import that cleanup can only remove.
+    reference.setSimpleName(simpleName);
+    reference.setSimplyQualified(true);
   }
 
   private static Optional<String> resolvedTypeIdentity(CtTypeReference<?> reference) {

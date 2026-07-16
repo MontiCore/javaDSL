@@ -143,22 +143,6 @@ final class SpoonWorkspace {
     }
   }
 
-  void rewriteTypeReferenceName(CtTypeReference<?> reference, String newName) {
-    if (reference == null || newName == null || newName.isBlank()) {
-      throw new IllegalArgumentException("Type reference and new name must be present");
-    }
-    String simpleName = JavaSourceNames.simpleName(newName);
-    if (newName.contains(".")) {
-      CtTypeReference<?> replacement = createTypeReference(newName);
-      reference.setPackage(replacement.getPackage());
-      reference.setDeclaringType(replacement.getDeclaringType());
-    }
-    // For a simple replacement, retain the original package identity. Turning entity.User into
-    // an unresolved simple Professor produces an invalid import that cleanup can only remove.
-    reference.setSimpleName(simpleName);
-    reference.setSimplyQualified(true);
-  }
-
   void clean(Path codePath) {
     Path sourcePath = codePath.toAbsolutePath().normalize();
     if (!Files.isDirectory(sourcePath)) {

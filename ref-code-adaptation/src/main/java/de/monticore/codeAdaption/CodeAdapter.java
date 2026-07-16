@@ -29,12 +29,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Adapts handwritten reference Java to a concrete class diagram through
+ * mapping-specific transformation passes.
+ *
+ * <p>A failed run never publishes its staging directory over existing output.
+ */
 public class CodeAdapter {
+  /** Maximum number of Cartesian multi-incarnation selections accepted for one source unit. */
   private static final int MAX_TYPE_SELECTIONS = 1024;
 
   private final Set<AdapterParam> adapterParams;
   private final Set<CDConfParameter> confParams;
 
+  /**
+   * Creates an adapter with explicit Java matching and CD-conformance policies.
+   *
+   * @param adapterParams enabled Java matching strategies and unmatched-element policies
+   * @param confParams enabled CD conformance parameters
+   */
   public CodeAdapter(Set<AdapterParam> adapterParams, Set<CDConfParameter> confParams) {
     this.adapterParams = Set.copyOf(Objects.requireNonNull(adapterParams, "adapterParams"));
     this.confParams = Set.copyOf(Objects.requireNonNull(confParams, "confParams"));
@@ -50,6 +63,7 @@ public class CodeAdapter {
    * @param refHwcPath reference handwritten-code directory
    * @param conHwcPath concrete handwritten-code directory
    * @param outputPath output directory
+   * @throws CodeAdaptationException if validation or deterministic adaptation fails
    */
   public void adapt(
       File referenceCD,
@@ -72,6 +86,17 @@ public class CodeAdapter {
    * <p>{@code useCommonParentForMultipleIncarnations} permits manual adaptation to resolve
    * class/interface mismatches and multi-incarnation type targets through an available common
    * parent or implemented interface.
+   *
+   * @param referenceCD reference class diagram
+   * @param concreteCD concrete class diagram
+   * @param mappings mapping stereotype names to apply
+   * @param refHwcPath reference handwritten-code directory
+   * @param conHwcPath concrete handwritten-code directory
+   * @param outputPath output directory published only after a successful run
+   * @param useConcretization whether to complete the concrete CD before adaptation
+   * @param useCommonParentForMultipleIncarnations whether exact common grouping types may replace
+   *     multiple concrete incarnations
+   * @throws CodeAdaptationException if validation, conflict detection, or adaptation fails
    */
   public void adapt(
       File referenceCD,
@@ -82,19 +107,15 @@ public class CodeAdapter {
       Path outputPath,
       boolean useConcretization,
       boolean useCommonParentForMultipleIncarnations) {
-    // MontiCore mills and global symbol scopes are process-global. Serialize complete runs rather
-    // than presenting unsafe pseudo-concurrency around only the updater instance.
-    synchronized (CodeAdapter.class) {
-      adaptInternal(
-          referenceCD,
-          concreteCD,
-          mappings,
-          refHwcPath,
-          conHwcPath,
-          outputPath,
-          useConcretization,
-          useCommonParentForMultipleIncarnations);
-    }
+    adaptInternal(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations);
   }
 
   private void adaptInternal(
@@ -112,7 +133,7 @@ public class CodeAdapter {
     workspace.validateReadOnlyInput(concreteCD.toPath(), "concrete class diagram");
     Path normalizedRefHwcPath = workspace.referenceSource();
     Path normalizedConHwcPath = workspace.concreteSource();
-    SortedSet<String> orderedMappings = validatedMappings(mappings);
+    SortedSet<String> validatedMappingsInOrder = validatedMappings(mappings);
 
     // load CD models
     ASTCDCompilationUnit conCD = JavaLoader.parseCD(concreteCD.getPath());
@@ -124,7 +145,7 @@ public class CodeAdapter {
     if (useConcretization) {
       conCD =
           new ConcretizationService(confParams)
-              .completeConcreteCD(conCD, refCD, orderedMappings);
+              .completeConcreteCD(conCD, refCD, validatedMappingsInOrder);
     }
     CDModelIndex conIndex = CDModelIndex.of(conCD);
     AdaptedCodeMerger codeMerger = new AdaptedCodeMerger();
@@ -133,13 +154,13 @@ public class CodeAdapter {
     // Build each context and checker once, then reuse that exact checker state in handlers.
     Map<String, AdaptationContextResult> contextResults =
         new AdaptationContextFactory(confParams, conformanceService)
-            .buildResults(referenceIndex, conIndex, orderedMappings, useConcretization);
-    Map<String, IncarnationContext> mappingContexts = new LinkedHashMap<>();
+            .buildResults(referenceIndex, conIndex, validatedMappingsInOrder, useConcretization);
+    Map<String, IncarnationContext> incarnationContextsByMapping = new LinkedHashMap<>();
     Map<String, CDConformanceChecker> checkers = new LinkedHashMap<>();
     Map<String, CodeValidator> validators = new LinkedHashMap<>();
-    for (String mapping : orderedMappings) {
+    for (String mapping : validatedMappingsInOrder) {
       AdaptationContextResult result = contextResults.get(mapping);
-      mappingContexts.put(mapping, result.context());
+      incarnationContextsByMapping.put(mapping, result.context());
       checkers.put(mapping, result.checker());
       validators.put(mapping, new CodeValidator(refCD, adapterParams));
     }
@@ -152,10 +173,10 @@ public class CodeAdapter {
                 java.util.stream.Collectors.toCollection(TreeSet::new));
     if (!useConcretization || !fallbackMappings.isEmpty()) {
       Set<String> mappingsToValidate =
-          useConcretization ? fallbackMappings : orderedMappings;
+          useConcretization ? fallbackMappings : validatedMappingsInOrder;
       Map<String, IncarnationContext> contextsToValidate = new LinkedHashMap<>();
       mappingsToValidate.forEach(
-          mapping -> contextsToValidate.put(mapping, mappingContexts.get(mapping)));
+          mapping -> contextsToValidate.put(mapping, incarnationContextsByMapping.get(mapping)));
       AdaptationConflictDetector.validate(
           referenceIndex,
           conIndex,
@@ -166,7 +187,7 @@ public class CodeAdapter {
     }
 
     // Validate before creating staging directories or changing existing output.
-    for (String mapping : orderedMappings) {
+    for (String mapping : validatedMappingsInOrder) {
       CodeValidator validator = validators.get(mapping);
       if (validator == null || !validator.isValid(refCD, normalizedRefHwcPath)) {
         throw new CodeAdaptationException(
@@ -190,12 +211,12 @@ public class CodeAdapter {
             inputConcreteIndex,
             useCommonParentForMultipleIncarnations);
 
-    for (String mapping : orderedMappings) {
-      if (!mappingContexts.containsKey(mapping)) {
+    for (String mapping : validatedMappingsInOrder) {
+      if (!incarnationContextsByMapping.containsKey(mapping)) {
         continue; // Skip mappings that failed to build contexts
       }
 
-      IncarnationContext ctx = mappingContexts.get(mapping);
+      IncarnationContext ctx = incarnationContextsByMapping.get(mapping);
       Map<String, String> groupingMappings =
           useCommonParentForMultipleIncarnations
               ? new GroupingMappingService().compute(ctx)
@@ -350,6 +371,10 @@ public class CodeAdapter {
     return passes;
   }
 
+  /**
+   * Builds the owner-aware Java element index used while planning multi-incarnation passes for one
+   * compilation unit.
+   */
   private static JavaAstElemCollector collectJavaElements(ASTOrdinaryCompilationUnit unit) {
     JavaAstElemCollector collector = new JavaAstElemCollector();
     JavaDSLTraverser traverser = JavaDSLMill.traverser();
@@ -358,6 +383,11 @@ public class CodeAdapter {
     return collector;
   }
 
+  /**
+   * Adds reference types that require pass expansion because a performing match has multiple
+   * concrete incarnations. Exact common-grouping sets stay in a single grouped pass, and non-type
+   * references do not participate in type selection.
+   */
   private static void addRelevantTypeReferences(
       Optional<CodeMatching> matching,
       IncarnationContext context,

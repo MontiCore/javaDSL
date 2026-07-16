@@ -14,22 +14,44 @@ import java.util.Optional;
 /** Builds incarnation contexts from checker results, optionally overlaid with stereotypes. */
 public class IncarnationContextBuilder {
   private final CDConformanceChecker conformanceChecker;
-  private final IncarnationContextSupport support;
+  private final IncarnationMappingSupport support;
 
+  /**
+   * Creates a builder backed by one completed conformance check and indexes of the same model pair.
+   *
+   * @param conformanceChecker checker whose incarnation mapping supplies inferred relationships
+   * @param referenceIndex index of the reference CD
+   * @param concreteIndex index of the concrete CD checked against the reference CD
+   */
   public IncarnationContextBuilder(
       CDConformanceChecker conformanceChecker,
       CDModelIndex referenceIndex,
       CDModelIndex concreteIndex) {
     this.conformanceChecker = conformanceChecker;
-    this.support = new IncarnationContextSupport(referenceIndex, concreteIndex);
+    this.support = new IncarnationMappingSupport(referenceIndex, concreteIndex);
   }
 
-  /** Builds a checker context and fills checker gaps from explicit stereotypes. */
+  /**
+   * Builds a context from checker results and fills checker gaps from explicit mapping
+   * stereotypes.
+   *
+   * @param mapping stereotype name whose explicit mappings should be overlaid
+   * @return immutable context for the requested mapping
+   */
   public IncarnationContext buildContextForMapping(String mapping) {
     return buildContextForMapping(mapping, true);
   }
 
-  /** Builds a context, optionally disabling the stereotype overlay for checker-only operation. */
+  /**
+   * Builds a context from inferred checker mappings and, when requested, explicit stereotypes.
+   * Explicit mappings are merged with rather than substituted for checker results; duplicate
+   * concrete targets are removed by {@link IncarnationMappingSupport}.
+   *
+   * @param mapping stereotype name represented by the resulting context
+   * @param overlayStereotypeMappings whether explicit stereotypes should fill or extend checker
+   *     data
+   * @return immutable incarnation and grouping context
+   */
   public IncarnationContext buildContextForMapping(
       String mapping, boolean overlayStereotypeMappings) {
     Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = support.newMapping();
@@ -45,6 +67,10 @@ public class IncarnationContextBuilder {
     return support.assembleContext(mapping, mappings);
   }
 
+  /**
+   * Copies inferred type, field, and method incarnations from the checker into stable keys that
+   * remain usable after AST cloning.
+   */
   private void extractCheckerMappings(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> result) {
     for (ASTCDType referenceType : support.referenceIndex().types()) {
@@ -80,6 +106,10 @@ public class IncarnationContextBuilder {
     }
   }
 
+  /**
+   * Extracts explicit mappings from stereotypes on concrete types and their members. Member
+   * references are resolved only within the reference owners mapped for the concrete type.
+   */
   private Map<StableElementKey, List<IncarnationContext.MappedElement>> extractStereotypeMappings(
       String mapping) {
     Map<StableElementKey, List<IncarnationContext.MappedElement>> result = support.newMapping();
@@ -109,6 +139,10 @@ public class IncarnationContextBuilder {
     return result;
   }
 
+  /**
+   * Finds the reference owners in which member stereotype names must be resolved, preferring the
+   * directly mapped reference type and then a mapped reference interface.
+   */
   private List<ASTCDType> referenceOwners(
       ASTCDType concreteType, String mapping, Optional<String> referenceTypeName) {
     List<ASTCDType> owners = new ArrayList<>();

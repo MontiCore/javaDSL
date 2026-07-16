@@ -116,4 +116,40 @@ class InfixMatcherTest extends MatcherAbstractTest {
         "EntityToEntity",
         MatcherHelper.fillTemplate(matching.getTemplate(), matching.getReferences()));
   }
+
+  @Test
+  void referencesAreOrderedByTheirNonOverlappingPositions() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+    ASTCDType application =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Application".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    List<de.monticore.symboltable.ISymbol> references =
+        MatcherHelper.cleanReferences(
+            "EntityApplicationEntity", List.of(application.getSymbol(), entity.getSymbol()));
+
+    Assertions.assertEquals(List.of("Entity", "Application", "Entity"),
+        references.stream().map(de.monticore.symboltable.ISymbol::getName).toList());
+  }
+
+  @Test
+  void unmatchedTemplatePlaceholdersRemainVisible() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    Assertions.assertEquals(
+        "Entity${cap_first}",
+        MatcherHelper.fillTemplate("${}${cap_first}", List.of(entity.getSymbol())));
+  }
 }
