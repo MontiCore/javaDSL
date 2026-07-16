@@ -259,6 +259,10 @@ final class JavaMemberUpdateService {
    * Rewrites Java names derived from CD association roles. For each adapted reference owner/target
    * pair, the method finds the corresponding role in the concrete CD and rejects ambiguous role
    * names instead of choosing one arbitrarily.
+   *
+   * <p>For example, if {@code Person -> Address} uses role {@code addresses} and the mapped {@code
+   * Customer -> Location} association uses {@code locations}, accesses to {@code
+   * Customer.addresses} are rewritten to {@code Customer.locations}.
    */
   void handleAssociationRoleUpdate(JavaAstElemCollector collector) {
     for (ASTTypeDeclaration javaType : collector.getAllTypeDeclarations()) {

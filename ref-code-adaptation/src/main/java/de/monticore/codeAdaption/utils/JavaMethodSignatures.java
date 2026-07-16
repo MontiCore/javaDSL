@@ -22,6 +22,10 @@ public final class JavaMethodSignatures {
   /**
    * Parses and normalizes a complete method signature.
    *
+   * <p>For example, {@code
+   * update(java.util.Map<java.lang.String,java.util.List<any[]>>,int[],long)} becomes {@code
+   * update(Map<String,List<Object[]>>,int[],long)}.
+   *
    * @param signature method name followed by a parameter-type list
    * @return the normalized signature, or empty when the input is not a complete valid signature
    */

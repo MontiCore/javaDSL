@@ -12,11 +12,14 @@ import de.monticore.statements.mccommonstatements._visitor.MCCommonStatementsVis
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.*;
 
-/***
- * this visitor collect Type, field,methods, local-variable and formal parameters
- * from a ASTOrdinaryCompilationUnit
+/**
+ * Collects top-level types and their fields, methods, supertypes, parameters, and local variables
+ * from an {@link ASTOrdinaryCompilationUnit}.
+ *
+ * <p>For example, in {@code void visit(Person input) { for (Person person : people) {} }}, {@code
+ * input} is collected as a method parameter and enhanced-for variable {@code person} as a local
+ * variable, although JavaDSL represents both with {@code ASTFormalParameter} nodes.
  */
-
 public class JavaAstElemCollector implements JavaDSLVisitor2 {
   private final List<ASTTypeDeclaration> typeDeclarations = new ArrayList<>();
   private final Map<ASTTypeDeclaration, TypeElementCollector> typeElements = new LinkedHashMap<>();

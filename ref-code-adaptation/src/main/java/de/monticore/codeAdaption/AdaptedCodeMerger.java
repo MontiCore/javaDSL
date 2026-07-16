@@ -76,6 +76,10 @@ final class AdaptedCodeMerger {
   /**
    * Builds the final generated code on top of concrete handwritten classes. Adapted and concrete
    * units with the same package-qualified top-level identity are merged.
+   *
+   * <p>For example, an adapted {@code adapter.Port} containing {@code void send()} can be relocated
+   * to a uniquely matching handwritten {@code concrete.Port}; the result remains in package {@code
+   * concrete} and contains {@code send()}.
    */
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCodeIntoConcreteBase(
       Set<ASTOrdinaryCompilationUnit> concreteCode,

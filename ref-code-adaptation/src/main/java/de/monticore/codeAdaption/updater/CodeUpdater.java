@@ -225,7 +225,13 @@ public interface CodeUpdater {
         getClass().getName() + " does not support updater operation: " + operation);
   }
 
-  /** Immutable description of the small generated method-body forms supported by the updater. */
+  /**
+   * Immutable description of the small generated method-body forms supported by the updater.
+   *
+   * <p>For example, {@code assignFieldAndReturnThis("name", "value")} represents {@code this.name =
+   * value; return this;}, while {@code returnNew("Person", List.of("name", "age"))} represents
+   * {@code return new Person(name, age);}.
+   */
   final class MethodBodySpec {
     /** Supported generated method-body shapes. */
     public enum Kind {

@@ -47,6 +47,10 @@ public class IncarnationContextBuilder {
    * Explicit mappings are merged with rather than substituted for checker results; duplicate
    * concrete targets are removed by {@link IncarnationMappingSupport}.
    *
+   * <p>For example, if the checker maps {@code Payment -> CreditCard} and stereotype {@code
+   * <<shop="Payment">>} maps {@code Invoice}, enabling the overlay yields {@code Payment ->
+   * [CreditCard, Invoice]}; disabling it retains only {@code CreditCard}.
+   *
    * @param mapping stereotype name represented by the resulting context
    * @param overlayStereotypeMappings whether explicit stereotypes should fill or extend checker
    *     data

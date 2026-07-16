@@ -25,11 +25,19 @@ public @interface Adapt {
   /**
    * Returns the qualified or owner-relative reference-CD element names represented by this Java
    * element.
+   *
+   * <p>For methods, {@code Order.update} selects a unique method by name, {@code Order.update()}
+   * selects the zero-parameter overload, and {@code Order.update(int)} selects the overload with an
+   * {@code int} parameter.
    */
   String[] ref() default {};
 
   /**
    * Returns the name template used to validate and adapt the existing handwritten element.
+   *
+   * <p>For example, {@code ref={"Entity", "Entity.id"}} with {@code
+   * template="find${}By${cap_first}"} produces {@code findPersonByNumber} when those references map
+   * to {@code Person} and {@code number}. Placeholders consume references from left to right.
    */
   String template() default "";
 
