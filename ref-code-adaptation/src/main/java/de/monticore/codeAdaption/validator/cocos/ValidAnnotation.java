@@ -1,13 +1,12 @@
 package de.monticore.codeAdaption.validator.cocos;
 
 import static de.monticore.codeAdaption.utils.AdapterUtils.getPosition;
-import static de.monticore.codeAdaption.utils.Constants.*;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.matcher.annotMatcher.AnnotElementCollector;
+import de.monticore.codeAdaption.utils.AdaptAnnotationNames;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.Constants;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTJavaAnnotation;
 import de.monticore.java.javadsl._cocos.JavaDSLASTJavaAnnotationCoCo;
@@ -41,14 +40,14 @@ public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightA
 
   @Override
   public void check(ASTJavaAnnotation node) {
-    if (JavaLoader.print(node.getAnnotationName()).endsWith(ANNOT_NAME)) {
+    if (AdaptAnnotationNames.matches(node.getAnnotationName().getQName())) {
       checkAnnotation(node);
     }
   }
 
   @Override
   public void check(ASTAnnotation node) {
-    if (JavaLoader.print(node.getAnnotationName()).endsWith(ANNOT_NAME)) {
+    if (AdaptAnnotationNames.matches(node.getAnnotationName().getQName())) {
       checkAnnotation(node);
     }
   }

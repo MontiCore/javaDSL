@@ -59,19 +59,18 @@ class JavaSourceNamesTest {
   @Test
   void normalizesMethodParametersThroughTheTypeParser() {
     assertEquals(
-        "update(Map<String,List<Object[]>>,int[],long)",
-        JavaMethodSignatures.normalize(
+        Optional.of("update(Map<String,List<Object[]>>,int[],long)"),
+        JavaMethodSignatures.parseNormalized(
             " update(java.util.Map<java.lang.String, java.util.List<any[]>>, int[], long) "));
-    assertEquals("update()", JavaMethodSignatures.normalize(" update( ) "));
+    assertEquals(Optional.of("update()"), JavaMethodSignatures.parseNormalized(" update( ) "));
   }
 
   @Test
-  void leavesMalformedMethodSignaturesUnchanged() {
+  void rejectsMalformedMethodSignatures() {
     assertEquals(
-        "update(Map<String,List<Integer>,int)",
-        JavaMethodSignatures.normalize("update(Map<String,List<Integer>,int)"));
+        Optional.empty(),
+        JavaMethodSignatures.parseNormalized("update(Map<String,List<Integer>,int)"));
     assertEquals(
-        "update(String) trailing",
-        JavaMethodSignatures.normalize("update(String) trailing"));
+        Optional.empty(), JavaMethodSignatures.parseNormalized("update(String) trailing"));
   }
 }

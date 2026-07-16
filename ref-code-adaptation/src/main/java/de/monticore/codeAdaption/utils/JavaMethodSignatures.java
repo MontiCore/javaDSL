@@ -20,17 +20,14 @@ public final class JavaMethodSignatures {
   private JavaMethodSignatures() {}
 
   /**
-   * Normalizes a method name and its parameter types for owner-aware lookup.
+   * Parses and normalizes a complete method signature.
    *
-   * <p>Malformed or unsupported signatures are returned trimmed but otherwise unchanged so an
-   * invalid key cannot accidentally match a different method.
-   *
-   * @param signature textual method signature
-   * @return normalized lookup key, an empty string for {@code null}, or unchanged malformed input
+   * @param signature method name followed by a parameter-type list
+   * @return the normalized signature, or empty when the input is not a complete valid signature
    */
-  public static String normalize(String signature) {
+  public static Optional<String> parseNormalized(String signature) {
     if (signature == null) {
-      return "";
+      return Optional.empty();
     }
     String normalized = signature.trim();
     int open = normalized.indexOf('(');
@@ -39,20 +36,19 @@ public final class JavaMethodSignatures {
         || close < open
         || close != normalized.length() - 1
         || normalized.indexOf('(', open + 1) >= 0) {
-      return normalized;
+      return Optional.empty();
     }
 
     String methodName = normalized.substring(0, open).trim();
     if (!isMethodName(methodName)) {
-      return normalized;
+      return Optional.empty();
     }
     String parameters = normalized.substring(open + 1, close).trim();
     if (parameters.isEmpty()) {
-      return methodName + "()";
+      return Optional.of(methodName + "()");
     }
     return parseParameterTypes(parameters)
-        .map(types -> methodName + "(" + String.join(",", types) + ")")
-        .orElse(normalized);
+        .map(types -> methodName + "(" + String.join(",", types) + ")");
   }
 
   private static boolean isMethodName(String name) {

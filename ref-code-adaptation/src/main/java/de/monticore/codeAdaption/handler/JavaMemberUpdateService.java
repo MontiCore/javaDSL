@@ -8,6 +8,7 @@ import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
+import de.monticore.codeAdaption.utils.AdaptReference;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
@@ -392,15 +393,23 @@ final class JavaMemberUpdateService {
       ASTCDType annotatedOwner,
       ASTCDType targetOwner,
       ASTCDMethod method) {
-    String trimmed = referenceName.trim();
-    if (!method.getName().equals(JavaSourceNames.simpleName(trimmed))) {
+    Optional<AdaptReference> parsed = AdaptReference.parse(referenceName);
+    if (parsed.isEmpty()) {
       return false;
     }
-    if (!trimmed.contains(".")) {
+    AdaptReference reference = parsed.get();
+    if (!method.getName().equals(reference.memberName())) {
+      return false;
+    }
+    if (reference.isMethod()
+        && !JavaSourceNames.methodSignature(method)
+            .equals(reference.methodSignature().orElseThrow())) {
+      return false;
+    }
+    if (reference.owner().isEmpty()) {
       return annotatedOwner.getName().equals(targetOwner.getName());
     }
-    String ownerName = trimmed.substring(0, trimmed.lastIndexOf('.'));
-    return targetOwner.getName().equals(JavaSourceNames.simpleName(ownerName));
+    return targetOwner.getName().equals(JavaSourceNames.simpleName(reference.owner().get()));
   }
 
   /** Reads one stereotype value and treats malformed generated AST values as absent. */

@@ -24,34 +24,24 @@ public class AdapterUtils {
   }
 
   public static Optional<ISymbol> resolveCDSymbol(String name, ASTCDCompilationUnit refCD) {
-    if (name == null || name.isEmpty()) {
+    Optional<AdaptReference> parsed = AdaptReference.parse(name);
+    if (parsed.isEmpty() || refCD == null) {
       return Optional.empty();
     }
+    AdaptReference reference = parsed.get();
+    String n = reference.memberName();
+    CDModelIndex index = CDModelIndex.of(refCD);
+    Log.debug("AdapterUtils.resolveCDSymbol: resolving '" + name + "'", "AdapterUtils");
 
-    // normalize - strip trailing parentheses used in some annotations like "update()"
-    String n = name.trim();
-    if (n.endsWith("()")) {
-      n = n.substring(0, n.length() - 2);
-    }
-    Log.debug("AdapterUtils.resolveCDSymbol: resolving '" + name + "' -> '" + n + "'", "AdapterUtils");
-
-    // handle qualified references like "Type.member" -> resolve member symbol from type AST
-    if (n.contains(".")) {
-      String[] parts = n.split("\\.", 2);
-      String typeName = parts[0].trim();
-      String memberName = parts[1].trim();
+    if (reference.owner().isPresent()) {
+      String typeName = reference.owner().get();
+      String memberName = reference.memberName();
       Log.debug("AdapterUtils.resolveCDSymbol: qualified ref type='" + typeName + "' member='" + memberName + "'", "AdapterUtils");
 
-      // Try to find the referenced type in the reference CD AST
-      CDModelIndex index = CDModelIndex.of(refCD);
-      if (memberName.contains("(")) {
-        Optional<ISymbol> exactMethod =
-            index.method(typeName, JavaSourceNames.normalizeMethodSignature(memberName))
+      if (reference.isMethod()) {
+        return index.method(typeName, reference.methodSignature().orElseThrow())
                 .map(ASTCDMethod::getSymbol)
                 .map(symbol -> (ISymbol) symbol);
-        if (exactMethod.isPresent()) {
-          return exactMethod;
-        }
       }
       Optional<ISymbol> attribute =
           index.attribute(typeName, memberName)
@@ -81,8 +71,19 @@ public class AdapterUtils {
                 + "' is overloaded; include a signature-aware mapping");
         return Optional.empty();
       }
-      // not found as qualified member -> fallthrough to global lookup below
-      n = memberName; // try resolving member name globally as a fallback
+    } else if (reference.isMethod()) {
+      List<ASTCDMethod> methods =
+          index.types().stream()
+              .map(type -> index.method(type.getName(), reference.methodSignature().orElseThrow()))
+              .flatMap(Optional::stream)
+              .toList();
+      if (methods.size() == 1) {
+        return Optional.of(methods.get(0).getSymbol());
+      }
+      if (methods.size() > 1) {
+        Log.warn("Adapter reference '" + name + "' resolves to multiple methods");
+      }
+      return Optional.empty();
     }
 
     // try resolve as a field in the enclosing scope

@@ -5,6 +5,7 @@ import static de.monticore.codeAdaption.utils.Constants.*;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.matcher.annotMatcher.AnnotElementCollector;
+import de.monticore.codeAdaption.utils.AdaptAnnotationNames;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -168,7 +169,8 @@ public final class MatcherHelper {
   public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
     for (ASTJavaModifier mod : mods) {
       if (mod instanceof ASTJavaAnnotation
-          && isAdaptAnnotationName(((ASTJavaAnnotation) mod).getAnnotationName().getQName())) {
+          && AdaptAnnotationNames.matches(
+              ((ASTJavaAnnotation) mod).getAnnotationName().getQName())) {
         return Optional.of((ASTJavaAnnotation) mod);
       }
     }
@@ -180,7 +182,7 @@ public final class MatcherHelper {
 
     for (ASTMCModifier mod : mods) {
       if (mod instanceof ASTAnnotation
-          && isAdaptAnnotationName(((ASTAnnotation) mod).getAnnotationName().getQName())) {
+          && AdaptAnnotationNames.matches(((ASTAnnotation) mod).getAnnotationName().getQName())) {
         return Optional.of((ASTAnnotation) mod);
       }
     }
@@ -279,11 +281,6 @@ public final class MatcherHelper {
       }
     }
     return result;
-  }
-
-  /** Accepts both the annotation's simple and fully qualified names. */
-  private static boolean isAdaptAnnotationName(String qualifiedName) {
-    return ANNOT_NAME.equals(qualifiedName) || ANNOT_PACKAGE.equals(qualifiedName);
   }
 
   /** Performs a locale-independent, case-insensitive infix test. */

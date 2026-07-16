@@ -91,11 +91,6 @@ public final class JavaSourceNames {
     return method.getName() + "(" + String.join(",", parameters) + ")";
   }
 
-  /** Delegates parser-based method-key normalization to {@link JavaMethodSignatures}. */
-  public static String normalizeMethodSignature(String signature) {
-    return JavaMethodSignatures.normalize(signature);
-  }
-
   /** Uppercases the first character without changing the remainder. */
   public static String capitalize(String value) {
     if (value == null || value.isEmpty()) {

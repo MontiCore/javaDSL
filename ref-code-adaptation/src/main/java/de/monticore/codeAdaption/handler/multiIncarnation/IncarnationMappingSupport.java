@@ -3,9 +3,9 @@ package de.monticore.codeAdaption.handler.multiIncarnation;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.utils.AdaptReference;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
-import de.monticore.codeAdaption.utils.JavaMethodSignatures;
 import de.monticore.symboltable.ISymbol;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -324,10 +324,14 @@ final class IncarnationMappingSupport {
     }
 
     Optional<StableElementKey> findField(List<ASTCDType> owners, String requested) {
-      String normalized = requested == null ? "" : requested.trim();
+      Optional<AdaptReference> parsed = AdaptReference.parse(requested);
+      if (parsed.isEmpty() || parsed.get().isMethod()) {
+        return Optional.empty();
+      }
+      AdaptReference reference = parsed.get();
       List<ASTCDAttribute> matches = new ArrayList<>();
-      String fieldName = JavaSourceNames.simpleName(normalized);
-      String explicitOwner = ownerPart(normalized);
+      String fieldName = reference.memberName();
+      String explicitOwner = reference.owner().orElse("");
       for (ASTCDType owner : searchOwners(owners, explicitOwner)) {
         index.attribute(owner.getName(), fieldName).ifPresent(matches::add);
       }
@@ -339,16 +343,18 @@ final class IncarnationMappingSupport {
     }
 
     Optional<StableElementKey> findMethod(List<ASTCDType> owners, String requested) {
-      String normalized = requested == null ? "" : requested.trim();
-      String explicitOwner = ownerPart(normalized);
-      String methodReference = explicitOwner.isEmpty() ? normalized : memberPart(normalized);
-      String methodName = JavaSourceNames.simpleName(methodReference);
+      Optional<AdaptReference> parsed = AdaptReference.parse(requested);
+      if (parsed.isEmpty()) {
+        return Optional.empty();
+      }
+      AdaptReference reference = parsed.get();
+      String explicitOwner = reference.owner().orElse("");
       List<ASTCDMethod> matches = new ArrayList<>();
       for (ASTCDType owner : searchOwners(owners, explicitOwner)) {
-        for (ASTCDMethod method : index.methods(owner.getName(), methodName)) {
-          if (!methodReference.contains("(")
+        for (ASTCDMethod method : index.methods(owner.getName(), reference.memberName())) {
+          if (!reference.isMethod()
               || JavaSourceNames.methodSignature(method)
-                  .equals(JavaMethodSignatures.normalize(methodReference))) {
+                  .equals(reference.methodSignature().orElseThrow())) {
             matches.add(method);
           }
         }
@@ -368,16 +374,5 @@ final class IncarnationMappingSupport {
       return owners == null || owners.isEmpty() ? index.types() : owners;
     }
 
-    private static String ownerPart(String reference) {
-      int open = reference.indexOf('(');
-      int dot = reference.lastIndexOf('.', open < 0 ? reference.length() - 1 : open);
-      return dot < 0 ? "" : JavaSourceNames.simpleName(reference.substring(0, dot));
-    }
-
-    private static String memberPart(String reference) {
-      int open = reference.indexOf('(');
-      int dot = reference.lastIndexOf('.', open < 0 ? reference.length() - 1 : open);
-      return dot < 0 ? reference : reference.substring(dot + 1);
-    }
   }
 }
