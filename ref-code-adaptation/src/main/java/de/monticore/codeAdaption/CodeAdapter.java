@@ -136,8 +136,8 @@ public class CodeAdapter {
     SortedSet<String> validatedMappingsInOrder = validatedMappings(mappings);
 
     // load CD models
-    ASTCDCompilationUnit conCD = JavaLoader.parseCD(concreteCD.getPath());
     ASTCDCompilationUnit refCD = JavaLoader.parseCD(referenceCD.getPath());
+    ASTCDCompilationUnit conCD = JavaLoader.parseCD(concreteCD.getPath());
     CDModelIndex inputConcreteIndex = CDModelIndex.of(conCD);
     CDModelIndex referenceIndex = CDModelIndex.of(refCD);
     MappingConformanceService conformanceService = new MappingConformanceService(confParams);

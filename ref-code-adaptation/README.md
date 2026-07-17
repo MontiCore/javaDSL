@@ -212,10 +212,13 @@ explicitly does not implement. They remain executable rejection/rollback tests:
   `matchStructure` semantics)
 - method-target `forEach`
 
-Six otherwise supported fixtures still compile and run, but do not use their
-complete model as a structural oracle. Each is registered by path and
-reason in `CDConcretizationTestCases`: one golden CD attaches a non-marker
-interface without satisfying its Java contract, while five rely on upstream
-multi-incarnation/`forEach` expansions that the completed CD returned by the
-current dependency does not contain. These cases are not disabled; metadata
-cleanup and strict Java compilation remain mandatory.
+Five fixtures still compile and run, but do not use their complete model as a
+structural oracle. Each is registered by path and reason in
+`CDConcretizationTestCases`: four mirror tests explicitly disabled upstream
+because of unresolved association, binding, cross-incarnation, or bidirectional
+`forEach` semantics; the fifth is an inherited attribute-type mismatch that the
+current concretizer incorrectly accepts. These cases are not skipped locally;
+metadata cleanup and strict Java compilation remain mandatory.
+
+Fixtures for which upstream provides no separate `*Out.cd` use their reference
+CD as the structural oracle, matching the assertions in the upstream tests.

@@ -481,6 +481,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
         root.resolve("adapter"),
         root.resolve("concrete"),
         root.resolve("output"),
+        Set.of("ref"),
         false,
         true);
   }

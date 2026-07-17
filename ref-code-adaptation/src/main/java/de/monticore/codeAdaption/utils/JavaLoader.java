@@ -18,9 +18,8 @@ import de.monticore.java.javadsl._symboltable.IJavaDSLGlobalScope;
 import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitor;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.types.mcbasictypes.MCBasicTypesMill;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
-import de.se_rwth.commons.logging.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -96,9 +95,7 @@ public class JavaLoader {
   public static void initializeCDSymbolTable(ASTCDCompilationUnit ast) {
     BuiltInTypes.addBuiltInTypes(CD4CodeMill.globalScope());
     ICD4CodeArtifactScope as = CD4CodeMill.scopesGenitorDelegator().createFromAST(ast);
-    CD4CodeSymbolTableCompleter c =
-        new CD4CodeSymbolTableCompleter(
-            ast.getMCImportStatementList(), MCBasicTypesMill.mCQualifiedNameBuilder().build());
+    CD4CodeSymbolTableCompleter c = new CD4CodeSymbolTableCompleter(ast);
     ast.accept(c.getTraverser());
     ast.setEnclosingScope(as);
   }

@@ -3,12 +3,15 @@ package de.monticore.codeAdaption.handler;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cd4codebasis._ast.ASTCDParameter;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
+import de.monticore.cdbasis._ast.ASTCDClass;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdbasis._symboltable.CDTypeSymbol;
 import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
+import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
@@ -21,7 +24,10 @@ import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -191,6 +197,14 @@ final class JavaTypeUpdateService {
   private void projectCompletionDelta(ASTTypeDeclaration javaType, ASTCDType completedType) {
     Optional<ASTCDType> inputType = handler.inputConIndex.type(completedType.getName());
 
+    boolean completedAbstract = CDTypeRelations.isAbstract(completedType);
+    if (completedType instanceof ASTCDClass) {
+      // Reference templates may be abstract even when a concrete incarnation is not. Normalize
+      // every adapted class to the final target CD instead of treating abstractness only as a
+      // completion delta.
+      handler.updater.setTypeAbstract(javaType, completedAbstract);
+    }
+
     for (ASTCDAttribute completedField : completedType.getCDAttributeList()) {
       Optional<ASTCDAttribute> inputField =
           inputType.flatMap(
@@ -255,14 +269,26 @@ final class JavaTypeUpdateService {
             .flatMap(type -> CDTypeRelations.interfaceNames(type).stream())
             .map(JavaSourceNames::simpleName)
             .collect(java.util.stream.Collectors.toSet());
-    CDTypeRelations.interfaceNames(completedType).stream()
+    List<String> addedInterfaces = CDTypeRelations.interfaceNames(completedType).stream()
         .map(JavaSourceNames::simpleName)
         .filter(interfaceName -> !inputInterfaces.contains(interfaceName))
-        // A class diagram may attach an interface without supplying its abstract contract. Adding
-        // such an interface to a concrete Java class would make otherwise valid output fail to
-        // compile. Contract-bearing interfaces remain an upstream completion responsibility.
-        .filter(this::isMarkerInterface)
-        .forEach(interfaceName -> handler.updater.addSuperType(javaType, interfaceName, true));
+        .distinct()
+        .toList();
+    addedInterfaces.forEach(
+        interfaceName -> handler.updater.addSuperType(javaType, interfaceName, true));
+    if (completedType instanceof ASTCDClass && !completedAbstract) {
+      Set<String> completedEffectiveInterfaces =
+          effectiveInterfaceNames(handler.conIndex, completedType.getName());
+      Set<String> inputEffectiveInterfaces =
+          inputType
+              .map(type -> effectiveInterfaceNames(handler.inputConIndex, type.getName()))
+              .orElseGet(Set::of);
+      List<String> introducedEffectiveInterfaces =
+          completedEffectiveInterfaces.stream()
+              .filter(interfaceName -> !inputEffectiveInterfaces.contains(interfaceName))
+              .toList();
+      projectInterfaceContracts(javaType, completedType, introducedEffectiveInterfaces);
+    }
 
     if (completedType instanceof ASTCDEnum completedEnum) {
       Set<String> inputConstants =
@@ -282,8 +308,168 @@ final class JavaTypeUpdateService {
     }
   }
 
-  private boolean isMarkerInterface(String interfaceName) {
-    return handler.conIndex.type(interfaceName).map(type -> type.getCDMethodList().isEmpty()).orElse(false);
+  /**
+   * Returns every interface implemented directly or inherited through interfaces and
+   * superclasses. The visited set in the recursive helper makes malformed inheritance cycles safe.
+   */
+  static Set<String> effectiveInterfaceNames(CDModelIndex index, String typeName) {
+    Set<String> result = new LinkedHashSet<>();
+    collectEffectiveInterfaces(index, typeName, result, new LinkedHashSet<>());
+    return result;
+  }
+
+  private static void collectEffectiveInterfaces(
+      CDModelIndex index,
+      String typeName,
+      Set<String> interfaces,
+      Set<String> visitedTypes) {
+    String simpleName = JavaSourceNames.simpleName(typeName);
+    if (!visitedTypes.add(simpleName)) {
+      return;
+    }
+    ASTCDType type = index.type(simpleName).orElse(null);
+    if (type == null) {
+      return;
+    }
+    for (String interfaceName : CDTypeRelations.interfaceNames(type)) {
+      String simpleInterface = JavaSourceNames.simpleName(interfaceName);
+      interfaces.add(simpleInterface);
+      collectEffectiveInterfaces(index, simpleInterface, interfaces, visitedTypes);
+    }
+    CDTypeRelations.firstSuperclassName(type)
+        .ifPresent(parent -> collectEffectiveInterfaces(index, parent, interfaces, visitedTypes));
+  }
+
+  /**
+   * Materializes newly introduced interface contracts on a concrete Java class. Abstract classes
+   * intentionally skip this step; their concrete descendants receive any still-missing contracts.
+   */
+  private void projectInterfaceContracts(
+      ASTTypeDeclaration javaType, ASTCDType completedType, List<String> addedInterfaces) {
+    Map<String, ASTCDMethod> contracts = new LinkedHashMap<>();
+    Set<String> visitedInterfaces = new LinkedHashSet<>();
+    for (String interfaceName : addedInterfaces) {
+      collectInterfaceContracts(interfaceName, contracts, visitedInterfaces);
+    }
+
+    for (ASTCDMethod contract : contracts.values()) {
+      validateCompletedImplementation(completedType, contract);
+      handler.updater.addMethod(
+          javaType,
+          null,
+          contract.getName(),
+          contract.getCDParameterList().stream()
+              .map(ASTCDParameter::getMCType)
+              .map(JavaSourceNames::printNormalizedType)
+              .map(symbols::resolveConcreteCdType)
+              .toList(),
+          contract.getCDParameterList().stream().map(ASTCDParameter::getName).toList(),
+          symbols.resolveConcreteCdType(JavaSourceNames.printNormalizedReturnType(contract)),
+          false,
+          MethodBodySpec.interfaceContract());
+    }
+  }
+
+  /**
+   * Traverses parent interfaces first and keeps one method per normalized signature. Compatible
+   * covariant returns select the most specific declaration; incompatible returns fail explicitly.
+   */
+  private void collectInterfaceContracts(
+      String interfaceName,
+      Map<String, ASTCDMethod> contracts,
+      Set<String> visitedInterfaces) {
+    String simpleName = JavaSourceNames.simpleName(interfaceName);
+    if (!visitedInterfaces.add(simpleName)) {
+      return;
+    }
+    ASTCDType interfaceType = handler.conIndex.type(simpleName).orElse(null);
+    if (!(interfaceType instanceof ASTCDInterface)) {
+      throw new IllegalStateException(
+          "Completed Java interface '" + simpleName + "' is not an interface in the concrete CD");
+    }
+    for (String parent : CDTypeRelations.interfaceNames(interfaceType)) {
+      collectInterfaceContracts(parent, contracts, visitedInterfaces);
+    }
+    for (ASTCDMethod method : interfaceType.getCDMethodList()) {
+      if (method.getModifier().isStatic()) {
+        continue;
+      }
+      String signature = JavaSourceNames.methodSignature(method);
+      ASTCDMethod existing = contracts.get(signature);
+      if (existing != null) {
+        String existingReturn = JavaSourceNames.printNormalizedReturnType(existing);
+        String candidateReturn = JavaSourceNames.printNormalizedReturnType(method);
+        if (!returnsAreCompatible(existingReturn, candidateReturn)) {
+          throw new IllegalStateException(
+              "Incompatible inherited interface contracts for "
+                  + signature
+                  + ": "
+                  + existingReturn
+                  + " and "
+                  + candidateReturn);
+        }
+        if (isCovariantReturn(candidateReturn, existingReturn)) {
+          contracts.put(signature, method);
+        }
+      } else {
+        contracts.put(signature, method);
+      }
+    }
+  }
+
+  private boolean returnsAreCompatible(String first, String second) {
+    return isCompatibleImplementationReturn(handler.conIndex, first, second)
+        || isCompatibleImplementationReturn(handler.conIndex, second, first);
+  }
+
+  private boolean isCovariantReturn(String candidate, String parent) {
+    return !JavaSourceNames.normalizeType(candidate)
+            .equals(JavaSourceNames.normalizeType(parent))
+        && isCompatibleImplementationReturn(handler.conIndex, candidate, parent);
+  }
+
+  /** Tests Java-compatible equality or covariance for an implementation return type. */
+  static boolean isCompatibleImplementationReturn(
+      CDModelIndex index, String actualReturn, String expectedReturn) {
+    String actual = JavaSourceNames.normalizeType(actualReturn);
+    String expected = JavaSourceNames.normalizeType(expectedReturn);
+    if (actual.equals(expected)) {
+      return true;
+    }
+    if ("Object".equals(JavaSourceNames.simpleName(expected)) && !isPrimitive(actual)) {
+      return true;
+    }
+    return index.isSubtypeOf(actual, expected);
+  }
+
+  private static boolean isPrimitive(String type) {
+    return Set.of("boolean", "byte", "short", "int", "long", "char", "float", "double", "void")
+        .contains(type);
+  }
+
+  /** Rejects a completed class method that already occupies a contract signature incompatibly. */
+  private void validateCompletedImplementation(ASTCDType completedType, ASTCDMethod contract) {
+    String signature = JavaSourceNames.methodSignature(contract);
+    for (ASTCDMethod method : completedType.getCDMethodList()) {
+      if (!signature.equals(JavaSourceNames.methodSignature(method))) {
+        continue;
+      }
+      String expectedReturn = JavaSourceNames.printNormalizedReturnType(contract);
+      String actualReturn = JavaSourceNames.printNormalizedReturnType(method);
+      if (!isCompatibleImplementationReturn(
+          handler.conIndex, actualReturn, expectedReturn)) {
+        throw new IllegalStateException(
+            "Method "
+                + completedType.getName()
+                + "."
+                + signature
+                + " has return type "
+                + actualReturn
+                + " but interface contract requires "
+                + expectedReturn);
+      }
+      return;
+    }
   }
 
   private void projectFields(

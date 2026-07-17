@@ -12,6 +12,7 @@ public record CDConcretizationTestCase(
     Path adapterPath,
     Path concretePath,
     Path outputPath,
+    Set<String> mappings,
     boolean strictParameterOrder,
     boolean enabled) {
 
@@ -20,7 +21,7 @@ public record CDConcretizationTestCase(
 
   public static final String OUTPUT_ROOT = "target/adapter/cdconcretization/";
 
-  public Set<String> mappings() {
-    return Set.of("ref");
+  public CDConcretizationTestCase {
+    mappings = Set.copyOf(mappings);
   }
 }

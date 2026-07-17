@@ -4,6 +4,8 @@ import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.CDModelIndex;
+import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl.JavaDSLMill;
@@ -21,9 +23,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Merges, filters, splits, and deduplicates Java AST units produced by mapping runs. */
 final class AdaptedCodeMerger {
+
+  /**
+   * Caches platform-class lookups used while repairing imports. A cached {@code true} means the
+   * fully qualified name resolves, without class initialization, to a public top-level JDK type;
+   * such a type is already available through {@code java.lang} or a matching wildcard import.
+   */
+  private static final Map<String, Boolean> PLATFORM_PUBLIC_TOP_LEVEL_TYPE_CACHE =
+      new ConcurrentHashMap<>();
 
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCode(
       Set<ASTOrdinaryCompilationUnit> actualCode,
@@ -123,7 +134,154 @@ final class AdaptedCodeMerger {
               : AdapterUtils.mergeAstsPreferringLeft(concreteMatch, mergeableAdapted));
     }
 
+    repairMemberTypeImports(result);
+
     return new LinkedHashSet<>(result.values());
+  }
+
+  /**
+   * Imports final concrete declaration locations used by generated fields, methods and
+   * supertypes. Completion can introduce member types after the initial reference-CD import
+   * projection, and relocation can place those types in packages different from their adapted
+   * owner.
+   */
+  private void repairMemberTypeImports(Map<String, ASTOrdinaryCompilationUnit> units) {
+    Map<String, Set<String>> declarationsBySimpleName = new LinkedHashMap<>();
+    for (ASTOrdinaryCompilationUnit unit : units.values()) {
+      String declarationPackage = packageName(unit);
+      for (ASTTypeDeclaration type : unit.getTypeDeclarationList()) {
+        declarationsBySimpleName
+            .computeIfAbsent(type.getName(), ignored -> new LinkedHashSet<>())
+            .add(qualify(declarationPackage, type.getName()));
+      }
+    }
+
+    for (ASTOrdinaryCompilationUnit unit : units.values()) {
+      Set<String> referencedSimpleNames = memberTypeNames(unit);
+      Set<String> declaredSimpleNames =
+          unit.getTypeDeclarationList().stream()
+              .map(ASTTypeDeclaration::getName)
+              .collect(java.util.stream.Collectors.toSet());
+      Set<String> existingImports =
+          unit.getImportDeclarationList().stream()
+              .filter(
+                  importDeclaration ->
+                      !importDeclaration.isStatic() && !importDeclaration.isSTAR())
+              .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
+              .filter(qualifiedName -> qualifiedName.contains("."))
+              .collect(java.util.stream.Collectors.toSet());
+      Set<String> explicitlyImportedSimpleNames =
+          existingImports.stream()
+              .map(this::simpleName)
+              .collect(java.util.stream.Collectors.toSet());
+      Set<String> wildcardImportPackages =
+          unit.getImportDeclarationList().stream()
+              .filter(
+                  importDeclaration ->
+                      !importDeclaration.isStatic() && importDeclaration.isSTAR())
+              .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
+              .collect(java.util.stream.Collectors.toSet());
+      Map<String, String> requiredImports = new LinkedHashMap<>();
+      for (String simpleName : referencedSimpleNames) {
+        Set<String> candidates = declarationsBySimpleName.getOrDefault(simpleName, Set.of());
+        if (declaredSimpleNames.contains(simpleName)
+            || candidates.stream()
+                .anyMatch(candidate -> packageName(candidate).equals(packageName(unit)))
+            || explicitlyImportedSimpleNames.contains(simpleName)
+            || wildcardImportPackages.stream()
+                .anyMatch(
+                    importedPackage ->
+                        isAvailableThroughWildcardImport(
+                            importedPackage, simpleName, candidates))
+            || isImplicitJavaLangType(simpleName)) {
+          continue;
+        }
+        if (candidates.size() == 1) {
+          requiredImports.put(simpleName, candidates.iterator().next());
+        } else if (candidates.size() > 1) {
+          throw new CodeAdaptationException(
+              "Cannot import generated member type '"
+                  + simpleName
+                  + "' because final output contains multiple declarations: "
+                  + candidates);
+        }
+      }
+      addRelocationImports(unit, requiredImports, packageName(unit));
+    }
+  }
+
+  /** Returns whether a generated simple name is implicitly visible from {@code java.lang}. */
+  private boolean isImplicitJavaLangType(String simpleName) {
+    if (simpleName == null || simpleName.isBlank() || simpleName.contains(".")) {
+      return false;
+    }
+    return isLoadablePublicTopLevelType("java.lang." + simpleName);
+  }
+
+  /**
+   * A wildcard import covers either a type produced in the final output or a public top-level JDK
+   * type. Checking both avoids adding redundant explicit imports after relocation.
+   */
+  private boolean isAvailableThroughWildcardImport(
+      String importedPackage, String simpleName, Set<String> outputCandidates) {
+    String qualifiedName = qualify(importedPackage, simpleName);
+    return outputCandidates.contains(qualifiedName)
+        || isLoadablePublicTopLevelType(qualifiedName);
+  }
+
+  private boolean isLoadablePublicTopLevelType(String qualifiedName) {
+    return PLATFORM_PUBLIC_TOP_LEVEL_TYPE_CACHE.computeIfAbsent(
+        qualifiedName, AdaptedCodeMerger::loadPublicTopLevelType);
+  }
+
+  /**
+   * Probes only the JDK platform class loader and does not initialize the class. Nested and
+   * non-public classes are deliberately rejected because a Java wildcard import cannot expose
+   * them as top-level source types.
+   */
+  private static boolean loadPublicTopLevelType(String qualifiedName) {
+    try {
+      Class<?> type = Class.forName(qualifiedName, false, ClassLoader.getPlatformClassLoader());
+      return type.getEnclosingClass() == null
+          && java.lang.reflect.Modifier.isPublic(type.getModifiers());
+    } catch (ClassNotFoundException | LinkageError ignored) {
+      return false;
+    }
+  }
+
+  /** Collects type names appearing in declaration signatures that may require final imports. */
+  private Set<String> memberTypeNames(ASTOrdinaryCompilationUnit unit) {
+    Set<String> names = new LinkedHashSet<>();
+    JavaAstElemCollector collector = collect(unit);
+    for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
+      collector.getAllFSuperTypeDeclarations(type).forEach(value -> collectTypeNames(value, names));
+      collector
+          .getAllFieldDeclarations(type)
+          .forEach(field -> collectTypeNames(field.getMCType(), names));
+      collector
+          .getAllMethodDeclarations(type)
+          .forEach(
+              method -> {
+                collectTypeNames(method.getMCReturnType(), names);
+                collector
+                    .getAllParameters(type, method)
+                    .forEach(parameter -> collectTypeNames(parameter.getMCType(), names));
+              });
+    }
+    return names;
+  }
+
+  /**
+   * Uses the shared type-name parser to find simple names inside arrays and nested generic types;
+   * the returned replacement is empty because this pass only observes names.
+   */
+  private void collectTypeNames(de.monticore.ast.ASTNode type, Set<String> names) {
+    JavaSourceNames.replaceSimpleTypeNames(
+        JavaLoader.print(type),
+        simpleName -> {
+          names.add(simpleName);
+          return Optional.empty();
+        });
   }
 
   private Map<String, Relocation> findRelocations(

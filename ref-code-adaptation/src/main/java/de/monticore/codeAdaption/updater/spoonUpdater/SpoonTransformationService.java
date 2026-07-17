@@ -290,10 +290,50 @@ final class SpoonTransformationService {
               || (owner.getSimpleName() != null && owner.getSimpleName().endsWith("Builder")))) {
         continue;
       }
+      if (wouldCollapseOverload(reference)) {
+        continue;
+      }
       if (!replacement.equals(reference.getSimpleName())) {
         rewriteTypeReferenceName(reference, replacement);
       }
     }
+  }
+
+  /**
+   * Keeps concrete parameter types when replacing them by a grouping type would erase overload
+   * identity. This is required for overload sets introduced by CD completion, such as Visitor
+   * methods for several concrete node incarnations.
+   */
+  private boolean wouldCollapseOverload(CtTypeReference<?> reference) {
+    CtParameter<?> parameter = reference.getParent(CtParameter.class);
+    if (parameter == null || parameter.getType() != reference) {
+      return false;
+    }
+    CtMethod<?> method = parameter.getParent(CtMethod.class);
+    CtType<?> owner = method == null ? null : method.getParent(CtType.class);
+    if (owner == null) {
+      return false;
+    }
+    String groupedSignature = groupedSignature(method);
+    return owner.getMethods().stream()
+        .filter(candidate -> candidate != method)
+        .anyMatch(candidate -> groupedSignature.equals(groupedSignature(candidate)));
+  }
+
+  private String groupedSignature(CtMethod<?> method) {
+    return method.getSimpleName()
+        + "("
+        + method.getParameters().stream()
+            .map(CtParameter::getType)
+            .map(
+                type -> {
+                  String grouping = mappingFor(type);
+                  return grouping == null
+                      ? type.getSimpleName()
+                      : JavaSourceNames.simpleName(grouping);
+                })
+            .collect(Collectors.joining(","))
+        + ")";
   }
 
   private String mappingFor(CtTypeReference<?> reference) {

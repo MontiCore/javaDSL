@@ -147,6 +147,11 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   @Override
+  public void setTypeAbstract(ASTTypeDeclaration targetType, boolean isAbstract) {
+    generation.setTypeAbstract(targetType, isAbstract);
+  }
+
+  @Override
   public void addEnumConstant(
       ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
     generation.addEnumConstant(targetType, constantName, expectedIndex);

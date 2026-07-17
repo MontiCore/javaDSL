@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -144,6 +145,58 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   }
 
   @Test
+  void preservesCompletedAbstractnessWhenMergingIntoConcreteCode() throws IOException {
+    ASTOrdinaryCompilationUnit adapted =
+        parse(
+            "adapter/BankAccount.java",
+            "package adapter; abstract class BankAccount implements Auditable {}");
+    ASTOrdinaryCompilationUnit concrete =
+        parse("concrete/BankAccount.java", "package concrete; class BankAccount {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { abstract class BankAccount; }");
+
+    ASTOrdinaryCompilationUnit merged =
+        merger
+            .mergeAdaptedCodeIntoConcreteBase(
+                linkedSet(concrete),
+                linkedSet(adapted),
+                CDModelIndex.of(JavaLoader.parseCD(cd.toString())))
+            .stream()
+            .filter(unit -> unit.getTypeDeclarationList().get(0).getName().equals("BankAccount"))
+            .findFirst()
+            .orElseThrow();
+
+    String rendered = JavaLoader.print(merged);
+    assertTrue(rendered.contains("abstract class BankAccount"), rendered);
+    assertTrue(rendered.contains("implements Auditable"), rendered);
+  }
+
+  @Test
+  void removesStaleAbstractnessWhenCompletedTypeIsConcrete() throws IOException {
+    ASTOrdinaryCompilationUnit adapted =
+        parse("adapter/BankAccount.java", "package adapter; class BankAccount {}");
+    ASTOrdinaryCompilationUnit concrete =
+        parse(
+            "concrete/BankAccount.java",
+            "package concrete; public abstract class BankAccount {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class BankAccount; }");
+
+    ASTOrdinaryCompilationUnit merged =
+        merger
+            .mergeAdaptedCodeIntoConcreteBase(
+                linkedSet(concrete),
+                linkedSet(adapted),
+                CDModelIndex.of(JavaLoader.parseCD(cd.toString())))
+            .iterator()
+            .next();
+
+    String rendered = JavaLoader.print(merged);
+    assertTrue(rendered.contains("public class BankAccount"), rendered);
+    assertFalse(rendered.contains("abstract class BankAccount"), rendered);
+  }
+
+  @Test
   void importsRelocatedTypesIntoDependentAdaptedUnits() throws IOException {
     ASTOrdinaryCompilationUnit adaptedAccount =
         parse("adapter/Account.java", "package adapter; class Account {}");
@@ -197,6 +250,70 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
             .findFirst()
             .orElseThrow();
     assertTrue(JavaLoader.print(child).contains("import domain.Base;"));
+  }
+
+  @Test
+  void memberImportRepairPreservesExplicitImportBinding() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import java.util.Date; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    ASTOrdinaryCompilationUnit mergedConsumer = unitNamed(merged, "Consumer");
+    String rendered = JavaLoader.print(mergedConsumer);
+    assertTrue(rendered.contains("import java.util.Date;"), rendered);
+    assertFalse(rendered.contains("import domain.Date;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairDoesNotShadowJavaLangType() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse("adapter/Consumer.java", "package adapter; class Consumer { String name; }");
+    ASTOrdinaryCompilationUnit domainString =
+        parse("domain/String.java", "package domain; class String {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class String; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainString),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertFalse(rendered.contains("import domain.String;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairDoesNotOverrideWildcardImport() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import java.util.*; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("import java.util.*;"), rendered);
+    assertFalse(rendered.contains("import domain.Date;"), rendered);
   }
 
   @Test
@@ -312,6 +429,14 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
     Files.createDirectories(file.getParent());
     Files.writeString(file, source);
     return JavaLoader.loadJava(file.toFile());
+  }
+
+  private ASTOrdinaryCompilationUnit unitNamed(
+      Set<ASTOrdinaryCompilationUnit> units, String typeName) {
+    return units.stream()
+        .filter(unit -> unit.getTypeDeclarationList().get(0).getName().equals(typeName))
+        .findFirst()
+        .orElseThrow();
   }
 
   @SafeVarargs

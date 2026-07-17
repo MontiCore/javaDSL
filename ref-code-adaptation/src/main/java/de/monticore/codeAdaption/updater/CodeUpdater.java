@@ -200,6 +200,11 @@ public interface CodeUpdater {
     throw unsupported("addSuperType");
   }
 
+  /** Sets whether a generated or adapted Java type is abstract. */
+  default void setTypeAbstract(ASTTypeDeclaration targetType, boolean isAbstract) {
+    throw unsupported("setTypeAbstract");
+  }
+
   /** Adds an enum constant introduced by completed-CD projection. */
   default void addEnumConstant(
       ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
@@ -237,6 +242,8 @@ public interface CodeUpdater {
     public enum Kind {
       /** Preserve a cloned body or synthesize a safe empty/default body. */
       EMPTY,
+      /** Preserve an implementation or synthesize a public, safe interface-contract body. */
+      INTERFACE_CONTRACT,
       /** Assign one parameter to a field and return {@code this}. */
       ASSIGN_FIELD_AND_RETURN_THIS,
       /** Return a newly constructed value using selected fields as arguments. */
@@ -268,6 +275,12 @@ public interface CodeUpdater {
     /** Returns a specification that requests no structured replacement body. */
     public static MethodBodySpec empty() {
       return new MethodBodySpec(Kind.EMPTY, null, null, null, java.util.List.of());
+    }
+
+    /** Returns a specification for a concrete implementation of an interface contract. */
+    public static MethodBodySpec interfaceContract() {
+      return new MethodBodySpec(
+          Kind.INTERFACE_CONTRACT, null, null, null, java.util.List.of());
     }
 
     /** Returns a builder-style field-assignment specification. */

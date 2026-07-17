@@ -99,6 +99,8 @@ public class CombinedPatternEvaluationTest extends EvaluationAbstractTest {
     assertTrue(renderDecorator.contains("return wrapped.render(depth);"));
     assertTrue(borderDecorator.contains("public class BorderDecorator extends RenderDecorator"));
     assertTrue(shadowDecorator.contains("public class ShadowDecorator extends RenderDecorator"));
+    assertFalse(borderDecorator.contains("abstract class BorderDecorator"));
+    assertFalse(shadowDecorator.contains("abstract class ShadowDecorator"));
     assertFalse(groupNode.contains("Component"));
     assertFalse(groupNode.contains("operation("));
   }

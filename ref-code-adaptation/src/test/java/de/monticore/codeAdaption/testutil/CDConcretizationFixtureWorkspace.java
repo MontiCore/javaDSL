@@ -69,6 +69,7 @@ public final class CDConcretizationFixtureWorkspace {
         adapterTarget,
         concreteTarget,
         testCase.outputPath(),
+        testCase.mappings(),
         testCase.strictParameterOrder(),
         testCase.enabled());
   }

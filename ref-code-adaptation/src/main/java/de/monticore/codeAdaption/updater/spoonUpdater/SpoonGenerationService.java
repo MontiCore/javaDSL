@@ -108,6 +108,19 @@ final class SpoonGenerationService {
     }
   }
 
+  /** Reconciles a generated Java class modifier with the authoritative target CD type. */
+  void setTypeAbstract(ASTTypeDeclaration targetType, boolean isAbstract) {
+    CtType<?> target = resolver.getSpoonType(targetType);
+    if (target.isInterface()) {
+      return;
+    }
+    if (isAbstract) {
+      target.addModifier(ModifierKind.ABSTRACT);
+    } else {
+      target.removeModifier(ModifierKind.ABSTRACT);
+    }
+  }
+
   void addEnumConstant(
       ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
     requireName(constantName, "Enum constant name");
@@ -138,9 +151,16 @@ final class SpoonGenerationService {
       MethodBodySpec methodBody) {
     validateMethodInput(newName, parameterTypes, parameterNames);
     Objects.requireNonNull(methodBody, "Method body specification must not be null");
+    if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT && isStatic) {
+      throw new IllegalStateException("An interface contract implementation cannot be static");
+    }
     CtType<?> spoonType = resolver.getSpoonType(targetType);
     CtMethod<?> existingMethod = findMethod(spoonType, newName, parameterTypes);
     if (existingMethod != null) {
+      if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
+        completeExistingInterfaceContract(existingMethod, returnType);
+        return;
+      }
       existingMethod.setType(workspace.createTypeReference(returnType));
       setStatic(existingMethod, isStatic);
       return;
@@ -155,8 +175,88 @@ final class SpoonGenerationService {
             returnType,
             hasReplacementBody(methodBody));
     setStatic(clone, isStatic);
+    if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
+      clone.addModifier(ModifierKind.PUBLIC);
+      clone.removeModifier(ModifierKind.ABSTRACT);
+    }
     applyMethodBodySpec(targetType, clone, methodBody);
     spoonType.addMethod(clone);
+  }
+
+  /**
+   * Turns an existing declaration into a legal concrete interface implementation without
+   * replacing a handwritten body. Signature conflicts are rejected before visibility/body repair.
+   */
+  private void completeExistingInterfaceContract(
+      CtMethod<?> existingMethod, String contractReturnType) {
+    if (existingMethod.hasModifier(ModifierKind.STATIC)) {
+      throw new IllegalStateException(
+          "Static method "
+              + existingMethod.getSignature()
+              + " cannot implement an interface contract");
+    }
+    CtTypeReference<?> existingReturn = existingMethod.getType();
+    CtTypeReference<?> contractReturn = workspace.createTypeReference(contractReturnType);
+    if (!isCompatibleInterfaceReturn(existingReturn, contractReturn)) {
+      throw new IllegalStateException(
+          "Method "
+              + existingMethod.getSignature()
+              + " returns "
+              + typeName(existingReturn)
+              + " but interface contract requires "
+              + typeName(contractReturn));
+    }
+    existingMethod.removeModifier(ModifierKind.PRIVATE);
+    existingMethod.removeModifier(ModifierKind.PROTECTED);
+    existingMethod.addModifier(ModifierKind.PUBLIC);
+    existingMethod.removeModifier(ModifierKind.ABSTRACT);
+    if (existingMethod.getBody() == null) {
+      existingMethod.setBody(safeDefaultBody(typeName(existingReturn)));
+    }
+  }
+
+  /** Accepts identical returns and Java covariance, but never mixes primitive and reference types. */
+  private boolean isCompatibleInterfaceReturn(
+      CtTypeReference<?> actualReturn, CtTypeReference<?> expectedReturn) {
+    if (actualReturn == null || expectedReturn == null) {
+      return false;
+    }
+    if (sameType(actualReturn, expectedReturn)) {
+      return true;
+    }
+    if (isPrimitiveOrVoid(actualReturn) || isPrimitiveOrVoid(expectedReturn)) {
+      return false;
+    }
+    if ("Object".equals(expectedReturn.getSimpleName())) {
+      return true;
+    }
+    try {
+      return actualReturn.isSubtypeOf(expectedReturn);
+    } catch (RuntimeException ignored) {
+      return false;
+    }
+  }
+
+  private boolean sameType(CtTypeReference<?> first, CtTypeReference<?> second) {
+    String firstQualified = first.getQualifiedName();
+    String secondQualified = second.getQualifiedName();
+    if (Objects.equals(firstQualified, secondQualified)) {
+      return true;
+    }
+    return first.getSimpleName().equals(second.getSimpleName())
+        && (first.isSimplyQualified() || second.isSimplyQualified());
+  }
+
+  private boolean isPrimitiveOrVoid(CtTypeReference<?> type) {
+    return type.isPrimitive() || "void".equals(type.getSimpleName());
+  }
+
+  private String typeName(CtTypeReference<?> type) {
+    if (type == null) {
+      return "Object";
+    }
+    String qualifiedName = type.getQualifiedName();
+    return qualifiedName == null || qualifiedName.isBlank() ? type.getSimpleName() : qualifiedName;
   }
 
   private boolean requiresSignatureOnlyMethod(
@@ -294,7 +394,8 @@ final class SpoonGenerationService {
   }
 
   private static boolean hasReplacementBody(MethodBodySpec methodBody) {
-    return methodBody.kind() != MethodBodySpec.Kind.EMPTY;
+    return methodBody.kind() != MethodBodySpec.Kind.EMPTY
+        && methodBody.kind() != MethodBodySpec.Kind.INTERFACE_CONTRACT;
   }
 
   private CtMethod<?> findMethod(CtType<?> type, String name, List<String> parameterTypes) {
@@ -323,7 +424,8 @@ final class SpoonGenerationService {
   @SuppressWarnings({"rawtypes", "unchecked"})
   private void applyMethodBodySpec(
       ASTTypeDeclaration targetType, CtMethod<?> clone, MethodBodySpec methodBody) {
-    if (methodBody.kind() == MethodBodySpec.Kind.EMPTY) {
+    if (methodBody.kind() == MethodBodySpec.Kind.EMPTY
+        || methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
       return;
     }
     CtBlock<?> body = workspace.factory().Core().createBlock();

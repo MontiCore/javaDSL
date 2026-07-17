@@ -3,6 +3,7 @@ package de.monticore.codeAdaption.updater.spoonUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -209,6 +210,198 @@ class SpoonServicesTest {
             .getEnumValues().stream()
             .map(value -> value.getSimpleName())
             .toList());
+  }
+
+  @Test
+  void concreteInterfaceContractsArePublicAndReceiveSafeBodies() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("interface-contracts"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Implementation",
+            "class Implementation { String existing() { return \"kept\"; } }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration implementation = loadType(source, "Implementation");
+
+    generation.setTypeAbstract(implementation, true);
+    assertTrue(
+        resolver
+            .getSpoonType(implementation)
+            .hasModifier(spoon.reflect.declaration.ModifierKind.ABSTRACT));
+    generation.setTypeAbstract(implementation, false);
+    assertFalse(
+        resolver
+            .getSpoonType(implementation)
+            .hasModifier(spoon.reflect.declaration.ModifierKind.ABSTRACT));
+
+    generation.addMethod(
+        implementation,
+        null,
+        "existing",
+        List.of(),
+        List.of(),
+        "String",
+        false,
+        MethodBodySpec.interfaceContract());
+    generation.addMethod(
+        implementation,
+        null,
+        "enabled",
+        List.of(),
+        List.of(),
+        "boolean",
+        false,
+        MethodBodySpec.interfaceContract());
+    generation.addMethod(
+        implementation,
+        null,
+        "description",
+        List.of(),
+        List.of(),
+        "String",
+        false,
+        MethodBodySpec.interfaceContract());
+    generation.addMethod(
+        implementation,
+        null,
+        "reset",
+        List.of(),
+        List.of(),
+        "void",
+        false,
+        MethodBodySpec.interfaceContract());
+
+    var type = resolver.getSpoonType(implementation);
+    String existing = type.getMethodsByName("existing").get(0).toString();
+    assertTrue(existing.contains("public"), existing);
+    assertTrue(existing.contains("return \"kept\""), existing);
+    assertTrue(type.getMethodsByName("enabled").get(0).toString().contains("return false"));
+    assertTrue(type.getMethodsByName("description").get(0).toString().contains("return null"));
+    assertNotNull(type.getMethodsByName("reset").get(0).getBody());
+  }
+
+  @Test
+  void interfaceContractPreservesExistingCovariantReturnAndBody() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("covariant-contract"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Implementation",
+            "class Implementation { protected String value() { return \"kept\"; } }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration implementation = loadType(source, "Implementation");
+
+    generation.addMethod(
+        implementation,
+        null,
+        "value",
+        List.of(),
+        List.of(),
+        "Object",
+        false,
+        MethodBodySpec.interfaceContract());
+
+    var method = resolver.getSpoonType(implementation).getMethodsByName("value").get(0);
+    assertEquals("String", method.getType().getSimpleName());
+    assertTrue(method.hasModifier(spoon.reflect.declaration.ModifierKind.PUBLIC));
+    assertFalse(method.hasModifier(spoon.reflect.declaration.ModifierKind.PROTECTED));
+    assertTrue(method.toString().contains("return \"kept\""), method.toString());
+  }
+
+  @Test
+  void interfaceContractRejectsIncompatibleOrStaticExistingMethod() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("invalid-contract"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Implementation",
+            "class Implementation { Integer value() { return 1; } "
+                + "static String utility() { return \"kept\"; } }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration implementation = loadType(source, "Implementation");
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            generation.addMethod(
+                implementation,
+                null,
+                "value",
+                List.of(),
+                List.of(),
+                "String",
+                false,
+                MethodBodySpec.interfaceContract()));
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            generation.addMethod(
+                implementation,
+                null,
+                "utility",
+                List.of(),
+                List.of(),
+                "String",
+                false,
+                MethodBodySpec.interfaceContract()));
+
+    assertEquals(
+        "Integer",
+        resolver
+            .getSpoonType(implementation)
+            .getMethodsByName("value")
+            .get(0)
+            .getType()
+            .getSimpleName());
+    assertTrue(
+        resolver
+            .getSpoonType(implementation)
+            .getMethodsByName("utility")
+            .get(0)
+            .hasModifier(spoon.reflect.declaration.ModifierKind.STATIC));
+  }
+
+  @Test
+  void interfaceContractUsesPreservedReturnForSynthesizedBody() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("bodyless-contract"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Implementation",
+            "abstract class Implementation { protected abstract String value(); }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration implementation = loadType(source, "Implementation");
+
+    generation.addMethod(
+        implementation,
+        null,
+        "value",
+        List.of(),
+        List.of(),
+        "Object",
+        false,
+        MethodBodySpec.interfaceContract());
+
+    var method = resolver.getSpoonType(implementation).getMethodsByName("value").get(0);
+    assertEquals("String", method.getType().getSimpleName());
+    assertFalse(method.hasModifier(spoon.reflect.declaration.ModifierKind.ABSTRACT));
+    assertTrue(method.toString().contains("return null"), method.toString());
   }
 
   @Test

@@ -8,6 +8,7 @@ import static de.monticore.cdconformance.CDConfParameter.METHOD_OVERLOADING;
 import static de.monticore.cdconformance.CDConfParameter.NAME_MAPPING;
 import static de.monticore.cdconformance.CDConfParameter.SRC_TARGET_ASSOC_MAPPING;
 import static de.monticore.cdconformance.CDConfParameter.STEREOTYPE_MAPPING;
+import static de.monticore.cdconformance.CDConfParameter.STRICT_PARAMETER_ORDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,8 +17,11 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -109,6 +113,48 @@ class ConcretizationServiceTest extends AdapterAbstractTest {
     CDModelIndex index = CDModelIndex.of(completed);
 
     assertTrue(index.methods("UserService", "sendToOrderService").isEmpty());
+  }
+
+  @Test
+  void visitorCompletionProducesAllOverloadsWithUpstreamParameters() {
+    Set<CDConfParameter> upstreamParameters = new LinkedHashSet<>(parameters);
+    upstreamParameters.remove(ALLOW_ADDITIONAL_PARAMETERS);
+    upstreamParameters.add(STRICT_PARAMETER_ORDER);
+
+    assertVisitorCompletion(upstreamParameters);
+  }
+
+  @Test
+  void visitorCompletionProducesAllOverloadsWithProductionParameters() {
+    Set<CDConfParameter> productionParameters = new LinkedHashSet<>(parameters);
+    productionParameters.add(STRICT_PARAMETER_ORDER);
+
+    assertVisitorCompletion(productionParameters);
+  }
+
+  private void assertVisitorCompletion(Set<CDConfParameter> completionParameters) {
+    ASTCDCompilationUnit referenceCD =
+        JavaLoader.parseCD(ROOT.resolve("evaluation/visitor/VisitorRef.cd").toString());
+    ASTCDCompilationUnit concreteCD =
+        JavaLoader.parseCD(ROOT.resolve("evaluation/visitor/VisitorConc.cd").toString());
+    ASTCDCompilationUnit originalConcreteCD = concreteCD.deepClone();
+
+    ASTCDCompilationUnit completed =
+        new ConcretizationService(completionParameters)
+            .completeConcreteCD(concreteCD, referenceCD, Set.of("ref"));
+    CDModelIndex completedIndex = CDModelIndex.of(completed);
+
+    assertEquals(
+        Set.of("visit(Node)", "visit(RootNode)", "visit(InnerNode)", "visit(LeafNode)"),
+        completedIndex.methods("NodeVisitor", "visit").stream()
+            .map(JavaSourceNames::methodSignature)
+            .collect(Collectors.toSet()));
+    assertTrue(
+        concreteCD.deepEquals(originalConcreteCD, false),
+        "Concretization must leave the caller-owned concrete AST unchanged");
+    assertTrue(
+        CDModelIndex.of(concreteCD).methods("NodeVisitor").isEmpty(),
+        "Completed Visitor declarations must exist only in the returned clone");
   }
 
   private ASTCDCompilationUnit complete(String reference, String concrete) {

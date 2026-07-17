@@ -89,6 +89,11 @@ public final class CDConcretizationTestCases {
           "evaluation/staticDelegator/StaticDelegatorConc.cd",
               "Upstream cdconcretization does not implement method-target forEach completion");
 
+  private static final Map<String, Set<String>> MAPPING_OVERRIDES =
+      Map.of(
+          "evaluation/observer/mutualObservers/MutualObserversConc.cd",
+          Set.of("ref1", "ref2"));
+
   private static final Map<String, Boolean> STRICT_PARAMETER_ORDER =
       Map.ofEntries(
           Map.entry("evaluation/builder/DataModelConc.cd", true),
@@ -118,56 +123,36 @@ public final class CDConcretizationTestCases {
           "evaluation/macoco/EmptyConc.cd", "evaluation/macoco/EmptyConcOut.cd",
           "evaluation/mill/LanguageInfrastructureConc.cd", "evaluation/mill/MillOut.cd");
 
-  private static final Map<String, String> NO_EXPECTED_OUTPUT_REASONS =
-      Map.ofEntries(
-          Map.entry(
-              "attributes/valid/AttributesMissingConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "attributes/valid/TwoAttributesMissingConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "attributes/valid/TwoAttributesMissingOneMatchConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "inheritance/AttributeTypeMismatchConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "inheritance/MissingInheritanceConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "methods/basic/valid/ClassEmptyConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "methods/basic/valid/ClassMissingConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "methods/basic/valid/MethodMissingConc.cd",
-              "Upstream fixture provides no expected output model"),
-          Map.entry(
-              "methods/basic/valid/MultipleMethodsMissingConc.cd",
-              "Upstream fixture provides no expected output model"));
+  /** Upstream asserts these completed CDs directly against their reference CDs. */
+  private static final Set<String> REFERENCE_AS_EXPECTED_OUTPUT_CASES =
+      Set.of(
+          "attributes/valid/AttributesMissingConc.cd",
+          "attributes/valid/TwoAttributesMissingConc.cd",
+          "attributes/valid/TwoAttributesMissingOneMatchConc.cd",
+          "inheritance/MissingInheritanceConc.cd",
+          "methods/basic/valid/ClassEmptyConc.cd",
+          "methods/basic/valid/ClassMissingConc.cd",
+          "methods/basic/valid/MethodMissingConc.cd",
+          "methods/basic/valid/MultipleMethodsMissingConc.cd");
 
   private static final Map<String, String> STRUCTURAL_ORACLE_EXCLUSIONS =
       Map.ofEntries(
           Map.entry(
-              "evaluation/banking2/BankingConc.cd",
-              "The golden CD adds a non-marker interface without implementing its abstract Java contract"),
+              "associations/AssociationMissingSimpleConc.cd",
+              "Upstream test is disabled until its association semantics issue is clarified"),
+          Map.entry(
+              "inheritance/AttributeTypeMismatchConc.cd",
+              "Upstream cdconcretization incorrectly accepts an inherited attribute with an incompatible type"),
           Map.entry(
               "evaluation/banking/multiInc/BankingConc.cd",
-              "The current upstream completer does not materialize the golden multi-incarnation account aliases"),
+              "Upstream test is disabled because bind mappings are not considered while "
+                  + "completing associations"),
           Map.entry(
               "evaluation/cross-references/MicroserviceConc.cd",
-              "The current upstream completer does not materialize method-forEach-type Cartesian expansions"),
+              "Upstream test is disabled because forEach cannot express global cross-incarnation references"),
           Map.entry(
-              "evaluation/observer/mutualObservers/MutualObserversConc.cd",
-              "The current upstream completer does not materialize members inherited from both mapped reference roles"),
-          Map.entry(
-              "evaluation/staticDelegator/attrWorkaround/StaticExistsConc.cd",
-              "The current upstream completer does not materialize reverse method-to-attribute forEach expansions"),
-          Map.entry(
-              "evaluation/visitor/VisitorConc.cd",
-              "The current upstream completer does not materialize the golden visitor forEach overloads"));
+              "evaluation/staticDelegator/attrWorkaround/InstanceMethodExistsConc.cd",
+              "Upstream test is disabled because forEach completion is not bidirectional"));
 
   private CDConcretizationTestCases() {}
 
@@ -230,6 +215,7 @@ public final class CDConcretizationTestCases {
         adapterPath,
         concretePath,
         outputPath,
+        MAPPING_OVERRIDES.getOrDefault(concRelativePath, Set.of("ref")),
         STRICT_PARAMETER_ORDER.getOrDefault(concRelativePath, false),
         !EXPECTED_FAILURE_CASES.contains(concRelativePath)
             && !UNSUPPORTED_CASES.containsKey(concRelativePath));
@@ -272,6 +258,9 @@ public final class CDConcretizationTestCases {
     if (STRUCTURAL_ORACLE_EXCLUSIONS.containsKey(concretePath)) {
       return Optional.empty();
     }
+    if (REFERENCE_AS_EXPECTED_OUTPUT_CASES.contains(concretePath)) {
+      return Optional.of(testCase.refCd());
+    }
     String expectedPath =
         EXPECTED_OUTPUT_OVERRIDES.getOrDefault(
             concretePath, concretePath.replace("Conc.cd", "Out.cd"));
@@ -280,9 +269,7 @@ public final class CDConcretizationTestCases {
   }
 
   public static Optional<String> noExpectedOutputReason(CDConcretizationTestCase testCase) {
-    String path = relativeConcretePath(testCase);
-    return Optional.ofNullable(
-        STRUCTURAL_ORACLE_EXCLUSIONS.getOrDefault(path, NO_EXPECTED_OUTPUT_REASONS.get(path)));
+    return Optional.ofNullable(STRUCTURAL_ORACLE_EXCLUSIONS.get(relativeConcretePath(testCase)));
   }
 
   static String resolveRefPath(String concRelativePath) {

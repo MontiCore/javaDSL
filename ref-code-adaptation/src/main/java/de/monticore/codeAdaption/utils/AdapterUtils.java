@@ -360,6 +360,7 @@ public class AdapterUtils {
       ASTTypeDeclaration leftType, ASTTypeDeclaration rightType) {
     if (leftType instanceof ASTClassDeclaration leftClass
         && rightType instanceof ASTClassDeclaration rightClass) {
+      mergeCompletedAbstractModifier(leftClass, rightClass);
       if (!leftClass.isPresentSuperClass() && rightClass.isPresentSuperClass()) {
         leftClass.setSuperClass(rightClass.getSuperClass().deepClone());
       }
@@ -385,6 +386,35 @@ public class AdapterUtils {
         }
       }
     }
+  }
+
+  /**
+   * The concrete source is authoritative for handwritten members, while the adapted declaration's
+   * abstractness has already been normalized to the final target CD. Preserve that structural
+   * modifier when the adapted declaration is merged into an existing concrete class.
+   */
+  private static void mergeCompletedAbstractModifier(
+      ASTClassDeclaration concreteClass, ASTClassDeclaration adaptedClass) {
+    boolean adaptedIsAbstract =
+        adaptedClass.getJavaModifierList().stream()
+            .anyMatch(modifier -> "abstract".equals(JavaLoader.print(modifier).trim()));
+    boolean concreteIsAbstract =
+        concreteClass.getJavaModifierList().stream()
+            .anyMatch(modifier -> "abstract".equals(JavaLoader.print(modifier).trim()));
+    if (!adaptedIsAbstract) {
+      concreteClass
+          .getJavaModifierList()
+          .removeIf(modifier -> "abstract".equals(JavaLoader.print(modifier).trim()));
+      return;
+    }
+    if (concreteIsAbstract) {
+      return;
+    }
+    adaptedClass.getJavaModifierList().stream()
+        .filter(modifier -> "abstract".equals(JavaLoader.print(modifier).trim()))
+        .findFirst()
+        .map(modifier -> modifier.deepClone())
+        .ifPresent(concreteClass::addJavaModifier);
   }
 
   private static void mergeTypes(List<ASTMCType> left, List<ASTMCType> right) {
