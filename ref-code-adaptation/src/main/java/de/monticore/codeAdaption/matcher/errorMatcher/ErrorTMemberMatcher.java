@@ -68,7 +68,6 @@ public class ErrorTMemberMatcher implements TMemberMatcher {
 
     String pos = AdapterUtils.getPosition(supertype.get_SourcePositionStart());
     Log.error(pos + " No Match found for the Type " + name);
-    assert false;
     return Optional.empty();
   }
 }

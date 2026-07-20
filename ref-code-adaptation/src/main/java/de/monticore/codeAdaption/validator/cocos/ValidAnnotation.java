@@ -67,14 +67,10 @@ public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightA
         Log.error(String.format(missingTemplate, pos));
       }
 
-      // template argument == references
-      long arguments =
-          collector.getTemplate() == null
-              ? 0
-              : collector.getTemplate().chars().filter(s -> (char) s == '$').count();
       long references = collector.getReferences().size();
-      if (arguments > 0 && arguments != collector.getReferences().size()) {
-        Log.error(String.format(templateArguments, pos, references, arguments));
+      validateTemplateArity(collector.getTemplate(), references, pos);
+      if (collector.getGenTemplate() != null && !collector.getGenTemplate().isBlank()) {
+        validateTemplateArity(collector.getGenTemplate(), references, pos);
       }
 
       // reference must exist in the class diagram
@@ -84,6 +80,15 @@ public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightA
           Log.error(String.format(refNotFound, pos, ref, cd.getCDDefinition().getName()));
         }
       }
+    }
+  }
+
+  private void validateTemplateArity(String template, long references, String pos) {
+    long arguments = template == null ? 0 : extractPlaceHolders(template).size();
+    // A constant template is valid and intentionally ignores its references. As soon as a
+    // placeholder is used, every reference must have a corresponding placeholder.
+    if (arguments > 0 && arguments != references) {
+      Log.error(String.format(templateArguments, pos, references, arguments));
     }
   }
 

@@ -242,6 +242,8 @@ public interface CodeUpdater {
     public enum Kind {
       /** Preserve a cloned body or synthesize a safe empty/default body. */
       EMPTY,
+      /** Replace a cloned implementation with a compilable default body. */
+      SAFE_DEFAULT,
       /** Preserve an implementation or synthesize a public, safe interface-contract body. */
       INTERFACE_CONTRACT,
       /** Assign one parameter to a field and return {@code this}. */
@@ -275,6 +277,11 @@ public interface CodeUpdater {
     /** Returns a specification that requests no structured replacement body. */
     public static MethodBodySpec empty() {
       return new MethodBodySpec(Kind.EMPTY, null, null, null, java.util.List.of());
+    }
+
+    /** Returns a specification that discards a cloned body and uses Java default values. */
+    public static MethodBodySpec safeDefault() {
+      return new MethodBodySpec(Kind.SAFE_DEFAULT, null, null, null, java.util.List.of());
     }
 
     /** Returns a specification for a concrete implementation of an interface contract. */

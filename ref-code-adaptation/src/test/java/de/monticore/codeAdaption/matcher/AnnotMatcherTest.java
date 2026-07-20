@@ -7,10 +7,12 @@ import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AnnotMatcherTest extends MatcherAbstractTest {
   private CodeValidator validator;
@@ -21,75 +23,61 @@ class AnnotMatcherTest extends MatcherAbstractTest {
     validator = new CodeValidator(cd, Set.of(AdapterParam.ANNOTATION_MATCHING));
   }
 
-  @Test
-  public void TestTypeAnnotationMatching() {
-    init("/annotMatcher/EntityRepository.java");
-    ASTTypeDeclaration entityRepos = collector.getAllTypeDeclarations().get(0);
-    Optional<CodeMatching> matching = validator.getMatchedType(entityRepos);
-
-    Assertions.assertTrue(matching.isPresent());
-    Assertions.assertEquals(1, matching.get().getReferences().size());
-    Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
-    Assertions.assertEquals("${}Repository", matching.get().getTemplate());
-    Assertions.assertTrue(matching.get().mustBePerform());
-  }
-
-  @Test
-  public void TestMethodAnnotationMatching() {
-    init("/annotMatcher/EntityRepository.java");
-    ASTTypeDeclaration entityRepos = collector.getAllTypeDeclarations().get(0);
-    ASTMethodDeclaration method = collector.getAllMethodDeclarations(entityRepos).get(0);
-
-    Optional<CodeMatching> matching = validator.getMatchedMethod(entityRepos, method);
-    Assertions.assertTrue(matching.isPresent());
-    Assertions.assertEquals(2, matching.get().getReferences().size());
-    Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
-    Assertions.assertEquals("id", matching.get().getReferences().get(1).getName());
-    Assertions.assertEquals("find${}By${cap_first}", matching.get().getTemplate());
-    Assertions.assertTrue(matching.get().mustBePerform());
-  }
-
-  @Test
-  public void TestAttributeAnnotationMatching() {
-    init("/annotMatcher/EntityRepository.java");
-    ASTTypeDeclaration entityRepos = collector.getAllTypeDeclarations().get(0);
-    ASTFieldDeclaration attribute = collector.getAllFieldDeclarations(entityRepos).get(0);
-
-    Optional<CodeMatching> matching = validator.getMatchedField(entityRepos, attribute);
-    Assertions.assertTrue(matching.isPresent());
-    Assertions.assertEquals(1, matching.get().getReferences().size());
-    Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
-    Assertions.assertEquals("${uncap_first}Set", matching.get().getTemplate());
-    Assertions.assertTrue(matching.get().mustBePerform());
-  }
-
-  @Test
-  public void TestLocalVariableAnnotationMatching() {
+  @ParameterizedTest(name = "annotation matching for {0}")
+  @ValueSource(strings = {"type", "method", "field", "local", "parameter"})
+  void matchesAnnotatedElements(String elementKind) {
     init("/annotMatcher/EntityRepository.java");
     ASTTypeDeclaration type = collector.getAllTypeDeclarations().get(0);
-    ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(2);
-    ASTLocalVariableDeclaration localVar = collector.getAllLocVariables(type, method).get(0);
+    ExpectedMatching expected = expectedMatching(elementKind, type);
+    Optional<CodeMatching> matching = expected.matching();
 
-    Optional<CodeMatching> matching = validator.getMatchedLocalVariable(type, method, localVar);
     Assertions.assertTrue(matching.isPresent());
-    Assertions.assertEquals(1, matching.get().getReferences().size());
-    Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
-    Assertions.assertEquals("${uncap_first}List", matching.get().getTemplate());
+    Assertions.assertEquals(
+        expected.referenceNames(),
+        matching.get().getReferences().stream().map(value -> value.getName()).toList());
+    Assertions.assertEquals(expected.template(), matching.get().getTemplate());
     Assertions.assertTrue(matching.get().mustBePerform());
   }
 
-  @Test
-  public void TestFormalParameterAnnotationMatching() {
-    init("/annotMatcher/EntityRepository.java");
-    ASTTypeDeclaration type = collector.getAllTypeDeclarations().get(0);
-    ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(3);
-    ASTFormalParameter param = collector.getAllParameters(type, method).get(0);
-
-    Optional<CodeMatching> matching = validator.getMatchedParameter(type, method, param);
-    Assertions.assertTrue(matching.isPresent());
-    Assertions.assertEquals(1, matching.get().getReferences().size());
-    Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
-    Assertions.assertEquals("${uncap_first}", matching.get().getTemplate());
-    Assertions.assertTrue(matching.get().mustBePerform());
+  private ExpectedMatching expectedMatching(String elementKind, ASTTypeDeclaration type) {
+    return switch (elementKind) {
+      case "type" ->
+          new ExpectedMatching(
+              validator.getMatchedType(type), List.of("Entity"), "${}Repository");
+      case "method" -> {
+        ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(0);
+        yield new ExpectedMatching(
+            validator.getMatchedMethod(type, method),
+            List.of("Entity", "id"),
+            "find${}By${cap_first}");
+      }
+      case "field" -> {
+        ASTFieldDeclaration field = collector.getAllFieldDeclarations(type).get(0);
+        yield new ExpectedMatching(
+            validator.getMatchedField(type, field),
+            List.of("Entity"),
+            "${uncap_first}Set");
+      }
+      case "local" -> {
+        ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(2);
+        ASTLocalVariableDeclaration local = collector.getAllLocVariables(type, method).get(0);
+        yield new ExpectedMatching(
+            validator.getMatchedLocalVariable(type, method, local),
+            List.of("Entity"),
+            "${uncap_first}List");
+      }
+      case "parameter" -> {
+        ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(3);
+        ASTFormalParameter parameter = collector.getAllParameters(type, method).get(0);
+        yield new ExpectedMatching(
+            validator.getMatchedParameter(type, method, parameter),
+            List.of("Entity"),
+            "${uncap_first}");
+      }
+      default -> throw new IllegalArgumentException("Unknown element kind: " + elementKind);
+    };
   }
+
+  private record ExpectedMatching(
+      Optional<CodeMatching> matching, List<String> referenceNames, String template) {}
 }

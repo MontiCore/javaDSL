@@ -253,7 +253,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   }
 
   @Test
-  void memberImportRepairPreservesExplicitImportBinding() throws IOException {
+  void memberImportRepairPreservesUnrelatedExplicitImportBinding() throws IOException {
     ASTOrdinaryCompilationUnit consumer =
         parse(
             "adapter/Consumer.java",
@@ -269,33 +269,76 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
             linkedSet(consumer),
             CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
 
-    ASTOrdinaryCompilationUnit mergedConsumer = unitNamed(merged, "Consumer");
-    String rendered = JavaLoader.print(mergedConsumer);
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
     assertTrue(rendered.contains("import java.util.Date;"), rendered);
     assertFalse(rendered.contains("import domain.Date;"), rendered);
   }
 
   @Test
-  void memberImportRepairDoesNotShadowJavaLangType() throws IOException {
+  void memberImportRepairAcceptsExactExplicitImportBinding() throws IOException {
     ASTOrdinaryCompilationUnit consumer =
-        parse("adapter/Consumer.java", "package adapter; class Consumer { String name; }");
-    ASTOrdinaryCompilationUnit domainString =
-        parse("domain/String.java", "package domain; class String {}");
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import domain.Date; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
     Path cd = tempDir.resolve("Concrete.cd");
-    Files.writeString(cd, "classdiagram Concrete { class String; }");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
 
     Set<ASTOrdinaryCompilationUnit> merged =
         merger.mergeAdaptedCodeIntoConcreteBase(
-            linkedSet(domainString),
+            linkedSet(domainDate),
             linkedSet(consumer),
             CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
 
     String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
-    assertFalse(rendered.contains("import domain.String;"), rendered);
+    assertTrue(rendered.contains("import domain.Date;"), rendered);
   }
 
   @Test
-  void memberImportRepairDoesNotOverrideWildcardImport() throws IOException {
+  void memberImportRepairPreservesImplicitJavaLangBinding() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse("adapter/Consumer.java", "package adapter; class Consumer { Runnable action; }");
+    ASTOrdinaryCompilationUnit domainRunnable =
+        parse("domain/Runnable.java", "package domain; class Runnable {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Runnable; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainRunnable),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("Runnable action"), rendered);
+    assertFalse(rendered.contains("import domain.Runnable;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairAddsExplicitImportUnderUnrelatedWildcard() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import java.io.*; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("import java.io.*;"), rendered);
+    assertTrue(rendered.contains("import domain.Date;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairPreservesMatchingPlatformWildcardBinding() throws IOException {
     ASTOrdinaryCompilationUnit consumer =
         parse(
             "adapter/Consumer.java",
@@ -313,6 +356,101 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
 
     String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
     assertTrue(rendered.contains("import java.util.*;"), rendered);
+    assertFalse(rendered.contains("import domain.Date;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairAcceptsMatchingWildcardBinding() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import domain.*; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("import domain.*;"), rendered);
+    assertFalse(rendered.contains("import domain.Date;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairUsesUniqueMatchingWildcardDespiteUnrelatedOutputCandidate()
+      throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; import domain.*; class Consumer { Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    ASTOrdinaryCompilationUnit unrelatedDate =
+        parse("other/Date.java", "package other; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate, unrelatedDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("import domain.*;"), rendered);
+    assertFalse(rendered.contains("import domain.Date;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairDoesNotRebindConcreteOnlyReference() throws IOException {
+    ASTOrdinaryCompilationUnit concreteConsumer =
+        parse(
+            "concrete/Consumer.java",
+            "package adapter; class Consumer { External handwritten; }");
+    ASTOrdinaryCompilationUnit adaptedConsumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; class Consumer { void generated() {} }");
+    ASTOrdinaryCompilationUnit domainExternal =
+        parse("domain/External.java", "package domain; class External {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Consumer; class External; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(concreteConsumer, domainExternal),
+            linkedSet(adaptedConsumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("External handwritten"), rendered);
+    assertFalse(rendered.contains("import domain.External;"), rendered);
+  }
+
+  @Test
+  void memberImportRepairDoesNotImportForQualifiedReference() throws IOException {
+    ASTOrdinaryCompilationUnit consumer =
+        parse(
+            "adapter/Consumer.java",
+            "package adapter; class Consumer { foreign.Date createdAt; }");
+    ASTOrdinaryCompilationUnit domainDate =
+        parse("domain/Date.java", "package domain; class Date {}");
+    Path cd = tempDir.resolve("Concrete.cd");
+    Files.writeString(cd, "classdiagram Concrete { class Date; }");
+
+    Set<ASTOrdinaryCompilationUnit> merged =
+        merger.mergeAdaptedCodeIntoConcreteBase(
+            linkedSet(domainDate),
+            linkedSet(consumer),
+            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+
+    String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
+    assertTrue(rendered.contains("foreign.Date createdAt"), rendered);
     assertFalse(rendered.contains("import domain.Date;"), rendered);
   }
 

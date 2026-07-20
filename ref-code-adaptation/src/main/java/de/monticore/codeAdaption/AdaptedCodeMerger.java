@@ -102,6 +102,7 @@ final class AdaptedCodeMerger {
     Map<String, Relocation> relocations = findRelocations(result, mergedAdapted, concreteIndex);
     Map<String, Map<String, String>> importsByOriginalPackage =
         adaptedTypeImports(mergedAdapted, relocations);
+    Map<String, Set<String>> repairableMemberTypesByUnit = new LinkedHashMap<>();
 
     // Every unit in adaptedCode has already passed filterCodeForMapping. Retaining that explicit
     // selection avoids guessing from coincidental type-name prefixes or suffixes.
@@ -127,6 +128,16 @@ final class AdaptedCodeMerger {
           mergeableAdapted.setPackageDeclarationAbsent();
         }
       }
+      Set<String> repairableMemberTypes = unqualifiedMemberTypeNames(mergeableAdapted);
+      if (concreteMatch != null) {
+        // Imports affect every occurrence of a simple name in the compilation unit. If concrete
+        // handwritten code already used that name, changing its binding would be unsafe even when
+        // an adapted member also uses it.
+        repairableMemberTypes.removeAll(unqualifiedMemberTypeNames(concreteMatch));
+      }
+      repairableMemberTypesByUnit
+          .computeIfAbsent(key, ignored -> new LinkedHashSet<>())
+          .addAll(repairableMemberTypes);
       result.put(
           key,
           concreteMatch == null
@@ -134,7 +145,7 @@ final class AdaptedCodeMerger {
               : AdapterUtils.mergeAstsPreferringLeft(concreteMatch, mergeableAdapted));
     }
 
-    repairMemberTypeImports(result);
+    repairMemberTypeImports(result, repairableMemberTypesByUnit);
 
     return new LinkedHashSet<>(result.values());
   }
@@ -145,7 +156,9 @@ final class AdaptedCodeMerger {
    * projection, and relocation can place those types in packages different from their adapted
    * owner.
    */
-  private void repairMemberTypeImports(Map<String, ASTOrdinaryCompilationUnit> units) {
+  private void repairMemberTypeImports(
+      Map<String, ASTOrdinaryCompilationUnit> units,
+      Map<String, Set<String>> repairableMemberTypesByUnit) {
     Map<String, Set<String>> declarationsBySimpleName = new LinkedHashMap<>();
     for (ASTOrdinaryCompilationUnit unit : units.values()) {
       String declarationPackage = packageName(unit);
@@ -156,8 +169,14 @@ final class AdaptedCodeMerger {
       }
     }
 
-    for (ASTOrdinaryCompilationUnit unit : units.values()) {
-      Set<String> referencedSimpleNames = memberTypeNames(unit);
+    for (Map.Entry<String, ASTOrdinaryCompilationUnit> unitEntry : units.entrySet()) {
+      ASTOrdinaryCompilationUnit unit = unitEntry.getValue();
+      Set<String> repairableMemberTypes =
+          repairableMemberTypesByUnit.getOrDefault(unitEntry.getKey(), Set.of());
+      if (repairableMemberTypes.isEmpty()) {
+        continue;
+      }
+      Set<JavaSourceNames.TypeReferenceName> referencedTypes = memberTypeNames(unit);
       Set<String> declaredSimpleNames =
           unit.getTypeDeclarationList().stream()
               .map(ASTTypeDeclaration::getName)
@@ -170,10 +189,10 @@ final class AdaptedCodeMerger {
               .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
               .filter(qualifiedName -> qualifiedName.contains("."))
               .collect(java.util.stream.Collectors.toSet());
-      Set<String> explicitlyImportedSimpleNames =
-          existingImports.stream()
-              .map(this::simpleName)
-              .collect(java.util.stream.Collectors.toSet());
+      Map<String, String> explicitImportsBySimpleName = new LinkedHashMap<>();
+      for (String existingImport : existingImports) {
+        explicitImportsBySimpleName.put(simpleName(existingImport), existingImport);
+      }
       Set<String> wildcardImportPackages =
           unit.getImportDeclarationList().stream()
               .filter(
@@ -182,21 +201,58 @@ final class AdaptedCodeMerger {
               .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
               .collect(java.util.stream.Collectors.toSet());
       Map<String, String> requiredImports = new LinkedHashMap<>();
-      for (String simpleName : referencedSimpleNames) {
+      for (JavaSourceNames.TypeReferenceName reference : referencedTypes) {
+        if (reference.qualified()) {
+          continue;
+        }
+        String simpleName = reference.simpleName();
+        if (!repairableMemberTypes.contains(simpleName)) {
+          continue;
+        }
         Set<String> candidates = declarationsBySimpleName.getOrDefault(simpleName, Set.of());
-        if (declaredSimpleNames.contains(simpleName)
-            || candidates.stream()
-                .anyMatch(candidate -> packageName(candidate).equals(packageName(unit)))
-            || explicitlyImportedSimpleNames.contains(simpleName)
-            || wildcardImportPackages.stream()
-                .anyMatch(
+        if (declaredSimpleNames.contains(simpleName) || candidates.isEmpty()) {
+          continue;
+        }
+        String explicitImport = explicitImportsBySimpleName.get(simpleName);
+        if (explicitImport != null) {
+          // A single-type import is an established binding. It may belong to handwritten code
+          // that shares a compilation unit with generated members, so never reinterpret it from
+          // coincidental declarations in the final output.
+          continue;
+        }
+        boolean samePackageCandidate =
+            candidates.stream()
+                .anyMatch(candidate -> packageName(candidate).equals(packageName(unit)));
+        if (samePackageCandidate) {
+          continue;
+        }
+        if (isImplicitJavaLangType(simpleName)) {
+          // The implicit java.lang binding has the same precedence as a pre-existing explicit
+          // import for this purpose. Generated code must use a qualified name if it means another
+          // type with the same simple name.
+          continue;
+        }
+        List<String> matchingWildcardPackages =
+            wildcardImportPackages.stream()
+                .filter(
                     importedPackage ->
                         isAvailableThroughWildcardImport(
                             importedPackage, simpleName, candidates))
-            || isImplicitJavaLangType(simpleName)) {
+                .toList();
+        if (matchingWildcardPackages.size() == 1) {
+          // Unrelated declarations do not make the wildcard binding ambiguous: only declarations
+          // from imported packages participate in that binding.
           continue;
         }
+        if (matchingWildcardPackages.size() > 1) {
+          throw new CodeAdaptationException(
+              "Cannot repair generated member type '"
+                  + simpleName
+                  + "' because multiple wildcard imports provide final declarations: "
+                  + matchingWildcardPackages);
+        }
         if (candidates.size() == 1) {
+          // A single-type import takes precedence over unrelated on-demand imports.
           requiredImports.put(simpleName, candidates.iterator().next());
         } else if (candidates.size() > 1) {
           throw new CodeAdaptationException(
@@ -210,7 +266,7 @@ final class AdaptedCodeMerger {
     }
   }
 
-  /** Returns whether a generated simple name is implicitly visible from {@code java.lang}. */
+  /** Returns whether the running Java platform implicitly provides the simple name. */
   private boolean isImplicitJavaLangType(String simpleName) {
     if (simpleName == null || simpleName.isBlank() || simpleName.contains(".")) {
       return false;
@@ -241,7 +297,8 @@ final class AdaptedCodeMerger {
    */
   private static boolean loadPublicTopLevelType(String qualifiedName) {
     try {
-      Class<?> type = Class.forName(qualifiedName, false, ClassLoader.getPlatformClassLoader());
+      Class<?> type =
+          Class.forName(qualifiedName, false, ClassLoader.getPlatformClassLoader());
       return type.getEnclosingClass() == null
           && java.lang.reflect.Modifier.isPublic(type.getModifiers());
     } catch (ClassNotFoundException | LinkageError ignored) {
@@ -249,9 +306,18 @@ final class AdaptedCodeMerger {
     }
   }
 
+  /** Collects unqualified signature names that originated in an adapted compilation unit. */
+  private Set<String> unqualifiedMemberTypeNames(ASTOrdinaryCompilationUnit unit) {
+    return memberTypeNames(unit).stream()
+        .filter(reference -> !reference.qualified())
+        .map(JavaSourceNames.TypeReferenceName::simpleName)
+        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+  }
+
   /** Collects type names appearing in declaration signatures that may require final imports. */
-  private Set<String> memberTypeNames(ASTOrdinaryCompilationUnit unit) {
-    Set<String> names = new LinkedHashSet<>();
+  private Set<JavaSourceNames.TypeReferenceName> memberTypeNames(
+      ASTOrdinaryCompilationUnit unit) {
+    Set<JavaSourceNames.TypeReferenceName> names = new LinkedHashSet<>();
     JavaAstElemCollector collector = collect(unit);
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
       collector.getAllFSuperTypeDeclarations(type).forEach(value -> collectTypeNames(value, names));
@@ -271,17 +337,10 @@ final class AdaptedCodeMerger {
     return names;
   }
 
-  /**
-   * Uses the shared type-name parser to find simple names inside arrays and nested generic types;
-   * the returned replacement is empty because this pass only observes names.
-   */
-  private void collectTypeNames(de.monticore.ast.ASTNode type, Set<String> names) {
-    JavaSourceNames.replaceSimpleTypeNames(
-        JavaLoader.print(type),
-        simpleName -> {
-          names.add(simpleName);
-          return Optional.empty();
-        });
+  /** Retains qualified identity while traversing arrays, generics, and wildcard bounds. */
+  private void collectTypeNames(
+      de.monticore.ast.ASTNode type, Set<JavaSourceNames.TypeReferenceName> names) {
+    names.addAll(JavaSourceNames.typeReferences(JavaLoader.print(type)));
   }
 
   private Map<String, Relocation> findRelocations(

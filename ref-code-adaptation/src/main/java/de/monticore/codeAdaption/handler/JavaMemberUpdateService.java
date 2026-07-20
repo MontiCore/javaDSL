@@ -205,7 +205,9 @@ final class JavaMemberUpdateService {
               symbols.resolveConcreteCdType(
                   JavaSourceNames.printNormalizedReturnType(concreteDeclaration)),
               concreteDeclaration.getModifier().isStatic(),
-              MethodBodySpec.empty());
+              concreteDeclaration.getCDParameterList().size() < sourceParameters.size()
+                  ? MethodBodySpec.safeDefault()
+                  : MethodBodySpec.empty());
           updater.removeMethod(type, method);
         } else if (!concreteMethod.get().getName().equals(referenceMethod.getName())) {
           updater.updateMethod(type, method, concreteMethod.get().getName());

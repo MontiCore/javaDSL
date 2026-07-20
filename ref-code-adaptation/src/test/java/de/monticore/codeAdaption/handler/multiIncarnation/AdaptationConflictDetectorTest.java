@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   private static final Path ROOT =
@@ -45,55 +47,21 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     confParams = Set.of(STEREOTYPE_MAPPING, NAME_MAPPING, INHERITANCE);
   }
 
-  @Test
-  public void detectsAmbiguousOverloadedMethodStereotype() {
-    assertConflict("AmbiguousOverloadRef.cd", "AmbiguousOverloadConc.cd", "ambiguous overloaded");
-  }
-
-  @Test
-  public void detectsTypeKindMismatch() {
-    assertConflict("TypeKindRef.cd", "TypeKindConc.cd", "type-kind mismatch");
-  }
-
-  @Test
-  public void detectsInheritedFieldConflict() {
-    assertConflict("FieldConflictRef.cd", "FieldConflictConc.cd", "inherited field conflict");
-  }
-
-  @Test
-  public void detectsDuplicateMethodReturnConflict() {
-    assertConflict("MethodConflictRef.cd", "MethodConflictConc.cd", "duplicate method");
-  }
-
-  @Test
-  public void detectsEnumOrderConflict() {
-    assertConflict("EnumOrderRef.cd", "EnumOrderConc.cd", "enum order conflict");
-  }
-
-  @Test
-  public void detectsAssociationCardinalityConflict() {
-    assertConflict("AssociationCardinalityRef.cd", "AssociationCardinalityConc.cd", "cardinality");
-  }
-
-  @Test
-  public void detectsAmbiguousAssociationDirection() {
-    assertConflict(
-        "AssociationAmbiguousDirectionRef.cd",
-        "AssociationAmbiguousDirectionConc.cd",
-        "ambiguous association direction");
-  }
-
-  @Test
-  public void detectsAssociationRoleFieldConflict() {
-    assertConflict(
-        "AssociationRoleConflictRef.cd",
-        "AssociationRoleConflictConc.cd",
-        "association role field conflict");
-  }
-
-  @Test
-  public void detectsUnderspecifiedAnyWithoutIncarnation() {
-    assertConflict("AnyRef.cd", "AnyConc.cd", "underspecified attribute type");
+  @ParameterizedTest(name = "{0} -> {2}")
+  @CsvSource({
+    "AmbiguousOverloadRef.cd, AmbiguousOverloadConc.cd, ambiguous overloaded",
+    "TypeKindRef.cd, TypeKindConc.cd, type-kind mismatch",
+    "FieldConflictRef.cd, FieldConflictConc.cd, inherited field conflict",
+    "MethodConflictRef.cd, MethodConflictConc.cd, duplicate method",
+    "EnumOrderRef.cd, EnumOrderConc.cd, enum order conflict",
+    "AssociationCardinalityRef.cd, AssociationCardinalityConc.cd, cardinality",
+    "AssociationAmbiguousDirectionRef.cd, AssociationAmbiguousDirectionConc.cd, ambiguous association direction",
+    "AssociationRoleConflictRef.cd, AssociationRoleConflictConc.cd, association role field conflict",
+    "AnyRef.cd, AnyConc.cd, underspecified attribute type"
+  })
+  void detectsInvalidManualAdaptation(
+      String reference, String concrete, String expectedMessagePart) {
+    assertConflict(reference, concrete, expectedMessagePart);
   }
 
   @Test

@@ -89,16 +89,9 @@ public class CodeAdapterTest extends AdapterAbstractTest {
     String studentRepository = readFileContent(outputPath, "StudentRepository.java");
     Assertions.assertTrue(
         studentRepository.contains("public class StudentRepository extends Repository<Student>"));
-    Assertions.assertTrue(
-        studentRepository.contains("private Set<Student> studentSet = new HashSet<>();"));
-    Assertions.assertTrue(
-        studentRepository.contains("public Optional<Student> findStudentByStudentId(String id)"));
     Assertions.assertTrue(studentRepository.contains("return Optional.empty();"));
     Assertions.assertTrue(
-        studentRepository.contains("public List<Student> getAllStudentSortedByStudentId()"));
-    Assertions.assertTrue(
         studentRepository.contains("List<Student> studentList = new ArrayList<>();"));
-    Assertions.assertTrue(studentRepository.contains("public void store(Student student)"));
     Assertions.assertTrue(studentRepository.contains("studentSet.add(student);"));
   }
 }

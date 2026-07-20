@@ -165,6 +165,11 @@ final class SpoonGenerationService {
       setStatic(existingMethod, isStatic);
       return;
     }
+    if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT
+        && hasInheritedInterfaceImplementation(
+            spoonType, newName, parameterTypes, returnType)) {
+      return;
+    }
     CtMethod<?> clone =
         cloneConfiguredMethod(
             targetType,
@@ -303,7 +308,6 @@ final class SpoonGenerationService {
                 .map(CtMethod::clone)
                 .orElseGet(() -> workspace.factory().Core().createMethod());
     clone.setSimpleName(newName);
-    boolean signatureArityChanged = clone.getParameters().size() != parameterNames.size();
     int sharedParameters = Math.min(clone.getParameters().size(), parameterNames.size());
     for (int index = 0; index < sharedParameters; index++) {
       updateParameter(
@@ -398,27 +402,47 @@ final class SpoonGenerationService {
         && methodBody.kind() != MethodBodySpec.Kind.INTERFACE_CONTRACT;
   }
 
-  private CtMethod<?> findMethod(CtType<?> type, String name, List<String> parameterTypes) {
-    for (CtMethod<?> method : type.getMethods()) {
-      if (!name.equals(method.getSimpleName())
-          || method.getParameters().size() != parameterTypes.size()) {
+  /** Checks inherited declarations without ever mutating the declaring supertype. */
+  private boolean hasInheritedInterfaceImplementation(
+      CtType<?> type, String name, List<String> parameterTypes, String returnType) {
+    CtTypeReference<?> expectedReturn = workspace.createTypeReference(returnType);
+    for (CtMethod<?> method : type.getAllMethods()) {
+      if (method.getDeclaringType() == type || !matchesSignature(method, name, parameterTypes)) {
         continue;
       }
-      boolean same = true;
-      for (int index = 0; index < parameterTypes.size(); index++) {
-        CtTypeReference<?> actualType = method.getParameters().get(index).getType();
-        String actual = actualType == null ? "" : actualType.getSimpleName();
-        String expected = JavaSourceNames.simpleName(parameterTypes.get(index));
-        if (!actual.equals(expected)) {
-          same = false;
-          break;
-        }
+      if (method.hasModifier(ModifierKind.PUBLIC)
+          && !method.hasModifier(ModifierKind.STATIC)
+          && !method.hasModifier(ModifierKind.ABSTRACT)
+          && isCompatibleInterfaceReturn(method.getType(), expectedReturn)) {
+        return true;
       }
-      if (same) {
+    }
+    return false;
+  }
+
+  private CtMethod<?> findMethod(CtType<?> type, String name, List<String> parameterTypes) {
+    for (CtMethod<?> method : type.getMethods()) {
+      if (matchesSignature(method, name, parameterTypes)) {
         return method;
       }
     }
     return null;
+  }
+
+  private boolean matchesSignature(
+      CtMethod<?> method, String name, List<String> parameterTypes) {
+    if (!name.equals(method.getSimpleName())
+        || method.getParameters().size() != parameterTypes.size()) {
+      return false;
+    }
+    for (int index = 0; index < parameterTypes.size(); index++) {
+      CtTypeReference<?> actualType = method.getParameters().get(index).getType();
+      CtTypeReference<?> expectedType = workspace.createTypeReference(parameterTypes.get(index));
+      if (!sameType(actualType, expectedType)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -426,6 +450,12 @@ final class SpoonGenerationService {
       ASTTypeDeclaration targetType, CtMethod<?> clone, MethodBodySpec methodBody) {
     if (methodBody.kind() == MethodBodySpec.Kind.EMPTY
         || methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
+      return;
+    }
+    if (methodBody.kind() == MethodBodySpec.Kind.SAFE_DEFAULT) {
+      if (!clone.hasModifier(ModifierKind.ABSTRACT)) {
+        clone.setBody(safeDefaultBody(typeName(clone.getType())));
+      }
       return;
     }
     CtBlock<?> body = workspace.factory().Core().createBlock();

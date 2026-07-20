@@ -142,7 +142,7 @@ final class JavaTypeUpdateService {
     }
     List<GeneratedAttribute> attributes = new ArrayList<>();
     for (ASTCDAttribute attribute : concreteType.get().getCDAttributeList()) {
-      String type = JavaLoader.print(attribute.getMCType());
+      String type = JavaSourceNames.printNormalizedType(attribute.getMCType());
       if (handler.incarnationContext != null
           && handler.useCommonParentForMultipleIncarnations) {
         type = symbols.replaceConcreteWithGroupingType(type);

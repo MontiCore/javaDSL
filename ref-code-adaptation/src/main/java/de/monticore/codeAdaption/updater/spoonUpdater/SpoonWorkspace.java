@@ -1,5 +1,6 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
+import de.monticore.codeAdaption.utils.AdaptAnnotationNames;
 import de.monticore.codeAdaption.utils.Constants;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -35,6 +38,8 @@ import spoon.support.compiler.VirtualFile;
 
 /** Owns the Spoon model, its factory and the generated-source filesystem lifecycle. */
 final class SpoonWorkspace {
+  private static final Pattern SOURCE_ANNOTATION_NAME =
+      Pattern.compile("^\\s*@\\s*([A-Za-z_$][\\w$]*(?:\\s*\\.\\s*[A-Za-z_$][\\w$]*)*)");
   private final Map<String, Optional<CtTypeReference<?>>> parsedTypePrototypes =
       new LinkedHashMap<>();
   private File outputDirectory;
@@ -165,7 +170,7 @@ final class SpoonWorkspace {
       Launcher cleanupLauncher = cleanupLauncher(sourcePath);
       List<CtAnnotation<?>> annotations =
           new ArrayList<>(cleanupLauncher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
-      annotations.stream().filter(SpoonWorkspace::isAdaptAnnotation).forEach(CtAnnotation::delete);
+      cleanAdaptAnnotations(cleanupLauncher, annotations);
       for (CtType<?> type : cleanupLauncher.getModel().getAllTypes()) {
         if (!type.isInterface()) {
           continue;
@@ -352,6 +357,10 @@ final class SpoonWorkspace {
   }
 
   private static boolean isAdaptAnnotation(CtAnnotation<?> annotation) {
+    Optional<String> sourceName = sourceAnnotationName(annotation);
+    if (sourceName.isPresent()) {
+      return AdaptAnnotationNames.matches(sourceName.get());
+    }
     CtTypeReference<?> type = annotation.getAnnotationType();
     if (type != null) {
       String simple = type.getSimpleName();
@@ -367,6 +376,43 @@ final class SpoonWorkspace {
     String rendered = annotation.toString().trim();
     return hasAnnotationPrefix(rendered, Constants.ANNOT_NAME)
         || hasAnnotationPrefix(rendered, Constants.ANNOT_PACKAGE);
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void cleanAdaptAnnotations(
+      Launcher cleanupLauncher, List<CtAnnotation<?>> annotations) {
+    for (CtAnnotation<?> annotation : annotations) {
+      Optional<String> sourceName = sourceAnnotationName(annotation);
+      if (sourceName.filter(AdaptAnnotationNames::matches).isPresent()
+          || (sourceName.isEmpty() && isAdaptAnnotation(annotation))) {
+        annotation.delete();
+      } else if (sourceName.filter(name -> name.contains(".")).isPresent()) {
+        CtTypeReference<?> originalType =
+            cleanupLauncher.getFactory().Type().createReference(sourceName.get());
+        originalType.setSimplyQualified(false);
+        ((CtAnnotation) annotation).setAnnotationType(originalType);
+      }
+    }
+  }
+
+  private static Optional<String> sourceAnnotationName(CtAnnotation<?> annotation) {
+    try {
+      if (annotation.getPosition() == null || !annotation.getPosition().isValidPosition()) {
+        return Optional.empty();
+      }
+      String source = annotation.getPosition().getCompilationUnit().getOriginalSourceCode();
+      int start = annotation.getPosition().getSourceStart();
+      int end = annotation.getPosition().getSourceEnd();
+      if (source == null || start < 0 || end < start || end >= source.length()) {
+        return Optional.empty();
+      }
+      Matcher matcher = SOURCE_ANNOTATION_NAME.matcher(source.substring(start, end + 1));
+      return matcher.find()
+          ? Optional.of(matcher.group(1).replaceAll("\\s+", ""))
+          : Optional.empty();
+    } catch (RuntimeException ignored) {
+      return Optional.empty();
+    }
   }
 
   private static boolean hasAnnotationPrefix(String rendered, String annotationName) {

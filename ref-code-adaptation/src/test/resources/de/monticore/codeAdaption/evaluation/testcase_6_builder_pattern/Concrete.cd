@@ -1,6 +1,7 @@
 import java.lang.String;
 import java.lang.Object;
 import java.util.Date;
+import java.util.List;
 
 classdiagram Concrete {
 
@@ -9,6 +10,7 @@ classdiagram Concrete {
     <<buildPat="attribute">> int age;
     <<buildPat="attribute">> String email;
     <<buildPat="attribute">> String phone;
+    <<buildPat="attribute">> List<String> tags;
 
     <<buildPat="setAttribute">> void sX(Object x);
   }

@@ -7,6 +7,7 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtMethod;
@@ -140,7 +141,9 @@ final class SpoonExecutableRepairService {
       StableElementKey target =
           findConcreteRewriteTarget(invocation, methodName, groupingMappings);
       List<String> parameterTypes =
-          target == null ? unambiguousLegacyParameters(methodName) : target.getParameterTypes();
+          target == null
+              ? unambiguousLegacyParameters(methodName)
+              : target.getParameterTypeSources();
       if (parameterTypes == null) {
         continue;
       }
@@ -165,18 +168,123 @@ final class SpoonExecutableRepairService {
   private CtExpression<?> missingArgument(CtInvocation<?> invocation, String parameterType) {
     CtMethod<?> enclosingMethod = invocation.getParent(CtMethod.class);
     if (enclosingMethod != null) {
-      List<CtParameter<?>> compatible =
+      CtTypeReference<?> expected = expectedTypeReference(enclosingMethod, parameterType);
+      List<CtParameter<?>> exact =
           enclosingMethod.getParameters().stream()
               .filter(parameter -> parameter.getType() != null)
               .filter(
                   parameter ->
-                      sameTypeName(parameter.getType().getQualifiedName(), parameterType))
+                      sameArgumentType(parameter.getType(), expected, parameterType))
               .toList();
-      if (compatible.size() == 1) {
-        return workspace.factory().Code().createVariableRead(compatible.get(0).getReference(), false);
+      if (exact.size() == 1) {
+        return workspace.factory().Code().createVariableRead(exact.get(0).getReference(), false);
+      }
+      if (exact.isEmpty()) {
+        List<CtParameter<?>> compatibleSubtypes =
+            enclosingMethod.getParameters().stream()
+                .filter(parameter -> isSubtype(parameter.getType(), expected))
+                .toList();
+        if (compatibleSubtypes.size() == 1) {
+          return workspace
+              .factory()
+              .Code()
+              .createVariableRead(compatibleSubtypes.get(0).getReference(), false);
+        }
       }
     }
     return workspace.defaultExpression(parameterType);
+  }
+
+  private CtTypeReference<?> expectedTypeReference(
+      CtMethod<?> enclosingMethod, String parameterType) {
+    if (parameterType != null && parameterType.contains(".")) {
+      Optional<CtType<?>> qualifiedMatch =
+          workspace.model().getAllTypes().stream()
+              .filter(type -> parameterType.equals(type.getQualifiedName()))
+              .findFirst();
+      if (qualifiedMatch.isPresent()) {
+        return qualifiedMatch.get().getReference();
+      }
+    }
+    if (parameterType != null && !parameterType.contains(".")) {
+      String simpleName = JavaSourceNames.simpleName(parameterType);
+      List<CtType<?>> modelMatches =
+          workspace.model().getAllTypes().stream()
+              .filter(type -> simpleName.equals(type.getSimpleName()))
+              .toList();
+      if (modelMatches.size() == 1) {
+        return modelMatches.get(0).getReference();
+      }
+      CtType<?> owner = enclosingMethod.getParent(CtType.class);
+      if (owner != null && owner.getPackage() != null) {
+        String localName = owner.getPackage().getQualifiedName() + "." + simpleName;
+        Optional<CtType<?>> localMatch =
+            modelMatches.stream()
+                .filter(type -> localName.equals(type.getQualifiedName()))
+                .findFirst();
+        if (localMatch.isPresent()) {
+          return localMatch.get().getReference();
+        }
+      }
+    }
+    return workspace.createTypeReference(parameterType);
+  }
+
+  private boolean isSubtype(CtTypeReference<?> actual, CtTypeReference<?> expected) {
+    if (actual == null || expected == null || actual.isPrimitive() || expected.isPrimitive()) {
+      return false;
+    }
+    String actualName = resolvedQualifiedName(actual);
+    String expectedName = resolvedQualifiedName(expected);
+    if (expectedName.contains(".") && !actualName.contains(".")) {
+      return false;
+    }
+    if (actualName.contains(".")
+        && expectedName.contains(".")
+        && !actualName.equals(expectedName)
+        && actual.getSimpleName().equals(expected.getSimpleName())) {
+      return false;
+    }
+    try {
+      return actual.isSubtypeOf(expected);
+    } catch (RuntimeException ignored) {
+      return false;
+    }
+  }
+
+  /** Does not equate distinct known qualified types that merely share a simple name. */
+  private static boolean sameArgumentType(
+      CtTypeReference<?> actual, CtTypeReference<?> expected, String expectedSource) {
+    if (actual == null || expected == null) {
+      return false;
+    }
+    String actualName = resolvedQualifiedName(actual);
+    String expectedName = resolvedQualifiedName(expected);
+    if (expectedSource != null && expectedSource.contains(".")) {
+      return actualName.equals(expectedName)
+          && sameNormalizedTypeShape(actual, expected);
+    }
+    return sameNormalizedTypeShape(actual, expected);
+  }
+
+  /** Compares complete type shapes while intentionally ignoring package qualification. */
+  private static boolean sameNormalizedTypeShape(
+      CtTypeReference<?> actual, CtTypeReference<?> expected) {
+    return JavaSourceNames.normalizeType(actual.toString())
+        .equals(JavaSourceNames.normalizeType(expected.toString()));
+  }
+
+  private static String resolvedQualifiedName(CtTypeReference<?> type) {
+    try {
+      CtType<?> declaration = type.getTypeDeclaration();
+      if (declaration != null && declaration.getQualifiedName() != null) {
+        return declaration.getQualifiedName();
+      }
+    } catch (RuntimeException ignored) {
+      // Fall back to the reference's own no-classpath name.
+    }
+    String qualifiedName = type.getQualifiedName();
+    return qualifiedName == null ? type.getSimpleName() : qualifiedName;
   }
 
   /**

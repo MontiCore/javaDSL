@@ -143,19 +143,25 @@ public class CodeValidator {
       // Check the adapter-specific CoCos before matcher queries can add further findings.
       asts.forEach(ast -> runAdapterCoCos(ast, refCD));
 
-      // Check that every relevant element has a match.
-      Set<ASTTypeDeclaration> allType = new LinkedHashSet<>();
+      // Collect the complete source scope before any matcher query. ErrorTMemberMatcher uses this
+      // scope to distinguish a valid source-local supertype from an unmatched external type.
+      Set<ASTTypeDeclaration> allTypes = new LinkedHashSet<>();
+      List<JavaAstElemCollector> collectors = new ArrayList<>();
       for (ASTOrdinaryCompilationUnit ast : asts) {
         JavaAstElemCollector collector = new JavaAstElemCollector();
         JavaDSLTraverser traverser = JavaDSLMill.traverser();
         traverser.add4JavaDSL(collector);
         ast.accept(traverser);
 
-        allType.addAll(collector.getAllTypeDeclarations());
+        collectors.add(collector);
+        allTypes.addAll(collector.getAllTypeDeclarations());
+      }
+      typeMatcher.setAllTypeDeclarations(allTypes);
+
+      // Check that every relevant element has a match only after the complete scope is available.
+      for (JavaAstElemCollector collector : collectors) {
         checkAllMatching(collector);
       }
-
-      typeMatcher.setAllTypeDeclarations(allType);
       valid = Log.getErrorCount() == errorsBefore;
       if (!valid) {
         diagnostics =
@@ -205,6 +211,9 @@ public class CodeValidator {
 
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
       if (getMatchedType(type).isPresent()) {
+        collector
+            .getAllFSuperTypeDeclarations(type)
+            .forEach(supertype -> getMatchedSupertype(type, supertype));
         collector.getAllFieldDeclarations(type).forEach(f -> getMatchedField(type, f));
 
         for (ASTMethodDeclaration method : collector.getAllMethodDeclarations(type)) {

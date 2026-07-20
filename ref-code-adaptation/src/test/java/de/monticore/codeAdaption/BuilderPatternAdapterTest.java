@@ -62,6 +62,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(personBuilderContent.contains("public PersonBuilder setAge(int age)"));
     assertTrue(personBuilderContent.contains("public PersonBuilder setEmail(String email)"));
     assertTrue(personBuilderContent.contains("public PersonBuilder setPhone(String phone)"));
+    assertTrue(personBuilderContent.contains("public PersonBuilder setTags(List<String> tags)"));
     assertTrue(personBuilderContent.contains("public Person build()"));
     assertTrue(personBuilderContent.contains("return this;"));
 
@@ -79,6 +80,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(personBuilderContent.contains("int ageField"));
     assertTrue(personBuilderContent.contains("String emailField"));
     assertTrue(personBuilderContent.contains("String phoneField"));
+    assertTrue(personBuilderContent.contains("List<String> tagsField"));
 
     assertTrue(taskBuilderContent.contains("int idField"));
     assertTrue(taskBuilderContent.contains("String titleField"));
@@ -97,7 +99,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(taskBuilderContent.contains("new Task("));
     assertTrue(
         personBuilderContent.contains(
-            "return new Person(this.nameField, this.ageField, this.emailField, this.phoneField);"));
+            "return new Person(this.nameField, this.ageField, this.emailField, this.phoneField, this.tagsField);"));
     assertTrue(
         taskBuilderContent
             .contains(

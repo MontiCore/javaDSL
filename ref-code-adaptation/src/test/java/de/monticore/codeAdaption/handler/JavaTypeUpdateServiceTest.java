@@ -1,8 +1,6 @@
 package de.monticore.codeAdaption.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.utils.CDModelIndex;
@@ -11,9 +9,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class JavaTypeUpdateServiceTest {
   @TempDir Path temporaryDirectory;
@@ -47,36 +49,32 @@ class JavaTypeUpdateServiceTest {
     assertEquals(Set.of("Auditable"), completedInterfaces);
   }
 
-  @Test
-  void acceptsExactAndCovariantImplementationReturns() throws IOException {
-    CDModelIndex index =
-        index(
-            "Returns.cd",
-            "classdiagram Returns { class Parent; class Child extends Parent; }");
-
-    assertTrue(JavaTypeUpdateService.isCompatibleImplementationReturn(index, "int", "int"));
-    assertTrue(
-        JavaTypeUpdateService.isCompatibleImplementationReturn(index, "Child", "Parent"));
-    assertTrue(
-        JavaTypeUpdateService.isCompatibleImplementationReturn(index, "String", "Object"));
-    assertTrue(
-        JavaTypeUpdateService.isCompatibleImplementationReturn(index, "Child[]", "Object"));
-  }
-
-  @Test
-  void rejectsReversedUnrelatedAndPrimitiveReturnCompatibility() throws IOException {
+  @ParameterizedTest(name = "{0} implements {1}: {2}")
+  @MethodSource("implementationReturnCases")
+  void checksImplementationReturnCompatibility(
+      String actualReturn, String requiredReturn, boolean compatible) throws IOException {
     CDModelIndex index =
         index(
             "Returns.cd",
             "classdiagram Returns { class Parent; class Child extends Parent; class Other; }");
 
-    assertFalse(
-        JavaTypeUpdateService.isCompatibleImplementationReturn(index, "Parent", "Child"));
-    assertFalse(
-        JavaTypeUpdateService.isCompatibleImplementationReturn(index, "Other", "Parent"));
-    assertFalse(JavaTypeUpdateService.isCompatibleImplementationReturn(index, "int", "long"));
-    assertFalse(JavaTypeUpdateService.isCompatibleImplementationReturn(index, "void", "Object"));
-    assertFalse(JavaTypeUpdateService.isCompatibleImplementationReturn(index, "Object", "void"));
+    assertEquals(
+        compatible,
+        JavaTypeUpdateService.isCompatibleImplementationReturn(
+            index, actualReturn, requiredReturn));
+  }
+
+  private static Stream<Arguments> implementationReturnCases() {
+    return Stream.of(
+        Arguments.of("int", "int", true),
+        Arguments.of("Child", "Parent", true),
+        Arguments.of("String", "Object", true),
+        Arguments.of("Child[]", "Object", true),
+        Arguments.of("Parent", "Child", false),
+        Arguments.of("Other", "Parent", false),
+        Arguments.of("int", "long", false),
+        Arguments.of("void", "Object", false),
+        Arguments.of("Object", "void", false));
   }
 
   private CDModelIndex index(String fileName, String source) throws IOException {

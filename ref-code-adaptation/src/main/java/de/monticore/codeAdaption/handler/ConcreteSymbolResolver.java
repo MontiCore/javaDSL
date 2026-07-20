@@ -18,6 +18,7 @@ import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,15 +27,14 @@ import java.util.Set;
 /** Resolves reference-CD symbols, signatures, and Java type names to concrete counterparts. */
 final class ConcreteSymbolResolver {
   private final BasicUpdateHandler handler;
-  private final Map<String, String> concreteImportedTypes;
+  private final Map<String, Set<String>> concreteImportedTypes;
 
   ConcreteSymbolResolver(
       BasicUpdateHandler handler,
       ASTCDCompilationUnit referenceCD,
       ASTCDCompilationUnit concreteCD) {
     this.handler = handler;
-    this.concreteImportedTypes = importedTypes(referenceCD);
-    this.concreteImportedTypes.putAll(importedTypes(concreteCD));
+    this.concreteImportedTypes = importedTypes(concreteCD, referenceCD);
   }
 
   String buildConcreteName(CodeMatching matching) {
@@ -196,7 +196,19 @@ final class ConcreteSymbolResolver {
       Optional<StableElementKey> referenceKey = handler.referenceKey(reference);
       Optional<StableElementKey> concreteKey = handler.concreteKey(concrete);
       if (referenceKey.isPresent() && concreteKey.isPresent()) {
-        handler.updater.registerMethodRewrite(referenceKey.get(), concreteKey.get());
+        List<String> qualifiedParameterTypes =
+            concreteMethod.getCDParameterList().stream()
+                .map(
+                    parameter ->
+                        qualifyCdType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
+                .toList();
+        StableElementKey qualifiedConcreteKey =
+            StableElementKey.method(
+                concreteKey.get().getOwnerType().orElse(null),
+                concreteKey.get().getName(),
+                qualifiedParameterTypes,
+                concreteKey.get().getReturnType().orElse(null));
+        handler.updater.registerMethodRewrite(referenceKey.get(), qualifiedConcreteKey);
       }
     }
     handler.updater.registerConcreteMethodSignature(
@@ -278,7 +290,18 @@ final class ConcreteSymbolResolver {
               || handler.refIndex.type(simpleName).isPresent()) {
             return Optional.empty();
           }
-          return Optional.ofNullable(concreteImportedTypes.get(simpleName));
+          Set<String> candidates = concreteImportedTypes.get(simpleName);
+          if (candidates == null || candidates.isEmpty()) {
+            return Optional.empty();
+          }
+          if (candidates.size() == 1) {
+            return Optional.of(candidates.iterator().next());
+          }
+          throw new IllegalStateException(
+              "Ambiguous class-diagram imports for used type '"
+                  + simpleName
+                  + "': "
+                  + candidates.stream().sorted().collect(java.util.stream.Collectors.joining(", ")));
         });
   }
 
@@ -381,15 +404,27 @@ final class ConcreteSymbolResolver {
         .map(grouping -> grouping.key().getName());
   }
 
-  private static Map<String, String> importedTypes(ASTCDCompilationUnit cd) {
-    Map<String, String> imports = new LinkedHashMap<>();
+  private static Map<String, Set<String>> importedTypes(
+      ASTCDCompilationUnit primary, ASTCDCompilationUnit fallback) {
+    Map<String, Set<String>> imports = importedTypes(fallback);
+    // Generated signatures describe concrete declarations, so concrete imports intentionally win
+    // over same-named reference imports. Ambiguities within the selected CD remain detectable.
+    importedTypes(primary).forEach(imports::put);
+    return imports;
+  }
+
+  private static Map<String, Set<String>> importedTypes(ASTCDCompilationUnit cd) {
+    Map<String, Set<String>> imports = new LinkedHashMap<>();
     if (cd == null) {
       return imports;
     }
     for (var statement : cd.getMCImportStatementList()) {
       String imported = statement.getMCQualifiedName().getQName();
-      if (!imported.endsWith(".*") && !imported.startsWith("java.lang.")) {
-        imports.putIfAbsent(JavaSourceNames.simpleName(imported), imported);
+      if (!statement.isStar() && !imported.startsWith("java.lang.")) {
+        imports
+            .computeIfAbsent(
+                JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
+            .add(imported);
       }
     }
     return imports;

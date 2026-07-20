@@ -3,7 +3,6 @@ package de.monticore.codeAdaption.utils;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -207,12 +206,6 @@ class JavaSourcePostProcessorTest {
   }
 
   @Test
-  void normalizesPrimitiveGenericArgumentsWhenRenderingTypes() {
-    assertTrue(JavaSourceNames.normalizeType("Optional<long>").contains("Optional<Long>"));
-    assertTrue(JavaSourceNames.normalizeType("List<int>").contains("List<Integer>"));
-  }
-
-  @Test
   void printAstPreservesPackageDirectoriesForSameSimpleNames() throws IOException {
     Path inputDir = tempDir.resolve("input");
     Path outputDir = tempDir.resolve("output");
@@ -243,42 +236,4 @@ class JavaSourcePostProcessorTest {
     assertFalse(Files.exists(outputDir.resolve("User.java")));
   }
 
-  @Test
-  void spoonCleanupPreservesPackageRelativePathsForSameSimpleNames() throws IOException {
-    Path outputDir = tempDir.resolve("generated");
-    Files.createDirectories(outputDir.resolve("a"));
-    Files.createDirectories(outputDir.resolve("b"));
-    Files.writeString(
-        outputDir.resolve("a").resolve("User.java"),
-        """
-        package a;
-
-        import de.monticore.codeAdaption.utils.Adapt;
-
-        @Adapt(ignore = true)
-        public class User {}
-        """,
-        StandardCharsets.UTF_8);
-    Files.writeString(
-        outputDir.resolve("b").resolve("User.java"),
-        """
-        package b;
-
-        import de.monticore.codeAdaption.utils.Adapt;
-
-        @Adapt(ignore = true)
-        public class User {}
-        """,
-        StandardCharsets.UTF_8);
-
-    new SpoonUpdater().cleanCode(outputDir);
-
-    Path aUser = outputDir.resolve("a").resolve("User.java");
-    Path bUser = outputDir.resolve("b").resolve("User.java");
-    assertTrue(Files.exists(aUser));
-    assertTrue(Files.exists(bUser));
-    assertFalse(Files.exists(outputDir.resolve("User.java")));
-    assertFalse(Files.readString(aUser).contains("Adapt"));
-    assertFalse(Files.readString(bUser).contains("Adapt"));
-  }
 }

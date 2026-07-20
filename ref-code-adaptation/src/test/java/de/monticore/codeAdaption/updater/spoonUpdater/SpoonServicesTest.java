@@ -110,7 +110,8 @@ class SpoonServicesTest {
             sources,
             "sample",
             "Echo",
-            "class Echo { String echo(String value) { return value; } }");
+            "class Echo { String echo(String value) { return value; } "
+                + "String combine(String kept, String removed) { return kept + removed; } }");
     SpoonWorkspace workspace = new SpoonWorkspace();
     workspace.load(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
@@ -131,6 +132,31 @@ class SpoonServicesTest {
     String generated =
         resolver.getSpoonType(echo).getMethodsByName("renamedEcho").get(0).toString();
     assertTrue(generated.contains("return renamedValue"), generated);
+
+    generation.addMethod(
+        echo,
+        loadMethod(source, "Echo", "combine"),
+        "reduced",
+        List.of("String"),
+        List.of("kept"),
+        "String",
+        false,
+        MethodBodySpec.safeDefault());
+    generation.addMethod(
+        echo,
+        template,
+        "expanded",
+        List.of("String", "int"),
+        List.of("value", "ignored"),
+        "String",
+        false,
+        MethodBodySpec.empty());
+
+    String reduced = resolver.getSpoonType(echo).getMethodsByName("reduced").get(0).toString();
+    String expanded = resolver.getSpoonType(echo).getMethodsByName("expanded").get(0).toString();
+    assertTrue(reduced.contains("return null"), reduced);
+    assertFalse(reduced.contains("removed"), reduced);
+    assertTrue(expanded.contains("return value"), expanded);
   }
 
   @Test
@@ -405,6 +431,70 @@ class SpoonServicesTest {
   }
 
   @Test
+  void interfaceContractKeepsACompatibleInheritedImplementation() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("inherited-contract"));
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Child",
+            "class Base { public String value() { return \"base\"; } } class Child extends Base {}");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration childAst = loadType(source, "Child");
+
+    generation.addMethod(
+        childAst,
+        null,
+        "value",
+        List.of(),
+        List.of(),
+        "Object",
+        false,
+        MethodBodySpec.interfaceContract());
+
+    var child = resolver.getSpoonType(childAst);
+    var base = workspace.model().getAllTypes().stream()
+        .filter(type -> "Base".equals(type.getSimpleName()))
+        .findFirst()
+        .orElseThrow();
+    assertTrue(child.getMethods().stream().noneMatch(method -> "value".equals(method.getSimpleName())));
+    assertTrue(base.getMethodsByName("value").get(0).toString().contains("return \"base\""));
+  }
+
+  @Test
+  void generatedMethodLookupDistinguishesQualifiedParameterTypes() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("qualified-overload"));
+    javaSource(sources, "alpha", "Value", "public class Value {}");
+    javaSource(sources, "beta", "Value", "public class Value {}");
+    Path source =
+        javaSource(
+            sources,
+            "sample",
+            "Service",
+            "class Service { void run(alpha.Value value) {} }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration service = loadType(source, "Service");
+
+    generation.addMethod(
+        service,
+        null,
+        "run",
+        List.of("beta.Value"),
+        List.of("value"),
+        "void",
+        false,
+        MethodBodySpec.empty());
+
+    assertEquals(2, resolver.getSpoonType(service).getMethodsByName("run").size());
+  }
+
+  @Test
   void typeRewriteDoesNotTouchResolvedLibraryTypesWithTheSameSimpleName() throws IOException {
     Path sources = Files.createDirectory(temporaryDirectory.resolve("library-type"));
     javaSource(
@@ -471,7 +561,11 @@ class SpoonServicesTest {
         .transformations()
         .updateMethod(loadType(source, "Service"), loadMethod(source, "Service", "run", 1), "execute");
 
-    String rendered = workspace.model().getAllTypes().iterator().next().toString();
+    String rendered = workspace.model().getAllTypes().stream()
+        .filter(type -> "Service".equals(type.getSimpleName()))
+        .findFirst()
+        .orElseThrow()
+        .toString();
     assertTrue(rendered.contains("execute(\"x\")"), rendered);
     assertTrue(rendered.contains("run(1, 2)"), rendered);
     assertEquals(1, workspace.model().getAllTypes().iterator().next().getMethodsByName("run").size());
@@ -511,8 +605,11 @@ class SpoonServicesTest {
         sources,
         "sample",
         "Service",
-        "class Service { void target(String value) {} void target(int value) {} "
-            + "void call(String suffix) { target(\"x\"); target(1); } }");
+        "class Item {} class SpecialItem extends Item {} class OtherItem extends Item {} "
+            + "class Service { void target(String value) {} void target(int value) {} "
+            + "void call(SpecialItem special) { target(\"x\"); target(1); } "
+            + "void exact(Item item, SpecialItem special) { target(\"y\"); } "
+            + "void ambiguous(SpecialItem first, OtherItem second) { target(\"z\"); } }");
     SpoonWorkspace workspace = new SpoonWorkspace();
     workspace.load(sources);
     Services services = services(workspace);
@@ -520,13 +617,80 @@ class SpoonServicesTest {
         .repairs()
         .registerMethodRewrite(
             StableElementKey.method("Service", "target", List.of("String")),
-            StableElementKey.method("Service", "execute", List.of("String", "String")));
+            StableElementKey.method("Service", "execute", List.of("String", "Item")));
 
     services.repairs().prepareForPrint(Map.of());
 
-    String rendered = workspace.model().getAllTypes().iterator().next().toString();
-    assertTrue(rendered.contains("execute(\"x\", suffix)"), rendered);
+    String rendered = workspace.model().getAllTypes().stream()
+        .filter(type -> "Service".equals(type.getSimpleName()))
+        .findFirst()
+        .orElseThrow()
+        .toString();
+    assertTrue(rendered.contains("execute(\"x\", special)"), rendered);
+    assertTrue(rendered.contains("execute(\"y\", item)"), rendered);
+    assertTrue(rendered.contains("execute(\"z\", null)"), rendered);
     assertTrue(rendered.contains("target(1)"), rendered);
+  }
+
+  @Test
+  void missingArgumentRejectsDifferentlyQualifiedTypeWithSameSimpleName() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("ambiguous-argument"));
+    javaSource(sources, "alpha", "Role", "public class Role {}");
+    javaSource(sources, "beta", "Role", "public class Role {}");
+    javaSource(
+        sources,
+        "sample",
+        "Service",
+        "class Service { void targetRole(String value) {} "
+            + "void qualified(alpha.Role role) { targetRole(\"y\"); } }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    Services services = services(workspace);
+    services
+        .repairs()
+        .registerMethodRewrite(
+            StableElementKey.method("Service", "targetRole", List.of("String")),
+            StableElementKey.method("Service", "executeRole", List.of("String", "beta.Role")));
+
+    services.repairs().prepareForPrint(Map.of());
+
+    String rendered = workspace.model().getAllTypes().stream()
+        .filter(type -> "Service".equals(type.getSimpleName()))
+        .findFirst()
+        .orElseThrow()
+        .toString();
+    assertTrue(rendered.contains("executeRole(\"y\", null)"), rendered);
+  }
+
+  @Test
+  void missingArgumentReusesUniqueImportedParametersForUnqualifiedStableTypes()
+      throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("imported-argument"));
+    javaSource(
+        sources,
+        "sample",
+        "Service",
+        "import java.util.Date; import java.util.List; "
+            + "class Service { void target(String value) {} "
+            + "void imported(Date date, List<String> values) { target(\"x\"); } }");
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    Services services = services(workspace);
+    services
+        .repairs()
+        .registerMethodRewrite(
+            StableElementKey.method("Service", "target", List.of("String")),
+            StableElementKey.method(
+                "Service", "execute", List.of("String", "Date", "List<String>")));
+
+    services.repairs().prepareForPrint(Map.of());
+
+    String rendered = workspace.model().getAllTypes().stream()
+        .filter(type -> "Service".equals(type.getSimpleName()))
+        .findFirst()
+        .orElseThrow()
+        .toString();
+    assertTrue(rendered.contains("execute(\"x\", date, values)"), rendered);
   }
 
   @Test

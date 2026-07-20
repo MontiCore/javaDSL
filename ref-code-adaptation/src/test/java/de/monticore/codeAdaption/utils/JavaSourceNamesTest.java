@@ -3,6 +3,7 @@ package de.monticore.codeAdaption.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.se_rwth.commons.logging.LogStub;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ class JavaSourceNamesTest {
     assertEquals("String[]", JavaSourceNames.normalizeType("java.lang.String []"));
     assertEquals("int[]", JavaSourceNames.normalizeType("int[]"));
     assertEquals("void", JavaSourceNames.normalizeType("void"));
+    assertEquals("Optional<Long>", JavaSourceNames.normalizeType("Optional<long>"));
+    assertEquals("List<Integer>", JavaSourceNames.normalizeType("List<int>"));
     assertEquals(
         "List<?extendsNumber>",
         JavaSourceNames.normalizeType("java.util.List<? extends java.lang.Number>"));
@@ -47,6 +50,18 @@ class JavaSourceNamesTest {
             simple -> "Person".equals(simple) ? Optional.of("Named") : Optional.empty());
 
     assertEquals("java.util.Map<java.lang.String, java.util.List<Named[]>>", replaced);
+  }
+
+  @Test
+  void extractsQualifiedIdentityFromNestedGenericAndWildcardTypes() {
+    assertEquals(
+        List.of(
+            new JavaSourceNames.TypeReferenceName("java.util.Map", "Map", true),
+            new JavaSourceNames.TypeReferenceName("a.User", "User", true),
+            new JavaSourceNames.TypeReferenceName("java.util.List", "List", true),
+            new JavaSourceNames.TypeReferenceName("b.User", "User", true)),
+        JavaSourceNames.typeReferences(
+            "java.util.Map<a.User[], java.util.List<? extends b.User>>"));
   }
 
   @Test

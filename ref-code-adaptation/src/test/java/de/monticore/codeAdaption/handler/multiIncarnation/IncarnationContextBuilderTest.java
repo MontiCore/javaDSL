@@ -19,7 +19,6 @@ import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.handler.BasicUpdateHandlerTestAccess;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
-import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.cddiff.CDDiffUtil;
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -69,8 +68,9 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
 
     assertTrue(targets.contains(StableElementKey.field("Person", "name", "String")));
     assertTrue(targets.contains(StableElementKey.field("Person", "age", "int")));
+    assertTrue(targets.contains(StableElementKey.field("Person", "tags", "List<String>")));
     assertTrue(targets.contains(StableElementKey.field("Task", "status", "String")));
-    assertEquals(10, targets.size());
+    assertEquals(11, targets.size());
   }
 
   @Test
@@ -248,7 +248,7 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
             .orElseThrow();
 
     assertFalse(context.getIncarnations(typeKey).isEmpty());
-    assertEquals(10, context.getIncarnations(fieldKey).size());
+    assertEquals(11, context.getIncarnations(fieldKey).size());
     assertFalse(context.getIncarnations(methodKey).isEmpty());
     assertThrows(
         UnsupportedOperationException.class,

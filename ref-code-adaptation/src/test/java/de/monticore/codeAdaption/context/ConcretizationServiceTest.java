@@ -24,6 +24,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConcretizationServiceTest extends AdapterAbstractTest {
 
@@ -115,21 +117,16 @@ class ConcretizationServiceTest extends AdapterAbstractTest {
     assertTrue(index.methods("UserService", "sendToOrderService").isEmpty());
   }
 
-  @Test
-  void visitorCompletionProducesAllOverloadsWithUpstreamParameters() {
-    Set<CDConfParameter> upstreamParameters = new LinkedHashSet<>(parameters);
-    upstreamParameters.remove(ALLOW_ADDITIONAL_PARAMETERS);
-    upstreamParameters.add(STRICT_PARAMETER_ORDER);
+  @ParameterizedTest(name = "allow additional parameters = {0}")
+  @ValueSource(booleans = {false, true})
+  void visitorCompletionProducesAllOverloads(boolean allowAdditionalParameters) {
+    Set<CDConfParameter> completionParameters = new LinkedHashSet<>(parameters);
+    if (!allowAdditionalParameters) {
+      completionParameters.remove(ALLOW_ADDITIONAL_PARAMETERS);
+    }
+    completionParameters.add(STRICT_PARAMETER_ORDER);
 
-    assertVisitorCompletion(upstreamParameters);
-  }
-
-  @Test
-  void visitorCompletionProducesAllOverloadsWithProductionParameters() {
-    Set<CDConfParameter> productionParameters = new LinkedHashSet<>(parameters);
-    productionParameters.add(STRICT_PARAMETER_ORDER);
-
-    assertVisitorCompletion(productionParameters);
+    assertVisitorCompletion(completionParameters);
   }
 
   private void assertVisitorCompletion(Set<CDConfParameter> completionParameters) {

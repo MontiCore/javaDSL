@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class CDConcretizationAdapterTest extends AdapterAbstractTest {
@@ -147,9 +148,11 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     assertThrows(AssertionError.class, () -> assertGeneratedJavaCompiles(sources));
   }
 
-  @Test
-  void compilationOracleRejectsConcreteTypeInWrongPackage() throws IOException {
-    CDConcretizationTestCase testCase = oracleTestCase("wrong-package");
+  @ParameterizedTest(name = "adapted package {0} compiles: {1}")
+  @CsvSource({"wrong, false", "expected, true"})
+  void compilationOracleResolvesOriginalConcreteTypeFromExpectedPackage(
+      String adaptedPackage, boolean compiles) throws IOException {
+    CDConcretizationTestCase testCase = oracleTestCase("concrete-type-" + adaptedPackage);
     write(testCase.refCd(), "classdiagram Reference { class ReferenceType; }");
     write(testCase.concCd(), "classdiagram Concrete { class ConcreteType; }");
     write(
@@ -157,8 +160,10 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
         "package expected;\npublic class Anchor {}");
     Path adapted =
         write(
-            testCase.outputPath().resolve("wrong/UsesConcrete.java"),
-            "package wrong; public class UsesConcrete { ConcreteType value; }");
+            testCase.outputPath().resolve(adaptedPackage + "/UsesConcrete.java"),
+            "package "
+                + adaptedPackage
+                + "; public class UsesConcrete { ConcreteType value; }");
 
     List<Path> sources = compilationSources(List.of(adapted), testCase);
 
@@ -169,33 +174,11 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
                     path.toString()
                         .replace('\\', '/')
                         .endsWith("/expected/ConcreteType.java")));
-    assertThrows(AssertionError.class, () -> assertGeneratedJavaCompiles(sources));
-  }
-
-  @Test
-  void compilationOracleAllowsOriginalConcreteTypeFromExternalGeneration()
-      throws IOException {
-    CDConcretizationTestCase testCase = oracleTestCase("external-concrete-type");
-    write(testCase.refCd(), "classdiagram Reference { class ReferenceType; }");
-    write(testCase.concCd(), "classdiagram Concrete { class ConcreteType; }");
-    write(
-        testCase.concretePath().resolve("Anchor.java"),
-        "package expected;\npublic class Anchor {}");
-    Path adapted =
-        write(
-            testCase.outputPath().resolve("expected/UsesConcrete.java"),
-            "package expected; public class UsesConcrete { ConcreteType value; }");
-
-    List<Path> sources = compilationSources(List.of(adapted), testCase);
-
-    assertTrue(
-        sources.stream()
-            .anyMatch(
-                path ->
-                    path.toString()
-                        .replace('\\', '/')
-                        .endsWith("/expected/ConcreteType.java")));
-    assertDoesNotThrow(() -> assertGeneratedJavaCompiles(sources));
+    if (compiles) {
+      assertDoesNotThrow(() -> assertGeneratedJavaCompiles(sources));
+    } else {
+      assertThrows(AssertionError.class, () -> assertGeneratedJavaCompiles(sources));
+    }
   }
 
   @Test

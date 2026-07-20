@@ -9,30 +9,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CodeAdapterSafetyTest {
 
   @TempDir Path tempDir;
 
-  @Test
-  void rejectsOutputInsideReferenceSources() {
+  @ParameterizedTest(name = "rejects path containment: {0}")
+  @ValueSource(strings = {"output-inside-reference", "reference-inside-output"})
+  void rejectsOverlappingReferenceAndOutputPaths(String scenario) {
     Path reference = tempDir.resolve("reference");
-    Path concrete = tempDir.resolve("concrete");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> CodeAdapter.validatePaths(reference, concrete, reference.resolve("generated")));
-  }
-
-  @Test
-  void rejectsSourceInsideOutput() {
     Path output = tempDir.resolve("output");
+    if ("output-inside-reference".equals(scenario)) {
+      output = reference.resolve("generated");
+    } else {
+      reference = output.resolve("reference");
+    }
+    Path concrete = tempDir.resolve("concrete");
+    Path finalReference = reference;
+    Path finalOutput = output;
 
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            CodeAdapter.validatePaths(
-                output.resolve("reference"), tempDir.resolve("concrete"), output));
+        () -> CodeAdapter.validatePaths(finalReference, concrete, finalOutput));
   }
 
   @Test

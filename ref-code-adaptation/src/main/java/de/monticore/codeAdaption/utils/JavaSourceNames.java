@@ -138,6 +138,29 @@ public final class JavaSourceNames {
     return rewritten.changed() ? rewritten.type().render(false, true, false) : rawType;
   }
 
+  /** Describes one named leaf in a parsed Java type without discarding qualification. */
+  public record TypeReferenceName(String originalName, String simpleName, boolean qualified) {}
+
+  /**
+   * Extracts named leaves from a type, including nested generic arguments and wildcard bounds.
+   * Arrays retain the identity of their component type.
+   */
+  public static List<TypeReferenceName> typeReferences(String rawType) {
+    if (rawType == null || rawType.isBlank()) {
+      return List.of();
+    }
+    Optional<TypeKey> parsed = parseTypeKey(rawType.trim());
+    if (parsed.isEmpty()) {
+      String fallback = fallbackSimpleName(rawType);
+      return fallback.isBlank()
+          ? List.of()
+          : List.of(new TypeReferenceName(rawType.trim(), fallback, rawType.contains(".")));
+    }
+    List<TypeReferenceName> references = new ArrayList<>();
+    parsed.get().collectReferences(references);
+    return List.copyOf(references);
+  }
+
   private static Optional<TypeKey> parseTypeKey(String rawType) {
     try {
       Optional<ASTMCReturnType> returnType =
@@ -294,6 +317,23 @@ public final class JavaSourceNames {
           new TypeKey(rewrittenName, List.copyOf(rewrittenArguments), arrayDimensions), changed);
     }
 
+    private void collectReferences(List<TypeReferenceName> references) {
+      if (!name.isBlank() && !isPrimitiveOrVoid(name)) {
+        references.add(new TypeReferenceName(name, simpleName(), name.contains(".")));
+      }
+      for (TypeArgumentKey argument : arguments) {
+        argument.collectReferences(references);
+      }
+    }
+
+    private static boolean isPrimitiveOrVoid(String value) {
+      return switch (value) {
+        case "boolean", "byte", "short", "int", "long", "float", "double", "char", "void" ->
+            true;
+        default -> false;
+      };
+    }
+
     private static String boxedPrimitiveName(String value) {
       return switch (value) {
         case "boolean" -> "Boolean";
@@ -339,6 +379,8 @@ public final class JavaSourceNames {
     String render(boolean normalizeNames, boolean spaced);
 
     TypeArgumentRewrite rewrite(Function<String, Optional<String>> replacementForSimpleName);
+
+    void collectReferences(List<TypeReferenceName> references);
   }
 
   private record ConcreteTypeArgument(TypeKey type) implements TypeArgumentKey {
@@ -352,6 +394,11 @@ public final class JavaSourceNames {
         Function<String, Optional<String>> replacementForSimpleName) {
       RewriteResult rewritten = type.rewrite(replacementForSimpleName);
       return new TypeArgumentRewrite(new ConcreteTypeArgument(rewritten.type()), rewritten.changed());
+    }
+
+    @Override
+    public void collectReferences(List<TypeReferenceName> references) {
+      type.collectReferences(references);
     }
   }
 
@@ -376,6 +423,11 @@ public final class JavaSourceNames {
       return new TypeArgumentRewrite(
           new WildcardTypeArgument(Optional.of(rewritten.type()), upper), rewritten.changed());
     }
+
+    @Override
+    public void collectReferences(List<TypeReferenceName> references) {
+      bound.ifPresent(type -> type.collectReferences(references));
+    }
   }
 
   private record UnknownTypeArgument(String raw) implements TypeArgumentKey {
@@ -389,6 +441,11 @@ public final class JavaSourceNames {
         Function<String, Optional<String>> replacementForSimpleName) {
       String rewritten = replaceSimpleTypeNames(raw, replacementForSimpleName);
       return new TypeArgumentRewrite(new UnknownTypeArgument(rewritten), !rewritten.equals(raw));
+    }
+
+    @Override
+    public void collectReferences(List<TypeReferenceName> references) {
+      references.addAll(typeReferences(raw));
     }
   }
 

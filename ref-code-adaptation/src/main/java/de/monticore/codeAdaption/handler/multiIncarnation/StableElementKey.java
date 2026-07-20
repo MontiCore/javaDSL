@@ -33,6 +33,7 @@ public final class StableElementKey {
   private final String name;
   private final String fieldKind;
   private final List<String> parameterTypes;
+  private final List<String> parameterTypeSources;
   private final String returnType;
 
   private StableElementKey(
@@ -50,6 +51,11 @@ public final class StableElementKey {
         parameterTypes == null
             ? List.of()
             : Collections.unmodifiableList(parameterTypes.stream().map(StableElementKey::normalizeType).toList());
+    this.parameterTypeSources =
+        parameterTypes == null
+            ? List.of()
+            : Collections.unmodifiableList(
+                parameterTypes.stream().map(StableElementKey::normalizeTypeSource).toList());
     this.returnType = normalizeType(returnType);
   }
 
@@ -131,6 +137,16 @@ public final class StableElementKey {
     return parameterTypes;
   }
 
+  /**
+   * Returns the supplied parameter spellings with qualification intact. Stable-key equality still
+   * uses {@link #getParameterTypes() normalized simple-name identities}; consumers that create Java
+   * type references need these source spellings to distinguish types such as {@code alpha.Role}
+   * and {@code beta.Role}.
+   */
+  public List<String> getParameterTypeSources() {
+    return parameterTypeSources;
+  }
+
   public Optional<String> getReturnType() {
     return Optional.ofNullable(returnType);
   }
@@ -194,5 +210,10 @@ public final class StableElementKey {
       return null;
     }
     return JavaSourceNames.normalizeType(normalized);
+  }
+
+  private static String normalizeTypeSource(String value) {
+    String normalized = normalize(value);
+    return normalized == null ? "Object" : normalized;
   }
 }
