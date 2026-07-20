@@ -11,9 +11,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/***
- * match a type in the code with a type with a type with the same name
- * in the reference class diagram.
+/**
+ * Matches a handwritten type to the reference-CD type having the same case-sensitive simple name.
+ * For example, Java type {@code Entity} matches CD type {@code Entity}, while {@code
+ * EntityRepository} is left to the infix strategy.
  */
 public class NameTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;
@@ -41,9 +42,7 @@ public class NameTypeMatcher implements TypeMatcher {
     this.referenceTypes = List.copyOf(AdapterUtils.getAllCDTypes(cd));
   }
 
-  /***
-   * match a type to a type with the same name in the class diagram.
-   */
+  /** Returns an identity-template matching for one equal Java/CD type name. */
   @Override
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration element) {
     for (ASTCDType type : referenceTypes) {

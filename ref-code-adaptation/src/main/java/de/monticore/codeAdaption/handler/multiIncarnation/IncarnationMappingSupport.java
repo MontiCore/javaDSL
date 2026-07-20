@@ -215,6 +215,22 @@ final class IncarnationMappingSupport {
     return Optional.of(first);
   }
 
+  /**
+   * Selects concrete interfaces that represent complete incarnation groups.
+   *
+   * <p>The returned map is keyed by each concrete incarnation and points to the common interface
+   * selected for its group. An interface is eligible only when its concrete class implementers
+   * exactly equal the incarnations in that group (the interface itself is ignored if it is also an
+   * incarnation). This exact-set rule prevents an unrelated implementer from becoming accepted by
+   * a rewritten field or parameter.
+   *
+   * <p>For example, {@code [CreditCard, Invoice]} may be grouped as {@code PaymentMethod} when
+   * those are exactly its concrete implementers, producing {@code CreditCard -> PaymentMethod} and
+   * {@code Invoice -> PaymentMethod}. If {@code Cash} also implements {@code PaymentMethod} but is
+   * not an incarnation of the same reference type, that interface is rejected. When several exact
+   * interfaces qualify, the nearest interface wins; its name breaks equal-distance ties
+   * deterministically.
+   */
   private Map<StableElementKey, IncarnationContext.MappedElement> groupingTypes(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     Map<StableElementKey, IncarnationContext.MappedElement> result = new LinkedHashMap<>();

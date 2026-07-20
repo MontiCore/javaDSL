@@ -12,9 +12,13 @@ import de.monticore.literals.mccommonliterals._visitor.MCCommonLiteralsVisitor2;
 import java.util.ArrayList;
 import java.util.List;
 
-/***
- * this class visits an ASTAnnotation or ASTJavaAnnotation and collects information.
- * (template, ignore-tag and references)
+/**
+ * Decodes the literal attributes of one JavaDSL {@code @Adapt} annotation.
+ *
+ * <p>{@code ref} values are collected in declaration order because template placeholders consume
+ * them from left to right. {@code template} and {@code genTemplate} must each contain exactly one
+ * string literal, while {@code ignore} must contain exactly one boolean literal. Structural and
+ * reference-resolution validation is performed later by {@code ValidAnnotation}.
  */
 public class AnnotElementCollector implements JavaLightVisitor2 {
 

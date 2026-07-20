@@ -38,16 +38,16 @@ public interface CodeUpdater {
   /**
    * Renames a type declaration and all resolvable references and uses.
    *
-   * @param srcType the source type to replace.
-   * @param newName the new name of the type.
+   * @param srcType handwritten Java declaration to rename
+   * @param newName concrete Java type name
    */
   void updateType(ASTTypeDeclaration srcType, String newName);
 
   /**
    * Renames a method declaration and the invocations resolved to that method.
    *
-   * @param srcType the source-type  that contains the method-declaration.
-   * @param srcMethod the source method.
+   * @param srcType handwritten Java type containing the method declaration
+   * @param srcMethod handwritten Java method to rename
    * @param newName the new name of the method
    */
   void updateMethod(ASTTypeDeclaration srcType, ASTMethodDeclaration srcMethod, String newName);
@@ -55,16 +55,18 @@ public interface CodeUpdater {
   /**
    * Renames a field declaration and all resolvable accesses.
    *
-   * @param srcType the source-type that contains the field-declaration
-   * @param srcField the source Field.
-   * @param newName the new name of the field.
+   * @param srcType handwritten Java type containing the field declaration
+   * @param srcField handwritten Java field to rename
+   * @param newName concrete field name
    */
   void updateField(ASTTypeDeclaration srcType, ASTFieldDeclaration srcField, String newName);
 
   /**
-   * Change accesses to a field generated from an association role. Association fields do not have
-   * declarations in handwritten reference code, so they cannot be handled by {@link #updateField}.
-   * The source type scopes the rewrite and prevents changes to same-named roles on other owners.
+   * Renames accesses to a field generated from a CD association role.
+   *
+   * <p>Unlike {@link #updateField}, this operation has no handwritten field declaration to rename:
+   * the declaration will be generated from the concrete CD. The source type scopes the rewrite so
+   * a role such as {@code children} on one owner does not affect another owner's same-named role.
    */
   default void updateAssociationRole(
       ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
@@ -74,10 +76,10 @@ public interface CodeUpdater {
   /**
    * Renames a local variable declaration and all resolvable uses in its method.
    *
-   * @param srcType the source-type that contains the local variable.
-   * @param srcMethod the source method tha contains le local variable.
-   * @param sourceVar the source local variable.
-   * @param newName the new name of the local variable.
+   * @param srcType handwritten Java type containing the local variable
+   * @param srcMethod handwritten Java method containing the local variable
+   * @param sourceVar local variable to rename
+   * @param newName concrete local-variable name
    */
   void updateLocalVariable(
       ASTTypeDeclaration srcType,
@@ -88,10 +90,10 @@ public interface CodeUpdater {
   /**
    * Renames a method parameter declaration and all resolvable uses.
    *
-   * @param srcType the source type that contains the local parameter
-   * @param srcMethod the source method that contains le the parameter
-   * @param srcParam the source parameter
-   * @param newName the new name of the parameter
+   * @param srcType handwritten Java type containing the parameter
+   * @param srcMethod handwritten Java method containing the parameter
+   * @param srcParam formal parameter to rename
+   * @param newName concrete parameter name
    */
   void updateMethodParameter(
       ASTTypeDeclaration srcType,
@@ -100,12 +102,18 @@ public interface CodeUpdater {
       String newName);
 
   /**
-   * Rewrites references to a CD type that has no Java declaration in the handwritten model.
+   * Rewrites uses of a reference-CD type that has no declaration in handwritten Java.
    *
-   * @param cdType type  in the reference class diagram to update in the reference code.
-   * @param newName new name of the type.
+   * <p>For example, handwritten code may declare {@code List<Role>} without declaring {@code Role}
+   * because that type is generated from the CD. If {@code Role} maps to {@code Permission}, this
+   * operation rewrites the type use even though {@link #updateType} has no Java declaration to
+   * target.
+   *
+   * @param cdType reference-CD type whose handwritten Java uses are rewritten
+   * @param newName concrete Java type name
    */
   void updateCDType(ASTCDType cdType, String newName);
+
   /**
    * Sets the destination used by {@link #printCode()}.
    *
@@ -131,10 +139,15 @@ public interface CodeUpdater {
   }
 
   /**
-   * Provide a mapping of concrete-type-simple-name -> grouping-type-simple-name
-   * so that updaters that operate on an AST (e.g. SpoonUpdater) can apply
-   * grouping replacements before pretty-printing.
-   * @param mappings mapping from concrete simple name to grouping simple name
+   * Configures incarnation-type to grouping-type replacements for the current updater pass.
+   *
+   * <p>Keys identify individual concrete incarnations and values identify the common concrete type
+   * representing their incarnation group. For example, {@code {CreditCard=PaymentMethod,
+   * Invoice=PaymentMethod}} allows a shared {@code CreditCard} or {@code Invoice} parameter to be
+   * printed as {@code PaymentMethod}. Implementations apply these replacements during final model
+   * repair; they do not rename the incarnation declarations themselves.
+   *
+   * @param mappings incarnation simple name to grouping-type simple name; empty disables grouping
    */
   default void setGroupingMappings(Map<String, String> mappings) {
     if (mappings != null && !mappings.isEmpty()) {
@@ -143,16 +156,30 @@ public interface CodeUpdater {
   }
 
   /**
-   * Register a concrete method signature so updaters can fix invocations that were
-   * renamed from a reference method with fewer arguments.
+   * Registers an owner-independent concrete method signature for legacy invocation repair.
+   *
+   * <p>For example, registering {@code send(String, boolean)} allows an adapted {@code send(label)}
+   * invocation to receive a compatible enclosing {@code boolean} parameter or a Java default value.
+   * Because no owner is supplied, repair is performed only when the method name has one
+   * unambiguous registered signature. New code should prefer {@link #registerMethodRewrite}.
+   *
+   * @param methodName concrete method name
+   * @param parameterTypes concrete parameter types in declaration order
    */
   default void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
     throw unsupported("registerConcreteMethodSignature");
   }
 
   /**
-   * Register an owner/signature-aware method rewrite. The reference key describes the source
-   * method before adaptation; the concrete key describes the target method after adaptation.
+   * Registers an owner- and signature-aware method rewrite for invocation repair.
+   *
+   * <p>The reference key identifies the method before adaptation; the concrete key identifies its
+   * renamed owner, name, and parameters afterward. For example, {@code Port.send(String) ->
+   * ShippingPort.ship(String, boolean)} both renames matching calls and supplies the additional
+   * argument without changing unrelated {@code send} overloads.
+   *
+   * @param referenceMethod owner- and signature-aware reference-CD method key
+   * @param concreteMethod owner- and signature-aware concrete-CD method key
    */
   default void registerMethodRewrite(StableElementKey referenceMethod, StableElementKey concreteMethod) {
     throw unsupported("registerMethodRewrite");

@@ -1,16 +1,20 @@
 package de.monticore.codeAdaption.matcher;
 
+import de.monticore.codeAdaption.matcher.annotMatcher.AnnotVariableMatcher;
 import de.monticore.codeAdaption.utils.AdapterParam;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -37,6 +41,27 @@ class AnnotMatcherTest extends MatcherAbstractTest {
         matching.get().getReferences().stream().map(value -> value.getName()).toList());
     Assertions.assertEquals(expected.template(), matching.get().getTemplate());
     Assertions.assertTrue(matching.get().mustBePerform());
+  }
+
+  @Test
+  void variableMatcherUsesReplacedReferenceCD() {
+    init("/annotMatcher/EntityRepository.java");
+    var unrelatedCD =
+        JavaLoader.loadCD(
+            new File(
+                "src/test/resources/de/monticore/codeAdaption/validator/Validator.cd"));
+    AnnotVariableMatcher matcher = new AnnotVariableMatcher(unrelatedCD);
+    matcher.setReferenceCD(cd);
+
+    ASTTypeDeclaration type = collector.getAllTypeDeclarations().get(0);
+    ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(2);
+    ASTLocalVariableDeclaration local = collector.getAllLocVariables(type, method).get(0);
+    Optional<CodeMatching> matching = matcher.getMatchedLocalVariable(type, method, local);
+
+    Assertions.assertTrue(matching.isPresent());
+    Assertions.assertEquals(
+        List.of("Entity"),
+        matching.get().getReferences().stream().map(value -> value.getName()).toList());
   }
 
   private ExpectedMatching expectedMatching(String elementKind, ASTTypeDeclaration type) {

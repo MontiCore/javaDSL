@@ -83,9 +83,11 @@ public class CodeAdapter {
    * stereotypes and deterministic name rules, conflicts are reported before the output directory is
    * cleaned, and the concrete CD is not changed.
    *
-   * <p>{@code useCommonParentForMultipleIncarnations} permits manual adaptation to resolve
-   * class/interface mismatches and multi-incarnation type targets through an available common
-   * parent or implemented interface.
+   * <p>{@code useCommonParentForMultipleIncarnations} permits manual adaptation to represent an
+   * exact group of concrete incarnations through a common concrete interface. For example, if
+   * {@code Payment} maps to {@code CreditCard} and {@code Invoice}, and those are exactly the
+   * concrete implementers of {@code PaymentMethod}, shared Java declarations may use {@code
+   * PaymentMethod}. A broader interface that also has unrelated implementers is not selected.
    *
    * @param referenceCD reference class diagram
    * @param concreteCD concrete class diagram
@@ -94,8 +96,9 @@ public class CodeAdapter {
    * @param conHwcPath concrete handwritten-code directory
    * @param outputPath output directory published only after a successful run
    * @param useConcretization whether to complete the concrete CD before adaptation
-   * @param useCommonParentForMultipleIncarnations whether exact common grouping types may replace
-   *     multiple concrete incarnations
+   * @param useCommonParentForMultipleIncarnations whether a common concrete interface whose
+   *     implementers exactly match an incarnation group may replace the individual incarnation
+   *     types in shared Java declarations
    * @throws CodeAdaptationException if validation, conflict detection, or adaptation fails
    */
   public void adapt(

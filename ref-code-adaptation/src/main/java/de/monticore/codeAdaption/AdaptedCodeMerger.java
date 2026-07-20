@@ -36,6 +36,13 @@ final class AdaptedCodeMerger {
   private static final Map<String, Boolean> PLATFORM_PUBLIC_TOP_LEVEL_TYPE_CACHE =
       new ConcurrentHashMap<>();
 
+  /**
+   * Merges newly adapted units into output accumulated from earlier mapping passes.
+   *
+   * <p>Units are matched by package-qualified top-level identity, not by source-file path. Thus two
+   * passes producing {@code shipping.Port} contribute members to one unit, while {@code api.Port}
+   * remains separate.
+   */
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCode(
       Set<ASTOrdinaryCompilationUnit> actualCode,
       Set<ASTOrdinaryCompilationUnit> newAdaptedCode) {
@@ -48,6 +55,14 @@ final class AdaptedCodeMerger {
     return new LinkedHashSet<>(merged.values());
   }
 
+  /**
+   * Retains compilation units relevant to one mapping-specific incarnation context.
+   *
+   * <p>A unit is retained when a top-level Java type matches a reference-CD type having at least
+   * one incarnation in {@code context}. A unit explicitly marked {@code @Adapt(ignore = true)} is
+   * also retained: ignore prevents transformation of that type, but does not mean that its source
+   * file should disappear from the mapping output.
+   */
   Set<ASTOrdinaryCompilationUnit> filterCodeForMapping(
       Set<ASTOrdinaryCompilationUnit> javaFiles,
       CodeValidator validator,
@@ -343,6 +358,13 @@ final class AdaptedCodeMerger {
     names.addAll(JavaSourceNames.typeReferences(JavaLoader.print(type)));
   }
 
+  /**
+   * Finds adapted units that must move to an existing concrete handwritten package before merge.
+   *
+   * <p>The result maps the adapted unit's original package-qualified identity to its concrete
+   * target identity and package. Relocation requires one unique concrete Java declaration with the
+   * same concrete-CD type name; zero matches leave the unit in place and multiple matches fail.
+   */
   private Map<String, Relocation> findRelocations(
       Map<String, ASTOrdinaryCompilationUnit> concreteCode,
       Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
@@ -370,6 +392,14 @@ final class AdaptedCodeMerger {
     return relocations;
   }
 
+  /**
+   * Indexes final adapted type locations for cross-package import repair.
+   *
+   * <p>The outer key is the type's original package. Each inner map is {@code simple type name ->
+   * final qualified name}. For example, relocating {@code adapter.Port} to {@code concrete.Port}
+   * records {@code adapter -> {Port=concrete.Port}}, allowing other units originally in {@code
+   * adapter} to import the relocated type.
+   */
   private Map<String, Map<String, String>> adaptedTypeImports(
       Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
       Map<String, Relocation> relocations) {
@@ -514,6 +544,10 @@ final class AdaptedCodeMerger {
     return result;
   }
 
+  /**
+   * Indexes units by package-qualified top-level identity and merges duplicate identities.
+   * Source paths do not participate in the key.
+   */
   private Map<String, ASTOrdinaryCompilationUnit> indexAndMerge(
       Set<ASTOrdinaryCompilationUnit> files) {
     Map<String, ASTOrdinaryCompilationUnit> byQualifiedType = new LinkedHashMap<>();

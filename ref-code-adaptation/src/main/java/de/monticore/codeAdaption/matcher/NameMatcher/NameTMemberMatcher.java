@@ -21,9 +21,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/***
- * match Field and method in the code with attribute and method in the class diagram
- * having the same name.
+/**
+ * Matches handwritten members by names within the reference-CD types represented by their Java
+ * owner.
+ *
+ * <p>Fields require one equal-name attribute. Methods require the same name and normalized
+ * parameter types, so {@code update()} and {@code update(String)} remain distinct. Declared
+ * supertypes use embedded type-name matching because their printed Java type may be qualified or
+ * generic rather than a bare simple name.
  */
 public class NameTMemberMatcher implements TMemberMatcher {
   protected TypeMatcher typeMatcher;
@@ -110,9 +115,9 @@ public class NameTMemberMatcher implements TMemberMatcher {
     return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().size();
   }
 
-  /***
-   * match a field in referring classes with the same name.
-   * example :field "id" in "EntityBuilder" refers to "id" in Entity.
+  /**
+   * Matches one equal-name reference attribute within the Java owner's matched reference types.
+   * For example, field {@code id} in {@code EntityBuilder} may refer to attribute {@code Entity.id}.
    */
   @Override
   public Optional<CodeMatching> getMatchedField(

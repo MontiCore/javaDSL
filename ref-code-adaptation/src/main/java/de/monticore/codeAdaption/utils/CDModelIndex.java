@@ -19,7 +19,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Immutable lookup structure for class diagram AST elements and relationships. */
+/**
+ * Immutable lookup structure for class-diagram elements and inheritance relationships.
+ *
+ * <p>Named lookups are intentionally based on simple CD type names. Supplying {@code
+ * shop.Payment} therefore looks up {@code Payment}; this index does not distinguish two types that
+ * differ only by package. Member-owner lookups use the owning type's simple name, while {@link
+ * #ownerOf(ASTCDAttribute)} and {@link #ownerOf(ASTCDMethod)} use AST object identity and therefore
+ * require nodes from this indexed CD.
+ */
 public final class CDModelIndex {
   private final ASTCDCompilationUnit cd;
   private final List<ASTCDType> types;
@@ -116,6 +124,7 @@ public final class CDModelIndex {
     this.implementersByInterface = copyListMap(implementers);
   }
 
+  /** Creates an index, or an empty index when {@code cd} is {@code null}. */
   public static CDModelIndex of(ASTCDCompilationUnit cd) {
     if (cd == null) {
       return new CDModelIndex();
@@ -147,6 +156,7 @@ public final class CDModelIndex {
     return associations;
   }
 
+  /** Resolves a type after reducing the supplied name to its simple name. */
   public Optional<ASTCDType> type(String name) {
     return Optional.ofNullable(typesBySimpleName.get(JavaSourceNames.simpleName(name)));
   }
@@ -155,10 +165,12 @@ public final class CDModelIndex {
     return type(name).isPresent();
   }
 
+  /** Returns attributes declared directly by the named owner; inherited attributes are excluded. */
   public List<ASTCDAttribute> attributes(String ownerName) {
     return attributesByOwner.getOrDefault(JavaSourceNames.simpleName(ownerName), List.of());
   }
 
+  /** Resolves one directly declared attribute by owner and simple attribute name. */
   public Optional<ASTCDAttribute> attribute(String ownerName, String attributeName) {
     String simpleAttribute = JavaSourceNames.simpleName(attributeName);
     return attributes(ownerName).stream()
@@ -166,10 +178,12 @@ public final class CDModelIndex {
         .findFirst();
   }
 
+  /** Returns methods declared directly by the named owner; inherited methods are excluded. */
   public List<ASTCDMethod> methods(String ownerName) {
     return methodsByOwner.getOrDefault(JavaSourceNames.simpleName(ownerName), List.of());
   }
 
+  /** Returns directly declared overloads having the supplied simple method name. */
   public List<ASTCDMethod> methods(String ownerName, String methodName) {
     String simpleMethod = JavaSourceNames.simpleName(methodName);
     return methods(ownerName).stream()
@@ -177,6 +191,12 @@ public final class CDModelIndex {
         .toList();
   }
 
+  /**
+   * Resolves one directly declared method by its normalized {@code name(type,...)} signature.
+   *
+   * <p>For example, {@code method("Order", "update(java.time.Instant)")} does not match a
+   * zero-argument {@code update()} overload.
+   */
   public Optional<ASTCDMethod> method(String ownerName, String signature) {
     String normalizedSignature = signature == null ? "" : signature.trim();
     return methods(ownerName).stream()
@@ -192,10 +212,12 @@ public final class CDModelIndex {
     return Optional.ofNullable(methodOwners.get(method));
   }
 
+  /** Returns direct superclass and interface names; the supplied type itself is not included. */
   public Set<String> directParentNames(String typeName) {
     return directParentsByType.getOrDefault(JavaSourceNames.simpleName(typeName), Set.of());
   }
 
+  /** Returns every reachable superclass and interface name, excluding the supplied type itself. */
   public Set<String> transitiveParentNames(String typeName) {
     Set<String> result = new LinkedHashSet<>();
     ArrayDeque<String> queue = new ArrayDeque<>(directParentNames(typeName));
@@ -209,20 +231,35 @@ public final class CDModelIndex {
     return Collections.unmodifiableSet(result);
   }
 
+  /**
+   * Returns whether {@code typeName} has {@code parentName} as a direct or transitive parent.
+   * Equal type names are not considered a subtype relationship by this method.
+   */
   public boolean isSubtypeOf(String typeName, String parentName) {
     String simpleParent = JavaSourceNames.simpleName(parentName);
     return directParentNames(typeName).contains(simpleParent)
         || transitiveParentNames(typeName).contains(simpleParent);
   }
 
+  /** Returns names of types that directly declare the supplied parent. */
   public Set<String> childNames(String parentName) {
     return childrenByParent.getOrDefault(JavaSourceNames.simpleName(parentName), Set.of());
   }
 
+  /**
+   * Returns types that directly list the supplied interface in their declaration.
+   *
+   * <p>This is a declaration index, not a transitive subtype query. Use {@link #isSubtypeOf} when
+   * indirect interface implementation must count.
+   */
   public List<ASTCDType> implementersOf(String interfaceName) {
     return implementersByInterface.getOrDefault(JavaSourceNames.simpleName(interfaceName), List.of());
   }
 
+  /**
+   * Finds the unique type that directly declares an attribute or method with this simple name.
+   * Returns empty both when no owner exists and when several types declare that member name.
+   */
   public Optional<ASTCDType> ownerOfMemberNamed(String memberName) {
     String simpleMember = JavaSourceNames.simpleName(memberName);
     ASTCDType owner = null;

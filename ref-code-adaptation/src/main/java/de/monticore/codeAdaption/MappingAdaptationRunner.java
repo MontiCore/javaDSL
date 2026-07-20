@@ -20,6 +20,14 @@ import java.util.stream.Collectors;
 
 /** Executes the complete isolated updater lifecycle for one mapping's adaptation passes. */
 final class MappingAdaptationRunner {
+  /**
+   * One deterministic multi-incarnation choice and the top-level Java types retained from it.
+   *
+   * <p>{@code typeSelection} maps reference type keys to the one concrete incarnation used by this
+   * pass, for example {@code Payment -> CreditCard}. {@code outputTypeNames} contains concrete Java
+   * top-level names such as {@code CreditCardAdapter}; all other transformed units are discarded
+   * after serving as cross-file resolution context.
+   */
   record AdaptationPass(
       Map<StableElementKey, IncarnationContext.MappedElement> typeSelection,
       Set<String> outputTypeNames) {
@@ -62,6 +70,17 @@ final class MappingAdaptationRunner {
         useCommonParentForMultipleIncarnations;
   }
 
+  /**
+   * Runs every planned pass for one mapping and merges the retained output units.
+   *
+   * @param mapping stereotype name identifying the isolated incarnation context
+   * @param mappingCode complete filtered source set loaded into every pass for cross-file resolution
+   * @param passes concrete incarnation selections to execute
+   * @param checker usable conformance checker, or {@code null} for manual mapping
+   * @param validator matcher/validation state for the same mapping
+   * @param context reference-element to concrete-incarnation mappings for this mapping only
+   * @param groupingMappings incarnation simple name to common grouping-type simple name
+   */
   Set<ASTOrdinaryCompilationUnit> run(
       String mapping,
       Set<ASTOrdinaryCompilationUnit> mappingCode,

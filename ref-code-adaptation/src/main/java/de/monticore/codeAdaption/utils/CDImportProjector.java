@@ -36,6 +36,12 @@ public final class CDImportProjector {
    * otherwise-unbound simple name is supplied by multiple distinct explicit CD imports, projection
    * fails deterministically instead of creating an uncompilable pair of imports.
    *
+   * <p>For example, if the reference CD imports {@code reference.Customer} and the concrete CD
+   * imports {@code concrete.Customer}, a Java unit that uses unqualified {@code Customer} is
+   * ambiguous and causes an exception. If that unit already imports {@code reference.Customer},
+   * the existing Java import wins and no conflicting import is added. A unit that never uses
+   * {@code Customer} receives neither explicit import.
+   *
    * @param javaUnits handwritten adapter compilation units to update
    * @param classDiagrams class diagrams whose imports are projected
    */

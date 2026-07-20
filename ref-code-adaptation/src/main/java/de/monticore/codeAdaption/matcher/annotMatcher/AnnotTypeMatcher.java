@@ -9,9 +9,10 @@ import de.monticore.java.javadsl._ast.*;
 import java.util.Optional;
 import java.util.Set;
 
-/***
- * match a TypeDeclaration(class, enum, interface) in the reference code to elements in
- *  the reference class Diagram form annotations.
+/**
+ * Matches a handwritten class, interface, or enum through its explicit {@code @Adapt} annotation.
+ * Annotation references are resolved against the reference CD and retain their declared order for
+ * template expansion.
  */
 public class AnnotTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;

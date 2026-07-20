@@ -28,33 +28,34 @@ public class IncarnationContext {
 
   private final String mappingName;
   private final Map<StableElementKey, List<MappedElement>> mappings;
-  private final Map<StableElementKey, MappedElement> groupingByImplementer;
+  private final Map<StableElementKey, MappedElement> groupingByIncarnation;
 
   /**
    * Creates an immutable context for one mapping.
    *
    * <p>Example: for mapping {@code "shop"}, {@code mappings} may associate reference type
    * {@code Payment} with concrete types {@code CreditCard} and {@code Invoice}. If both concrete
-   * types must be used through {@code PaymentMethod}, {@code groupingByImplementer} contains
+   * types must be used through {@code PaymentMethod}, {@code groupingByIncarnation} contains
    * {@code CreditCard -> PaymentMethod} and {@code Invoice -> PaymentMethod}.
    *
    * @param mappingName name of the CD stereotype that identifies this mapping, such as {@code shop}
-   * @param mappings stable reference-element keys to one or more concrete {@link MappedElement}s;
-   *     for example {@code Payment -> [CreditCard, Invoice]}
-   * @param groupingByImplementer concrete type keys to the common type through which generated Java
-   *     should reference them; for example {@code CreditCard -> PaymentMethod}; may be {@code null}
-   *     when no grouping is required
+   * @param mappings stable reference-element keys to one or more concrete incarnations; entries may
+   *     represent types, fields, or signature-aware methods, for example {@code Payment ->
+   *     [CreditCard, Invoice]}
+   * @param groupingByIncarnation concrete type-incarnation keys to the common concrete type through
+   *     which shared Java declarations should reference their incarnation group; for example {@code
+   *     CreditCard -> PaymentMethod}; may be {@code null} when no grouping is required
    */
   public IncarnationContext(
       String mappingName,
       Map<StableElementKey, List<MappedElement>> mappings,
-      Map<StableElementKey, MappedElement> groupingByImplementer) {
+      Map<StableElementKey, MappedElement> groupingByIncarnation) {
     this.mappingName = Objects.requireNonNull(mappingName);
     this.mappings = immutableMappings(mappings);
-    this.groupingByImplementer =
+    this.groupingByIncarnation =
         Collections.unmodifiableMap(
             new LinkedHashMap<>(
-                groupingByImplementer == null ? Map.of() : groupingByImplementer));
+                groupingByIncarnation == null ? Map.of() : groupingByIncarnation));
   }
 
   /** Returns the mapping stereotype name represented by this context. */
@@ -81,17 +82,17 @@ public class IncarnationContext {
     return incarnations.size() == 1 ? Optional.of(incarnations.get(0)) : Optional.empty();
   }
 
-  /** Returns the grouping type selected for a concrete implementer. */
-  public Optional<MappedElement> getGroupingFor(StableElementKey implementer) {
-    return Optional.ofNullable(groupingByImplementer.get(implementer));
+  /** Returns the common grouping type selected for one concrete type incarnation. */
+  public Optional<MappedElement> getGroupingFor(StableElementKey incarnation) {
+    return Optional.ofNullable(groupingByIncarnation.get(incarnation));
   }
 
   /**
-   * Returns the complete immutable implementer-to-grouping index, for example {@code CreditCard ->
-   * PaymentMethod}.
+   * Returns the complete immutable type-incarnation to grouping-type index, for example {@code
+   * CreditCard -> PaymentMethod} and {@code Invoice -> PaymentMethod}.
    */
   public Map<StableElementKey, MappedElement> getGroupingMappings() {
-    return groupingByImplementer;
+    return groupingByIncarnation;
   }
 
   /** Copies both map and incarnation lists so callers cannot mutate context state after creation. */

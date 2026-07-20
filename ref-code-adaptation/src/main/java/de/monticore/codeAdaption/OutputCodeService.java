@@ -11,9 +11,24 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Handles final generated-source cleanup and concrete handwritten-file inclusion. */
+/**
+ * Handles final generated-source cleanup and inclusion of pre-existing concrete handwritten files.
+ *
+ * <p>Adapted files are already present in the staging output. Concrete handwritten files are added
+ * only when no adapted file occupies their target path, so adapted output wins without overwriting
+ * the user's concrete source tree.
+ */
 final class OutputCodeService {
 
+  /**
+   * Copies concrete handwritten files into their final package-relative output locations.
+   *
+   * <p>Java files are placed according to their declared package rather than their input folder.
+   * For example, {@code misc/Port.java} declaring {@code package shipping;} targets {@code
+   * shipping/Port.java}. Non-Java files preserve their path relative to {@code conHwcPath}. If two
+   * inputs target the same output path, identical content is deduplicated and differing content is
+   * rejected.
+   */
   void copyConcreteFiles(Path conHwcPath, Path outputPath) {
     if (!Files.exists(conHwcPath)) {
       try {
@@ -56,6 +71,7 @@ final class OutputCodeService {
     }
   }
 
+  /** Removes adapter-only annotations/imports and performs the updater's final source cleanup. */
   void cleanCode(Path codePath) {
     CodeUpdaterMill.reset();
     try {

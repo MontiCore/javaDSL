@@ -12,9 +12,11 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.Optional;
 
-/***
- * match an Attributes and method in the reference code to elements
- * in the reference class Diagram form annotations.
+/**
+ * Matches handwritten fields and methods through explicit {@code @Adapt} annotations.
+ *
+ * <p>Declared Java supertypes cannot carry annotations at their type-use position in the supported
+ * JavaDSL model, so this strategy deliberately returns no supertype match.
  */
 public class AnnotTMemberMatcher implements TMemberMatcher {
 

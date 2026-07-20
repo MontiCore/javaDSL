@@ -14,9 +14,13 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.List;
 import java.util.Optional;
 
-/***
- * match an Attributes and method in the reference code to elements
- * in the reference class Diagram by analyzing the infix.
+/**
+ * Matches handwritten fields, methods, and declared supertypes by reference-CD names embedded in
+ * their Java names or types.
+ *
+ * <p>For example, {@code getEntity()} may reference type {@code Entity}, while {@code getId()} may
+ * reference attribute {@code id}. Method candidates are additionally restricted by parameter
+ * count so overloads with different arity do not all become references.
  */
 public class InfixTMemberMatcher implements TMemberMatcher {
   protected ASTCDCompilationUnit cd;
@@ -41,11 +45,7 @@ public class InfixTMemberMatcher implements TMemberMatcher {
     return typeMatcher;
   }
 
-  /***
-   * match method to a type or an attribute in the reference class diagram.
-   * eg:     getId  to id ;
-   *     getEntity  to Entity
-   */
+  /** Matches a method name to embedded reference fields, types, and same-arity methods. */
   @Override
   public Optional<CodeMatching> getMatchedMethod(
       ASTTypeDeclaration type, ASTMethodDeclaration method) {
@@ -68,11 +68,7 @@ public class InfixTMemberMatcher implements TMemberMatcher {
     return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().size();
   }
 
-  /***
-   * match field to a type or an attribute in the reference class diagram.
-   * eg: entityList to Entity
-   *         longId to id
-   */
+  /** Matches a field through reference names embedded in its name and declared type. */
   @Override
   public Optional<CodeMatching> getMatchedField(
       ASTTypeDeclaration type, ASTFieldDeclaration field) {
@@ -86,11 +82,7 @@ public class InfixTMemberMatcher implements TMemberMatcher {
     return MatcherHelper.mkMatchingFromInfixRef(references, name);
   }
 
-  /***
-   * match field to a type or an attribute in the reference class diagram.
-   * eg: entityList to Entity
-   *         longId to id
-   */
+  /** Matches a declared Java supertype to embedded reference-CD type names. */
   @Override
   public Optional<CodeMatching> getMatchedSupertype(ASTTypeDeclaration type, ASTMCType superType) {
     String name = JavaLoader.print(superType);

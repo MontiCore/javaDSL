@@ -13,8 +13,12 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 
-/***
- *throws an error when the previous strategies didn't find machining for attributes or a methods.
+/**
+ * Terminal fallback that reports unmatched fields, methods, and external supertypes as validation
+ * errors.
+ *
+ * <p>A supertype declared by another Java source in the same input batch is accepted unchanged: it
+ * is a source-local Java relationship rather than a missing reference-CD match.
  */
 public class ErrorTMemberMatcher implements TMemberMatcher {
   protected ASTCDCompilationUnit cd;

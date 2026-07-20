@@ -11,9 +11,9 @@ import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 
-/***
- *throws an error when the previous strategy didn't find machining for local-variables
- * and method parameters.
+/**
+ * Terminal fallback that reports unmatched local variables and formal parameters as validation
+ * errors. It is installed when {@code IGNORE_NON_MATCHED_VAR} is not enabled.
  */
 public class ErrorVariableMatcher implements VariableMatcher {
   @Override

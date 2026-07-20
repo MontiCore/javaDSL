@@ -10,9 +10,9 @@ import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import java.util.List;
 import java.util.Optional;
 
-/***
- * compose matching Strategy for functions parameters and local variables.
- * allow trying several matching strategies until a matching is found.
+/**
+ * Applies formal-parameter and local-variable matchers in configured precedence order and returns
+ * the first result. Annotation and infix strategies run before the terminal ignore-or-error policy.
  */
 public class CompVariableMatcher implements VariableMatcher {
 

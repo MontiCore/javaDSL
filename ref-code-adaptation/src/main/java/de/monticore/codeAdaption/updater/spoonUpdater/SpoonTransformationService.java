@@ -62,6 +62,11 @@ final class SpoonTransformationService {
     typeDeclarationsBySimpleName = null;
   }
 
+  /**
+   * Sets incarnation-name to grouping-type-name replacements for this isolated Spoon pass.
+   * Qualified keys target only that qualified incarnation; simple keys are applied only when the
+   * loaded model contains one unambiguous declaration with that simple name.
+   */
   void setGroupingMappings(Map<String, String> mappings) {
     groupingMappings =
         mappings == null || mappings.isEmpty()
@@ -270,6 +275,15 @@ final class SpoonTransformationService {
     }
   }
 
+  /**
+   * Rewrites uses of individual incarnation types to their configured common grouping types.
+   *
+   * <p>For {@code {CreditCard=PaymentMethod, Invoice=PaymentMethod}}, a shared {@code
+   * List<CreditCard>} may become {@code List<PaymentMethod>}. The concrete incarnation declarations
+   * themselves are not renamed, builder declarations retain their concrete types, and a method
+   * parameter is left unchanged when grouping it would collapse two overloads to the same Java
+   * signature.
+   */
   private void applyGroupingToModel() {
     if (groupingMappings.isEmpty()) {
       return;
@@ -336,6 +350,14 @@ final class SpoonTransformationService {
         + ")";
   }
 
+  /**
+   * Resolves the grouping replacement applicable to one Spoon type reference.
+   *
+   * <p>A qualified map key must match the reference's qualified identity. A simple key is accepted
+   * only when exactly one loaded declaration has that simple name and the reference resolves to it
+   * (or, when unresolved, is used from the same package). This prevents a mapping for {@code
+   * billing.Invoice} from rewriting an unrelated {@code shipping.Invoice}.
+   */
   private String mappingFor(CtTypeReference<?> reference) {
     String qualifiedName = reference.getQualifiedName();
     if (qualifiedName != null && groupingMappings.containsKey(qualifiedName)) {

@@ -9,12 +9,18 @@ public enum AdapterParam {
   /** Enables explicit matching through {@link Adapt} metadata. */
   ANNOTATION_MATCHING,
 
-  /** Keeps an otherwise unmatched Java type instead of reporting a validation error. */
+  /**
+   * Accepts an otherwise unmatched Java type instead of reporting a validation error.
+   *
+   * <p>The type has no reference-CD incarnation to adapt and is therefore excluded from
+   * mapping-specific adapted output. Use an explicit {@code @Adapt(ignore = true)} annotation when
+   * an intentionally unchanged reference type must remain in that output.
+   */
   IGNORE_NON_MATCHED_TYPE,
 
-  /** Keeps an otherwise unmatched local variable or parameter. */
+  /** Leaves an otherwise unmatched local variable or parameter unchanged. */
   IGNORE_NON_MATCHED_VAR,
 
-  /** Keeps an otherwise unmatched field, method, or supertype declaration. */
+  /** Leaves an otherwise unmatched field, method, or supertype declaration unchanged. */
   IGNORE_NON_MATCHED_TYPE_MEMBER
 }
