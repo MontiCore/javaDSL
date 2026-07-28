@@ -170,7 +170,7 @@ scope(shadowing) ClassDeclaration extends TypeDeclaration
     =   JavaModifier* "class" Name TypeParameters?
         ("extends" superClass:MCType)?
         ("implements" implementedInterface:(MCType || ",")+)?
-        ClassBody ";"
+        ClassBody
     ;
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
@@ -188,7 +188,7 @@ ClassBody
 scope(shadowing) RecordDeclaration extends TypeDeclaration
     = JavaModifier* "record" Name TypeParameters? RecordHeader
         ("implements" implementedInterface:(MCType || ",")+)?
-        RecordBody ";"
+        RecordBody
     ;
 
 // TODO: "record" is a contextual keyword, but setting it to nokeyword creates conflicts with MethodDeclaration
@@ -221,7 +221,7 @@ CompactConstructorDeclaration
 scope(shadowing) InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
-        InterfaceBody ";"
+        InterfaceBody
     ;
 
 // TODO Replace with MCJavaBlock? -> with CoCos?
@@ -233,7 +233,7 @@ InterfaceBody
 scope(shadowing) EnumDeclaration extends TypeDeclaration
     =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
-        "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}" ";"
+        "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
 // TODO: Remove scope duplicate when monticore#4726 is fixed
