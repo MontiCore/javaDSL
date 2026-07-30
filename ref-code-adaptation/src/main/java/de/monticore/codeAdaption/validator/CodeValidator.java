@@ -177,7 +177,6 @@ public class CodeValidator {
 
   protected void runCoCosPhase1(ASTOrdinaryCompilationUnit ast, ASTCDCompilationUnit refCD) {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo((JavaDSLASTJavaAnnotationCoCo) new ValidAnnotation(refCD));
     checker.addCoCo((JavaLightASTAnnotationCoCo) new ValidAnnotation(refCD));
     // implicitly also adds CoCo to JavaDSLASTLocalVariableDeclaration
     checker.addCoCo((JavaDSLASTFieldDeclarationCoCo) new OneVarInDeclaration());
