@@ -273,6 +273,14 @@ ArrayInitializer implements VariableInitializer
     ;
 
 // ANNOTATIONS
+
+Annotation implements JavaModifier;
+
+astrule Annotation =
+    method public int getModifier() {
+        return -1;
+    };
+
 AnnotationTypeDeclaration extends TypeDeclaration
     =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
@@ -391,19 +399,6 @@ EnhancedForControlFormalParameter
 
 nokeyword "var";
 
-/*
- * TODO Remove this
- * This is a workaround to a questionable behavior in the core grammar JavaLight
- * where the production "Annotation" does not extend "JavaModifier" whereas
- * various productions use JavaModifier in places where annotations are allowed.
- *
- * We cannot override the Annotation production because we already extend
- * JavaModifier either, so we'll have to live with a separate production for now.
- */
-JavaAnnotation extends JavaModifier implements ElementValue
-    =   "@" annotationName:MCQualifiedName
-            ( "(" AnnotationArguments? ")" )?
-    ;
 
 scope(shadowing) AnonymousClass extends ClassCreator implements Creator
     =   MCType Arguments ClassBody?

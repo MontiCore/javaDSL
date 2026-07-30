@@ -6,6 +6,8 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.TypeMatcher;
 import de.monticore.java.javadsl._ast.*;
+import de.monticore.javalight._ast.ASTAnnotation;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,7 +41,7 @@ public class AnnotTypeMatcher implements TypeMatcher {
   @Override
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration type) {
 
-    Optional<ASTJavaAnnotation> annotation = Optional.empty();
+    Optional<ASTAnnotation> annotation = Optional.empty();
     if (type instanceof ASTClassDeclaration) {
       annotation = getInfoJavaAnnot(((ASTClassDeclaration) type).getJavaModifierList());
     } else if (type instanceof ASTInterfaceDeclaration) {
