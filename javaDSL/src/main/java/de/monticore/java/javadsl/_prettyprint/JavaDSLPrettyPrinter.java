@@ -1,14 +1,30 @@
 package de.monticore.java.javadsl._prettyprint;
 
+import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
-
-import java.util.stream.Collectors;
 
 public class JavaDSLPrettyPrinter extends JavaDSLPrettyPrinterTOP {
   
   public JavaDSLPrettyPrinter(IndentPrinter printer, boolean printComments) {
     super(printer, printComments);
+  }
+  
+  @Override
+  public void handle(ASTOrdinaryCompilationUnit node) {
+    if (this.isPrintComments()) {
+      de.monticore.prettyprint.CommentPrettyPrinter.printPreComments(node, getPrinter());
+    }
+    if (node.isPresentPackageDeclaration()) {
+      node.getPackageDeclaration().accept(getTraverser());
+    }
+    
+    node.getImportDeclarationList().forEach(n->n.accept(getTraverser()));
+    
+    node.getTypeDeclarationList().forEach(n->n.accept(getTraverser()));
+
+    if (this.isPrintComments()) {
+      de.monticore.prettyprint.CommentPrettyPrinter.printPostComments(node, getPrinter());
+    }
   }
   
   @Override
