@@ -14,11 +14,15 @@ import de.monticore.javalight._ast.ASTAnnotation;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._cocos.JavaLightASTMethodDeclarationCoCo;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
+import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mccommonstatements._cocos.MCCommonStatementsASTFormalParameterCoCo;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ValidTemplate
     implements JavaDSLASTFieldDeclarationCoCo,
@@ -46,13 +50,13 @@ public class ValidTemplate
   @Override
   public void check(ASTFieldDeclaration node) {
     String srcName = node.getVariableDeclarator(0).getDeclarator().getName();
-    Optional<ASTJavaAnnotation> annotation = getInfoJavaAnnot(node.getJavaModifierList());
+    Optional<ASTAnnotation> annotation = getInfoJavaAnnot(node.getJavaModifierList());
     annotation.ifPresent(astJavaAnnotation -> checkTemplate(astJavaAnnotation, srcName));
   }
 
   @Override
   public void check(ASTTypeDeclaration node) {
-    Optional<ASTJavaAnnotation> annotation = Optional.empty();
+    Optional<ASTAnnotation> annotation = Optional.empty();
     if (node instanceof ASTClassDeclaration) {
       annotation = getInfoJavaAnnot(((ASTClassDeclaration) node).getJavaModifierList());
     } else if (node instanceof ASTInterfaceDeclaration) {
@@ -66,7 +70,7 @@ public class ValidTemplate
 
   @Override
   public void check(ASTFormalParameter node) {
-    Optional<ASTJavaAnnotation> annotation = getInfoJavaAnnot(node.getJavaModifierList());
+    Optional<ASTAnnotation> annotation = getInfoAnnotation(node.getMCModifierList());
     annotation.ifPresent(
         astJavaAnnotation -> checkTemplate(astJavaAnnotation, node.getDeclarator().getName()));
   }

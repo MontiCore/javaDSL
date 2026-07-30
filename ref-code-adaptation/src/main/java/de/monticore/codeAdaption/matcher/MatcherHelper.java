@@ -9,7 +9,6 @@ import de.monticore.codeAdaption.matcher.annotMatcher.AnnotElementCollector;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTJavaAnnotation;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.*;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
@@ -107,11 +106,11 @@ public class MatcherHelper {
     return result;
   }
 
-  public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
+  public static Optional<ASTAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
     for (ASTMCModifier mod : mods) {
-      if (mod instanceof ASTJavaAnnotation
-          && ((ASTJavaAnnotation) mod).getAnnotationName().getQName().equals(ANNOT_NAME)) {
-        return Optional.of((ASTJavaAnnotation) mod);
+      if (mod instanceof ASTAnnotation
+          && ((ASTAnnotation) mod).getAnnotationName().getQName().equals(ANNOT_NAME)) {
+        return Optional.of((ASTAnnotation) mod);
       }
     }
     return Optional.empty();
