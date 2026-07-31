@@ -10,7 +10,7 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mcarraystatements._ast.ASTArrayDeclaratorId;
-import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
+import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
@@ -25,15 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.*;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.ABSTRACT;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.FINAL;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.MODIFIER_DEFAULT;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.NATIVE;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.STATIC;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.STRICTFP;
-import static de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements.SYNCHRONIZED;
 
 public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor2 {
   
@@ -120,7 +111,7 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
       supertypes.add(TypeCheck3.symTypeFromAST(node.getSuperClass()));
     }
     supertypes.addAll(node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
-        .collect(Collectors.toList()));
+        .toList());
     symbol.setSuperTypesList(supertypes);
   }
   
@@ -158,33 +149,24 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
   protected void addModifiersToField(FieldSymbol fieldSymbol,
       Iterable<? extends ASTMCModifier> astModifierList) {
     for (ASTMCModifier modifier : astModifierList) {
-      if (modifier instanceof ASTJavaModifier) {
-        // visibility
-        switch (((ASTJavaModifier) modifier).getModifier()) {
-          case PUBLIC:
-            fieldSymbol.setIsPublic(true);
-            break;
-          case PROTECTED:
-            fieldSymbol.setIsProtected(true);
-            break;
-          case PRIVATE:
-            fieldSymbol.setIsPrivate(true);
-            // other variable modifiers as in jls7 8.3.1 Field Modifiers
-            break;
-          case STATIC:
-            fieldSymbol.setIsStatic(true);
-            break;
-          case FINAL:
-            fieldSymbol.setIsFinal(true);
-            break;
-          default:
-            break;
+      switch (modifier) {
+        case ASTAnnotation annotation -> {
+          //fieldSymbol.addAnnotations(TypeCheck3.symTypeFromAST(annotation.getAnnotationName()));
+          // TODO: FieldSymbols do not support annotations yet -> annotations are lost
         }
-      }
-      else if (modifier instanceof ASTAnnotation) {
-        ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        //fieldSymbol.addAnnotations(TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
-        // TODO: FieldSymbols do not support annotations yet -> annotations are lost
+        case ASTJavaModifier javaModifier -> {
+          switch (javaModifier) {
+            case ASTModifierPublic m -> fieldSymbol.setIsPublic(true);
+            case ASTModifierProtected m -> fieldSymbol.setIsProtected(true);
+            case ASTModifierPrivate m -> fieldSymbol.setIsPrivate(true);
+            case ASTModifierStatic m -> fieldSymbol.setIsStatic(true);
+            case ASTModifierFinal m -> fieldSymbol.setIsFinal(true);
+            default -> {
+            } // ignore
+          }
+        }
+        default -> {
+        } // ignore
       }
     }
   }
@@ -192,47 +174,27 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
   protected void addModifiersToMethOrConstr(JavaMethodSymbol javaMethodSymbol,
       Iterable<? extends ASTMCModifier> astModifierList) {
     for (ASTMCModifier modifier : astModifierList) {
-      if (modifier instanceof ASTJavaModifier) {
-        // visibility
-        switch (((ASTJavaModifier) modifier).getModifier()) {
-          case PUBLIC:
-            javaMethodSymbol.setIsPublic(true);
-            break;
-          case PROTECTED:
-            javaMethodSymbol.setIsProtected(true);
-            break;
-          case PRIVATE:
-            javaMethodSymbol.setIsPrivate(true);
-            // other variable modifiers as in jls7 8.3.1 Field Modifiers
-            break;
-          case ABSTRACT:
-            javaMethodSymbol.setIsAbstract(true);
-            break;
-          case STATIC:
-            javaMethodSymbol.setIsStatic(true);
-            break;
-          case FINAL:
-            javaMethodSymbol.setIsFinal(true);
-            break;
-          case NATIVE:
-            javaMethodSymbol.setIsNative(true);
-            break;
-          case STRICTFP:
-            javaMethodSymbol.setIsStrictfp(true);
-            break;
-          case SYNCHRONIZED:
-            javaMethodSymbol.setIsSynchronized(true);
-            break;
-          case MODIFIER_DEFAULT:
-            javaMethodSymbol.setIsDefault(true);
-          default:
-            break;
+      switch (modifier) {
+        case ASTAnnotation annotation -> javaMethodSymbol.addAnnotations(
+            TypeCheck3.symTypeFromAST(annotation.getAnnotationName()));
+        case ASTJavaModifier javaModifier -> {
+          switch (javaModifier) {
+            case ASTModifierPublic m -> javaMethodSymbol.setIsPublic(true);
+            case ASTModifierProtected m -> javaMethodSymbol.setIsProtected(true);
+            case ASTModifierPrivate m -> javaMethodSymbol.setIsPrivate(true);
+            case ASTModifierAbstract m -> javaMethodSymbol.setIsAbstract(true);
+            case ASTModifierStatic m -> javaMethodSymbol.setIsStatic(true);
+            case ASTModifierFinal m -> javaMethodSymbol.setIsFinal(true);
+            case ASTModifierNative m -> javaMethodSymbol.setIsNative(true);
+            case ASTModifierStrictFp m -> javaMethodSymbol.setIsStrictfp(true);
+            case ASTModifierSynchronized m -> javaMethodSymbol.setIsSynchronized(true);
+            case ASTModifierDefault m -> javaMethodSymbol.setIsDefault(true);
+            default -> {
+            } // ignore
+          }
         }
-      }
-      else if (modifier instanceof ASTAnnotation) {
-        ASTAnnotation astAnnotation = (ASTAnnotation) modifier;
-        javaMethodSymbol.addAnnotations(
-            TypeCheck3.symTypeFromAST(astAnnotation.getAnnotationName()));
+        default -> {
+        } // ignore
       }
     }
   }

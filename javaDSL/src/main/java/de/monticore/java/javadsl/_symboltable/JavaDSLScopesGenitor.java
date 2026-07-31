@@ -3,8 +3,7 @@ package de.monticore.java.javadsl._symboltable;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
-import de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements;
-import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
+import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
 import de.monticore.symboltable.ImportStatement;
 
@@ -22,8 +21,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
       artifactScope.setName("");
     }
     
-    if (rootNode instanceof ASTOrdinaryCompilationUnit) {
-      ASTOrdinaryCompilationUnit ordinaryCompilationUnit = (ASTOrdinaryCompilationUnit) rootNode;
+    if (rootNode instanceof ASTOrdinaryCompilationUnit ordinaryCompilationUnit) {
       
       if (ordinaryCompilationUnit.isPresentPackageDeclaration()) {
         ASTPackageDeclaration packageDeclaration = ordinaryCompilationUnit.getPackageDeclaration();
@@ -93,7 +91,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
   public void visit(ASTModuleDeclaration node) {
     super.visit(node);
     IJavaDSLScope enclosingScope = node.getEnclosingScope();
-    if (JavaDSLMill.typeDispatcher().isJavaDSLIJavaDSLArtifactScope(enclosingScope)) {
+    if (enclosingScope instanceof IJavaDSLArtifactScope) {
       enclosingScope.setName(node.getName());
     }
   }
@@ -118,8 +116,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
    * @param modifiers List of node's modifiers
    */
   private void tryToUpdateScopeName(ASTTypeDeclaration node, List<ASTJavaModifier> modifiers) {
-    if (modifiers.stream()
-        .anyMatch(x -> x.getModifier() == ASTConstantsMCCommonStatements.PUBLIC)) {
+    if (modifiers.stream().anyMatch(x -> x instanceof ASTModifierPublic)) {
       IJavaDSLScope enclosingScope = node.getEnclosingScope();
       if (JavaDSLMill.typeDispatcher().isJavaDSLIJavaDSLArtifactScope(enclosingScope)) {
         enclosingScope.setName(node.getName());
@@ -129,23 +126,14 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
   
   private void updateModifiers(OOTypeSymbol symbol, List<ASTJavaModifier> modifiers) {
     modifiers.forEach(javaModifier -> {
-      if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PUBLIC) {
-        symbol.setIsPublic(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PROTECTED) {
-        symbol.setIsProtected(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.PRIVATE) {
-        symbol.setIsPrivate(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.ABSTRACT) {
-        symbol.setIsAbstract(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.STATIC) {
-        symbol.setIsStatic(true);
-      }
-      else if (javaModifier.getModifier() == ASTConstantsMCCommonStatements.FINAL) {
-        symbol.setIsFinal(true);
+      switch (javaModifier) {
+        case ASTModifierPublic m -> symbol.setIsPublic(true);
+        case ASTModifierProtected m -> symbol.setIsProtected(true);
+        case ASTModifierPrivate m -> symbol.setIsPrivate(true);
+        case ASTModifierAbstract m -> symbol.setIsAbstract(true);
+        case ASTModifierStatic m -> symbol.setIsStatic(true);
+        case ASTModifierFinal m -> symbol.setIsFinal(true);
+        default -> {}
       }
     });
   }
