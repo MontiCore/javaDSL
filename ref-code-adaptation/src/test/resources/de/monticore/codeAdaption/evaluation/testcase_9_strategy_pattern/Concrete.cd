@@ -11,18 +11,18 @@ classdiagram Concrete {
     <<strategy="execute">> void pay(double amount);
   }
 
-  <<strategy="ConcreteStrategy">> class CreditCardStrategy implements PaymentStrategy {
+  class CreditCardStrategy implements PaymentStrategy {
     String cardNumber;
-    <<strategy="execute">> void pay(double amount);
+    void pay(double amount);
   }
 
-  <<strategy="ConcreteStrategy">> class PayPalStrategy implements PaymentStrategy {
+  class PayPalStrategy implements PaymentStrategy {
     String email;
-    <<strategy="execute">> void pay(double amount);
+    void pay(double amount);
   }
 
-  <<strategy="ConcreteStrategy">> class BitcoinStrategy implements PaymentStrategy {
+  class BitcoinStrategy implements PaymentStrategy {
     String walletAddress;
-    <<strategy="execute">> void pay(double amount);
+    void pay(double amount);
   }
 }

@@ -37,7 +37,7 @@ public class AnnotVariableMatcher implements VariableMatcher {
   @Override
   public Optional<CodeMatching> getMatchedFormalParameter(
       ASTTypeDeclaration type, ASTMethodDeclaration method, ASTFormalParameter param) {
-    return getInfoJavaAnnot(param.getJavaModifierList())
+    return getInfoAnnotation(param.getMCModifierList())
         .map(annot -> mkMatchingFromAnnotation(annot, cd));
   }
 }

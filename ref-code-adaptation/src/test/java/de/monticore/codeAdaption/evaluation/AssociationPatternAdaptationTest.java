@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.testutil.CD4CodeTestGenerator;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
@@ -64,15 +63,9 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
             "for (ScienceDept department : this.scienceDepts)"));
     assertFalse(adaptedTeacher.contains("this.departments)"));
 
-    Path generated = output.resolve("generated");
-    assertDoesNotThrow(() -> CD4CodeTestGenerator.generate(concreteCD, output, generated));
-
-    String generatedTeacherTop = readFileContent(generated, "TeacherTOP.java");
-    assertTrue(
-        generatedTeacherTop.contains("java.util.Set<Concrete.MathDept> mathDepts"));
-    assertTrue(
-        generatedTeacherTop.contains(
-            "java.util.Set<Concrete.ScienceDept> scienceDepts"));
+    String generatedTeacherTop = readFileContent(output, "TeacherTOP.java");
+    assertTrue(generatedTeacherTop.contains("Set<MathDept> mathDepts"));
+    assertTrue(generatedTeacherTop.contains("Set<ScienceDept> scienceDepts"));
 
     assertNoAdapterMetadata(output);
     assertGeneratedJavaCompiles(output);
@@ -106,13 +99,10 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     assertTrue(adaptedTicket.contains("this.sprint = replacement"));
     assertFalse(adaptedTicket.contains("this.project"));
 
-    Path generated = output.resolve("generated");
-    assertDoesNotThrow(() -> CD4CodeTestGenerator.generate(concreteCD, output, generated));
-
-    String generatedSprintTop = readFileContent(generated, "SprintTOP.java");
-    assertTrue(generatedSprintTop.contains("Concrete.Ticket tickets"));
-    String generatedTicketTop = readFileContent(generated, "TicketTOP.java");
-    assertTrue(generatedTicketTop.contains("Concrete.Sprint sprint"));
+    String generatedSprintTop = readFileContent(output, "SprintTOP.java");
+    assertTrue(generatedSprintTop.contains("Ticket tickets"));
+    String generatedTicketTop = readFileContent(output, "TicketTOP.java");
+    assertTrue(generatedTicketTop.contains("Sprint sprint"));
 
     assertNoAdapterMetadata(output);
     assertGeneratedJavaCompiles(output);

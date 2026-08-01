@@ -8,6 +8,8 @@ import de.monticore.codeAdaption.context.AdaptationContextFactory.AdaptationCont
 import de.monticore.codeAdaption.context.ConcretizationService;
 import de.monticore.codeAdaption.context.GroupingMappingService;
 import de.monticore.codeAdaption.context.MappingConformanceService;
+import de.monticore.codeAdaption.dependency.ReferenceCodeDependencySelector;
+import de.monticore.codeAdaption.dependency.ReferenceCodeSelection;
 import de.monticore.codeAdaption.MappingAdaptationRunner.AdaptationPass;
 import de.monticore.codeAdaption.handler.multiIncarnation.AdaptationConflictDetector;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
@@ -28,6 +30,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+
+import static java.util.stream.Collectors.toCollection;
 
 /**
  * Adapts handwritten reference Java to a concrete class diagram through
@@ -76,6 +80,26 @@ public class CodeAdapter {
   }
 
   /**
+   * Adapts reference Java and generates the concrete Java baseline when no handwritten concrete
+   * source tree exists.
+   *
+   * @param referenceCD reference class diagram
+   * @param concreteCD concrete class diagram
+   * @param mappings mapping stereotype names to apply
+   * @param refHwcPath reference handwritten-code directory
+   * @param outputPath output directory
+   */
+  public void adaptWithoutConcreteCode(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath) {
+    adaptWithoutConcreteCode(
+        referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
+  }
+
+  /**
    * Adapts reference Java code to a concrete class diagram.
    *
    * <p>With {@code useConcretization=true}, cdconcretization may complete the concrete CD before
@@ -115,7 +139,30 @@ public class CodeAdapter {
         concreteCD,
         mappings,
         refHwcPath,
-        conHwcPath,
+        Optional.of(Objects.requireNonNull(conHwcPath, "conHwcPath")),
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations);
+  }
+
+  /**
+   * Adapts reference Java without a concrete handwritten-code input and generates concrete model
+   * code before transactional publication.
+   */
+  public void adaptWithoutConcreteCode(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations) {
+    adaptInternal(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        Optional.empty(),
         outputPath,
         useConcretization,
         useCommonParentForMultipleIncarnations);
@@ -126,7 +173,7 @@ public class CodeAdapter {
       File concreteCD,
       Set<String> mappings,
       Path refHwcPath,
-      Path conHwcPath,
+      Optional<Path> conHwcPath,
       Path outputPath,
       boolean useConcretization,
       boolean useCommonParentForMultipleIncarnations) {
@@ -135,7 +182,9 @@ public class CodeAdapter {
     workspace.validateReadOnlyInput(referenceCD.toPath(), "reference class diagram");
     workspace.validateReadOnlyInput(concreteCD.toPath(), "concrete class diagram");
     Path normalizedRefHwcPath = workspace.referenceSource();
-    Path normalizedConHwcPath = workspace.concreteSource();
+    Optional<Path> normalizedConHwcPath = workspace.concreteSourceOptional();
+    boolean hasConcreteJavaInput =
+        normalizedConHwcPath.map(CodeAdapter::containsJavaFiles).orElse(false);
     SortedSet<String> validatedMappingsInOrder = validatedMappings(mappings);
 
     // load CD models
@@ -161,11 +210,33 @@ public class CodeAdapter {
     Map<String, IncarnationContext> incarnationContextsByMapping = new LinkedHashMap<>();
     Map<String, CDConformanceChecker> checkers = new LinkedHashMap<>();
     Map<String, CodeValidator> validators = new LinkedHashMap<>();
+    Set<ASTOrdinaryCompilationUnit> refCode = JavaLoader.readJavaCode(normalizedRefHwcPath);
+    ReferenceCodeDependencySelector dependencySelector =
+        useConcretization
+            ? new ReferenceCodeDependencySelector(
+                normalizedRefHwcPath, refCode, referenceIndex.typeNames())
+            : null;
+    Map<String, ReferenceCodeSelection> codeSelections = new LinkedHashMap<>();
     for (String mapping : validatedMappingsInOrder) {
       AdaptationContextResult result = contextResults.get(mapping);
       incarnationContextsByMapping.put(mapping, result.context());
       checkers.put(mapping, result.checker());
-      validators.put(mapping, new CodeValidator(refCD, adapterParams));
+      CodeValidator validator =
+          useConcretization
+              ? new CodeValidator(
+                  refCD,
+                  adapterParams,
+                  CodeValidator.ValidationPolicy.PRESERVE_CONCRETIZATION_HELPERS)
+              : new CodeValidator(refCD, adapterParams);
+      validators.put(mapping, validator);
+      if (useConcretization) {
+        Set<String> mappedRoots =
+            mappedRootTypeIdentities(
+                refCode, validator, result.context(), referenceIndex);
+        codeSelections.put(mapping, dependencySelector.select(mappedRoots));
+      } else {
+        codeSelections.put(mapping, emptyCodeSelection());
+      }
     }
 
     SortedSet<String> fallbackMappings =
@@ -173,7 +244,7 @@ public class CodeAdapter {
             .filter(entry -> !entry.getValue().conformanceValid())
             .map(Map.Entry::getKey)
             .collect(
-                java.util.stream.Collectors.toCollection(TreeSet::new));
+                toCollection(TreeSet::new));
     if (!useConcretization || !fallbackMappings.isEmpty()) {
       Set<String> mappingsToValidate =
           useConcretization ? fallbackMappings : validatedMappingsInOrder;
@@ -192,79 +263,108 @@ public class CodeAdapter {
     // Validate before creating staging directories or changing existing output.
     for (String mapping : validatedMappingsInOrder) {
       CodeValidator validator = validators.get(mapping);
-      if (validator == null || !validator.isValid(refCD, normalizedRefHwcPath)) {
+      boolean valid =
+          validator != null
+              && (useConcretization
+                  ? validator.isValid(
+                      refCD,
+                      refCode,
+                      codeSelections.get(mapping).selectedTypeIdentities())
+                  : validator.isValid(refCD, refCode));
+      if (!valid) {
         throw new CodeAdaptationException(
             "Reference code is not valid for the reference CD (mapping '" + mapping + "')");
       }
     }
 
-    Set<ASTOrdinaryCompilationUnit> refCode = JavaLoader.readJavaCode(normalizedRefHwcPath);
     CDImportProjector.project(refCode, refCD, conCD);
     Path stagingPath = workspace.createStagingDirectory();
     boolean published = false;
     try {
-    Set<ASTOrdinaryCompilationUnit> adaptedCode = new LinkedHashSet<>();
-    MappingAdaptationRunner passRunner =
-        new MappingAdaptationRunner(
-            workspace,
-            codeMerger,
-            stagingPath,
-            referenceIndex,
-            conIndex,
-            inputConcreteIndex,
-            useCommonParentForMultipleIncarnations);
+      Set<ASTOrdinaryCompilationUnit> adaptedCode = new LinkedHashSet<>();
+      MappingAdaptationRunner passRunner =
+          new MappingAdaptationRunner(
+              workspace,
+              codeMerger,
+              stagingPath,
+              referenceIndex,
+              conIndex,
+              inputConcreteIndex,
+              useCommonParentForMultipleIncarnations);
 
-    for (String mapping : validatedMappingsInOrder) {
-      if (!incarnationContextsByMapping.containsKey(mapping)) {
-        continue; // Skip mappings that failed to build contexts
+      for (String mapping : validatedMappingsInOrder) {
+        if (!incarnationContextsByMapping.containsKey(mapping)) {
+          continue; // Skip mappings that failed to build contexts
+        }
+
+        IncarnationContext ctx = incarnationContextsByMapping.get(mapping);
+        Map<String, String> groupingMappings =
+            useCommonParentForMultipleIncarnations
+                ? new GroupingMappingService().compute(ctx)
+                : Collections.emptyMap();
+        Set<ASTOrdinaryCompilationUnit> mappingCode = cloneUnits(refCode);
+        mappingCode = codeMerger.splitCompilationUnitsByType(mappingCode);
+        ReferenceCodeSelection codeSelection = codeSelections.get(mapping);
+        mappingCode =
+            codeMerger.filterCodeForMapping(
+                mappingCode,
+                validators.get(mapping),
+                ctx,
+                referenceIndex,
+                codeSelection.selectedTypeIdentities());
+
+        Set<ASTOrdinaryCompilationUnit> mappingAdaptedCode =
+            passRunner.run(
+                mapping,
+                mappingCode,
+                buildAdaptationPasses(
+                    mappingCode,
+                    validators.get(mapping),
+                    ctx,
+                    referenceIndex,
+                    conIndex,
+                    inputConcreteIndex,
+                    codeSelection,
+                    useCommonParentForMultipleIncarnations),
+                checkers.get(mapping),
+                validators.get(mapping),
+                ctx,
+                groupingMappings,
+                codeSelection.helperTypeIdentities());
+        adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, mappingAdaptedCode);
       }
 
-      IncarnationContext ctx = incarnationContextsByMapping.get(mapping);
-      Map<String, String> groupingMappings =
-          useCommonParentForMultipleIncarnations
-              ? new GroupingMappingService().compute(ctx)
-              : Collections.emptyMap();
-      Set<ASTOrdinaryCompilationUnit> mappingCode = cloneUnits(refCode);
-      mappingCode = codeMerger.splitCompilationUnitsByType(mappingCode);
-      mappingCode =
-          codeMerger.filterCodeForMapping(
-              mappingCode, validators.get(mapping), ctx, referenceIndex);
+      // Final output to destination
+      if (!adaptedCode.isEmpty()) {
+        Set<ASTOrdinaryCompilationUnit> concreteCode =
+            normalizedConHwcPath.filter(Files::exists)
+                .map(JavaLoader::readJavaCode)
+                .orElseGet(LinkedHashSet::new);
+        Set<ASTOrdinaryCompilationUnit> finalCode =
+            codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conIndex);
 
-      Set<ASTOrdinaryCompilationUnit> mappingAdaptedCode =
-          passRunner.run(
-              mapping,
-              mappingCode,
-              buildAdaptationPasses(
-                  mappingCode,
-                  validators.get(mapping),
-                  ctx,
-                  referenceIndex,
-                  conIndex,
-                  inputConcreteIndex,
-                  useCommonParentForMultipleIncarnations),
-              checkers.get(mapping),
-              validators.get(mapping),
-              ctx,
-              groupingMappings);
-      adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, mappingAdaptedCode);
-    }
-
-    // Final output to destination
-    if (!adaptedCode.isEmpty()) {
-      Set<ASTOrdinaryCompilationUnit> concreteCode =
-          Files.exists(normalizedConHwcPath)
-              ? JavaLoader.readJavaCode(normalizedConHwcPath)
-              : new LinkedHashSet<>();
-      Set<ASTOrdinaryCompilationUnit> finalCode =
-          codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conIndex);
-
-      JavaLoader.printAST(finalCode, stagingPath);
-      // Clean up @Adapt annotations and invalid imports in both adaptation modes.
-      outputCode.cleanCode(stagingPath);
-    }
-    outputCode.copyConcreteFiles(normalizedConHwcPath, stagingPath);
-    workspace.publish(stagingPath);
-    published = true;
+        JavaLoader.printAST(finalCode, stagingPath);
+      }
+      normalizedConHwcPath.ifPresent(path -> outputCode.copyConcreteFiles(path, stagingPath));
+      if (containsJavaFiles(stagingPath)) {
+        // Clean HWC before CD4Code consumes it and remove adapter-only metadata in both modes.
+        outputCode.cleanCode(stagingPath);
+      }
+      if (!hasConcreteJavaInput) {
+        Path generationWorkspace = workspace.createGenerationDirectory(stagingPath);
+        try {
+          Path generatedSourceRoot =
+              new ConcreteCodeGenerationService().generate(conCD, stagingPath, generationWorkspace);
+          outputCode.mergeGeneratedFiles(generatedSourceRoot, stagingPath);
+        } finally {
+          workspace.discard(generationWorkspace);
+        }
+      }
+      if (containsJavaFiles(stagingPath)) {
+        outputCode.cleanCode(stagingPath);
+      }
+      workspace.publish(stagingPath);
+      published = true;
     } finally {
       if (!published) {
         workspace.discard(stagingPath);
@@ -274,6 +374,53 @@ public class CodeAdapter {
 
   static void validatePaths(Path refHwcPath, Path conHwcPath, Path outputPath) {
     AdaptationWorkspace.validatePaths(refHwcPath, conHwcPath, outputPath);
+  }
+
+  private static boolean containsJavaFiles(Path sourcePath) {
+    if (!Files.exists(sourcePath)) {
+      return false;
+    }
+    if (!Files.isDirectory(sourcePath)) {
+      throw new IllegalArgumentException("Java source path is not a directory: " + sourcePath);
+    }
+    try (var paths = Files.walk(sourcePath)) {
+      return paths.anyMatch(
+          path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java"));
+    } catch (java.io.IOException exception) {
+      throw new CodeAdaptationException(
+          "Could not inspect Java source directory " + sourcePath, exception);
+    }
+  }
+
+  private static Set<String> mappedRootTypeIdentities(
+      Set<ASTOrdinaryCompilationUnit> units,
+      CodeValidator validator,
+      IncarnationContext context,
+      CDModelIndex referenceIndex) {
+    validator.initializeTypeMatcher(units);
+    Set<String> roots = new LinkedHashSet<>();
+    for (ASTOrdinaryCompilationUnit unit : units) {
+      for (var type : unit.getTypeDeclarationList()) {
+        Optional<CodeMatching> matching = validator.getMatchedType(type);
+        if (matching.isEmpty() || !matching.get().mustBePerform()) {
+          continue;
+        }
+        boolean mapped =
+            matching.get().getReferences().stream()
+                .map(reference -> StableElementKey.fromSymbol(reference, referenceIndex))
+                .flatMap(Optional::stream)
+                .map(context::getIncarnations)
+                .anyMatch(incarnations -> !incarnations.isEmpty());
+        if (mapped) {
+          roots.add(qualifiedTypeIdentity(unit, type.getName()));
+        }
+      }
+    }
+    return Set.copyOf(roots);
+  }
+
+  private static ReferenceCodeSelection emptyCodeSelection() {
+    return new ReferenceCodeSelection(Set.of(), Set.of(), Map.of(), Map.of(), List.of());
   }
 
   private static Set<ASTOrdinaryCompilationUnit> cloneUnits(
@@ -290,6 +437,7 @@ public class CodeAdapter {
       CDModelIndex referenceIndex,
       CDModelIndex concreteIndex,
       CDModelIndex inputConcreteIndex,
+      ReferenceCodeSelection codeSelection,
       boolean useCommonParentForMultipleIncarnations) {
     List<AdaptationPass> passes = new ArrayList<>();
     boolean hasDefaultPass = false;
@@ -297,6 +445,18 @@ public class CodeAdapter {
     for (ASTOrdinaryCompilationUnit unit : units) {
       Set<StableElementKey> relevantTypes = new LinkedHashSet<>();
       JavaAstElemCollector collector = collectJavaElements(unit);
+      for (String identity : topLevelTypeIdentities(unit)) {
+        for (String referenceType :
+            codeSelection
+                .referencedCDTypeKeysBySourceType()
+                .getOrDefault(identity, Set.of())) {
+          addRelevantTypeKey(
+              StableElementKey.type(referenceType),
+              context,
+              relevantTypes,
+              useCommonParentForMultipleIncarnations);
+        }
+      }
       for (var type : collector.getAllTypeDeclarations()) {
         addRelevantTypeReferences(
             validator.getMatchedType(type),
@@ -352,7 +512,7 @@ public class CodeAdapter {
       if (orderedReferences.isEmpty()) {
         hasDefaultPass = true;
         defaultOutputTypeNames.addAll(
-            expectedOutputTypeNames(unit, validator, context, Map.of(), referenceIndex));
+            expectedOutputTypeIdentities(unit, validator, context, Map.of(), referenceIndex));
       } else {
         for (Map<StableElementKey, IncarnationContext.MappedElement> selection :
             buildCompleteTypeSelections(
@@ -361,13 +521,16 @@ public class CodeAdapter {
                 referenceIndex,
                 concreteIndex,
                 inputConcreteIndex)) {
-          passes.add(
-              new AdaptationPass(
-                  selection,
-                  expectedOutputTypeNames(unit, validator, context, selection, referenceIndex)));
+          Set<String> outputIdentities =
+              new LinkedHashSet<>(
+                  expectedOutputTypeIdentities(
+                      unit, validator, context, selection, referenceIndex));
+          outputIdentities.addAll(codeSelection.helperTypeIdentities());
+          passes.add(new AdaptationPass(selection, outputIdentities));
         }
       }
     }
+    defaultOutputTypeNames.addAll(codeSelection.helperTypeIdentities());
     if (hasDefaultPass) {
       passes.add(0, new AdaptationPass(Map.of(), Set.copyOf(defaultOutputTypeNames)));
     }
@@ -418,6 +581,21 @@ public class CodeAdapter {
     }
   }
 
+  private static void addRelevantTypeKey(
+      StableElementKey referenceType,
+      IncarnationContext context,
+      Set<StableElementKey> relevantTypes,
+      boolean useCommonParentForMultipleIncarnations) {
+    List<IncarnationContext.MappedElement> incarnations =
+        context.getIncarnations(referenceType);
+    if (incarnations.size() < 2
+        || (useCommonParentForMultipleIncarnations
+            && isExactGroupingSet(context, incarnations))) {
+      return;
+    }
+    relevantTypes.add(referenceType);
+  }
+
   private static boolean isExactGroupingSet(
       IncarnationContext context, List<IncarnationContext.MappedElement> incarnations) {
     Set<String> incarnationNames =
@@ -464,7 +642,7 @@ public class CodeAdapter {
     return false;
   }
 
-  private static Set<String> expectedOutputTypeNames(
+  private static Set<String> expectedOutputTypeIdentities(
       ASTOrdinaryCompilationUnit unit,
       CodeValidator validator,
       IncarnationContext context,
@@ -474,7 +652,7 @@ public class CodeAdapter {
     for (var type : unit.getTypeDeclarationList()) {
       Optional<CodeMatching> matching = validator.getMatchedType(type);
       if (matching.isEmpty() || !matching.get().mustBePerform()) {
-        result.add(type.getName());
+        result.add(qualifiedTypeIdentity(unit, type.getName()));
         continue;
       }
       boolean resolved = false;
@@ -491,12 +669,29 @@ public class CodeAdapter {
               ? matching.get().getGenerateTemplate()
               : matching.get().getTemplate();
       if (resolved && template != null) {
-        result.add(MatcherHelper.fillTemplate(template, concreteReferences));
+        result.add(
+            qualifiedTypeIdentity(
+                unit, MatcherHelper.fillTemplate(template, concreteReferences)));
       } else {
-        result.add(type.getName());
+        result.add(qualifiedTypeIdentity(unit, type.getName()));
       }
     }
     return Set.copyOf(result);
+  }
+
+  private static Set<String> topLevelTypeIdentities(ASTOrdinaryCompilationUnit unit) {
+    return unit.getTypeDeclarationList().stream()
+        .map(type -> qualifiedTypeIdentity(unit, type.getName()))
+        .collect(toCollection(LinkedHashSet::new));
+  }
+
+  private static String qualifiedTypeIdentity(
+      ASTOrdinaryCompilationUnit unit, String simpleName) {
+    String packageName =
+        unit.isPresentPackageDeclaration()
+            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+            : "";
+    return packageName.isBlank() ? simpleName : packageName + "." + simpleName;
   }
 
   private static IncarnationContext.MappedElement selectedIncarnation(
@@ -541,7 +736,7 @@ public class CodeAdapter {
     for (StableElementKey referenceType : referenceTypes) {
       List<IncarnationContext.MappedElement> incarnations =
           context.getIncarnations(referenceType).stream()
-              .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+              .collect(toCollection(ArrayList::new));
       incarnations.removeIf(incarnation -> !concreteIndex.hasType(incarnation.key().getName()));
       String referenceName = referenceType.getName();
       if (incarnations.size() > 1 && !inputConcreteIndex.hasType(referenceName)) {

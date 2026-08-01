@@ -60,7 +60,7 @@ public class AnnotationRemover
 
   @Override
   public void visit(ASTFormalParameter param) {
-    removeJavaInfoAnnot(param.getJavaModifierList());
+    removeInfoAnnot(param.getMCModifierList());
   }
 
   @Override

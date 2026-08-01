@@ -8,8 +8,6 @@ import de.monticore.codeAdaption.utils.AdaptAnnotationNames;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.Constants;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTJavaAnnotation;
-import de.monticore.java.javadsl._cocos.JavaDSLASTJavaAnnotationCoCo;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTAnnotation;
 import de.monticore.javalight._cocos.JavaLightASTAnnotationCoCo;
@@ -22,7 +20,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightASTAnnotationCoCo {
+public class ValidAnnotation implements JavaLightASTAnnotationCoCo {
   private final ASTCDCompilationUnit cd;
 
   public ValidAnnotation(ASTCDCompilationUnit cd) {
@@ -37,13 +35,6 @@ public class ValidAnnotation implements JavaDSLASTJavaAnnotationCoCo, JavaLightA
 
   protected String refNotFound =
       "0xRC001  %s Invalid annotation:the  reference [%s] was not found in the class diagram [%s]";
-
-  @Override
-  public void check(ASTJavaAnnotation node) {
-    if (AdaptAnnotationNames.matches(node.getAnnotationName().getQName())) {
-      checkAnnotation(node);
-    }
-  }
 
   @Override
   public void check(ASTAnnotation node) {

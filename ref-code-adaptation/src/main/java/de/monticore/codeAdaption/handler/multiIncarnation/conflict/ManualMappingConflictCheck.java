@@ -16,6 +16,7 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
   @Override
   public void check(ConflictDetectionContext context, ConflictCollector conflicts) {
     for (IncarnationContext incarnationContext : context.contexts().values()) {
+      validateExplicitStereotypes(context, conflicts, incarnationContext);
       for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
           incarnationContext.getMappings().entrySet()) {
         StableElementKey reference = entry.getKey();
@@ -41,6 +42,85 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
         }
       }
     }
+  }
+
+  /**
+   * Rejects active explicit stereotypes that the manual builder could not resolve.
+   *
+   * <p>The builder deliberately returns only valid stable-key relationships. Without this inverse
+   * check, a misspelled reference target would silently disappear from the context and a
+   * no-concrete-code run could still publish generated model shells without the intended adapted
+   * implementation.
+   */
+  private void validateExplicitStereotypes(
+      ConflictDetectionContext context,
+      ConflictCollector conflicts,
+      IncarnationContext incarnationContext) {
+    String mapping = incarnationContext.getMappingName();
+    for (ASTCDType concreteType : context.concreteIndex().types()) {
+      context
+          .stereotypeValue(concreteType, mapping)
+          .filter(
+              ignored ->
+                  !hasConcreteTarget(
+                      incarnationContext, StableElementKey.type(concreteType.getName())))
+          .ifPresent(
+              target ->
+                  conflicts.conflict(
+                      mapping,
+                      "unresolved explicit type stereotype",
+                      concreteType.getName() + " names unknown reference target '" + target + "'"));
+
+      for (var concreteField : concreteType.getCDAttributeList()) {
+        context
+            .stereotypeValue(concreteField, mapping)
+            .filter(
+                ignored ->
+                    !hasConcreteTarget(
+                        incarnationContext,
+                        StableElementKey.field(concreteType, concreteField)))
+            .ifPresent(
+                target ->
+                    conflicts.conflict(
+                        mapping,
+                        "unresolved explicit field stereotype",
+                        concreteType.getName()
+                            + "."
+                            + concreteField.getName()
+                            + " names unknown or owner-incompatible reference target '"
+                            + target
+                            + "'"));
+      }
+
+      for (var concreteMethod : concreteType.getCDMethodList()) {
+        context
+            .stereotypeValue(concreteMethod, mapping)
+            .filter(
+                ignored ->
+                    !hasConcreteTarget(
+                        incarnationContext,
+                        StableElementKey.method(concreteType, concreteMethod)))
+            .ifPresent(
+                target ->
+                    conflicts.conflict(
+                        mapping,
+                        "unresolved explicit method stereotype",
+                        concreteType.getName()
+                            + "."
+                            + concreteMethod.getName()
+                            + " names unknown or owner-incompatible reference target '"
+                            + target
+                            + "'"));
+      }
+    }
+  }
+
+  private boolean hasConcreteTarget(
+      IncarnationContext incarnationContext, StableElementKey concreteKey) {
+    return incarnationContext.getMappings().values().stream()
+        .flatMap(List::stream)
+        .map(IncarnationContext.MappedElement::key)
+        .anyMatch(concreteKey::equals);
   }
 
   private void validateTypeMapping(

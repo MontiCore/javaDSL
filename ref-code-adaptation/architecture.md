@@ -70,9 +70,15 @@ This package contains the public entry point and CLI wrapper.
 - `AdaptedCodeMerger` owns Java AST filtering, splitting, deduplication, and
   merging after isolated mapping runs.
 - `OutputCodeService` owns final generated-source cleanup and concrete
-  handwritten-file inclusion.
+  handwritten-file inclusion, and merges isolated CD4Code output without
+  overwriting staged handwritten code.
+- `ConcreteCodeGenerationService` serializes the final concrete-CD AST and runs
+  CD4Code in an isolated JVM and workspace when the API has no concrete Java
+  input. The subprocess prevents CD4Code's process-global mill and logging
+  initialization from changing the caller's state.
 - `AdaptationWorkspace` owns normalized path validation, safe temporary
-  directories, rollback, and transactional output publication.
+  directories (including generation scratch space), rollback, and transactional
+  output publication. The concrete source is optional at this boundary.
 
 The entry package coordinates the workflow. It owns high-level sequencing:
 
@@ -82,7 +88,10 @@ The entry package coordinates the workflow. It owns high-level sequencing:
 - validate mappings before destructive output changes
 - run one or more mapping adaptation passes
 - merge adapted Java with concrete handwritten Java through `AdaptedCodeMerger`
-- invoke final cleanup and concrete file copying through `OutputCodeService`
+- invoke final cleanup, concrete file copying, and generated-source merging
+  through `OutputCodeService`
+- generate a concrete Java baseline from the final concrete CD when no concrete
+  Java input exists
 
 The entry package does not own low-level rewriting. It delegates Java changes to
 `CodeUpdater`, mapping lookups to context builders and validators, and CD
@@ -127,6 +136,9 @@ operations after Java AST generation:
   cleanup to `CodeUpdater.cleanCode(...)`.
 - `copyConcreteFiles(...)` includes concrete handwritten files that were not
   already produced by adaptation.
+- `mergeGeneratedFiles(...)` adds CD4Code-generated companions and model-only
+  declarations by package-relative path while keeping staged handwritten files
+  authoritative.
 - `concreteCopyTarget(...)` preserves package-based Java output paths when a
   concrete Java file parses successfully. Non-Java files preserve their original
   relative paths. Unparsable concrete Java is rejected because its authoritative
@@ -134,6 +146,24 @@ operations after Java AST generation:
 
 This class keeps file-copying and cleanup out of `CodeAdapter`. It does not
 inspect adaptation mappings and does not merge ASTs.
+
+### `de.monticore.codeAdaption.dependency`
+
+This package owns concretization-mode reference-source dependency selection.
+
+- `ReferenceCodeDependencySelector` is the parser-independent facade used by
+  orchestration.
+- `ReferenceCodeSelection` is an immutable mapping-specific result containing
+  package-qualified roots and helpers, source-local dependency edges, and the
+  reference-CD type keys used by retained units.
+
+The complete graph is built once from the same reference Java snapshot used by
+validation. Mapping-specific selection starts at mapped top-level types and
+follows transitive source-local type dependencies. Nested, local, and anonymous
+classes remain with their top-level owner. Ambiguous source-local identities
+fail deterministically; unrelated Java-only units are not retained. The
+Spoon-backed analyzer is implemented behind this facade in the Spoon updater
+package, so Spoon model types do not escape into orchestration.
 
 ### `de.monticore.codeAdaption.context`
 
@@ -379,30 +409,37 @@ The main workflow has these phases:
 4. `AdaptationContextFactory` builds one incarnation context for each mapping.
 5. Manual mode and any stereotype-derived concretization fallback run
    `AdaptationConflictDetector` before staging or output publication begins.
-6. `GroupingMappingService` computes common-parent grouping replacements when
-   common-parent adaptation is enabled.
-7. `CodeAdapter` creates conformance checkers and Java validators for each
-   mapping.
+6. `CodeAdapter` parses reference Java once, creates conformance checkers and
+   Java validators, and in concretization mode computes each mapping's
+   transitive Java-only helper closure.
+7. Validation uses an explicit helper-preservation policy only in
+   concretization mode. Annotation and declaration-shape checks remain active;
+   manual-mode validation remains unchanged.
 8. `AdaptationWorkspace` creates an isolated staging directory only after all
    preflight checks succeed.
-9. Reference Java source is parsed into JavaDSL ASTs.
-10. `CodeAdapter` plans zero, one, or many isolated passes using immutable stable-key selections;
+9. For each mapping, `GroupingMappingService` computes optional common-parent
+   replacements and `CodeAdapter` plans zero, one, or many isolated passes
+   using immutable stable-key selections;
     the ordinary case is one pass with an empty selection.
-11. `AdaptedCodeMerger.filterCodeForMapping(...)` keeps the Java units relevant
-   to the active mapping.
-12. `MappingAdaptationRunner` configures one `BasicUpdateHandler` for the pass and runs the updater
+10. `AdaptedCodeMerger.filterCodeForMapping(...)` keeps the mapped roots and
+   their package-qualified helper closure for the active mapping.
+11. `MappingAdaptationRunner` configures one `BasicUpdateHandler` for the pass and runs the updater
     lifecycle in a temporary output directory.
-13. `AdaptedCodeMerger.splitCompilationUnitsByType(...)` gives generated
-   top-level types separate Java units.
-14. `AdaptedCodeMerger.mergeAdaptedCode(...)` accumulates results from all
-   mapping passes.
-15. `AdaptedCodeMerger.mergeAdaptedCodeIntoConcreteBase(...)` overlays adapted
-   Java on concrete handwritten Java.
-16. `OutputCodeService.cleanCode(...)` removes adapter annotations and invalid
-    generated imports in staging.
-17. `OutputCodeService.copyConcreteFiles(...)` copies remaining concrete
+12. `AdaptedCodeMerger.splitCompilationUnitsByType(...)` gives generated
+    top-level types separate Java units.
+13. `AdaptedCodeMerger.mergeAdaptedCode(...)` accumulates results from all
+    mapping passes.
+14. `AdaptedCodeMerger.mergeAdaptedCodeIntoConcreteBase(...)` overlays adapted
+    Java on concrete handwritten Java.
+15. `OutputCodeService.copyConcreteFiles(...)` copies remaining concrete
     handwritten files into staging.
-18. `AdaptationWorkspace` atomically publishes staging and restores the prior
+16. `OutputCodeService.cleanCode(...)` removes adapter annotations and invalid
+    generated imports before generation.
+17. When the original input has no concrete Java, `ConcreteCodeGenerationService`
+    generates from the final concrete-CD AST into isolated scratch space and
+    `OutputCodeService.mergeGeneratedFiles(...)` merges that output into staging.
+18. The combined source tree is cleaned again.
+19. `AdaptationWorkspace` atomically publishes staging and restores the prior
     output on publication failure.
 
 The workflow protects user output by performing conflict detection before
@@ -422,6 +459,50 @@ Manual mode requires strict conflict detection because there is no model-level
 repair phase. `AdaptationConflictDetector` reports ambiguous or unsafe cases
 before output files are touched.
 
+`ManualIncarnationContextBuilder` constructs the shared context shape consumed
+by later handlers in three ordered passes:
+
+1. Map reference type keys to concrete types from explicit stereotypes on the
+   concrete CD, falling back to enabled deterministic name rules.
+2. Map fields and methods only inside the reference owners established by the
+   type pass. Explicit member stereotypes take precedence over same-name or
+   same-signature matching.
+3. Expand reference-side `forEach` declarations from mappings already known.
+   Type/member targets copy their incarnations; attribute-driven methods derive
+   exact concrete method-name candidates and still require a matching concrete
+   declaration.
+
+Stable keys, rather than symbol-object identity, make the result reusable after
+index construction. The builder only records relationships; it creates no
+concrete CD element and performs no Java or filesystem mutation.
+
+#### Manual mode with no concrete Java
+
+`adaptWithoutConcreteCode(..., false, ...)` composes the manual mapping path
+with generation:
+
+```text
+reference CD + concrete CD + reference Java
+        |
+        v
+manual contexts -> conflict/Java validation -> mapping passes
+        |
+        v
+adapted Java in staging
+        |
+        v
+isolated CD4Code over the unchanged concrete CD
+        |
+        v
+HWC + generated TOP/model-only files -> cleanup -> atomic publication
+```
+
+The absence of concrete Java changes only the output-baseline phase. It does
+not change how mappings are derived. Conversely, disabling concretization means
+that CD4Code receives the originally parsed concrete CD, not a completed clone.
+Generation still runs when reference Java is empty. The dependency
+selector and helper-preservation validator are not enabled in this mode.
+
 ### Concretization Mode
 
 Concretization mode calls `ConcretizationCompleter` before code adaptation.
@@ -437,6 +518,13 @@ Completed-CD projection is part of `JavaTypeUpdateService`. It writes
 Java-expressible elements introduced by the completed CD into generated Java
 while sharing generated-type tracking and template-member handling with the
 rest of type generation.
+
+Concretization mode also enables helper-closure preservation. Java-only helper
+members and transitively required helper classes may remain unannotated. They
+are retained only when reachable from a mapped reference type, and reference-CD
+type uses within them participate in incarnation-pass planning and normal Spoon
+rewriting. Divergent variants of one package-qualified helper produced by
+multi-incarnation passes are rejected before AST merging.
 
 ## Clean Layer Boundaries
 
@@ -472,7 +560,7 @@ line slicing. The current refactoring state is:
 
 | Class | Current role | Current state |
 | --- | --- | --- |
-| `CodeAdapter` | Public API, pass planning, and adaptation-run orchestration | Context creation, grouping maps, merge logic, cleanup, concrete file copying, and isolated pass execution have dedicated collaborators. It is 543 physical lines after pass execution moved to `MappingAdaptationRunner`; pass calculation remains close to orchestration. |
+| `CodeAdapter` | Public API, pass planning, and adaptation-run orchestration | Context creation, grouping maps, merge logic, cleanup, concrete file copying, generation, and isolated pass execution have dedicated collaborators. Pass calculation remains close to orchestration because it combines mapping context, source selection, and output identity. |
 | `MappingAdaptationRunner` | Isolated mapping-pass execution | Package-private runner for clone, print, updater/handler lifecycle, output filtering, merge, cleanup, and wrapped diagnostics. |
 | `AdaptedCodeMerger` | Java AST filtering, splitting, deduplication, and merge policy | Extracted from `CodeAdapter`; package-private orchestration helper. |
 | `OutputCodeService` | Final cleanup and concrete handwritten-file inclusion | Extracted from `CodeAdapter`; package-private orchestration helper. |
@@ -527,9 +615,10 @@ the source model it rewrites and prints.
 
 ### Output Files
 
-Temporary mapping directories and the final merged output live in an isolated
-staging workspace. Existing output remains untouched until successful
-transactional publication.
+Temporary mapping and CD4Code-generation directories are separate from the
+final isolated staging workspace. Existing output remains untouched until all
+adaptation, generation, merging, and cleanup phases succeed and publication is
+performed transactionally.
 
 ## Error Handling
 

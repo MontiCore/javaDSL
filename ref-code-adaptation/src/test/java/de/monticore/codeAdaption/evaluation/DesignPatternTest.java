@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.testutil.CD4CodeTestGenerator;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
@@ -81,7 +80,5 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     assertDoesNotThrow(
         () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output));
-    assertDoesNotThrow(
-        () -> CD4CodeTestGenerator.generate(concreteCD, output, output.resolve("generated")));
   }
 }

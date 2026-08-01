@@ -10,7 +10,6 @@ import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTJavaAnnotation;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.*;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
@@ -166,12 +165,12 @@ public final class MatcherHelper {
   }
 
   /** Returns the adapter annotation among JavaDSL Java modifiers, if present. */
-  public static Optional<ASTJavaAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
-    for (ASTJavaModifier mod : mods) {
-      if (mod instanceof ASTJavaAnnotation
+  public static Optional<ASTAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
+    for (ASTMCModifier mod : mods) {
+      if (mod instanceof ASTAnnotation
           && AdaptAnnotationNames.matches(
-              ((ASTJavaAnnotation) mod).getAnnotationName().getQName())) {
-        return Optional.of((ASTJavaAnnotation) mod);
+              ((ASTAnnotation) mod).getAnnotationName().getQName())) {
+        return Optional.of((ASTAnnotation) mod);
       }
     }
     return Optional.empty();

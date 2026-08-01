@@ -78,6 +78,12 @@ public class ManualIncarnationContextBuilder {
       String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     for (ASTCDType concreteType : support.concreteIndex().types()) {
       List<ASTCDType> referenceOwners = support.mappedReferenceOwners(mappings, concreteType);
+      if (referenceOwners.isEmpty()) {
+        // A member mapping is meaningful only after its concrete owner has a deterministic
+        // reference-type mapping. Searching all reference owners here would let a typo in the
+        // owner's explicit stereotype attach its members to unrelated same-named declarations.
+        continue;
+      }
       for (ASTCDAttribute concreteField : concreteType.getCDAttributeList()) {
         Optional<String> explicit = support.stereotypeValue(concreteField, mapping);
         if (explicit.isPresent()) {

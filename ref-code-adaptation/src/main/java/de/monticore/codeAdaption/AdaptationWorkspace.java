@@ -7,17 +7,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Owns normalized paths, temporary directories, and transactional output publication. */
 final class AdaptationWorkspace {
 
   private final Path referenceSource;
-  private final Path concreteSource;
+  private final Optional<Path> concreteSource;
   private final Path output;
 
   AdaptationWorkspace(Path referenceSource, Path concreteSource, Path output) {
+    this(
+        referenceSource,
+        Optional.of(Objects.requireNonNull(concreteSource, "concreteSource")),
+        output);
+  }
+
+  AdaptationWorkspace(Path referenceSource, Optional<Path> concreteSource, Path output) {
     this.referenceSource = canonicalPath(referenceSource);
-    this.concreteSource = canonicalPath(concreteSource);
+    this.concreteSource =
+        Objects.requireNonNull(concreteSource, "concreteSource")
+            .map(AdaptationWorkspace::canonicalPath);
     this.output = canonicalPath(output);
     validatePaths(this.referenceSource, this.concreteSource, this.output);
   }
@@ -26,7 +36,7 @@ final class AdaptationWorkspace {
     return referenceSource;
   }
 
-  Path concreteSource() {
+  Optional<Path> concreteSourceOptional() {
     return concreteSource;
   }
 
@@ -50,6 +60,24 @@ final class AdaptationWorkspace {
       return directory;
     } catch (IOException exception) {
       throw new CodeAdaptationException("Could not create mapping workspace", exception);
+    }
+  }
+
+  /**
+   * Creates generator space beside, rather than inside, the staged handwritten-code tree.
+   * Keeping these trees disjoint prevents CD4Code from observing its own output as HWC.
+   */
+  Path createGenerationDirectory(Path stagingDirectory) {
+    Path outputParent = output.getParent();
+    requireContained(outputParent, stagingDirectory);
+    try {
+      Files.createDirectories(outputParent);
+      Path directory = Files.createTempDirectory(outputParent, ".code-generation-");
+      requireContained(outputParent, directory);
+      rejectNestedTemporaryDirectories(stagingDirectory, directory);
+      return directory;
+    } catch (IOException exception) {
+      throw new CodeAdaptationException("Could not create code-generation workspace", exception);
     }
   }
 
@@ -90,15 +118,25 @@ final class AdaptationWorkspace {
   }
 
   static void validatePaths(Path referenceSource, Path concreteSource, Path output) {
+    validatePaths(
+        referenceSource,
+        Optional.of(Objects.requireNonNull(concreteSource, "concreteSource")),
+        output);
+  }
+
+  static void validatePaths(Path referenceSource, Optional<Path> concreteSource, Path output) {
     Path normalizedReference = normalizedPath(referenceSource);
-    Path normalizedConcrete = normalizedPath(concreteSource);
+    Optional<Path> normalizedConcrete =
+        Objects.requireNonNull(concreteSource, "concreteSource")
+            .map(AdaptationWorkspace::normalizedPath);
     Path normalizedOutput = normalizedPath(output);
     if (normalizedOutput.getParent() == null) {
       throw new IllegalArgumentException(
           "Output path must not be a filesystem root: " + normalizedOutput);
     }
     rejectOverlap("reference handwritten code", normalizedReference, normalizedOutput);
-    rejectOverlap("concrete handwritten code", normalizedConcrete, normalizedOutput);
+    normalizedConcrete.ifPresent(
+        concrete -> rejectOverlap("concrete handwritten code", concrete, normalizedOutput));
   }
 
   private static void rejectOverlap(String label, Path input, Path output) {
@@ -134,6 +172,19 @@ final class AdaptationWorkspace {
     if (!normalizedChild.startsWith(normalizedParent) || normalizedChild.equals(normalizedParent)) {
       throw new IllegalArgumentException(
           "Temporary path escapes its workspace: " + normalizedChild);
+    }
+  }
+
+  private static void rejectNestedTemporaryDirectories(Path first, Path second) {
+    Path normalizedFirst = normalizedPath(first);
+    Path normalizedSecond = normalizedPath(second);
+    if (normalizedFirst.startsWith(normalizedSecond)
+        || normalizedSecond.startsWith(normalizedFirst)) {
+      throw new IllegalArgumentException(
+          "Staging and generation workspaces must be disjoint: "
+              + normalizedFirst
+              + " and "
+              + normalizedSecond);
     }
   }
 

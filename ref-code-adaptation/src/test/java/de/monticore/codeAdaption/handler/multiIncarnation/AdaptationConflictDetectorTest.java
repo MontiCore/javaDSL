@@ -70,6 +70,18 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   }
 
   @Test
+  public void rejectsUnknownExplicitTargetsAndOwnerlessMemberMappings() {
+    CodeAdaptationException exception =
+        assertThrows(
+            CodeAdaptationException.class,
+            () -> validate("UnknownExplicitRef.cd", "UnknownExplicitConc.cd"));
+
+    assertTrue(exception.getMessage().contains("unresolved explicit type stereotype"));
+    assertTrue(exception.getMessage().contains("unresolved explicit field stereotype"));
+    assertTrue(exception.getMessage().contains("unresolved explicit method stereotype"));
+  }
+
+  @Test
   public void acceptsEvaluationTestcase1ObserverChainRoles() {
     ASTCDCompilationUnit refCD =
         JavaLoader.parseCD(EVALUATION_ROOT.resolve("testcase_1/Reference.cd").toString());

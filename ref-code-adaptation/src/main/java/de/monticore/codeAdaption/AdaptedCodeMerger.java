@@ -67,7 +67,8 @@ final class AdaptedCodeMerger {
       Set<ASTOrdinaryCompilationUnit> javaFiles,
       CodeValidator validator,
       IncarnationContext context,
-      CDModelIndex referenceIndex) {
+      CDModelIndex referenceIndex,
+      Set<String> selectedTypeIdentities) {
     validator.initializeTypeMatcher(javaFiles);
     Set<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>();
     for (ASTOrdinaryCompilationUnit unit : javaFiles) {
@@ -92,11 +93,21 @@ final class AdaptedCodeMerger {
               .anyMatch(
                   matching ->
                       !matching.mustBePerform() && matching.isExplicitAnnotation());
-      if (mappedTopLevel || ignoredTopLevel) {
+      boolean selectedDependency =
+          unit.getTypeDeclarationList().stream()
+              .map(type -> qualifiedTypeIdentity(unit, type))
+              .anyMatch(selectedTypeIdentities::contains);
+      if (mappedTopLevel || ignoredTopLevel || selectedDependency) {
         result.add(unit);
       }
     }
     return result;
+  }
+
+  private String qualifiedTypeIdentity(
+      ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
+    String typePackage = packageName(unit);
+    return typePackage.isBlank() ? type.getName() : typePackage + "." + type.getName();
   }
 
   /**

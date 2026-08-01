@@ -7,21 +7,21 @@ classdiagram Concrete {
     String source;
     <<template="primitiveOperation1">> abstract void extractData();
     <<template="primitiveOperation2">> abstract void processData();
-    <<template="primitiveOperation3">> abstract void loadData();
+    abstract void loadData();
   }
 
   <<template="ConcreteClass">> class SalesDataPipeline extends DataPipeline {
     String crmSystem;
     <<template="primitiveOperation1">> void extractData();
     <<template="primitiveOperation2">> void processData();
-    <<template="primitiveOperation3">> void loadData();
+    void loadData();
   }
 
   <<template="ConcreteClass">> class InventoryDataPipeline extends DataPipeline {
     String erpSystem;
     <<template="primitiveOperation1">> void extractData();
     <<template="primitiveOperation2">> void processData();
-    <<template="primitiveOperation3">> void loadData();
+    void loadData();
   }
 
   <<observer="Observer">> interface PipelineObserver {

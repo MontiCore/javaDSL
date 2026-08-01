@@ -43,31 +43,48 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.se_rwth.commons.logging.Log;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
- * Validates whether handwritten reference Java can be processed safely against a reference class
- * diagram and exposes the matchings used by the update phase.
+ * Checks whether handwritten Java code can be adapted to a reference class diagram. It also
+ * provides the mappings that are later used to update the Java code.
  *
- * <p>Validation performs three checks:
+ * <p>The validation has three parts:
  *
  * <ul>
- *   <li>The adapter-specific {@link ValidAnnotation} CoCo requires each non-ignored {@code @Adapt}
- *       annotation to define a template, requires its placeholder count to match its reference
- *       count, and requires every named reference to resolve in the reference CD.
- *   <li>The {@link OneVarInDeclaration} CoCo rejects field and local-variable declarations such as
- *       {@code String first, second;} because the updater addresses one declarator at a time.
- *   <li>The configured matcher chains are queried for every relevant Java type, field, method,
- *       parameter, and local variable. Depending on the {@link AdapterParam} settings, an
- *       unmatched element is either accepted by an ignore matcher or reported by an error matcher.
+ *   <li>{@link ValidAnnotation} checks each relevant {@code @Adapt} annotation. Its template must
+ *       exist, the number of placeholders and references must be equal, and every reference must
+ *       exist in the reference CD.
+ *   <li>{@link OneVarInDeclaration} rejects declarations such as {@code String first, second;}.
+ *       The updater can only process one declared variable at a time.
+ *   <li>Every relevant Java type, field, method, parameter, and local variable is matched to the
+ *       reference CD. The {@link AdapterParam} settings decide whether an element without a match
+ *       is allowed or reported as an error.
  * </ul>
  *
- * <p>This class does not compile the Java source, run the complete JavaDSL or CD4Code CoCo suites,
- * or check CD conformance. Those responsibilities belong to the Java compiler and the dedicated
- * conformance/concretization services.
+ * <p>This class does not compile Java code, run all JavaDSL or CD4Code checks, or check CD
+ * conformance. Other parts of the application perform those tasks.
  */
 public class CodeValidator {
+  /** Defines what happens when a Java declaration has no match in the reference CD. */
+  public enum ValidationPolicy {
+    /** Use the {@code IGNORE_NON_MATCHED_*} settings from the supplied {@link AdapterParam}s. */
+    CONFIGURED,
+    /**
+     * Allow additional Java types, members, and variables that belong to an already selected
+     * concretization helper set. The usual annotation and declaration checks still run. If a
+     * declaration does have a CD match, that match is checked normally.
+     */
+    PRESERVE_CONCRETIZATION_HELPERS
+  }
+
   private final CompTypeMatcher typeMatcher;
   private final CompTMemberMatcher tMemberMatcher;
+  /**
+   * Checks supertypes with the configured strictness, even when other unmatched helper
+   * declarations are allowed.
+   */
+  private final CompTMemberMatcher validationSupertypeMatcher;
   private final CompVariableMatcher variableMatcher;
 
   /**
@@ -77,6 +94,25 @@ public class CodeValidator {
    * @param params enabled matching and unmatched-element policies
    */
   public CodeValidator(ASTCDCompilationUnit cd, Set<AdapterParam> params) {
+    this(cd, params, ValidationPolicy.CONFIGURED);
+  }
+
+  /**
+   * Creates the matchers and specifies how Java declarations without a CD match are handled.
+   *
+   * <p>The supplied parameter set is not changed. {@link
+   * ValidationPolicy#PRESERVE_CONCRETIZATION_HELPERS} may only be used after the required helper
+   * files have already been selected. Manual adaptation must use {@link
+   * ValidationPolicy#CONFIGURED}.
+   *
+   * @param cd reference class diagram used to resolve Java elements
+   * @param params enabled matching and unmatched-element settings
+   * @param validationPolicy treatment of Java declarations without a CD match
+   */
+  public CodeValidator(
+      ASTCDCompilationUnit cd, Set<AdapterParam> params, ValidationPolicy validationPolicy) {
+    Objects.requireNonNull(params, "params");
+    Objects.requireNonNull(validationPolicy, "validationPolicy");
     List<TypeMatcher> typeMatchers = new ArrayList<>();
     List<TMemberMatcher> tMemberMatchers = new ArrayList<>();
     List<VariableMatcher> variableMatchers = new ArrayList<>();
@@ -98,19 +134,30 @@ public class CodeValidator {
       variableMatchers.add(new InfixVariableMatcher(cd));
     }
 
-    if (params.contains(IGNORE_NON_MATCHED_TYPE)) {
+    // Helper mode may allow additional members, but it must still reject unknown external
+    // supertypes. Therefore, supertypes use a separate matcher with the configured strictness.
+    List<TMemberMatcher> configuredSupertypeMatchers = new ArrayList<>(tMemberMatchers);
+    if (params.contains(IGNORE_NON_MATCHED_TYPE_MEMBER)) {
+      configuredSupertypeMatchers.add(new IgnoreTMemberMatcher());
+    } else {
+      configuredSupertypeMatchers.add(new ErrorTMemberMatcher());
+    }
+
+    boolean preserveHelpers =
+        validationPolicy == ValidationPolicy.PRESERVE_CONCRETIZATION_HELPERS;
+    if (preserveHelpers || params.contains(IGNORE_NON_MATCHED_TYPE)) {
       typeMatchers.add(new IgnoreTypeMatcher());
     } else {
       typeMatchers.add(new ErrorTypeMatcher());
     }
 
-    if (params.contains(IGNORE_NON_MATCHED_TYPE_MEMBER)) {
+    if (preserveHelpers || params.contains(IGNORE_NON_MATCHED_TYPE_MEMBER)) {
       tMemberMatchers.add(new IgnoreTMemberMatcher());
     } else {
       tMemberMatchers.add(new ErrorTMemberMatcher());
     }
 
-    if (params.contains(IGNORE_NON_MATCHED_VAR)) {
+    if (preserveHelpers || params.contains(IGNORE_NON_MATCHED_VAR)) {
       variableMatchers.add(new IgnoreVariableMatcher());
     } else {
       variableMatchers.add(new ErrorVariableMatcher());
@@ -119,8 +166,10 @@ public class CodeValidator {
     typeMatcher = new CompTypeMatcher(typeMatchers);
     variableMatcher = new CompVariableMatcher(variableMatchers);
     tMemberMatcher = new CompTMemberMatcher(tMemberMatchers);
+    validationSupertypeMatcher = new CompTMemberMatcher(configuredSupertypeMatchers);
 
     tMemberMatcher.setTypeMatcher(typeMatcher);
+    validationSupertypeMatcher.setTypeMatcher(typeMatcher);
   }
 
   /**
@@ -131,6 +180,53 @@ public class CodeValidator {
    * @return {@code true} if this validation run produced no new error findings
    */
   public boolean isValid(ASTCDCompilationUnit refCD, Path refCode) {
+    Objects.requireNonNull(refCode, "refCode");
+    return validate(refCD, () -> readJavaCode(refCode), null);
+  }
+
+  /**
+   * Validates Java files that have already been parsed.
+   *
+   * <p>This avoids parsing the same files again after helper dependency selection. The supplied
+   * ASTs are read but not modified.
+   *
+   * @param refCD reference CD used by annotation validation
+   * @param asts pre-parsed Java compilation units to validate
+   * @return {@code true} if this validation run produced no new error findings
+   */
+  public boolean isValid(
+      ASTCDCompilationUnit refCD, Set<ASTOrdinaryCompilationUnit> asts) {
+    Objects.requireNonNull(asts, "asts");
+    return validate(refCD, () -> asts, null);
+  }
+
+  /**
+   * Validates a selected set of top-level types against the reference CD.
+   *
+   * <p>All supplied source files are loaded so that references to other source types can be
+   * resolved. However, CD matching for types, members, variables, and supertypes is only performed
+   * for {@code selectedTopLevelTypeIdentities}. Annotation and declaration-shape checks still run
+   * for every supplied source file.
+   *
+   * @param refCD reference CD used by annotation validation
+   * @param asts pre-parsed Java compilation units to validate
+   * @param selectedTopLevelTypeIdentities package-qualified top-level identities selected for one
+   *     concretization mapping
+   * @return {@code true} if this validation run produced no new error findings
+   */
+  public boolean isValid(
+      ASTCDCompilationUnit refCD,
+      Set<ASTOrdinaryCompilationUnit> asts,
+      Set<String> selectedTopLevelTypeIdentities) {
+    Objects.requireNonNull(asts, "asts");
+    Objects.requireNonNull(selectedTopLevelTypeIdentities, "selectedTopLevelTypeIdentities");
+    return validate(refCD, () -> asts, Set.copyOf(selectedTopLevelTypeIdentities));
+  }
+
+  private boolean validate(
+      ASTCDCompilationUnit refCD,
+      Supplier<Set<ASTOrdinaryCompilationUnit>> sourceUnits,
+      Set<String> selectedTopLevelTypeIdentities) {
     boolean failQuickEnabled = Log.isFailQuickEnabled();
     int findingsBefore = Log.getFindings().size();
     long errorsBefore = Log.getErrorCount();
@@ -138,29 +234,38 @@ public class CodeValidator {
     List<String> diagnostics = List.of();
     try {
       Log.enableFailQuick(false);
-      Set<ASTOrdinaryCompilationUnit> asts = readJavaCode(refCode);
+      Set<ASTOrdinaryCompilationUnit> asts = sourceUnits.get();
 
-      // Check the adapter-specific CoCos before matcher queries can add further findings.
+      // Run annotation and declaration-shape checks for every source file. These checks are also
+      // global when CD matching below is limited to a selected helper set.
       asts.forEach(ast -> runAdapterCoCos(ast, refCD));
 
-      // Collect the complete source scope before any matcher query. ErrorTMemberMatcher uses this
-      // scope to distinguish a valid source-local supertype from an unmatched external type.
+      // Collect every declared type before matching. This lets the matchers recognize references
+      // to other supplied source files and distinguish them from unknown external types.
       Set<ASTTypeDeclaration> allTypes = new LinkedHashSet<>();
-      List<JavaAstElemCollector> collectors = new ArrayList<>();
+      Map<ASTOrdinaryCompilationUnit, JavaAstElemCollector> collectors = new LinkedHashMap<>();
       for (ASTOrdinaryCompilationUnit ast : asts) {
         JavaAstElemCollector collector = new JavaAstElemCollector();
         JavaDSLTraverser traverser = JavaDSLMill.traverser();
         traverser.add4JavaDSL(collector);
         ast.accept(traverser);
 
-        collectors.add(collector);
+        collectors.put(ast, collector);
         allTypes.addAll(collector.getAllTypeDeclarations());
       }
       typeMatcher.setAllTypeDeclarations(allTypes);
 
-      // Check that every relevant element has a match only after the complete scope is available.
-      for (JavaAstElemCollector collector : collectors) {
-        checkAllMatching(collector);
+      // Check CD matches now that all source types are known. If a helper set was supplied, skip
+      // top-level types that do not belong to it.
+      for (Map.Entry<ASTOrdinaryCompilationUnit, JavaAstElemCollector> entry :
+          collectors.entrySet()) {
+        ASTOrdinaryCompilationUnit unit = entry.getKey();
+        checkAllMatching(
+            entry.getValue(),
+            type ->
+                selectedTopLevelTypeIdentities == null
+                    || selectedTopLevelTypeIdentities.contains(qualifiedTypeIdentity(unit, type)),
+            selectedTopLevelTypeIdentities);
       }
       valid = Log.getErrorCount() == errorsBefore;
       if (!valid) {
@@ -208,12 +313,27 @@ public class CodeValidator {
    * Member and variable matchers are only queried when their enclosing type or method matched.
    */
   protected void checkAllMatching(JavaAstElemCollector collector) {
+    checkAllMatching(collector, type -> true, null);
+  }
 
+  private void checkAllMatching(
+      JavaAstElemCollector collector,
+      java.util.function.Predicate<ASTTypeDeclaration> validateType,
+      Set<String> selectedTopLevelTypeIdentities) {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
+      if (!validateType.test(type)) {
+        continue;
+      }
       if (getMatchedType(type).isPresent()) {
         collector
             .getAllFSuperTypeDeclarations(type)
-            .forEach(supertype -> getMatchedSupertype(type, supertype));
+            .forEach(
+                supertype -> {
+                  if (!isSelectedQualifiedSourceSupertype(
+                      supertype, selectedTopLevelTypeIdentities)) {
+                    validationSupertypeMatcher.getMatchedSupertype(type, supertype);
+                  }
+                });
         collector.getAllFieldDeclarations(type).forEach(f -> getMatchedField(type, f));
 
         for (ASTMethodDeclaration method : collector.getAllMethodDeclarations(type)) {
@@ -228,6 +348,35 @@ public class CodeValidator {
         }
       }
     }
+  }
+
+  /**
+   * Returns whether a qualified supertype is another source type in the selected helper set.
+   *
+   * <p>For example, in {@code class A extends helpers.Base}, the normal matcher would only compare
+   * the name {@code Base} with the reference CD. If dependency selection has already identified
+   * {@code helpers.Base} as a required source helper, it must not be reported as an unknown
+   * external supertype.
+   */
+  private boolean isSelectedQualifiedSourceSupertype(
+      ASTMCType supertype, Set<String> selectedTopLevelTypeIdentities) {
+    if (selectedTopLevelTypeIdentities == null) {
+      return false;
+    }
+    String printed = de.monticore.codeAdaption.utils.JavaSourceNames
+        .printQualifiedType(supertype)
+        .replace('$', '.');
+    return printed.contains(".") && selectedTopLevelTypeIdentities.contains(printed);
+  }
+
+  /** Builds the package-qualified top-level type name used by dependency selection. */
+  private String qualifiedTypeIdentity(
+      ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
+    String packageName =
+        unit.isPresentPackageDeclaration()
+            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+            : "";
+    return packageName.isBlank() ? type.getName() : packageName + "." + type.getName();
   }
 
   /** Returns the configured matching for a Java method, if a matcher accepted it. */
@@ -270,7 +419,6 @@ public class CodeValidator {
    */
   protected void runAdapterCoCos(ASTOrdinaryCompilationUnit ast, ASTCDCompilationUnit refCD) {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
-    checker.addCoCo((JavaDSLASTJavaAnnotationCoCo) new ValidAnnotation(refCD));
     checker.addCoCo((JavaLightASTAnnotationCoCo) new ValidAnnotation(refCD));
     // implicitly also adds CoCo to JavaDSLASTLocalVariableDeclaration
     checker.addCoCo((JavaDSLASTFieldDeclarationCoCo) new OneVarInDeclaration());

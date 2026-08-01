@@ -1,0 +1,7 @@
+import java.lang.String;
+
+classdiagram Concrete {
+  <<ref="Service">> class ConcreteService {
+    <<ref="name">> String name;
+  }
+}

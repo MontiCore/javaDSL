@@ -24,16 +24,16 @@ final class MappingAdaptationRunner {
    * One deterministic multi-incarnation choice and the top-level Java types retained from it.
    *
    * <p>{@code typeSelection} maps reference type keys to the one concrete incarnation used by this
-   * pass, for example {@code Payment -> CreditCard}. {@code outputTypeNames} contains concrete Java
-   * top-level names such as {@code CreditCardAdapter}; all other transformed units are discarded
-   * after serving as cross-file resolution context.
+   * pass, for example {@code Payment -> CreditCard}. {@code outputTypeIdentities} contains
+   * package-qualified concrete Java top-level names such as {@code billing.CreditCardAdapter}; all
+   * other transformed units are discarded after serving as cross-file resolution context.
    */
   record AdaptationPass(
       Map<StableElementKey, IncarnationContext.MappedElement> typeSelection,
-      Set<String> outputTypeNames) {
+      Set<String> outputTypeIdentities) {
     AdaptationPass {
       typeSelection = Map.copyOf(typeSelection);
-      outputTypeNames = Set.copyOf(outputTypeNames);
+      outputTypeIdentities = Set.copyOf(outputTypeIdentities);
     }
 
     String describeSelection() {
@@ -51,6 +51,7 @@ final class MappingAdaptationRunner {
   private final CDModelIndex concreteIndex;
   private final CDModelIndex inputConcreteIndex;
   private final boolean useCommonParentForMultipleIncarnations;
+  private final HelperVariantRegistry helperVariantRegistry = new HelperVariantRegistry();
 
   MappingAdaptationRunner(
       AdaptationWorkspace workspace,
@@ -80,6 +81,7 @@ final class MappingAdaptationRunner {
    * @param validator matcher/validation state for the same mapping
    * @param context reference-element to concrete-incarnation mappings for this mapping only
    * @param groupingMappings incarnation simple name to common grouping-type simple name
+   * @param helperTypeIdentities package-qualified top-level helper names retained by every pass
    */
   Set<ASTOrdinaryCompilationUnit> run(
       String mapping,
@@ -88,7 +90,8 @@ final class MappingAdaptationRunner {
       CDConformanceChecker checker,
       CodeValidator validator,
       IncarnationContext context,
-      Map<String, String> groupingMappings) {
+      Map<String, String> groupingMappings,
+      Set<String> helperTypeIdentities) {
     Set<ASTOrdinaryCompilationUnit> adaptedCode = new LinkedHashSet<>();
     for (AdaptationPass pass : passes) {
       // Load the complete mapping source set so Spoon can update cross-file references. The pass
@@ -118,10 +121,25 @@ final class MappingAdaptationRunner {
             processedCode.stream()
                 .filter(
                     unit ->
-                        unit.getTypeDeclarationList().stream()
-                            .anyMatch(type -> pass.outputTypeNames().contains(type.getName())))
+                        declaredTypeIdentities(unit).stream()
+                            .anyMatch(pass.outputTypeIdentities()::contains))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        processedCode =
+            removeDuplicateHelperVariants(processedCode, helperTypeIdentities, mapping, pass);
         adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, processedCode);
+      } catch (CodeAdaptationException exception) {
+        String selection =
+            pass.typeSelection().isEmpty()
+                ? ""
+                : " for type selection " + pass.describeSelection();
+        throw new CodeAdaptationException(
+            "Failed to process mapping '"
+                + mapping
+                + "'"
+                + selection
+                + ": "
+                + exception.getMessage(),
+            exception);
       } catch (RuntimeException | AssertionError exception) {
         String selection =
             pass.typeSelection().isEmpty()
@@ -151,5 +169,36 @@ final class MappingAdaptationRunner {
     Set<ASTOrdinaryCompilationUnit> clones = new LinkedHashSet<>();
     units.forEach(unit -> clones.add(unit.deepClone()));
     return clones;
+  }
+
+  private Set<ASTOrdinaryCompilationUnit> removeDuplicateHelperVariants(
+      Set<ASTOrdinaryCompilationUnit> incoming,
+      Set<String> helperTypeIdentities,
+      String mapping,
+      AdaptationPass pass) {
+    Set<ASTOrdinaryCompilationUnit> retained = new LinkedHashSet<>();
+    for (ASTOrdinaryCompilationUnit unit : incoming) {
+      String helperIdentity =
+          declaredTypeIdentities(unit).stream()
+              .filter(helperTypeIdentities::contains)
+              .findFirst()
+              .orElse(null);
+      if (helperIdentity == null
+          || helperVariantRegistry.register(
+              helperIdentity, unit, mapping, pass.describeSelection())) {
+        retained.add(unit);
+      }
+    }
+    return retained;
+  }
+
+  private static Set<String> declaredTypeIdentities(ASTOrdinaryCompilationUnit unit) {
+    String packageName =
+        unit.isPresentPackageDeclaration()
+            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+            : "";
+    return unit.getTypeDeclarationList().stream()
+        .map(type -> packageName.isBlank() ? type.getName() : packageName + "." + type.getName())
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 }

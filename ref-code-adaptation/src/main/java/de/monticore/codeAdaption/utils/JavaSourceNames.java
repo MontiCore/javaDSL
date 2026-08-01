@@ -72,6 +72,11 @@ public final class JavaSourceNames {
     return TypeKey.from(type).normalized();
   }
 
+  /** Renders a non-void MontiCore type AST while preserving qualified names. */
+  public static String printQualifiedType(ASTMCType type) {
+    return TypeKey.from(type).render(false, false, false);
+  }
+
   /** Renders the normalized type of a CD attribute. */
   public static String printNormalizedFieldType(ASTCDAttribute attribute) {
     return printNormalizedType(attribute.getMCType());

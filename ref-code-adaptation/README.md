@@ -11,8 +11,13 @@ Required inputs:
 - concrete class diagram
 - mapping names, such as `buildPat`, `observer`, or `ref`
 - adapter/reference Java source directory
-- concrete Java source directory
 - output directory
+
+The API accepts an optional concrete Java source directory. When it is omitted,
+does not exist, or contains no Java files, `CodeAdapter` generates the concrete
+Java baseline from the final concrete CD. A supplied directory that contains
+Java remains authoritative handwritten concrete code. The CLI still requires
+its existing concrete-code argument.
 
 The class diagrams define which reference classes, fields, and methods incarnate as concrete Java elements. Java code is parsed and transformed with MontiCore JavaDSL and Spoon.
 
@@ -24,17 +29,22 @@ The class diagrams define which reference classes, fields, and methods incarnate
    a staging workspace or changing existing output.
 4. Copy and filter reference adapter code for the active mapping.
 5. Adapt types, fields, methods, parameters, constructor calls, and pattern-derived members.
-6. Merge adapted code with existing concrete code.
-7. Clean generated Java:
+6. Merge adapted code with existing concrete code, when present.
+7. Clean staged handwritten Java:
    - remove `@Adapt` annotations with Spoon
    - remove invalid generated imports through JavaDSL import declarations
    - preserve valid existing imports without inventing imports for unresolved
      simple names
    - keep Spoon as the only whole-file formatter; import cleanup edits only
      import declaration source ranges
-8. Publish the completed staging directory transactionally, restoring the
+8. If no concrete Java was supplied, serialize the final concrete CD and run
+   CD4Code with the staged adapted code as handwritten code. Merge generated
+   `*TOP.java` companions and model-only declarations without overwriting the
+   staged handwritten implementation.
+9. Clean the combined Java tree and publish the completed staging directory
+   transactionally, restoring the
    previous output if publication fails.
-9. Compile and structurally verify generated Java in tests.
+10. Compile and structurally verify generated Java in tests.
 
 The context-building step depends on the `useConcretization` argument of
 `CodeAdapter.adapt(...)`.
@@ -51,6 +61,11 @@ This mode delegates model repair to cdconcretization before code adaptation:
 3. `JavaTypeUpdateService` projects Java-expressible elements that were added
    to the completed concrete CD, such as missing fields, methods, types, enum
    constants, inheritance, and interfaces.
+4. `ReferenceCodeDependencySelector` retains the transitive source-local
+   helper closure of mapped reference types. Required Java-only helper members
+   and helper classes do not need ignore annotations; unrelated source units
+   are excluded. Reference-CD type uses inside retained helpers are adapted by
+   the normal transformation passes.
 
 Use this mode when the concrete CD may need deterministic model-level repair
 before Java adaptation.
@@ -60,16 +75,15 @@ before Java adaptation.
 This mode does not mutate or complete the concrete CD. It builds a manual
 incarnation context from:
 
-- explicit stereotypes for the active mapping name,
-- deterministic name and adapted-name rules enabled by `CDConfParameter`,
+- explicit stereotypes on concrete-CD elements for the active mapping name,
+- deterministic same-name rules enabled by `CDConfParameter.NAME_MAPPING`,
 - manual `<<forEach="...">>` mappings derived from already-known
   incarnations.
 
 The manual branch does not call `ConcretizationCompleter` or
 `CDConformanceChecker`, and it does not clone or create CD elements. Conflicts
-are reported together as a `CodeAdaptationException` before
-`JavaLoader.removeDirectory(outputPath)` is executed, so existing output is
-preserved when adaptation cannot safely start.
+are reported together as a `CodeAdaptationException` before staging is created
+or existing output is touched.
 
 Supported manual `forEach` targets:
 
@@ -82,6 +96,50 @@ from already-mapped concrete attributes and deterministic method names, for
 example `getAttribute()` to `getFirstName()` and `getAge()`. The manual mode
 does not invent cdconcretization suffix rules; concrete stereotypes or enabled
 name rules must make the target deterministic.
+
+#### Manual mappings without concrete Java (R-024)
+
+The no-concrete-code API and manual mapping derivation are independent choices.
+This call combines them explicitly:
+
+```java
+adapter.adaptWithoutConcreteCode(
+    referenceCD,
+    concreteCD,
+    mappings,
+    referenceCodePath,
+    outputPath,
+    false,  // do not run cdconcretization
+    true);  // allow exact common-parent grouping
+```
+
+The implementation then follows one transactional pipeline:
+
+1. `AdaptationWorkspace` represents the concrete Java input as absent, while
+   both CDs and the reference Java directory remain read-only inputs.
+2. Because `useConcretization` is false, the parsed concrete CD is neither
+   cloned nor completed. `AdaptationContextFactory` delegates every mapping to
+   `ManualIncarnationContextBuilder`.
+3. The builder scans concrete types first, then members within their mapped
+   owners. An explicit `<<mapping="ReferenceElement">>` wins; enabled
+   same-name/signature rules are the deterministic fallback. Reference-side
+   `forEach` stereotypes copy or expand mappings already found in those passes.
+4. `AdaptationConflictDetector` and strict reference-Java validation run before
+   staging. Manual mode does not enable R-026's unannotated-helper policy.
+5. Normal isolated mapping passes transform the reference Java. With no
+   concrete Java base, this adapted result becomes the staged authoritative
+   handwritten code.
+6. `ConcreteCodeGenerationService` serializes the unchanged concrete CD and
+   runs CD4Code in a separate JVM, using the staged adapted Java as HWC.
+   `OutputCodeService` keeps that HWC and adds generated `*TOP.java` companions,
+   association fields, and model-only declarations.
+7. The combined sources are cleaned and published only after the entire run
+   succeeds. Empty reference Java still reaches generation, so the concrete CD
+   alone can produce a model baseline.
+
+R-026 is intentionally a concretization-mode feature. Its transitive
+Java-helper selection is not used by the manual path above; unmatched manual
+helpers must still satisfy the normal manual validation policy.
 
 ## Association Adaptation
 
@@ -117,6 +175,13 @@ assignments are rewritten only inside that owning Java type.
   immutable stable-key selection. An empty selection represents the ordinary case.
 - `MappingAdaptationRunner` owns the isolated per-pass updater lifecycle, output filtering, merge,
   cleanup, and error wrapping.
+- `ReferenceCodeDependencySelector` builds a package-qualified dependency graph
+  once from the reference source snapshot and selects mapping-specific helper
+  closures in concretization mode. Ambiguous source-local type resolution is
+  rejected deterministically.
+- `ConcreteCodeGenerationService` runs CD4Code in an isolated JVM and workspace when
+  the API receives no concrete Java. `OutputCodeService` merges its result with
+  staged handwritten code, which always has precedence.
 - `CDTypeRelations` centralizes direct generated-AST access for interfaces,
   superclasses, modifiers, and type-reference printing. Runtime Java reflection
   is not used by the adapter.
