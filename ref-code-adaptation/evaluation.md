@@ -22,6 +22,7 @@ handwritten code, or both.
 | `testcase_14_adapter_factory_combined` | Combined adapter and factory pattern resource case. | `Reference.cd`, `Concrete.cd`, `adapter/`, `concrete/` | `adapter`, `factory` | Adapts a shipping port/carrier adapter with factory creation. | `CombinedPatternEvaluationTest` |
 | `testcase_15_composite_decorator_combined` | Combined composite and decorator pattern resource case. | `Reference.cd`, `Concrete.cd`, `adapter/`, `concrete/` | `composite`, `decorator` | Adapts renderable components, groups, and decorators. | `CombinedPatternEvaluationTest` |
 | `testcase_16_observer_command_combined` | Combined observer and command pattern resource case. | `Reference.cd`, `Concrete.cd`, `adapter/`, `concrete/` | `observer`, `command` | Adapts event bus observers that are also workflow commands and a command queue invoker. | `CombinedPatternEvaluationTest` |
+| `testcase_17_fulfillment_platform` | Large fulfilment-platform evaluation required by R-011. | `Reference.cd`, `Concrete.cd`, `adapter/`, deliberately incomplete `concrete/` | `observer`, `command`, `strategy`, `adapter` | Derives all mappings manually, supplies missing pattern members through adapted reference HWC, compiles the 27-type combined system, and executes its end-to-end and queue failure/reuse scenarios. | `LargeFulfillmentSystemEvaluationTest` |
 
 ## Notes
 
@@ -29,3 +30,6 @@ handwritten code, or both.
   `de.monticore.codeAdaption` test package.
 - Cases 14 through 16 are covered by executable wrappers in
   `CombinedPatternEvaluationTest`.
+- Case 17 is the large multi-pattern R-011 evaluation. Its dedicated test
+  verifies that adaptation, rather than concrete-source copying, supplies the
+  mapped behavior.
