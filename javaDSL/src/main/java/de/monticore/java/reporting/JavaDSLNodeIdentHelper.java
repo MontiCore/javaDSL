@@ -14,6 +14,7 @@ import de.monticore.literals.mccommonliterals._ast.ASTStringLiteral;
 import de.monticore.literals.mcjavaliterals._ast.ASTIntLiteral;
 import de.monticore.statements.mccommonstatements._ast.ASTEnumConstantSwitchLabel;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
+import de.monticore.statements.mclowlevelstatements._ast.ASTLabel;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTDeclaratorId;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
 import de.monticore.types.mcbasictypes._ast.ASTMCPrimitiveType;
@@ -103,9 +104,9 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
     return format(name, type);
   }
   
-  public String getIdent(ASTLabeledStatement a) {
+  public String getIdent(ASTLabel a) {
     String type = Layouter.nodeName(a);
-    String name = a.getLabel();
+    String name = a.getName();
     return format(name, type);
   }
   
@@ -178,8 +179,8 @@ public class JavaDSLNodeIdentHelper extends ASTNodeIdentHelper {
     else if (a instanceof ASTIdentifierAndTypeArgument) {
       return getIdent((ASTIdentifierAndTypeArgument) a);
     }
-    else if (a instanceof ASTLabeledStatement) {
-      return getIdent((ASTLabeledStatement) a);
+    else if (a instanceof ASTLabel) {
+      return getIdent((ASTLabel) a);
     }
     else if (a instanceof ASTLastFormalParameter) {
       return getIdent((ASTLastFormalParameter) a);

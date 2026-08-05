@@ -13,6 +13,7 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.generating.templateengine.GlobalExtensionManagement;
 import de.monticore.generating.templateengine.StringHookPoint;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._prettyprint.JavaDSLFullPrettyPrinter;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
@@ -21,9 +22,7 @@ import de.monticore.javalight._ast.ASTFormalParameterListing;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.prettyprint.IndentPrinter;
-import de.monticore.statements.mccommonstatements._ast.ASTConstantsMCCommonStatements;
-import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
+import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
 import de.monticore.types.MCTypeFacade;
 import de.monticore.types.mcbasictypes._ast.ASTMCImportStatement;
@@ -52,6 +51,13 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   protected final GlobalExtensionManagement glex;
 
   protected final CD4C cd4C;
+  
+  private static final int M_PUBLIC    = 1;
+  private static final int M_PROTECTED = 1 << 1;
+  private static final int M_PRIVATE   = 1 << 2;
+  private static final int M_ABSTRACT  = 1 << 3;
+  private static final int M_FINAL     = 1 << 4;
+  private static final int M_STATIC    = 1 << 5;
 
   public Java2CDVisitor(GlobalExtensionManagement glex) {
     this.glex = glex;
@@ -98,7 +104,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
         if (i instanceof ASTMCQualifiedType) {
           interfaces.add(((ASTMCQualifiedType) i).getMCQualifiedName().getQName());
         } else {
-          interfaces.add(i.printType());
+          interfaces.add(printJavaDSLASTMCType(i));
         }
       }
     }
@@ -106,7 +112,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
     if (ast.isPresentSuperClass()) {
       classBuilder = classBuilder
           .setCDExtendUsage(CDExtendUsageFacade.getInstance()
-              .createCDExtendUsage(getMCType(ast.getSuperClass()).printType()));
+              .createCDExtendUsage(printJavaDSLASTMCType(getMCType(ast.getSuperClass()))));
     }
 
     ASTCDClass cdClass = classBuilder.build();
@@ -127,7 +133,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
           .createCDInterfaceUsage(
               ast.getImplementedInterfaceList()
                   .stream()
-                  .map(ASTMCType::printType)
+                  .map(this::printJavaDSLASTMCType)
                   .toArray(String[]::new)));
     }
 
@@ -168,7 +174,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
             .createCDExtendUsage(
                 ast.getExtendedInterfaceList()
                     .stream()
-                    .map(ASTMCType::printType)
+                    .map(this::printJavaDSLASTMCType)
                     .toArray(String[]::new)))
         .build();
 
@@ -185,7 +191,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
             .createCDInterfaceUsage(
                 ast.getImplementedInterfaceList()
                     .stream()
-                    .map(ASTMCType::printType)
+                    .map(this::printJavaDSLASTMCType)
                     .toArray(String[]::new)))
         .build();
 
@@ -227,13 +233,11 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
       type = MCTypeFacade.getInstance()
           .createQualifiedType(
               ((ASTMCQualifiedType) mcType).getMCQualifiedName().getQName());
-    } else if (mcType instanceof ASTMCArrayType) {
-      ASTMCArrayType arrayType = (ASTMCArrayType) mcType;
+    } else if (mcType instanceof ASTMCArrayType arrayType) {
       type = MCTypeFacade.getInstance()
           .createArrayType(
               getMCType(arrayType.getMCType()), arrayType.getAnnotatedDimensionList().size());
-    } else if (mcType instanceof ASTMCGenericType) {
-      ASTMCGenericType genericType = (ASTMCGenericType) mcType;
+    } else if (mcType instanceof ASTMCGenericType genericType) {
 
       List<ASTMCTypeArgument> typeArguments = genericType.getMCTypeArgumentList().stream()
           .map(ASTMCTypeArgument::getMCTypeOpt)
@@ -257,7 +261,7 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   @Override
   public void visit(ASTMethodDeclaration ast) {
     ASTCDMethod method = CDMethodFacade.getInstance().createMethod(
-        getModifier(ast.getMCModifierList().stream().map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
+        getModifier(ast.getMCModifierList().stream().filter(m -> m instanceof ASTJavaModifier).map(m -> (ASTJavaModifier) m).collect(Collectors.toList())),
         ast.getName());
 
     if (ast.getMCReturnType().isPresentMCType()) {
@@ -315,88 +319,62 @@ public class Java2CDVisitor implements JavaDSLVisitor2, JavaLightVisitor2 {
   }
 
   protected ASTModifier getModifier(List<ASTJavaModifier> modifiers) {
-    List<Integer> digits = modifiers.stream()
-        .map(ASTJavaModifier::getModifier)
-        .collect(Collectors.toList());
-
-    if (digits.isEmpty()) {
-      return PACKAGE_PRIVATE.build();
+    int mask = 0;
+    for (ASTJavaModifier modifier : modifiers) {
+      int bit = switch (modifier) {
+        case ASTModifierPublic ignored -> M_PUBLIC;
+        case ASTModifierProtected ignored -> M_PROTECTED;
+        case ASTModifierPrivate ignored -> M_PRIVATE;
+        case ASTModifierAbstract ignored -> M_ABSTRACT;
+        case ASTModifierFinal ignored -> M_FINAL;
+        case ASTModifierStatic ignored -> M_STATIC;
+        default -> -1;
+      };
+      
+      if (bit == -1 || (mask & bit) != 0) {
+        continue;
+      }
+      
+      mask |= bit;
     }
-    if (digits.size() == 1) {
-      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC)) {
-        return PUBLIC.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE)) {
-        return PRIVATE.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED)) {
-        return PROTECTED.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
-        return PACKAGE_PRIVATE_ABSTRACT.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-        return PACKAGE_PRIVATE_FINAL.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
-        return PACKAGE_PRIVATE_STATIC.build();
-      }
-    } else if (digits.size() == 2) {
-      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC)) {
-        if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
-          return PUBLIC_ABSTRACT.build();
-        }
-        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-          return PUBLIC_FINAL.build();
-        }
-        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
-          return PUBLIC_STATIC.build();
-        }
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED)) {
-        if (digits.contains(ASTConstantsMCCommonStatements.ABSTRACT)) {
-          return PROTECTED_ABSTRACT.build();
-        }
-        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-          return PROTECTED_FINAL.build();
-        }
-        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
-          return PROTECTED_STATIC.build();
-        }
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE)) {
-        if (digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-          return PRIVATE_FINAL.build();
-        }
-        if (digits.contains(ASTConstantsMCCommonStatements.STATIC)) {
-          return PRIVATE_STATIC.build();
-        }
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
-          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-        return PACKAGE_PRIVATE_STATIC_FINAL.build();
-      }
-    } else if (modifiers.size() == 3) {
-      if (digits.contains(ASTConstantsMCCommonStatements.PUBLIC) &&
-          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
-          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-        return PUBLIC_STATIC_FINAL.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PROTECTED) &&
-          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
-          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-        return PROTECTED_STATIC_FINAL.build();
-      }
-      if (digits.contains(ASTConstantsMCCommonStatements.PRIVATE) &&
-          digits.contains(ASTConstantsMCCommonStatements.STATIC) &&
-          digits.contains(ASTConstantsMCCommonStatements.FINAL)) {
-        return PRIVATE_STATIC_FINAL.build();
-      }
-    }
-    return PUBLIC.build();
+    
+    return switch (mask) {
+      case M_PUBLIC -> PUBLIC.build();
+      case M_PROTECTED -> PROTECTED.build();
+      case M_PRIVATE -> PRIVATE.build();
+      case M_ABSTRACT -> PACKAGE_PRIVATE_ABSTRACT.build();
+      case M_STATIC -> PACKAGE_PRIVATE_STATIC.build();
+      case M_FINAL -> PACKAGE_PRIVATE_FINAL.build();
+      case M_PUBLIC | M_ABSTRACT -> PUBLIC_ABSTRACT.build();
+      case M_PUBLIC | M_FINAL -> PUBLIC_FINAL.build();
+      case M_PUBLIC | M_STATIC -> PUBLIC_STATIC.build();
+      
+      case M_PROTECTED | M_ABSTRACT -> PROTECTED_ABSTRACT.build();
+      case M_PROTECTED | M_FINAL -> PROTECTED_FINAL.build();
+      case M_PROTECTED | M_STATIC -> PROTECTED_STATIC.build();
+      
+      case M_PRIVATE | M_FINAL -> PRIVATE_FINAL.build();
+      case M_PRIVATE | M_STATIC -> PRIVATE_STATIC.build();
+      
+      case M_STATIC | M_FINAL -> PACKAGE_PRIVATE_STATIC_FINAL.build();
+      
+      case M_PUBLIC | M_STATIC | M_FINAL -> PUBLIC_STATIC_FINAL.build();
+      
+      case M_PROTECTED | M_STATIC | M_FINAL -> PROTECTED_STATIC_FINAL.build();
+      
+      case M_PRIVATE | M_STATIC | M_FINAL -> PRIVATE_STATIC_FINAL.build();
+      default -> PACKAGE_PRIVATE.build();
+    };
   }
 
   public ASTCDCompilationUnit getCompilationUnit() {
     return cdCompilationUnit;
+  }
+  
+  public String printJavaDSLASTMCType(ASTMCType type) {
+    JavaDSLMill.init();
+    String printedType = type.printType();
+    CD4CodeMill.init();
+    return printedType;
   }
 }
