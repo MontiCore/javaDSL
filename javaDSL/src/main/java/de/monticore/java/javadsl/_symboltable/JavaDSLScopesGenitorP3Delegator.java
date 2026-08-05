@@ -1,9 +1,9 @@
 package de.monticore.java.javadsl._symboltable;
 
+import com.google.common.base.Preconditions;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
-import de.se_rwth.commons.logging.Log;
 
 public class JavaDSLScopesGenitorP3Delegator {
   
@@ -31,7 +31,7 @@ public class JavaDSLScopesGenitorP3Delegator {
   }
   
   public void createFromAST(ASTCompilationUnit astCompilationUnit) {
-    Log.errorIfNull(astCompilationUnit, "0x7A015: Called createFromAST with argument null");
+    Preconditions.checkNotNull(astCompilationUnit, "0x7A015: Called createFromAST with argument null");
     astCompilationUnit.accept(traverser);
   }
 }

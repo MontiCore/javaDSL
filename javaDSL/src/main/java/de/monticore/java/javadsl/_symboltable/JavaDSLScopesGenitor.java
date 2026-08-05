@@ -1,6 +1,5 @@
 package de.monticore.java.javadsl._symboltable;
 
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mccommonstatements._ast.*;
@@ -118,7 +117,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
   private void tryToUpdateScopeName(ASTTypeDeclaration node, List<ASTJavaModifier> modifiers) {
     if (modifiers.stream().anyMatch(x -> x instanceof ASTModifierPublic)) {
       IJavaDSLScope enclosingScope = node.getEnclosingScope();
-      if (JavaDSLMill.typeDispatcher().isJavaDSLIJavaDSLArtifactScope(enclosingScope)) {
+      if (enclosingScope instanceof IJavaDSLArtifactScope) {
         enclosingScope.setName(node.getName());
       }
     }

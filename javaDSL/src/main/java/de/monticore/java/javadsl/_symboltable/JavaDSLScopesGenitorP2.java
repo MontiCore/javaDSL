@@ -1,12 +1,10 @@
 package de.monticore.java.javadsl._symboltable;
 
 import de.monticore.ast.ASTNode;
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
 import de.monticore.javalight._ast.ASTAnnotation;
 import de.monticore.javalight._ast.ASTConstructorDeclaration;
-import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mcarraystatements._ast.ASTArrayDeclaratorId;
@@ -70,34 +68,18 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
           node.get_SourcePositionStart());
     }
   }
-  
-  // Temporary fix for missing scope property inheritance
-  // TODO: Remove when monticore#4729 is fixed
-  @Override
-  public void visit(ASTMethodDeclaration node) {
-    node.getSpannedScope().setShadowing(true);
-    node.getSpannedScope().setExportingSymbols(false);
-    node.getSpannedScope().setOrdered(true);
-  }
-  
+
   @Override
   public void endVisit(ASTConstructorDeclaration node) {
     JavaMethodSymbol symbol = node.getSymbol();
-    IJavaDSLScope enclosingScope =
-        JavaDSLMill.typeDispatcher().asJavaDSLIJavaDSLScope(node.getEnclosingScope());
+    IJavaDSLScope enclosingScope = (IJavaDSLScope) node.getEnclosingScope();
     ASTNode enclosingScopeNode = enclosingScope.getAstNode();
-    if (JavaDSLMill.typeDispatcher().isJavaDSLASTClassDeclaration(enclosingScopeNode)) {
-      ASTClassDeclaration enclosingClass =
-          JavaDSLMill.typeDispatcher().asJavaDSLASTClassDeclaration(enclosingScopeNode);
-      symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
-    }
-    else if (JavaDSLMill.typeDispatcher().isJavaDSLASTEnumDeclaration(enclosingScopeNode)) {
-      ASTEnumDeclaration enclosingEnum =
-          JavaDSLMill.typeDispatcher().asJavaDSLASTEnumDeclaration(enclosingScopeNode);
-      symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingEnum.getSymbol()));
-    }
-    else {
-      Log.error(
+    switch (enclosingScopeNode) {
+      case ASTClassDeclaration enclosingClass ->
+          symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
+      case ASTEnumDeclaration enclosingEnum ->
+          symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingEnum.getSymbol()));
+      default -> Log.error(
           "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
     }
   }
@@ -119,9 +101,7 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
   public void endVisit(ASTFieldDeclaration node) {
     for (ASTVariableDeclarator v : node.getVariableDeclaratorList()) {
       SymTypeExpression declaratorType = TypeCheck3.symTypeFromAST(node.getMCType());
-      if (JavaDSLMill.typeDispatcher().isMCArrayStatementsASTArrayDeclaratorId(v.getDeclarator())) {
-        ASTArrayDeclaratorId arrayDeclaratorId =
-            JavaDSLMill.typeDispatcher().asMCArrayStatementsASTArrayDeclaratorId(v.getDeclarator());
+      if (v.getDeclarator() instanceof ASTArrayDeclaratorId arrayDeclaratorId) {
         declaratorType = SymTypeRelations.normalize(
             SymTypeExpressionFactory.createTypeArray(declaratorType, arrayDeclaratorId.sizeDim()));
       }

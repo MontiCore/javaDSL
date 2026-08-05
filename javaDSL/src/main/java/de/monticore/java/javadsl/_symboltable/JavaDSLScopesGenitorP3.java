@@ -1,6 +1,5 @@
 package de.monticore.java.javadsl._symboltable;
 
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTEnhancedForControlFormalParameter;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTryLocalVariableDeclaration;
@@ -32,9 +31,7 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
       ASTVariableInit variableInit = declarator.getVariableInit();
       
       SymTypeExpression targetType = SymTypeExpressionFactory.createObscureType();
-      if (JavaDSLMill.typeDispatcher().isMCVarDeclarationStatementsASTSimpleInit(variableInit)) {
-        ASTSimpleInit simpleInit =
-            JavaDSLMill.typeDispatcher().asMCVarDeclarationStatementsASTSimpleInit(variableInit);
+      if (variableInit instanceof ASTSimpleInit simpleInit) {
         targetType = TypeCheck3.typeOf(simpleInit.getExpression());
       }
       else {
@@ -54,15 +51,10 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
       ASTDeclarator declarator = node.getDeclarator();
       FieldSymbol symbol = declarator.getSymbol();
       IJavaDSLScope enclosingScope = node.getEnclosingScope();
-      if (JavaDSLMill.typeDispatcher()
-          .isMCCommonStatementsASTForStatement(enclosingScope.getAstNode())) {
-        ASTForStatement forStatement = JavaDSLMill.typeDispatcher()
-            .asMCCommonStatementsASTForStatement(enclosingScope.getAstNode());
+      if (enclosingScope.getAstNode() instanceof ASTForStatement forStatement) {
         ASTForControl forControl = forStatement.getForControl();
         
-        if (JavaDSLMill.typeDispatcher().isMCCommonStatementsASTEnhancedForControl(forControl)) {
-          ASTEnhancedForControl enhancedForControl =
-              JavaDSLMill.typeDispatcher().asMCCommonStatementsASTEnhancedForControl(forControl);
+        if (forControl instanceof ASTEnhancedForControl enhancedForControl) {
           SymTypeExpression forExprType = TypeCheck3.typeOf(enhancedForControl.getExpression());
           symbol.setType(forExprType);
         }

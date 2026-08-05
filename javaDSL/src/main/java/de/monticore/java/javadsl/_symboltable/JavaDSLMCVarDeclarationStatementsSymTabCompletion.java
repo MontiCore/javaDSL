@@ -1,6 +1,5 @@
 package de.monticore.java.javadsl._symboltable;
 
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTLocalVariableDeclaration;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
@@ -12,11 +11,7 @@ public class JavaDSLMCVarDeclarationStatementsSymTabCompletion
   @Override
   public void endVisit(ASTLocalVariableDeclaration node) {
     if (!node.isEmptyVariableDeclarators()) {
-      boolean isJavaLocalVarDec =
-          JavaDSLMill.typeDispatcher().isJavaDSLASTLocalVariableDeclaration(node);
-      if (isJavaLocalVarDec) {
-        de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration javaVarDec =
-            JavaDSLMill.typeDispatcher().asJavaDSLASTLocalVariableDeclaration(node);
+      if (node instanceof de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration javaVarDec) {
         if (javaVarDec.isVar()) {
           return;
         }

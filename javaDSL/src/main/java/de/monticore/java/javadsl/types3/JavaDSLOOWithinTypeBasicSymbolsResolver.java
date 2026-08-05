@@ -73,7 +73,6 @@ public class JavaDSLOOWithinTypeBasicSymbolsResolver extends OOWithinTypeBasicSy
   }
   
   protected List<OOTypeSymbol> getOOTypeSymbolsIfAvailable(List<SymTypeExpression> exprs) {
-    // TODO: Replace with TypeDispatcher when fixed
     return exprs.stream().filter(SymTypeExpression::hasTypeInfo).map(SymTypeExpression::getTypeInfo)
         .filter(x -> x instanceof OOTypeSymbol).map(x -> (OOTypeSymbol) x)
         .collect(Collectors.toList());

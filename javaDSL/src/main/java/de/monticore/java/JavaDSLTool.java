@@ -122,7 +122,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
                   + "Expected that '%s' many output files are specified. "
                   + "If output files for the prettyprint option are specified, then the number "
                   + "of specified output files must be equal to the number of specified input files, "
-                  + "or one outputfolder should be specified.",
+                  + "or one output folder should be specified.",
               cmd.getOptionValues("pp").length, asts.size()));
         }
       }
@@ -157,7 +157,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
                   + "Expected that '%s' many output files are specified. "
                   + "If output files for the storesymbols option are specified, then the number "
                   + "of specified output files must be equal to the number of specified input files, "
-                  + "or one outputfolder should be specified.",
+                  + "or one output folder should be specified.",
               cmd.getOptionValues("s").length, asts.size()));
         }
       }
@@ -211,7 +211,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
             .argName("dir")
             .hasArg()
             .desc("Sets the output path.")
-            .build());
+            .get());
 
     options.addOption(
         Option.builder("ct")
@@ -219,7 +219,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
             .hasArg()
             .argName("template")
             .desc("Sets a template for configuration.")
-            .build());
+            .get());
 
     options.addOption(
         Option.builder("tp")
@@ -227,13 +227,13 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
             .hasArg()
             .argName("path")
             .desc("Sets the path for additional templates.")
-            .build());
+            .get());
 
     options.addOption(
         Option.builder("c2mc")
             .longOpt("class2mc")
             .desc("Enables to resolve java classes in the model path")
-            .build());
+            .get());
 
     return options;
   }
@@ -263,7 +263,7 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
    * splits the compound paths of all input models
    *
    * @param composedPaths combined paths of all models
-   * @return seperated paths of input models
+   * @return separated paths of input models
    */
   public final String[] splitPathEntries(String[] composedPaths) {
     return Arrays.stream(composedPaths)
@@ -342,21 +342,19 @@ public class JavaDSLTool extends de.monticore.java.javadsl.JavaDSLTool {
   protected String getRelativeFilePath(ASTCompilationUnit compilationUnit) {
     Optional<ASTMCQualifiedName> qualifiedName = Optional.empty();
     String artifactName = "";
-    if (JavaDSLMill.typeDispatcher().isJavaDSLASTOrdinaryCompilationUnit(compilationUnit)) {
-      ASTOrdinaryCompilationUnit ast = JavaDSLMill.typeDispatcher().asJavaDSLASTOrdinaryCompilationUnit(compilationUnit);
+    if (compilationUnit instanceof ASTOrdinaryCompilationUnit ast) {
       if (ast.isPresentPackageDeclaration()) {
         qualifiedName = Optional.of(ast.getPackageDeclaration().getMCQualifiedName());
       }
       if (ast.getTypeDeclarationList().size() == 1) {
-        artifactName = ast.getTypeDeclarationList().get(0).getName();
+        artifactName = ast.getTypeDeclarationList().getFirst().getName();
       } else {
         Optional<ASTTypeDeclaration> publicTypeDeclaration = ast.getTypeDeclarationList().stream().filter(x -> x.getSymbol().isIsPublic()).findFirst();
         if (publicTypeDeclaration.isPresent()) {
           artifactName = publicTypeDeclaration.get().getName();
         }
       }
-    } else if (JavaDSLMill.typeDispatcher().isJavaDSLASTModularCompilationUnit(compilationUnit)) {
-      ASTModularCompilationUnit ast = JavaDSLMill.typeDispatcher().asJavaDSLASTModularCompilationUnit(compilationUnit);
+    } else if (compilationUnit instanceof ASTModularCompilationUnit ast) {
       qualifiedName = Optional.of(ast.getModuleDeclaration().getMCQualifiedName());
     }
     

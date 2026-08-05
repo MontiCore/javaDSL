@@ -1,12 +1,12 @@
 package de.monticore.java.javadsl._symboltable;
 
+import com.google.common.base.Preconditions;
 import de.monticore.expressions.lambdaexpressions._symboltable.LambdaExpressionsSTCompleteTypes2;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._symboltable.JavaLightSTCompleteTypes;
 import de.monticore.types.typeparameters._symboltable.TypeParametersSTCompleteTypes;
-import de.se_rwth.commons.logging.Log;
 
 public class JavaDSLScopesGenitorP2Delegator {
   
@@ -61,7 +61,7 @@ public class JavaDSLScopesGenitorP2Delegator {
   }
   
   public void createFromAST(ASTCompilationUnit astCompilationUnit) {
-    Log.errorIfNull(astCompilationUnit, "0x7A016: Called createFromAST with argument null");
+    Preconditions.checkNotNull(astCompilationUnit, "0x7A016: Called createFromAST with argument null");
     astCompilationUnit.accept(traverser);
   }
 }
