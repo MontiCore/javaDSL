@@ -108,6 +108,70 @@ class CDImportProjectorTest extends AdapterAbstractTest {
     assertTrue(unit.getImportDeclarationList().get(0).isSTAR());
   }
 
+  @Test
+  void projectsJavaLangSubpackageAndNestedTypeImports() throws IOException {
+    ASTCDCompilationUnit cd =
+        cd(
+            "JavaLangImports",
+            """
+            import java.lang.reflect.Method;
+            import java.lang.Thread.State;
+            """);
+    ASTOrdinaryCompilationUnit unit =
+        java(
+            "Holder",
+            """
+            class Holder {
+              Method method;
+              State state;
+            }
+            """);
+
+    CDImportProjector.project(Set.of(unit), cd);
+
+    assertEquals(List.of("java.lang.reflect.Method", "java.lang.Thread.State"), imports(unit));
+  }
+
+  @Test
+  void ignoresTypeNamesMentionedOnlyInStringsAndComments() throws IOException {
+    ASTCDCompilationUnit reference = cd("ReferenceImports", "import alpha.Customer;");
+    ASTCDCompilationUnit concrete = cd("ConcreteImports", "import beta.Customer;");
+    ASTOrdinaryCompilationUnit unit =
+        java(
+            "Message",
+            """
+            class Message {
+              // Customer is only documentation, not a type use.
+              String text = "Customer";
+            }
+            """);
+
+    CDImportProjector.project(Set.of(unit), reference, concrete);
+
+    assertEquals(List.of(), imports(unit));
+  }
+
+  @Test
+  void ignoresNonTypeIdentifiersThatMatchImportedTypeNames() throws IOException {
+    ASTCDCompilationUnit reference =
+        cd("ReferenceIdentifierImports", "import alpha.Customer;");
+    ASTCDCompilationUnit concrete =
+        cd("ConcreteIdentifierImports", "import beta.Customer;");
+    ASTOrdinaryCompilationUnit unit =
+        java(
+            "Identifier",
+            """
+            class Identifier {
+              int Customer;
+              void Customer() {}
+            }
+            """);
+
+    CDImportProjector.project(Set.of(unit), reference, concrete);
+
+    assertEquals(List.of(), imports(unit));
+  }
+
   private ASTCDCompilationUnit cd(String name, String imports) throws IOException {
     Path file = tempDir.resolve(name + ".cd");
     Files.writeString(file, imports + System.lineSeparator() + "classdiagram " + name + " {}");

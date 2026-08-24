@@ -254,11 +254,11 @@ final class JavaTypeUpdateService {
 
     String inputSuperclass =
         inputType.flatMap(CDTypeRelations::firstSuperclassName)
-            .map(JavaSourceNames::simpleName)
+            .map(symbols::resolveConcreteCdType)
             .orElse(null);
     String completedSuperclass =
         CDTypeRelations.firstSuperclassName(completedType)
-            .map(JavaSourceNames::simpleName)
+            .map(symbols::resolveConcreteCdType)
             .orElse(null);
     if (completedSuperclass != null && !completedSuperclass.equals(inputSuperclass)) {
       handler.updater.addSuperType(javaType, completedSuperclass, false);
@@ -267,10 +267,10 @@ final class JavaTypeUpdateService {
     Set<String> inputInterfaces =
         inputType.stream()
             .flatMap(type -> CDTypeRelations.interfaceNames(type).stream())
-            .map(JavaSourceNames::simpleName)
+            .map(symbols::resolveConcreteCdType)
             .collect(java.util.stream.Collectors.toSet());
     List<String> addedInterfaces = CDTypeRelations.interfaceNames(completedType).stream()
-        .map(JavaSourceNames::simpleName)
+        .map(symbols::resolveConcreteCdType)
         .filter(interfaceName -> !inputInterfaces.contains(interfaceName))
         .distinct()
         .toList();
@@ -418,17 +418,28 @@ final class JavaTypeUpdateService {
   }
 
   private boolean returnsAreCompatible(String first, String second) {
-    return isCompatibleImplementationReturn(handler.conIndex, first, second)
-        || isCompatibleImplementationReturn(handler.conIndex, second, first);
+    return isCompatibleImplementationReturn(first, second)
+        || isCompatibleImplementationReturn(second, first);
   }
 
   private boolean isCovariantReturn(String candidate, String parent) {
     return !JavaSourceNames.normalizeType(candidate)
             .equals(JavaSourceNames.normalizeType(parent))
-        && isCompatibleImplementationReturn(handler.conIndex, candidate, parent);
+        && isCompatibleImplementationReturn(candidate, parent);
   }
 
   /** Tests Java-compatible equality or covariance for an implementation return type. */
+  private boolean isCompatibleImplementationReturn(
+      String actualReturn, String expectedReturn) {
+    if (isCompatibleImplementationReturn(handler.conIndex, actualReturn, expectedReturn)) {
+      return true;
+    }
+    String qualifiedActual = symbols.qualifyCdType(actualReturn);
+    String qualifiedExpected = symbols.qualifyCdType(expectedReturn);
+    return isClasspathSubtype(qualifiedActual, qualifiedExpected);
+  }
+
+  /** Tests local CD equality/covariance without guessing external type bindings. */
   static boolean isCompatibleImplementationReturn(
       CDModelIndex index, String actualReturn, String expectedReturn) {
     String actual = JavaSourceNames.normalizeType(actualReturn);
@@ -440,6 +451,57 @@ final class JavaTypeUpdateService {
       return true;
     }
     return index.isSubtypeOf(actual, expected);
+  }
+
+  private static boolean isClasspathSubtype(String actualReturn, String expectedReturn) {
+    Optional<JavaSourceNames.ErasedType> actualType = JavaSourceNames.erasedType(actualReturn);
+    Optional<JavaSourceNames.ErasedType> expectedType = JavaSourceNames.erasedType(expectedReturn);
+    if (actualType.isEmpty() || expectedType.isEmpty()) {
+      return false;
+    }
+    JavaSourceNames.ErasedType actual = actualType.get();
+    JavaSourceNames.ErasedType expected = expectedType.get();
+    if ((!actual.name().contains(".") && !isPrimitive(actual.name()))
+        || (!expected.name().contains(".") && !isPrimitive(expected.name()))
+        || actual.arrayDimensions() != expected.arrayDimensions()
+        || (!expected.typeArguments().isEmpty()
+            && !expected.typeArguments().equals(actual.typeArguments()))) {
+      return false;
+    }
+    try {
+      Class<?> actualClass = classFor(actual);
+      Class<?> expectedClass = classFor(expected);
+      return expectedClass.isAssignableFrom(actualClass);
+    } catch (ClassNotFoundException | LinkageError ignored) {
+      return false;
+    }
+  }
+
+  private static Class<?> classFor(JavaSourceNames.ErasedType type)
+      throws ClassNotFoundException {
+    Class<?> component = primitiveClass(type.name());
+    if (component == null) {
+      component =
+          Class.forName(type.name(), false, JavaTypeUpdateService.class.getClassLoader());
+    }
+    return type.arrayDimensions() == 0
+        ? component
+        : java.lang.reflect.Array.newInstance(component, new int[type.arrayDimensions()]).getClass();
+  }
+
+  private static Class<?> primitiveClass(String name) {
+    return switch (name) {
+      case "boolean" -> boolean.class;
+      case "byte" -> byte.class;
+      case "short" -> short.class;
+      case "int" -> int.class;
+      case "long" -> long.class;
+      case "char" -> char.class;
+      case "float" -> float.class;
+      case "double" -> double.class;
+      case "void" -> void.class;
+      default -> null;
+    };
   }
 
   private static boolean isPrimitive(String type) {
@@ -456,8 +518,7 @@ final class JavaTypeUpdateService {
       }
       String expectedReturn = JavaSourceNames.printNormalizedReturnType(contract);
       String actualReturn = JavaSourceNames.printNormalizedReturnType(method);
-      if (!isCompatibleImplementationReturn(
-          handler.conIndex, actualReturn, expectedReturn)) {
+      if (!isCompatibleImplementationReturn(actualReturn, expectedReturn)) {
         throw new IllegalStateException(
             "Method "
                 + completedType.getName()
@@ -526,6 +587,13 @@ final class JavaTypeUpdateService {
         for (ASTCDMethod concreteMethod : concreteMethodsFor(reference)) {
           if (isOwnedBy(concreteMethod, concreteType)) {
             generated = true;
+            boolean selected =
+                isSelectedIncarnation(reference, concreteMethod.getSymbol());
+            String concreteReturn =
+                symbols.resolveConcreteCdType(
+                    JavaSourceNames.printNormalizedReturnType(concreteMethod));
+            retainsTemplate |=
+                selected && matchesMethodShape(template, concreteMethod, type, collector);
             retainsTemplate |= matches(template, concreteMethod, type, collector);
             handler.updater.addMethod(
                 type,
@@ -540,8 +608,7 @@ final class JavaTypeUpdateService {
                 concreteMethod.getCDParameterList().stream()
                     .map(ASTCDParameter::getName)
                     .toList(),
-                symbols.resolveConcreteCdType(
-                    JavaSourceNames.printNormalizedReturnType(concreteMethod)),
+                concreteReturn,
                 concreteMethod.getModifier().isStatic(),
                 MethodBodySpec.empty());
           }
@@ -565,6 +632,15 @@ final class JavaTypeUpdateService {
       ASTCDMethod concrete,
       ASTTypeDeclaration owner,
       JavaAstElemCollector collector) {
+    return template.getName().equals(concrete.getName())
+        && matchesMethodShape(template, concrete, owner, collector);
+  }
+
+  private boolean matchesMethodShape(
+      ASTMethodDeclaration template,
+      ASTCDMethod concrete,
+      ASTTypeDeclaration owner,
+      JavaAstElemCollector collector) {
     List<String> templateParameters =
         collector.getAllParameters(owner, template).stream()
             .map(ASTFormalParameter::getMCType)
@@ -575,8 +651,7 @@ final class JavaTypeUpdateService {
             .map(ASTCDParameter::getMCType)
             .map(JavaSourceNames::printNormalizedType)
             .toList();
-    return template.getName().equals(concrete.getName())
-        && templateParameters.equals(concreteParameters)
+    return templateParameters.equals(concreteParameters)
         && JavaSourceNames.normalizeType(JavaLoader.print(template.getMCReturnType()))
             .equals(JavaSourceNames.printNormalizedReturnType(concrete));
   }

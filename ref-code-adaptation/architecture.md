@@ -68,17 +68,16 @@ This package contains the public entry point and CLI wrapper.
 - `CodeAdaptationException` is the user-facing failure type for deterministic
   adaptation conflicts.
 - `AdaptedCodeMerger` owns Java AST filtering, splitting, deduplication, and
-  merging after isolated mapping runs.
-- `OutputCodeService` owns final generated-source cleanup and concrete
-  handwritten-file inclusion, and merges isolated CD4Code output without
-  overwriting staged handwritten code.
-- `ConcreteCodeGenerationService` serializes the final concrete-CD AST and runs
-  CD4Code in an isolated JVM and workspace when the API has no concrete Java
-  input. The subprocess prevents CD4Code's process-global mill and logging
-  initialization from changing the caller's state.
+  merging after isolated mapping runs. It also exposes package relocation
+  without member merging for TOP composition.
+- `TopCodeComposer` performs a read-only per-type analysis and then creates
+  separate HWC/TOP ASTs. It never globally renames public concrete type
+  references.
+- `OutputCodeService` owns final source cleanup, TOP self-type repair, and
+  concrete handwritten-file and resource inclusion.
 - `AdaptationWorkspace` owns normalized path validation, safe temporary
-  directories (including generation scratch space), rollback, and transactional
-  output publication. The concrete source is optional at this boundary.
+  directories, rollback, and transactional output publication. The concrete
+  source is optional at this boundary.
 
 The entry package coordinates the workflow. It owns high-level sequencing:
 
@@ -87,11 +86,11 @@ The entry package coordinates the workflow. It owns high-level sequencing:
 - delegate incarnation context construction to the context layer
 - validate mappings before destructive output changes
 - run one or more mapping adaptation passes
-- merge adapted Java with concrete handwritten Java through `AdaptedCodeMerger`
-- invoke final cleanup, concrete file copying, and generated-source merging
-  through `OutputCodeService`
-- generate a concrete Java baseline from the final concrete CD when no concrete
-  Java input exists
+- compose final Java through either the legacy merger or `TopCodeComposer`
+- invoke final cleanup and concrete file/resource copying through
+  `OutputCodeService`
+- repair explicit self values in generated TOP implementations against their
+  public HWC subtype before transactional publication
 
 The entry package does not own low-level rewriting. It delegates Java changes to
 `CodeUpdater`, mapping lookups to context builders and validators, and CD
@@ -120,6 +119,9 @@ that happen after a handler has produced adapted code:
   same-name concrete declaration moves an adapted type into another package, the merger reconciles
   imports in dependent adapted units before changing package identity. Ambiguous concrete packages
   and conflicting simple-name imports are rejected.
+- `relocateAdaptedCodeToConcretePackages(...)` applies those package/import
+  decisions without merging members, allowing `TopCodeComposer` to keep the
+  adapted implementation separate.
 - `deduplicateBySimpleName(...)` keeps one unit per simple file name, preferring
   the unit with the deeper package-relative path.
 
@@ -136,9 +138,6 @@ operations after Java AST generation:
   cleanup to `CodeUpdater.cleanCode(...)`.
 - `copyConcreteFiles(...)` includes concrete handwritten files that were not
   already produced by adaptation.
-- `mergeGeneratedFiles(...)` adds CD4Code-generated companions and model-only
-  declarations by package-relative path while keeping staged handwritten files
-  authoritative.
 - `concreteCopyTarget(...)` preserves package-based Java output paths when a
   concrete Java file parses successfully. Non-Java files preserve their original
   relative paths. Unparsable concrete Java is rejected because its authoritative
@@ -400,8 +399,9 @@ The main workflow has these phases:
 1. `CodeAdapter` parses the concrete and reference CDs through `JavaLoader`.
 2. The reference CD and original concrete CD receive immutable indexes. In
    concretization mode, `ConcretizationService` completes a cloned concrete CD
-   once for all mappings and publishes the clone only after success. In manual
-   mode, the concrete CD remains unchanged.
+   once for all mappings. When `persistConcretizedCD` is enabled, this working
+   clone is written to the output directory even if completion or a later step
+   fails. In manual mode, the concrete CD remains unchanged.
 3. The completed concrete CD receives one immutable index. The reference and
    completed indexes are reused by context construction and every Java
    adaptation pass; the original concrete index remains available only for
@@ -429,18 +429,16 @@ The main workflow has these phases:
     top-level types separate Java units.
 13. `AdaptedCodeMerger.mergeAdaptedCode(...)` accumulates results from all
     mapping passes.
-14. `AdaptedCodeMerger.mergeAdaptedCodeIntoConcreteBase(...)` overlays adapted
-    Java on concrete handwritten Java.
+14. The selected API performs final composition: `adapt(...)` overlays adapted
+    Java on concrete HWC, while `adaptWithTopSeparation(...)` creates separate
+    HWC and TOP declarations per matching concrete type.
 15. `OutputCodeService.copyConcreteFiles(...)` copies remaining concrete
     handwritten files into staging.
 16. `OutputCodeService.cleanCode(...)` removes adapter annotations and invalid
-    generated imports before generation.
-17. When the original input has no concrete Java, `ConcreteCodeGenerationService`
-    generates from the final concrete-CD AST into isolated scratch space and
-    `OutputCodeService.mergeGeneratedFiles(...)` merges that output into staging.
-18. The combined source tree is cleaned again.
-19. `AdaptationWorkspace` atomically publishes staging and restores the prior
-    output on publication failure.
+    generated imports.
+17. When enabled, the completed CD is added to staging under the input concrete
+    CD's filename. `AdaptationWorkspace` then atomically publishes staging and
+    restores the prior output on publication failure.
 
 The workflow protects user output by performing conflict detection before
 staging and replacing output only after every mapping and cleanup phase
@@ -479,7 +477,7 @@ concrete CD element and performs no Java or filesystem mutation.
 #### Manual mode with no concrete Java
 
 `adaptWithoutConcreteCode(..., false, ...)` composes the manual mapping path
-with generation:
+with direct adapted-code output:
 
 ```text
 reference CD + concrete CD + reference Java
@@ -488,20 +486,14 @@ reference CD + concrete CD + reference Java
 manual contexts -> conflict/Java validation -> mapping passes
         |
         v
-adapted Java in staging
-        |
-        v
-isolated CD4Code over the unchanged concrete CD
-        |
-        v
-HWC + generated TOP/model-only files -> cleanup -> atomic publication
+adapted Java in staging -> cleanup -> atomic publication
 ```
 
-The absence of concrete Java changes only the output-baseline phase. It does
-not change how mappings are derived. Conversely, disabling concretization means
-that CD4Code receives the originally parsed concrete CD, not a completed clone.
-Generation still runs when reference Java is empty. The dependency
-selector and helper-preservation validator are not enabled in this mode.
+The absence of concrete Java does not change how mappings are derived. It only
+means that adapted reference Java becomes the complete Java output. The adapter
+does not run a regular generator, so an empty reference directory produces no
+model-only Java. The dependency selector and helper-preservation validator are
+not enabled in this mode.
 
 ### Concretization Mode
 
@@ -618,7 +610,10 @@ the source model it rewrites and prints.
 Temporary mapping and CD4Code-generation directories are separate from the
 final isolated staging workspace. Existing output remains untouched until all
 adaptation, generation, merging, and cleanup phases succeed and publication is
-performed transactionally.
+performed transactionally. The deliberate exception is the diagnostic
+concretized-CD write: when `persistConcretizedCD` is enabled, the current model
+is written directly to the output directory before a failure is rethrown. When
+the flag is disabled, no CD is written on either success or failure.
 
 ## Error Handling
 
@@ -630,7 +625,8 @@ paths where deterministic manual mapping information exists. Fallback behavior
 does not hide ambiguity; unsafe cases are still rejected by conflict detection.
 
 Updater errors indicate source-rewriting failures and are allowed to fail the
-current adaptation pass.
+current adaptation pass. If concretized-CD persistence is enabled, the last
+working model remains in the output directory to help explain these failures.
 
 ## Testing Architecture
 

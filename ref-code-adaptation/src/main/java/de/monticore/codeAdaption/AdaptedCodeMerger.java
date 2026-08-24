@@ -56,6 +56,59 @@ final class AdaptedCodeMerger {
   }
 
   /**
+   * Relocates adapted declarations to the package of a unique same-name concrete declaration
+   * without merging their members.
+   *
+   * <p>TOP composition needs the same package and import decisions as the legacy merger, but it
+   * deliberately keeps the two declarations separate. Relocation happens before the adapted
+   * declaration receives its {@code TOP} suffix so references continue to target the public
+   * concrete type.
+   */
+  Set<ASTOrdinaryCompilationUnit> relocateAdaptedCodeToConcretePackages(
+      Set<ASTOrdinaryCompilationUnit> concreteCode,
+      Set<ASTOrdinaryCompilationUnit> adaptedCode,
+      CDModelIndex concreteIndex) {
+    Map<String, ASTOrdinaryCompilationUnit> concreteByType = indexAndMerge(concreteCode);
+    Map<String, ASTOrdinaryCompilationUnit> adaptedByType = indexAndMerge(adaptedCode);
+    Map<String, Relocation> relocations =
+        findRelocations(concreteByType, adaptedByType, concreteIndex);
+    Map<String, Map<String, String>> importsByOriginalPackage =
+        adaptedTypeImports(adaptedByType, relocations);
+    Map<String, ASTOrdinaryCompilationUnit> relocated = new LinkedHashMap<>();
+    Map<String, Set<String>> repairableMemberTypesByUnit = new LinkedHashMap<>();
+
+    for (ASTOrdinaryCompilationUnit original : adaptedByType.values()) {
+      String originalKey = compilationUnitKey(original);
+      ASTOrdinaryCompilationUnit copy = original.deepClone();
+      Relocation relocation = relocations.get(originalKey);
+      String targetPackage = relocation == null ? packageName(copy) : relocation.targetPackage();
+      addRelocationImports(
+          copy,
+          importsByOriginalPackage.getOrDefault(packageName(original), Map.of()),
+          targetPackage);
+      if (relocation != null) {
+        ASTOrdinaryCompilationUnit concreteTarget = concreteByType.get(relocation.targetKey());
+        if (concreteTarget.isPresentPackageDeclaration()) {
+          copy.setPackageDeclaration(concreteTarget.getPackageDeclaration().deepClone());
+        } else {
+          copy.setPackageDeclarationAbsent();
+        }
+      }
+
+      String targetKey = compilationUnitKey(copy);
+      ASTOrdinaryCompilationUnit conflict = relocated.putIfAbsent(targetKey, copy);
+      if (conflict != null) {
+        throw new CodeAdaptationException(
+            "Several adapted declarations relocate to '" + targetKey + "'");
+      }
+      repairableMemberTypesByUnit.put(targetKey, unqualifiedMemberTypeNames(copy));
+    }
+
+    repairMemberTypeImports(relocated, repairableMemberTypesByUnit);
+    return new LinkedHashSet<>(relocated.values());
+  }
+
+  /**
    * Retains compilation units relevant to one mapping-specific incarnation context.
    *
    * <p>A unit is retained when a top-level Java type matches a reference-CD type having at least

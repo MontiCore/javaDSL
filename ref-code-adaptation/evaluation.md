@@ -9,6 +9,7 @@ handwritten code, or both.
 
 | Case | Purpose | Inputs | Mappings | Expected behavior | Test coverage |
 | --- | --- | --- | --- | --- | --- |
+| `design_patterns` | Composite and Adapter examples imported from the evaluation-paper branch. | `Composition.cd` or `Adapter.cd`, `DesignPatterns.cd`, matching `hwc/` directory | `ci` and `re`, or `npg` | Adapts the paper's Composite example for two mappings and its Adapter example. | `DesignPatternTest.adaptsCompositePatternForBothMappings`, `DesignPatternTest.adaptsAdapterPattern` |
 | `testcase_1` | University/user-role case with two mappings over shared concrete types. | `Reference.cd`, `Concrete.cd`, `reference/` | `stud`, `prof` | Adapts both mappings successfully. The former association-role conflict is resolved by treating roles as generated fields owned by the opposite association side. | `CodeAdapterTestCase1` |
 | `testcase_2_cd4code` | CD4Code user-role case with generated follow-up code. | `Reference.cd`, `Concrete.cd`, `hwc/` | `stud` | Adapts the reference handwritten code to `Student`/`HiwiRole` and then runs Java generation for the concrete CD. | `CodeAdapterTestCase2a` |
 | `testcase_6_builder_pattern` | Builder pattern expansion for multiple concrete target types. | `Reference.cd`, `Concrete.cd`, `adapter/`, `concrete/` | `buildPat` | Creates `PersonBuilder` and `TaskBuilder`, adapts setters/build methods, and keeps existing concrete classes. | `BuilderPatternAdapterTest` |
@@ -33,3 +34,24 @@ handwritten code, or both.
 - Case 17 is the large multi-pattern R-011 evaluation. Its dedicated test
   verifies that adaptation, rather than concrete-source copying, supplies the
   mapped behavior.
+
+## TOP Composition Cases
+
+These cases are decided independently for every adapted type. In the examples,
+the reference `Builder` pattern is adapted to `PersonBuilder`; the concrete CD
+containing `Person` remains mandatory, while concrete handwritten Java is
+optional.
+
+| Case                                                                    | Expected composition | Tests that assert it |
+|-------------------------------------------------------------------------| --- | --- |
+| 1. Concrete HWC exists without a TOP superclass.                        | The copied HWC becomes `PersonBuilder extends PersonBuilderTOP`; the adapted implementation becomes `PersonBuilderTOP`. | `TopCodeComposerTest.createsTopCompanionWithoutMergingMembersOrRewritingPublicTypeReferences` |
+| 2. No matching concrete HWC exists.                                     | The adapted implementation is emitted directly as `PersonBuilder`; no TOP layer is introduced by composition. | `TopCodeComposerTest.emitsAdaptedTypeDirectlyWhenConcreteHwcIsMissing` |
+| 3. Concrete HWC already declares `extends PersonBuilderTOP`.            | The existing inheritance is retained and the adapted implementation supplies `PersonBuilderTOP`. Fluent public self types continue to compile. | `TopCodeComposerTest.preservesFluentPublicSelfTypeInGeneratedTopCode`, `BuilderPatternAdapterTest.topSeparationCompilesFluentBuilderWithConcreteHwc` |
+| 4a. Reference code uses TOP and no matching concrete HWC exists.        | The adapted `PersonBuilder extends PersonBuilderTOP` is emitted unchanged; no TOPTOP layer is needed. | `TopCodeComposerTest.keepsExistingReferenceTopWhenNoConcreteHwcExists`, `CodeAdapterTestCase2a.adaptsAssociationRoleUsageWithoutRunningARegularGenerator` |
+| 4b. Reference code uses TOP and concrete HWC also owns `PersonBuilder`. | Concrete HWC extends `PersonBuilderTOP`; adapted reference HWC becomes `PersonBuilderTOP extends PersonBuilderTOPTOP`. The external generator supplies the actual TOPTOP base. | `TopCodeComposerTest.shiftsReferenceTopToTopTopWhenConcreteHwcOwnsThePublicType`, `CodeAdapterTestCase2a.topApiAddsInheritanceAndEmitsAdaptedImplementationAsTop` |
+
+Case 1 and case 3 have the same final two-class shape. They differ in whether
+the adapter adds the HWC `extends PersonBuilderTOP` clause or merely retains the
+clause already written by the developer. In case 4, the adapter creates the
+adapted `PersonBuilderTOP` middle layer and only references—not generates—the
+external `PersonBuilderTOPTOP` base.

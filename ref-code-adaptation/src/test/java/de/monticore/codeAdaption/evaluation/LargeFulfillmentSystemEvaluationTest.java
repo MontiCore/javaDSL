@@ -28,7 +28,6 @@ import javax.tools.ToolProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /** End-to-end evaluation of four interacting patterns in a fulfilment workflow. */
 public class LargeFulfillmentSystemEvaluationTest extends EvaluationAbstractTest {
@@ -64,8 +63,6 @@ public class LargeFulfillmentSystemEvaluationTest extends EvaluationAbstractTest
           "ShipmentRecord.java",
           "ShipmentRepository.java",
           "SustainableRoutePolicy.java");
-
-  @TempDir Path temporaryDirectory;
 
   @BeforeEach
   public void setup() {
@@ -143,7 +140,7 @@ public class LargeFulfillmentSystemEvaluationTest extends EvaluationAbstractTest
     concreteCD = new File(resourcesPath + CASE_NAME + "/Concrete.cd");
     refCodePath = Path.of(resourcesPath + CASE_NAME + "/adapter");
     conCodePath = Path.of(resourcesPath + CASE_NAME + "/concrete");
-    output = Path.of("target/codeAdapter/evaluation/" + CASE_NAME);
+    output = temporaryDirectory.resolve(CASE_NAME);
   }
 
   private void assertObserverAdaptation() {

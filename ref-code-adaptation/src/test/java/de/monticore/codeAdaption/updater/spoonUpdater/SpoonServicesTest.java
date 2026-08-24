@@ -29,7 +29,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import spoon.reflect.code.CtInvocation;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.filter.TypeFilter;
 
 class SpoonServicesTest {
   @TempDir Path temporaryDirectory;
@@ -75,8 +77,7 @@ class SpoonServicesTest {
     Path sources = Files.createDirectory(temporaryDirectory.resolve("packages"));
     Path first = javaSource(sources, "alpha", "Shared", "class Shared {}");
     javaSource(sources, "beta", "Shared", "class Shared {}");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
 
     ASTTypeDeclaration sourceType = loadType(first, "Shared");
@@ -93,8 +94,7 @@ class SpoonServicesTest {
             "sample",
             "Child",
             "class Base { void run() {} } class Child extends Base { void targetRun() {} }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     ASTTypeDeclaration child = loadType(source, "Child");
     ASTMethodDeclaration targetRun = loadMethod(source, "Child", "targetRun");
@@ -112,8 +112,7 @@ class SpoonServicesTest {
             "Echo",
             "class Echo { String echo(String value) { return value; } "
                 + "String combine(String kept, String removed) { return kept + removed; } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration echo = loadType(source, "Echo");
@@ -168,8 +167,7 @@ class SpoonServicesTest {
             "sample",
             "Template",
             "class Template { Object value() { return null; } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration type = loadType(source, "Template");
@@ -200,8 +198,7 @@ class SpoonServicesTest {
             "Child",
             "class Parent {} interface Contract {} enum Colour { RED, BLUE } "
                 + "class Child { Object value; }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration child = loadType(source, "Child");
@@ -247,8 +244,7 @@ class SpoonServicesTest {
             "sample",
             "Implementation",
             "class Implementation { String existing() { return \"kept\"; } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration implementation = loadType(source, "Implementation");
@@ -319,8 +315,7 @@ class SpoonServicesTest {
             "sample",
             "Implementation",
             "class Implementation { protected String value() { return \"kept\"; } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration implementation = loadType(source, "Implementation");
@@ -352,8 +347,7 @@ class SpoonServicesTest {
             "Implementation",
             "class Implementation { Integer value() { return 1; } "
                 + "static String utility() { return \"kept\"; } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration implementation = loadType(source, "Implementation");
@@ -408,8 +402,7 @@ class SpoonServicesTest {
             "sample",
             "Implementation",
             "abstract class Implementation { protected abstract String value(); }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration implementation = loadType(source, "Implementation");
@@ -439,8 +432,7 @@ class SpoonServicesTest {
             "sample",
             "Child",
             "class Base { public String value() { return \"base\"; } } class Child extends Base {}");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration childAst = loadType(source, "Child");
@@ -475,8 +467,7 @@ class SpoonServicesTest {
             "sample",
             "Service",
             "class Service { void run(alpha.Value value) {} }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
     SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
     ASTTypeDeclaration service = loadType(source, "Service");
@@ -506,8 +497,7 @@ class SpoonServicesTest {
     Files.writeString(cd, "classdiagram Model { class Date; }");
     ASTCDType date =
         JavaLoader.parseCD(cd.toString()).getCDDefinition().getCDClassesList().get(0);
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonTransformationService transformations = services(workspace).transformations();
 
     transformations.updateCDType(date, "RenamedDate");
@@ -530,8 +520,7 @@ class SpoonServicesTest {
     Files.writeString(cd, "classdiagram Reference { class Role; }");
     ASTCDType role =
         JavaLoader.parseCD(cd.toString()).getCDDefinition().getCDClassesList().get(0);
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     SpoonTransformationService transformations = services(workspace).transformations();
 
     transformations.updateCDType(role, "HiwiRole");
@@ -553,8 +542,7 @@ class SpoonServicesTest {
             "Service",
             "class Service { void run(String value) {} void run(int first, int second) {} "
                 + "void call() { run(\"x\"); run(1, 2); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
 
     services
@@ -581,8 +569,7 @@ class SpoonServicesTest {
             "Base",
             "class Base { static void create() {} void run() {} } "
                 + "class Child extends Base { void call() { run(); Base.create(); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     ASTTypeDeclaration base = loadType(source, "Base");
 
@@ -610,8 +597,7 @@ class SpoonServicesTest {
             + "void call(SpecialItem special) { target(\"x\"); target(1); } "
             + "void exact(Item item, SpecialItem special) { target(\"y\"); } "
             + "void ambiguous(SpecialItem first, OtherItem second) { target(\"z\"); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     services
         .repairs()
@@ -643,8 +629,7 @@ class SpoonServicesTest {
         "Service",
         "class Service { void targetRole(String value) {} "
             + "void qualified(alpha.Role role) { targetRole(\"y\"); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     services
         .repairs()
@@ -673,8 +658,7 @@ class SpoonServicesTest {
         "import java.util.Date; import java.util.List; "
             + "class Service { void target(String value) {} "
             + "void imported(Date date, List<String> values) { target(\"x\"); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     services
         .repairs()
@@ -703,8 +687,7 @@ class SpoonServicesTest {
         "class ConcreteService { void target(String value) {} } "
             + "class Caller { ConcreteService service; "
             + "void call(String suffix) { service.target(\"x\"); } }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     services.transformations().setGroupingMappings(Map.of("ConcreteService", "ServiceGroup"));
     services
@@ -736,8 +719,7 @@ class SpoonServicesTest {
     Path cd = temporaryDirectory.resolve("ConstructorReference.cd");
     Files.writeString(cd, "classdiagram Reference { class Role; }");
     ASTCDType role = JavaLoader.parseCD(cd.toString()).getCDDefinition().getCDClassesList().get(0);
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
 
     services.transformations().updateCDType(role, "HiwiRole");
@@ -755,8 +737,7 @@ class SpoonServicesTest {
         "sample",
         "Contract",
         "interface Contract { void run(); default void keep() {} static void utility() {} }");
-    SpoonWorkspace workspace = new SpoonWorkspace();
-    workspace.load(sources);
+    SpoonWorkspace workspace = loadedWorkspace(sources);
     Services services = services(workspace);
     var contract = workspace.model().getAllTypes().iterator().next();
     contract.getMethodsByName("run").get(0).setBody(workspace.factory().createBlock());
@@ -768,6 +749,159 @@ class SpoonServicesTest {
     assertNotNull(contract.getMethodsByName("utility").get(0).getBody());
   }
 
+  @Test
+  void associationRoleRewriteDoesNotChangeAFieldOnAnotherReceiver() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("association-receiver"));
+    Path ownerSource =
+        javaSource(
+            sources,
+            "sample",
+            "Owner",
+            """
+            class Other {
+              int children;
+            }
+            class Owner {
+              int children;
+              int read(Other other) {
+                return this.children + other.children;
+              }
+            }
+            """);
+    ASTTypeDeclaration owner = loadType(ownerSource, "Owner");
+    SpoonUpdater updater = updater(sources);
+
+    updater.updateAssociationRole(owner, "children", "kids");
+    String generated = print(updater, "association-output", "Owner.java");
+
+    assertTrue(generated.contains("this.kids"), generated);
+    assertTrue(generated.contains("other.children"), generated);
+    assertFalse(generated.contains("other.kids"), generated);
+  }
+
+  @Test
+  void executableRepairDistinguishesQualifiedOwnersWithTheSameSimpleName()
+      throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("qualified-owners"));
+    Path alphaService =
+        javaSource(
+            sources,
+            "alpha",
+            "Service",
+            "public class Service { public void run(String value) {} }");
+    javaSource(
+        sources,
+        "beta",
+        "Service",
+        "public class Service { public void run(String value) {} }");
+    javaSource(
+        sources,
+        "sample",
+        "Caller",
+        """
+        class Caller {
+          alpha.Service alphaService;
+          beta.Service betaService;
+          void call() {
+            alphaService.run("alpha");
+            betaService.run("beta");
+          }
+        }
+        """);
+    ASTTypeDeclaration service = loadType(alphaService, "Service");
+    ASTMethodDeclaration run = loadMethod(alphaService, "Service", "run");
+    SpoonUpdater updater = updater(sources);
+
+    updater.updateMethod(service, run, "execute");
+    updater.registerMethodRewrite(
+        service,
+        StableElementKey.method("alpha.Service", "run", List.of("String")),
+        StableElementKey.method("alpha.Service", "execute", List.of("String")));
+    String caller = print(updater, "qualified-owner-output", "Caller.java");
+
+    assertTrue(caller.contains("alphaService.execute(\"alpha\")"), caller);
+    assertTrue(caller.contains("betaService.run(\"beta\")"), caller);
+    assertFalse(caller.contains("betaService.execute(\"beta\")"), caller);
+  }
+
+  @Test
+  void unqualifiedExecutableOwnerUsesTheQualifiedReceiverBeforeRewrite() throws IOException {
+    Path sources =
+        Files.createDirectory(temporaryDirectory.resolve("unqualified-executable-owner"));
+    Path alphaService =
+        javaSource(
+            sources,
+            "alpha",
+            "Service",
+            "public class Service { public void run(String value) {} }");
+    javaSource(
+        sources,
+        "beta",
+        "Service",
+        "public class Service { public void run(String value) {} }");
+    javaSource(
+        sources,
+        "sample",
+        "Caller",
+        """
+        class Caller {
+          alpha.Service alphaService;
+          beta.Service betaService;
+          void call() {
+            alphaService.run("alpha");
+            betaService.run("beta");
+          }
+        }
+        """);
+    ASTTypeDeclaration service = loadType(alphaService, "Service");
+    ASTMethodDeclaration run = loadMethod(alphaService, "Service", "run");
+    SpoonWorkspace workspace = loadedWorkspace(sources);
+    Services services = services(workspace);
+
+    services.transformations().updateMethod(service, run, "execute");
+    services
+        .repairs()
+        .registerMethodRewrite(
+            StableElementKey.method("alpha.Service", "run", List.of("String")),
+            StableElementKey.method("alpha.Service", "execute", List.of("String")));
+    for (CtInvocation<?> invocation :
+        workspace.model().getElements(new TypeFilter<>(CtInvocation.class))) {
+      if ("run".equals(invocation.getExecutable().getSimpleName())
+          || "execute".equals(invocation.getExecutable().getSimpleName())) {
+        invocation
+            .getExecutable()
+            .setDeclaringType(invocation.getFactory().Type().createReference("Service"));
+      }
+    }
+    services.transformations().prepareForPrint();
+    String caller = print(workspace, "unqualified-owner-output", "Caller.java");
+
+    assertTrue(caller.contains("alphaService.execute(\"alpha\")"), caller);
+    assertTrue(caller.contains("betaService.run(\"beta\")"), caller);
+    assertFalse(caller.contains("betaService.execute(\"beta\")"), caller);
+  }
+
+  @Test
+  void superinterfaceDeduplicationUsesQualifiedIdentity() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("qualified-interfaces"));
+    javaSource(sources, "alpha", "Tag", "public interface Tag {}");
+    javaSource(sources, "beta", "Tag", "public interface Tag {}");
+    Path implementation =
+        javaSource(
+            sources,
+            "sample",
+            "Implementation",
+            "class Implementation implements alpha.Tag {}");
+    ASTTypeDeclaration type = loadType(implementation, "Implementation");
+    SpoonUpdater updater = updater(sources);
+
+    updater.addSuperType(type, "beta.Tag", true);
+    String generated = print(updater, "qualified-interface-output", "Implementation.java");
+
+    assertTrue(generated.contains("alpha.Tag"), generated);
+    assertTrue(generated.contains("beta.Tag"), generated);
+  }
+
   private Path sourceDirectory(String directoryName, String typeName) throws IOException {
     Path directory = Files.createDirectory(temporaryDirectory.resolve(directoryName));
     Files.writeString(
@@ -775,6 +909,46 @@ class SpoonServicesTest {
         "class " + typeName + " {}",
         StandardCharsets.UTF_8);
     return directory;
+  }
+
+  private SpoonUpdater updater(Path sources) {
+    SpoonUpdater updater = new SpoonUpdater();
+    updater.setCodePath(sources);
+    return updater;
+  }
+
+  private SpoonWorkspace loadedWorkspace(Path sources) throws IOException {
+    SpoonWorkspace workspace = new SpoonWorkspace();
+    workspace.load(sources);
+    return workspace;
+  }
+
+  private String print(SpoonUpdater updater, String outputName, String fileName)
+      throws IOException {
+    Path output = temporaryDirectory.resolve(outputName);
+    updater.setOutputDirectory(output);
+    updater.printCode();
+    return generatedSource(output, fileName);
+  }
+
+  private String print(SpoonWorkspace workspace, String outputName, String fileName)
+      throws IOException {
+    Path output = temporaryDirectory.resolve(outputName);
+    workspace.setOutputDirectory(output);
+    workspace.print();
+    return generatedSource(output, fileName);
+  }
+
+  private String generatedSource(Path output, String fileName) throws IOException {
+    try (var files = Files.walk(output)) {
+      Path generated =
+          files
+              .filter(Files::isRegularFile)
+              .filter(path -> fileName.equals(path.getFileName().toString()))
+              .findFirst()
+              .orElseThrow();
+      return Files.readString(generated, StandardCharsets.UTF_8);
+    }
   }
 
   private Path javaSource(

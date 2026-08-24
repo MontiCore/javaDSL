@@ -19,8 +19,16 @@ public final class ConcretizationService {
 
   public ASTCDCompilationUnit completeConcreteCD(
       ASTCDCompilationUnit conCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
+    return completeConcreteCDInPlace(conCD.deepClone(), refCD, mappings);
+  }
+
+  /**
+   * Completes a caller-owned working copy in place so its partial state remains available when
+   * cdconcretization reports an error.
+   */
+  public ASTCDCompilationUnit completeConcreteCDInPlace(
+      ASTCDCompilationUnit completedCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
     ConcretizationCompleter completer = new ConcretizationCompleter(confParams);
-    ASTCDCompilationUnit completedCD = conCD.deepClone();
     JavaLoader.initializeCDSymbolTable(completedCD);
     synchronized (Log.class) {
       boolean failQuickEnabled = Log.isFailQuickEnabled();
@@ -50,7 +58,7 @@ public final class ConcretizationService {
         return completedCD;
       } catch (Exception | AssertionError throwable) {
         throw new IllegalStateException(
-            "CD concretization failed before code adaptation; the concrete CD was not modified",
+            "CD concretization failed before code adaptation; the input concrete CD was not modified",
             throwable);
       } finally {
         // Log.enableFailQuick(true) terminates the process when error findings exist. The errors

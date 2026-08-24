@@ -10,6 +10,7 @@ import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
 import de.monticore.codeAdaption.utils.AdapterParam;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -17,15 +18,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class BuilderPatternAdapterTest extends AdapterAbstractTest {
+  @TempDir Path temporaryDirectory;
+
   private final String resourcesPath =
       "src/test/resources/de/monticore/codeAdaption/evaluation/testcase_6_builder_pattern/";
   private final File refCD = new File(resourcesPath + "Reference.cd");
   private final File concreteCD = new File(resourcesPath + "Concrete.cd");
   private final Path concreteCodePath = Path.of(resourcesPath + "concrete");
   private final Path adapterCodePath = Path.of(resourcesPath + "adapter");
-  private final Path outputPath = Path.of("target/adapter/builder_pattern");
+  private Path outputPath;
 
   private Set<CDConfParameter> confParameters;
   private Set<AdapterParam> adapterParams;
@@ -33,6 +37,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
   @BeforeEach
   public void setup() {
     initMills();
+    outputPath = temporaryDirectory.resolve("builder-pattern");
     deleteRecursively(outputPath);
     confParameters = Set.of(NAME_MAPPING, INHERITANCE, STEREOTYPE_MAPPING, STRICT_PARAMETER_ORDER);
     adapterParams = Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE);
@@ -117,6 +122,41 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(taskContent.contains("public class Task"));
     assertTrue(taskContent.contains("int id"));
     assertTrue(taskContent.contains("String title"));
+  }
+
+  @Test
+  @DisplayName("Builder Pattern: TOP separation preserves fluent public self types")
+  void topSeparationCompilesFluentBuilderWithConcreteHwc() throws IOException {
+    Path concreteWithBuilder = Files.createDirectories(temporaryDirectory.resolve("concrete"));
+    Files.copy(concreteCodePath.resolve("Person.java"), concreteWithBuilder.resolve("Person.java"));
+    Files.copy(concreteCodePath.resolve("Task.java"), concreteWithBuilder.resolve("Task.java"));
+    String packageName = "de.monticore.codeAdaption.evaluation.testcase_6_builder_pattern";
+    Files.writeString(
+        concreteWithBuilder.resolve("PersonBuilder.java"),
+        "package "
+            + packageName
+            + "; public class PersonBuilder extends PersonBuilderTOP {"
+            + " public void validate() {} } ");
+    Files.writeString(
+        concreteWithBuilder.resolve("BuilderUsage.java"),
+        "package "
+            + packageName
+            + "; class BuilderUsage { void use() {"
+            + " new PersonBuilder().setName(\"Ada\").validate(); } }");
+    Path topOutput = temporaryDirectory.resolve("top-output");
+
+    new CodeAdapter(adapterParams, confParameters)
+        .adaptWithTopSeparation(
+            refCD,
+            concreteCD,
+            Set.of("buildPat"),
+            adapterCodePath,
+            concreteWithBuilder,
+            topOutput);
+
+    String personBuilderTop = readFileContent(topOutput, "PersonBuilderTOP.java");
+    assertTrue(personBuilderTop.contains("return ((PersonBuilder) (this));"));
+    assertGeneratedJavaCompiles(topOutput);
   }
 
   @Test

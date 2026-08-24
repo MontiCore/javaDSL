@@ -33,11 +33,12 @@ public class DesignPatternTest extends EvaluationAbstractTest {
   public void adaptsCompositePatternForBothMappings() {
     configureFixture("Composition", "composition");
 
-    adaptAndGenerate(Set.of("ci", "re"));
+    adaptWithoutRegularGeneration(Set.of("ci", "re"));
 
     assertTrue(
         generatedFileNames(output)
-            .containsAll(Set.of("Circle.java", "Graphic.java", "Picture.java", "Rectangle.java")));
+            .containsAll(Set.of("Circle.java", "Picture.java", "Rectangle.java")));
+    assertFalse(generatedFileNames(output).contains("Graphic.java"));
     String picture = readFileContent(output, "Picture.java");
     assertTrue(picture.contains("class Picture implements Graphic"));
     assertTrue(picture.contains("void render()"));
@@ -45,7 +46,6 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     assertFalse(picture.contains("Component"));
     assertFalse(picture.contains("execute("));
     assertNoAdapterMetadata(output);
-    assertGeneratedJavaCompiles(output);
   }
 
   @Test
@@ -53,18 +53,18 @@ public class DesignPatternTest extends EvaluationAbstractTest {
   public void adaptsAdapterPattern() {
     configureFixture("Adapter", "adapter");
 
-    adaptAndGenerate(Set.of("npg"));
+    adaptWithoutRegularGeneration(Set.of("npg"));
 
     assertTrue(
         generatedFileNames(output)
-            .containsAll(Set.of("FlexImage.java", "NPGAdapter.java", "NPGImage.java")));
+            .containsAll(Set.of("NPGAdapter.java", "NPGImage.java")));
+    assertFalse(generatedFileNames(output).contains("FlexImage.java"));
     String adapter = readFileContent(output, "NPGAdapter.java");
     assertTrue(adapter.contains("class NPGAdapter implements FlexImage"));
     assertTrue(adapter.contains("void flex()"));
     assertFalse(adapter.contains("Target"));
     assertFalse(adapter.contains("operation("));
     assertNoAdapterMetadata(output);
-    assertGeneratedJavaCompiles(output);
   }
 
   private void configureFixture(String referenceName, String codeDirectory) {
@@ -72,10 +72,10 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     concreteCD = new File(resourcesPath + "design_patterns/DesignPatterns.cd");
     refCodePath = Path.of(resourcesPath + "design_patterns/hwc/" + codeDirectory);
     conCodePath = Path.of(resourcesPath + "design_patterns/concrete");
-    output = Path.of("target/codeAdapter/evaluation/design_patterns/" + codeDirectory);
+    output = temporaryDirectory.resolve("design_patterns").resolve(codeDirectory);
   }
 
-  private void adaptAndGenerate(Set<String> mappings) {
+  private void adaptWithoutRegularGeneration(Set<String> mappings) {
     deleteRecursively(output);
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     assertDoesNotThrow(

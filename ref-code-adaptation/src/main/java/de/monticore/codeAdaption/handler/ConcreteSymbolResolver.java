@@ -28,6 +28,7 @@ import java.util.Set;
 final class ConcreteSymbolResolver {
   private final BasicUpdateHandler handler;
   private final Map<String, Set<String>> concreteImportedTypes;
+  private final Set<String> wildcardImportPackages;
 
   ConcreteSymbolResolver(
       BasicUpdateHandler handler,
@@ -35,6 +36,7 @@ final class ConcreteSymbolResolver {
       ASTCDCompilationUnit concreteCD) {
     this.handler = handler;
     this.concreteImportedTypes = importedTypes(concreteCD, referenceCD);
+    this.wildcardImportPackages = wildcardImportPackages(concreteCD, referenceCD);
   }
 
   String buildConcreteName(CodeMatching matching) {
@@ -188,7 +190,10 @@ final class ConcreteSymbolResolver {
     return Optional.empty();
   }
 
-  void registerConcreteMethodSignature(ISymbol reference, ISymbol concrete) {
+  void registerConcreteMethodSignature(
+      de.monticore.java.javadsl._ast.ASTTypeDeclaration sourceOwner,
+      ISymbol reference,
+      ISymbol concrete) {
     if (concrete == null || !(concrete.getAstNode() instanceof ASTCDMethod concreteMethod)) {
       return;
     }
@@ -208,7 +213,8 @@ final class ConcreteSymbolResolver {
                 concreteKey.get().getName(),
                 qualifiedParameterTypes,
                 concreteKey.get().getReturnType().orElse(null));
-        handler.updater.registerMethodRewrite(referenceKey.get(), qualifiedConcreteKey);
+        handler.updater.registerMethodRewrite(
+            sourceOwner, referenceKey.get(), qualifiedConcreteKey);
       }
     }
     handler.updater.registerConcreteMethodSignature(
@@ -283,19 +289,37 @@ final class ConcreteSymbolResolver {
   }
 
   String qualifyCdType(String type) {
-    return JavaSourceNames.replaceSimpleTypeNames(
+    return JavaSourceNames.replaceTypeNames(
         type,
-        simpleName -> {
+        reference -> {
+          if (reference.qualified()) {
+            return Optional.empty();
+          }
+          String simpleName = reference.simpleName();
           if (handler.conIndex.type(simpleName).isPresent()
               || handler.refIndex.type(simpleName).isPresent()) {
             return Optional.empty();
           }
           Set<String> candidates = concreteImportedTypes.get(simpleName);
           if (candidates == null || candidates.isEmpty()) {
-            return Optional.empty();
+            LinkedHashSet<String> classpathCandidates = new LinkedHashSet<>();
+            String javaLang = "java.lang." + simpleName;
+            if (classpathTypeExists(javaLang)) {
+              classpathCandidates.add(javaLang);
+            }
+            for (String packageName : wildcardImportPackages) {
+              String candidate = packageName + "." + simpleName;
+              if (classpathTypeExists(candidate)) {
+                classpathCandidates.add(candidate);
+              }
+            }
+            candidates = classpathCandidates;
           }
           if (candidates.size() == 1) {
             return Optional.of(candidates.iterator().next());
+          }
+          if (candidates.isEmpty()) {
+            return Optional.empty();
           }
           throw new IllegalStateException(
               "Ambiguous class-diagram imports for used type '"
@@ -303,6 +327,15 @@ final class ConcreteSymbolResolver {
                   + "': "
                   + candidates.stream().sorted().collect(java.util.stream.Collectors.joining(", ")));
         });
+  }
+
+  private static boolean classpathTypeExists(String qualifiedName) {
+    try {
+      Class.forName(qualifiedName, false, ConcreteSymbolResolver.class.getClassLoader());
+      return true;
+    } catch (ClassNotFoundException | LinkageError ignored) {
+      return false;
+    }
   }
 
   String resolveConcreteCdType(String type) {
@@ -420,7 +453,7 @@ final class ConcreteSymbolResolver {
     }
     for (var statement : cd.getMCImportStatementList()) {
       String imported = statement.getMCQualifiedName().getQName();
-      if (!statement.isStar() && !imported.startsWith("java.lang.")) {
+      if (!statement.isStar()) {
         imports
             .computeIfAbsent(
                 JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
@@ -428,5 +461,23 @@ final class ConcreteSymbolResolver {
       }
     }
     return imports;
+  }
+
+  private static Set<String> wildcardImportPackages(
+      ASTCDCompilationUnit primary, ASTCDCompilationUnit fallback) {
+    LinkedHashSet<String> packages = new LinkedHashSet<>(wildcardImportPackages(fallback));
+    packages.addAll(wildcardImportPackages(primary));
+    return Set.copyOf(packages);
+  }
+
+  private static Set<String> wildcardImportPackages(ASTCDCompilationUnit cd) {
+    if (cd == null) {
+      return Set.of();
+    }
+    return cd.getMCImportStatementList().stream()
+        .filter(statement -> statement.isStar())
+        .map(statement -> statement.getMCQualifiedName().getQName())
+        .collect(
+            java.util.stream.Collectors.toCollection(LinkedHashSet::new));
   }
 }

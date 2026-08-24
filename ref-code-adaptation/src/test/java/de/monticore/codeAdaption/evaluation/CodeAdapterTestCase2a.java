@@ -16,11 +16,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
-
-  @TempDir Path tempDir;
 
   @BeforeEach
   public void setup() {
@@ -28,7 +25,7 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
     concreteCD = new File(resourcesPath + "testcase_2_cd4code/Concrete.cd");
     refCodePath = Path.of(resourcesPath + "testcase_2_cd4code/hwc/entity");
     conCodePath = Path.of(resourcesPath + "testcase_2_cd4code/concrete");
-    output = Path.of("target/codeAdapter/evaluation/testcase_2_cd4code/");
+    output = temporaryDirectory.resolve("testcase_2_cd4code");
     CD4CodeMill.init();
     adapterParams =
         Set.of(NAME_MATCHING, ANNOTATION_MATCHING, INFIX_MATCHING, IGNORE_NON_MATCHED_VAR);
@@ -36,8 +33,8 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
   }
 
   @Test
-  @DisplayName("Evaluation Code Adapter Case Study 2 CD4Code")
-  public void adaptsAssociationRoleUsageAndGeneratesRoleField() {
+  @DisplayName("Evaluation Code Adapter Case Study 2 without concrete Java")
+  public void adaptsAssociationRoleUsageWithoutRunningARegularGenerator() {
     Set<String> mappings = Set.of("stud");
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     deleteRecursively(output);
@@ -54,21 +51,17 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
     assertFalse(adaptedStudent.contains("Role role"));
     assertFalse(adaptedStudent.contains("printRoles()"));
 
-    String generatedStudentTop = readFileContent(output, "StudentTOP.java");
-    assertTrue(generatedStudentTop.contains("abstract class StudentTOP"));
-    assertTrue(generatedStudentTop.contains("Set<HiwiRole> roles"));
-    assertFalse(generatedStudentTop.contains("Set<Role>"));
-
+    assertFalse(generatedFileNames(output).contains("StudentTOP.java"));
+    assertFalse(generatedFileNames(output).contains("HiwiRole.java"));
     assertNoAdapterMetadata(output);
-    assertGeneratedJavaCompiles(output);
   }
 
   @Test
-  void suppliedJavaEmptyConcreteDirectoryTriggersGenerationAndPreservesResources()
+  void suppliedJavaEmptyConcreteDirectoryPreservesResourcesWithoutGeneration()
       throws IOException {
-    Path emptyConcrete = Files.createDirectories(tempDir.resolve("concrete"));
+    Path emptyConcrete = Files.createDirectories(temporaryDirectory.resolve("concrete"));
     Files.writeString(emptyConcrete.resolve("settings.txt"), "preserve-me");
-    Path generatedOutput = tempDir.resolve("generated-with-resource");
+    Path generatedOutput = temporaryDirectory.resolve("generated-with-resource");
 
     new CodeAdapter(adapterParams, confParameters)
         .adapt(
@@ -79,22 +72,47 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
             emptyConcrete,
             generatedOutput);
 
-    assertTrue(Files.isRegularFile(generatedOutput.resolve("Concrete/StudentTOP.java")));
+    assertTrue(Files.isRegularFile(generatedOutput.resolve("Concrete/Student.java")));
+    assertFalse(Files.isRegularFile(generatedOutput.resolve("Concrete/StudentTOP.java")));
     assertTrue(Files.isRegularFile(generatedOutput.resolve("settings.txt")));
-    assertGeneratedJavaCompiles(generatedOutput);
   }
 
   @Test
-  void emptyReferenceDirectoryStillGeneratesConcreteModel() throws IOException {
-    Path emptyReference = Files.createDirectories(tempDir.resolve("empty-reference"));
-    Path generatedOutput = tempDir.resolve("model-only-output");
+  void emptyReferenceDirectoryDoesNotGenerateConcreteModel() throws IOException {
+    Path emptyReference = Files.createDirectories(temporaryDirectory.resolve("empty-reference"));
+    Path generatedOutput = temporaryDirectory.resolve("model-only-output");
 
     new CodeAdapter(adapterParams, confParameters)
         .adaptWithoutConcreteCode(
             referenceCD, concreteCD, Set.of("stud"), emptyReference, generatedOutput);
 
-    assertTrue(generatedJavaFiles(generatedOutput).stream().anyMatch(path -> path.endsWith("Student.java")));
-    assertTrue(generatedJavaFiles(generatedOutput).stream().anyMatch(path -> path.endsWith("HiwiRole.java")));
-    assertGeneratedJavaCompiles(generatedOutput);
+    assertTrue(generatedJavaFiles(generatedOutput).isEmpty());
+  }
+
+  @Test
+  void topApiAddsInheritanceAndEmitsAdaptedImplementationAsTop() throws IOException {
+    Path concrete = Files.createDirectories(temporaryDirectory.resolve("top-concrete"));
+    Files.writeString(
+        concrete.resolve("Student.java"), "package Concrete; public class Student {}");
+    Files.writeString(
+        concrete.resolve("StudentTOPTOP.java"),
+        "package Concrete; import java.util.LinkedHashSet; import java.util.Set; "
+            + "public abstract class StudentTOPTOP { "
+            + "protected Set<HiwiRole> roles = new LinkedHashSet<>(); }");
+    Files.writeString(
+        concrete.resolve("HiwiRole.java"),
+        "package Concrete; public class HiwiRole { String name; }");
+    Path topOutput = temporaryDirectory.resolve("top-output");
+
+    new CodeAdapter(adapterParams, confParameters)
+        .adaptWithTopSeparation(
+            referenceCD, concreteCD, Set.of("stud"), refCodePath, concrete, topOutput);
+
+    String handwrittenStudent = readFileContent(topOutput, "Student.java");
+    String adaptedTop = readFileContent(topOutput, "StudentTOP.java");
+    assertTrue(handwrittenStudent.contains("class Student extends StudentTOP"));
+    assertTrue(adaptedTop.contains("class StudentTOP extends StudentTOPTOP"));
+    assertTrue(adaptedTop.contains("printHiwiRoles()"));
+    assertGeneratedJavaCompiles(topOutput);
   }
 }

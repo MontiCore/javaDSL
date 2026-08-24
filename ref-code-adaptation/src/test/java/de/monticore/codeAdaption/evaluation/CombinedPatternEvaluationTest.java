@@ -150,7 +150,7 @@ public class CombinedPatternEvaluationTest extends EvaluationAbstractTest {
     concreteCD = new File(resourcesPath + caseName + "/Concrete.cd");
     refCodePath = Path.of(resourcesPath + caseName + "/adapter");
     conCodePath = Path.of(resourcesPath + caseName + "/concrete");
-    output = Path.of("target/codeAdapter/evaluation/" + caseName);
+    output = temporaryDirectory.resolve(caseName);
 
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     assertDoesNotThrow(

@@ -86,7 +86,8 @@ public class CodeAdapterTool extends CD4CodeTool {
           requiredPath(commandLine, "concrete-code"),
           requiredPath(commandLine, "output"),
           commandLine.hasOption("concretize"),
-          !commandLine.hasOption("no-common-parent"));
+          !commandLine.hasOption("no-common-parent"),
+          !commandLine.hasOption("no-persist-concretized-cd"));
       return 0;
     } catch (ParseException | IllegalArgumentException | CodeAdaptationException exception) {
       Log.warn("Code adaptation failed: " + exception.getMessage());
@@ -126,6 +127,11 @@ public class CodeAdapterTool extends CD4CodeTool {
             .build());
     options.addOption(
         Option.builder().longOpt("concretize").desc("complete the concrete CD first").build());
+    options.addOption(
+        Option.builder()
+            .longOpt("no-persist-concretized-cd")
+            .desc("do not write the concretized CD to the output directory")
+            .build());
     options.addOption(
         Option.builder()
             .longOpt("no-common-parent")

@@ -40,6 +40,10 @@ final class AdaptationWorkspace {
     return concreteSource;
   }
 
+  Path output() {
+    return output;
+  }
+
   void validateReadOnlyInput(Path input, String label) {
     rejectOverlap(label, canonicalPath(input), output);
   }
@@ -60,24 +64,6 @@ final class AdaptationWorkspace {
       return directory;
     } catch (IOException exception) {
       throw new CodeAdaptationException("Could not create mapping workspace", exception);
-    }
-  }
-
-  /**
-   * Creates generator space beside, rather than inside, the staged handwritten-code tree.
-   * Keeping these trees disjoint prevents CD4Code from observing its own output as HWC.
-   */
-  Path createGenerationDirectory(Path stagingDirectory) {
-    Path outputParent = output.getParent();
-    requireContained(outputParent, stagingDirectory);
-    try {
-      Files.createDirectories(outputParent);
-      Path directory = Files.createTempDirectory(outputParent, ".code-generation-");
-      requireContained(outputParent, directory);
-      rejectNestedTemporaryDirectories(stagingDirectory, directory);
-      return directory;
-    } catch (IOException exception) {
-      throw new CodeAdaptationException("Could not create code-generation workspace", exception);
     }
   }
 
@@ -172,19 +158,6 @@ final class AdaptationWorkspace {
     if (!normalizedChild.startsWith(normalizedParent) || normalizedChild.equals(normalizedParent)) {
       throw new IllegalArgumentException(
           "Temporary path escapes its workspace: " + normalizedChild);
-    }
-  }
-
-  private static void rejectNestedTemporaryDirectories(Path first, Path second) {
-    Path normalizedFirst = normalizedPath(first);
-    Path normalizedSecond = normalizedPath(second);
-    if (normalizedFirst.startsWith(normalizedSecond)
-        || normalizedSecond.startsWith(normalizedFirst)) {
-      throw new IllegalArgumentException(
-          "Staging and generation workspaces must be disjoint: "
-              + normalizedFirst
-              + " and "
-              + normalizedSecond);
     }
   }
 

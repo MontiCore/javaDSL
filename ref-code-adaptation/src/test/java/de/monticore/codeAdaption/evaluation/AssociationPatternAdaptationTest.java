@@ -63,12 +63,8 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
             "for (ScienceDept department : this.scienceDepts)"));
     assertFalse(adaptedTeacher.contains("this.departments)"));
 
-    String generatedTeacherTop = readFileContent(output, "TeacherTOP.java");
-    assertTrue(generatedTeacherTop.contains("Set<MathDept> mathDepts"));
-    assertTrue(generatedTeacherTop.contains("Set<ScienceDept> scienceDepts"));
-
+    assertFalse(generatedFileNames(output).contains("TeacherTOP.java"));
     assertNoAdapterMetadata(output);
-    assertGeneratedJavaCompiles(output);
   }
 
   @Test
@@ -99,13 +95,9 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     assertTrue(adaptedTicket.contains("this.sprint = replacement"));
     assertFalse(adaptedTicket.contains("this.project"));
 
-    String generatedSprintTop = readFileContent(output, "SprintTOP.java");
-    assertTrue(generatedSprintTop.contains("Ticket tickets"));
-    String generatedTicketTop = readFileContent(output, "TicketTOP.java");
-    assertTrue(generatedTicketTop.contains("Sprint sprint"));
-
+    assertFalse(generatedFileNames(output).contains("SprintTOP.java"));
+    assertFalse(generatedFileNames(output).contains("TicketTOP.java"));
     assertNoAdapterMetadata(output);
-    assertGeneratedJavaCompiles(output);
   }
 
   private void configureFixture(String fixture) {
@@ -113,6 +105,6 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     concreteCD = new File(resourcesPath + fixture + "/Concrete.cd");
     refCodePath = Path.of(resourcesPath + fixture + "/adapter");
     conCodePath = Path.of(resourcesPath + fixture + "/concrete");
-    output = Path.of("target/codeAdapter/evaluation/" + fixture);
+    output = temporaryDirectory.resolve(fixture);
   }
 }

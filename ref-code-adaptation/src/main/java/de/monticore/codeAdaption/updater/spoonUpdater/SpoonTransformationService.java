@@ -24,6 +24,8 @@ import spoon.refactoring.CtRenameGenericVariableRefactoring;
 import spoon.refactoring.Refactoring;
 import spoon.reflect.code.CtFieldAccess;
 import spoon.reflect.code.CtLocalVariable;
+import spoon.reflect.code.CtThisAccess;
+import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
@@ -115,13 +117,41 @@ final class SpoonTransformationService {
       return;
     }
     CtType<?> owner = resolver.getSpoonType(sourceType);
+    CtField<?> ownerField = owner.getField(sourceRole);
     for (CtFieldAccess<?> access : owner.getElements(new TypeFilter<>(CtFieldAccess.class))) {
       if (access.getParent(CtType.class) == owner
           && access.getVariable() != null
-          && sourceRole.equals(access.getVariable().getSimpleName())) {
+          && sourceRole.equals(access.getVariable().getSimpleName())
+          && targetsOwnerField(access, owner, ownerField)) {
         access.getVariable().setSimpleName(concreteRole);
       }
     }
+  }
+
+  /**
+   * Returns whether a field access denotes the selected owner's role rather than an equally named
+   * field on another receiver.
+   */
+  private static boolean targetsOwnerField(
+      CtFieldAccess<?> access, CtType<?> owner, CtField<?> ownerField) {
+    if (access.getTarget() == null || access.getTarget() instanceof CtThisAccess<?>) {
+      return true;
+    }
+    CtField<?> declaration = access.getVariable().getDeclaration();
+    if (declaration != null) {
+      return declaration == ownerField
+          || (declaration.getDeclaringType() != null
+              && declaration.getDeclaringType().getQualifiedName().equals(owner.getQualifiedName()));
+    }
+    CtTypeReference<?> declaringType = access.getVariable().getDeclaringType();
+    if (declaringType != null
+        && declaringType.getQualifiedName() != null
+        && !declaringType.getQualifiedName().isBlank()) {
+      return declaringType.getQualifiedName().equals(owner.getQualifiedName());
+    }
+    // Do not apply a lexical-name fallback to another receiver: its equally named field may belong
+    // to an unrelated type.
+    return false;
   }
 
   void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName) {

@@ -4,7 +4,17 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTImportDeclaration;
+import de.monticore.java.javadsl._ast.ASTMCArrayType;
+import de.monticore.java.javadsl._ast.ASTMCBasicGenericType;
+import de.monticore.java.javadsl._ast.ASTMCQualifiedType;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
+import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
+import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
+import de.monticore.types.mccollectiontypes._ast.ASTMCListType;
+import de.monticore.types.mccollectiontypes._ast.ASTMCMapType;
+import de.monticore.types.mccollectiontypes._ast.ASTMCOptionalType;
+import de.monticore.types.mccollectiontypes._ast.ASTMCSetType;
+import de.monticore.types.mccollectiontypes._visitor.MCCollectionTypesVisitor2;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Projects non-{@code java.lang} imports from reference and concrete class diagrams into
@@ -80,12 +89,12 @@ public final class CDImportProjector {
           unit.getTypeDeclarationList().stream()
               .map(type -> type.getName())
               .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-      String sourceWithoutImports = sourceWithoutImports(unit);
+      Set<String> unqualifiedTypeUses = unqualifiedTypeUses(unit);
       for (Map.Entry<String, List<Map.Entry<ImportKey, ASTImportDeclaration>>> candidates :
           explicitImports.entrySet()) {
         String simpleName = candidates.getKey();
         if (declaredTypeNames.contains(simpleName)
-            || !usesUnqualifiedName(sourceWithoutImports, simpleName)) {
+            || !unqualifiedTypeUses.contains(simpleName)) {
           continue;
         }
 
@@ -145,19 +154,64 @@ public final class CDImportProjector {
             + qualifiedNames);
   }
 
-  private static String sourceWithoutImports(ASTOrdinaryCompilationUnit unit) {
-    ASTOrdinaryCompilationUnit clone = unit.deepClone();
-    clone.clearImportDeclarations();
-    return JavaLoader.print(clone);
+  /**
+   * Collects simple names from Java type nodes rather than from identifier-shaped source text.
+   * This distinguishes a type use such as {@code Customer value} from a field or method named
+   * {@code Customer}, while still covering types nested in arrays and generic arguments.
+   */
+  private static Set<String> unqualifiedTypeUses(ASTOrdinaryCompilationUnit unit) {
+    Set<String> typeNames = new LinkedHashSet<>();
+    JavaDSLVisitor2 collector =
+        new JavaDSLVisitor2() {
+          @Override
+          public void visit(ASTMCQualifiedType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+
+          @Override
+          public void visit(ASTMCBasicGenericType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+
+          @Override
+          public void visit(ASTMCArrayType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+        };
+    MCCollectionTypesVisitor2 collectionTypeCollector =
+        new MCCollectionTypesVisitor2() {
+          @Override
+          public void visit(ASTMCListType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+
+          @Override
+          public void visit(ASTMCMapType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+
+          @Override
+          public void visit(ASTMCOptionalType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+
+          @Override
+          public void visit(ASTMCSetType type) {
+            collectUnqualifiedTypeNames(JavaSourceNames.printQualifiedType(type), typeNames);
+          }
+        };
+    JavaDSLTraverser traverser = JavaDSLMill.traverser();
+    traverser.add4JavaDSL(collector);
+    traverser.add4MCCollectionTypes(collectionTypeCollector);
+    unit.accept(traverser);
+    return typeNames;
   }
 
-  private static boolean usesUnqualifiedName(String source, String simpleName) {
-    Pattern unqualifiedIdentifier =
-        Pattern.compile(
-            "(?<![\\p{Alnum}_$\\.])"
-                + Pattern.quote(simpleName)
-                + "(?![\\p{Alnum}_$])");
-    return unqualifiedIdentifier.matcher(source).find();
+  private static void collectUnqualifiedTypeNames(String printedType, Set<String> typeNames) {
+    JavaSourceNames.typeReferences(printedType).stream()
+        .filter(reference -> !reference.qualified())
+        .map(JavaSourceNames.TypeReferenceName::simpleName)
+        .forEach(typeNames::add);
   }
 
   private static Map<ImportKey, ASTImportDeclaration> parseImports(
@@ -223,9 +277,13 @@ public final class CDImportProjector {
     }
 
     private boolean isJavaLang() {
-      return wildcard
-          ? "java.lang".equals(qualifiedName)
-          : qualifiedName.startsWith("java.lang.");
+      if (wildcard) {
+        return "java.lang".equals(qualifiedName);
+      }
+      String prefix = "java.lang.";
+      return qualifiedName.startsWith(prefix)
+          && !qualifiedName.substring(prefix.length()).contains(".");
     }
   }
+
 }

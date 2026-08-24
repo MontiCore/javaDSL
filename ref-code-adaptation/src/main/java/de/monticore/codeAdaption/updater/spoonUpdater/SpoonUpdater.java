@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import spoon.reflect.declaration.CtType;
 
 /** Spoon-backed facade for loading, transforming, generating and printing Java source code. */
 public class SpoonUpdater implements CodeUpdater {
@@ -52,6 +53,11 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   @Override
+  public void cleanCode(Path codePath, Map<String, String> topToPublicSelfTypes) {
+    workspace.clean(codePath, topToPublicSelfTypes);
+  }
+
+  @Override
   public void setGroupingMappings(Map<String, String> mappings) {
     transformations.setGroupingMappings(mappings);
   }
@@ -65,6 +71,33 @@ public class SpoonUpdater implements CodeUpdater {
   public void registerMethodRewrite(
       StableElementKey referenceMethod, StableElementKey concreteMethod) {
     executableRepairs.registerMethodRewrite(referenceMethod, concreteMethod);
+  }
+
+  @Override
+  public void registerMethodRewrite(
+      ASTTypeDeclaration sourceOwner,
+      StableElementKey referenceMethod,
+      StableElementKey concreteMethod) {
+    CtType<?> sourceType = elementResolver.getSpoonType(sourceOwner);
+    String referenceOwnerIdentity = sourceType.getQualifiedName();
+    String concreteOwnerIdentity = concreteOwnerIdentity(sourceType, concreteMethod);
+    executableRepairs.registerMethodRewrite(
+        referenceMethod.withOwnerType(referenceOwnerIdentity),
+        concreteMethod.withOwnerType(concreteOwnerIdentity));
+  }
+
+  private static String concreteOwnerIdentity(
+      CtType<?> sourceType, StableElementKey concreteMethod) {
+    String requestedOwner = concreteMethod.getOwnerType().orElse(sourceType.getSimpleName());
+    if (requestedOwner.contains(".") || requestedOwner.contains("$")) {
+      return requestedOwner;
+    }
+    if (sourceType.getDeclaringType() != null) {
+      return sourceType.getDeclaringType().getQualifiedName() + "$" + requestedOwner;
+    }
+    String packageName =
+        sourceType.getPackage() == null ? "" : sourceType.getPackage().getQualifiedName();
+    return packageName.isEmpty() ? requestedOwner : packageName + "." + requestedOwner;
   }
 
   @Override

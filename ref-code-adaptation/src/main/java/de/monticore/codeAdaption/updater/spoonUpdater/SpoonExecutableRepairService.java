@@ -52,7 +52,22 @@ final class SpoonExecutableRepairService {
 
   /** Registers an owner- and signature-aware reference-method to concrete-method rewrite. */
   void registerMethodRewrite(StableElementKey reference, StableElementKey concrete) {
-    rewriteRegistry.registerRewrite(reference, concrete);
+    rewriteRegistry.registerRewrite(
+        qualifyUniqueModelOwner(reference), qualifyUniqueModelOwner(concrete));
+  }
+
+  private StableElementKey qualifyUniqueModelOwner(StableElementKey key) {
+    String owner = key.getOwnerType().orElse(null);
+    if (owner == null || owner.contains(".")) {
+      return key;
+    }
+    List<String> matches =
+        workspace.model().getAllTypes().stream()
+            .filter(type -> owner.equals(type.getSimpleName()))
+            .map(CtType::getQualifiedName)
+            .distinct()
+            .toList();
+    return matches.size() == 1 ? key.withOwnerType(matches.get(0)) : key;
   }
 
   /**
@@ -109,7 +124,7 @@ final class SpoonExecutableRepairService {
     try {
       CtTypeReference<?> declaringType = invocation.getExecutable().getDeclaringType();
       if (declaringType != null && owner != null) {
-        return sameTypeName(declaringType.getQualifiedName(), owner.getQualifiedName());
+        return sameOwnerTypeName(declaringType.getQualifiedName(), owner.getQualifiedName());
       }
     } catch (RuntimeException ignored) {
       // Unresolved inherited calls are handled by the lexical owner fallback below.
@@ -118,12 +133,12 @@ final class SpoonExecutableRepairService {
     if (lexicalOwner == null || owner == null) {
       return false;
     }
-    if (sameTypeName(lexicalOwner.getQualifiedName(), owner.getQualifiedName())) {
+    if (sameOwnerTypeName(lexicalOwner.getQualifiedName(), owner.getQualifiedName())) {
       return true;
     }
     CtTypeReference<?> superclass = lexicalOwner.getSuperclass();
     return superclass != null
-        && sameTypeName(superclass.getQualifiedName(), owner.getQualifiedName());
+        && sameOwnerTypeName(superclass.getQualifiedName(), owner.getQualifiedName());
   }
 
   /**
@@ -253,25 +268,15 @@ final class SpoonExecutableRepairService {
   }
 
   /** Does not equate distinct known qualified types that merely share a simple name. */
-  private static boolean sameArgumentType(
+  private boolean sameArgumentType(
       CtTypeReference<?> actual, CtTypeReference<?> expected, String expectedSource) {
     if (actual == null || expected == null) {
       return false;
     }
-    String actualName = resolvedQualifiedName(actual);
-    String expectedName = resolvedQualifiedName(expected);
-    if (expectedSource != null && expectedSource.contains(".")) {
-      return actualName.equals(expectedName)
-          && sameNormalizedTypeShape(actual, expected);
-    }
-    return sameNormalizedTypeShape(actual, expected);
-  }
-
-  /** Compares complete type shapes while intentionally ignoring package qualification. */
-  private static boolean sameNormalizedTypeShape(
-      CtTypeReference<?> actual, CtTypeReference<?> expected) {
-    return JavaSourceNames.normalizeType(actual.toString())
-        .equals(JavaSourceNames.normalizeType(expected.toString()));
+    String actualIdentity = canonicalWorkspaceType(actual.toString());
+    String expectedIdentity =
+        canonicalWorkspaceType(expectedSource == null ? expected.toString() : expectedSource);
+    return actualIdentity.equals(expectedIdentity);
   }
 
   private static String resolvedQualifiedName(CtTypeReference<?> type) {
@@ -317,6 +322,10 @@ final class SpoonExecutableRepairService {
       return matches.get(0);
     }
     if (matches.size() > 1) {
+      StableElementKey first = matches.get(0);
+      if (matches.stream().allMatch(first::sameSignatureIgnoringReturn)) {
+        return first;
+      }
       throw new IllegalStateException(
           "Ambiguous method rewrite for '"
               + methodName
@@ -329,7 +338,7 @@ final class SpoonExecutableRepairService {
   }
 
   /** Returns whether an invocation owner matches the reference, concrete, or grouping owner. */
-  private static boolean ownerMatches(
+  private boolean ownerMatches(
       String owner,
       StableElementKey reference,
       StableElementKey concrete,
@@ -341,20 +350,31 @@ final class SpoonExecutableRepairService {
     String referenceOwner = reference.getOwnerType().orElse(null);
     String concreteOwner = concrete.getOwnerType().orElse(null);
     String groupedOwner = groupingMappings.get(concreteOwner);
-    return sameTypeName(owner, referenceOwner)
-        || sameTypeName(owner, concreteOwner)
-        || sameTypeName(owner, groupedOwner);
+    if (groupedOwner == null && concreteOwner != null) {
+      groupedOwner = groupingMappings.get(JavaSourceNames.simpleName(concreteOwner));
+    }
+    if (groupedOwner != null
+        && !groupedOwner.contains(".")
+        && concreteOwner != null
+        && concreteOwner.contains(".")) {
+      groupedOwner =
+          concreteOwner.substring(0, concreteOwner.lastIndexOf('.') + 1) + groupedOwner;
+    }
+    return sameOwnerTypeName(owner, referenceOwner)
+        || sameOwnerTypeName(owner, concreteOwner)
+        || sameOwnerTypeName(owner, groupedOwner);
   }
 
   /** Compares normalized parameter types, treating unknown actual argument types as compatible. */
-  private static boolean signatureMatches(List<String> expected, List<String> actual) {
+  private boolean signatureMatches(List<String> expected, List<String> actual) {
     if (expected.size() != actual.size()) {
       return false;
     }
     for (int index = 0; index < expected.size(); index++) {
       String actualType = actual.get(index);
       if (actualType != null
-          && !sameTypeName(JavaSourceNames.normalizeType(expected.get(index)), actualType)) {
+          && !canonicalWorkspaceType(expected.get(index))
+              .equals(canonicalWorkspaceType(actualType))) {
         return false;
       }
     }
@@ -374,7 +394,7 @@ final class SpoonExecutableRepairService {
       result.add(
           qualifiedName == null || qualifiedName.isBlank() || qualifiedName.startsWith("<")
               ? null
-              : JavaSourceNames.normalizeType(qualifiedName));
+              : JavaSourceNames.canonicalType(type.toString()));
     }
     return result;
   }
@@ -396,23 +416,38 @@ final class SpoonExecutableRepairService {
    * enclosing type.
    */
   private static String ownerName(CtInvocation<?> invocation) {
+    String executableOwner = null;
     try {
       if (invocation.getExecutable() != null
           && invocation.getExecutable().getDeclaringType() != null) {
-        return invocation.getExecutable().getDeclaringType().getQualifiedName();
+        executableOwner = invocation.getExecutable().getDeclaringType().getQualifiedName();
       }
     } catch (RuntimeException ignored) {
       // Spoon may not resolve declaring types in no-classpath mode.
     }
+    String targetOwner = null;
     try {
       if (invocation.getTarget() != null && invocation.getTarget().getType() != null) {
-        return invocation.getTarget().getType().getQualifiedName();
+        targetOwner = invocation.getTarget().getType().getQualifiedName();
       }
     } catch (RuntimeException ignored) {
       // Fall through to the lexical owner.
     }
+    if (isQualifiedOwner(targetOwner) && !isQualifiedOwner(executableOwner)) {
+      return targetOwner;
+    }
+    if (executableOwner != null && !executableOwner.isBlank()) {
+      return executableOwner;
+    }
+    if (targetOwner != null && !targetOwner.isBlank()) {
+      return targetOwner;
+    }
     CtType<?> parent = invocation.getParent(CtType.class);
     return parent == null ? null : parent.getQualifiedName();
+  }
+
+  private static boolean isQualifiedOwner(String owner) {
+    return owner != null && owner.contains(".");
   }
 
   /** Removes bodies from non-default, non-static, non-private interface methods. */
@@ -431,13 +466,65 @@ final class SpoonExecutableRepairService {
     }
   }
 
-  /** Compares qualified names when available and otherwise accepts equal simple type names. */
-  private static boolean sameTypeName(String first, String second) {
+  /**
+   * Compares executable owners exactly. An unqualified no-classpath owner is resolved only when the
+   * loaded model proves that its simple name identifies one declaration.
+   */
+  private boolean sameOwnerTypeName(String first, String second) {
     if (first == null || second == null) {
       return false;
     }
-    return first.equals(second)
-        || JavaSourceNames.simpleName(first).equals(JavaSourceNames.simpleName(second));
+    String normalizedFirst = first.replace('$', '.');
+    String normalizedSecond = second.replace('$', '.');
+    if (normalizedFirst.contains(".") && normalizedSecond.contains(".")) {
+      return normalizedFirst.equals(normalizedSecond);
+    }
+    String simpleFirst = JavaSourceNames.simpleName(normalizedFirst);
+    String simpleSecond = JavaSourceNames.simpleName(normalizedSecond);
+    if (!simpleFirst.equals(simpleSecond)) {
+      return false;
+    }
+    List<String> modelOwners =
+        workspace.model().getAllTypes().stream()
+            .filter(type -> simpleFirst.equals(type.getSimpleName()))
+            .map(CtType::getQualifiedName)
+            .distinct()
+            .toList();
+    if (modelOwners.size() != 1) {
+      return false;
+    }
+    String resolved = modelOwners.get(0).replace('$', '.');
+    return (!normalizedFirst.contains(".") || resolved.equals(normalizedFirst))
+        && (!normalizedSecond.contains(".") || resolved.equals(normalizedSecond));
+  }
+
+  /** Resolves unqualified type leaves only from unique model declarations or direct java.lang. */
+  private String canonicalWorkspaceType(String source) {
+    return JavaSourceNames.canonicalType(
+        JavaSourceNames.replaceTypeNames(
+            source,
+            reference -> {
+              if (reference.qualified()) {
+                return Optional.empty();
+              }
+              List<String> modelTypes =
+                  workspace.model().getAllTypes().stream()
+                      .filter(type -> reference.simpleName().equals(type.getSimpleName()))
+                      .map(CtType::getQualifiedName)
+                      .distinct()
+                      .toList();
+              if (modelTypes.size() == 1) {
+                return Optional.of(modelTypes.get(0));
+              }
+              String javaLang = "java.lang." + reference.simpleName();
+              try {
+                Class.forName(
+                    javaLang, false, SpoonExecutableRepairService.class.getClassLoader());
+                return Optional.of(javaLang);
+              } catch (ClassNotFoundException | LinkageError ignored) {
+                return Optional.empty();
+              }
+            }));
   }
 
   /** Method declaration and invocations resolved to it before the rename. */

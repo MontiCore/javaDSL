@@ -107,15 +107,29 @@ public final class MatcherHelper {
         Comparator.comparingInt((ISymbol symbol) -> symbol.getName().length()).reversed());
     for (ISymbol infixSymbol : orderedInfixes) {
       String infix = infixSymbol.getName();
-      if (name.contains(infix)) {
-        template = template.replace(infix, SIMPLE_PLACE_HOLDER);
+      if (infix.isEmpty()) {
+        continue;
       }
-      if (name.contains(capFirst(infix))) {
-        template = template.replace(capFirst(infix), CAP_FIRST_PLACE_HOLDER);
+      StringBuilder replaced = new StringBuilder(template.length());
+      int position = 0;
+      while (position < template.length()) {
+        if (position + infix.length() > template.length()
+            || !template.regionMatches(true, position, infix, 0, infix.length())) {
+          replaced.append(template.charAt(position));
+          position++;
+          continue;
+        }
+        String matched = template.substring(position, position + infix.length());
+        String placeholder =
+            matched.equals(uncapFirst(infix)) && !matched.equals(infix)
+                ? UNCAP_FIRST_PLACE_HOLDER
+                : matched.equals(capFirst(infix)) && !matched.equals(infix)
+                    ? CAP_FIRST_PLACE_HOLDER
+                    : SIMPLE_PLACE_HOLDER;
+        replaced.append(placeholder);
+        position += infix.length();
       }
-      if (name.contains(uncapFirst(infix))) {
-        template = template.replace(uncapFirst(infix), UNCAP_FIRST_PLACE_HOLDER);
-      }
+      template = replaced.toString();
     }
     return template;
   }

@@ -22,7 +22,7 @@ public class CodeAdapterTestCase1 extends EvaluationAbstractTest {
     concreteCD = new File(resourcesPath + "testcase_1/Concrete.cd");
     refCodePath = Path.of(resourcesPath + "testcase_1/reference");
     conCodePath = Path.of(resourcesPath + "testcase_1/concrete");
-    output = Path.of("target/codeAdapter/evaluation/testcase_1/");
+    output = temporaryDirectory.resolve("testcase_1");
     initMills();
     deleteRecursively(output);
     adapterParams =

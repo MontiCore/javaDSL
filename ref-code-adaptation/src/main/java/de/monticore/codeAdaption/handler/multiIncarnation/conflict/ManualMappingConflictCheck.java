@@ -6,10 +6,8 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 final class ManualMappingConflictCheck implements AdaptationConflictCheck {
 
@@ -155,29 +153,20 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
     if (!context.useCommonParentForMultipleIncarnations()) {
       return false;
     }
-    boolean referenceClassConcreteInterface =
-        reference instanceof ASTCDClass && concrete instanceof ASTCDInterface;
-    boolean referenceInterfaceConcreteClass =
-        reference instanceof ASTCDInterface && concrete instanceof ASTCDClass;
-    if (referenceClassConcreteInterface) {
-      return true;
+    if (reference instanceof ASTCDClass && concrete instanceof ASTCDInterface) {
+      long implementers =
+          context.concreteIndex().classes().stream()
+              .filter(type -> context.concreteIndex().isSubtypeOf(type.getName(), concrete.getName()))
+              .count();
+      return implementers > 1;
     }
-    if (!referenceInterfaceConcreteClass) {
+    if (!(reference instanceof ASTCDInterface) || !(concrete instanceof ASTCDClass)) {
       return false;
     }
-    if (incarnationContext.getGroupingFor(StableElementKey.type(concrete.getName())).isPresent()) {
-      return true;
-    }
-    Set<String> mappedConcreteTypes = new LinkedHashSet<>();
-    for (var incarnation : incarnationContext.getIncarnations(referenceKey)) {
-      mappedConcreteTypes.add(incarnation.key().getName());
-    }
-    for (String parentName : context.concreteParentNames(concrete)) {
-      if (mappedConcreteTypes.contains(parentName)) {
-        return true;
-      }
-    }
-    return !context.concreteParentNames(concrete).isEmpty();
+    return incarnationContext.getIncarnations(referenceKey).size() > 1
+        && incarnationContext
+            .getGroupingFor(StableElementKey.type(concrete.getName()))
+            .isPresent();
   }
 
   private void validateFieldTargets(

@@ -2,22 +2,24 @@ package de.monticore.codeAdaption;
 
 import de.monticore.codeAdaption.updater.CodeUpdater;
 import de.monticore.codeAdaption.updater.CodeUpdaterMill;
+import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
+import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Handles final generated-source cleanup and inclusion of pre-existing concrete handwritten files.
  *
  * <p>Adapted files are already present in the staging output. Concrete handwritten files are added
- * only when no adapted file occupies their target path, so adapted output wins without overwriting
- * the user's concrete source tree.
+ * without overwriting the user's source tree. Multi-type Java units are split by declaration and
+ * merged into an existing staged target with the staged output taking precedence.
  */
 final class OutputCodeService {
 
@@ -27,8 +29,8 @@ final class OutputCodeService {
    * <p>Java files are placed according to their declared package rather than their input folder.
    * For example, {@code misc/Port.java} declaring {@code package shipping;} targets {@code
    * shipping/Port.java}. Non-Java files preserve their path relative to {@code conHwcPath}. If two
-   * inputs target the same output path, identical content is deduplicated and differing content is
-   * rejected.
+   * inputs target the same output path, identical single-file content is deduplicated and
+   * overlapping declarations are rejected.
    */
   void copyConcreteFiles(Path conHwcPath, Path outputPath) {
     if (!Files.exists(conHwcPath)) {
@@ -41,23 +43,38 @@ final class OutputCodeService {
     }
     try (var paths = Files.walk(conHwcPath)) {
       Map<Path, Path> sourcesByTarget = new LinkedHashMap<>();
+      Map<Path, ASTOrdinaryCompilationUnit> splitJavaByTarget = new LinkedHashMap<>();
+      Map<Path, Path> ownersByTarget = new LinkedHashMap<>();
       for (Path source :
           paths
               .filter(Files::isRegularFile)
               .sorted(java.util.Comparator.comparing(Path::toString))
               .toList()) {
-        Path target = concreteCopyTarget(conHwcPath, source, outputPath).toAbsolutePath().normalize();
-        Path existingSource = sourcesByTarget.putIfAbsent(target, source);
-        if (existingSource != null && Files.mismatch(existingSource, source) != -1L) {
-          throw new IllegalStateException(
-              "Concrete files '"
-                  + existingSource
-                  + "' and '"
-                  + source
-                  + "' both target '"
-                  + target
-                  + "' but have different content");
+        if (source.toString().endsWith(".java")) {
+          ASTOrdinaryCompilationUnit unit = loadConcreteJava(source);
+          if (unit.getTypeDeclarationList().size() > 1) {
+            for (ASTTypeDeclaration type : unit.getTypeDeclarationList()) {
+              ASTOrdinaryCompilationUnit split = compilationUnitForType(unit, type.getName());
+              Path target =
+                  concreteTypeTarget(split, type.getName(), outputPath)
+                      .toAbsolutePath()
+                      .normalize();
+              registerUniqueTarget(ownersByTarget, target, source);
+              splitJavaByTarget.put(target, split);
+            }
+            continue;
+          }
         }
+        Path target = concreteCopyTarget(conHwcPath, source, outputPath).toAbsolutePath().normalize();
+        Path existingSource = ownersByTarget.putIfAbsent(target, source);
+        if (existingSource != null) {
+          if (!splitJavaByTarget.containsKey(target)
+              && Files.mismatch(existingSource, source) == -1L) {
+            continue;
+          }
+          throw targetCollision(existingSource, source, target);
+        }
+        sourcesByTarget.put(target, source);
       }
       for (Map.Entry<Path, Path> entry : sourcesByTarget.entrySet()) {
         Path target = entry.getKey();
@@ -67,79 +84,91 @@ final class OutputCodeService {
           Files.copy(source, target);
         }
       }
+      for (Map.Entry<Path, ASTOrdinaryCompilationUnit> entry : splitJavaByTarget.entrySet()) {
+        Path target = entry.getKey();
+        Files.createDirectories(target.getParent());
+        ASTOrdinaryCompilationUnit concreteFragment = entry.getValue();
+        ASTOrdinaryCompilationUnit finalUnit =
+            Files.exists(target)
+                ? AdapterUtils.mergeAstsPreferringLeft(
+                    JavaLoader.loadJava(target.toFile()), concreteFragment)
+                : concreteFragment;
+        JavaLoader.printAST(Set.of(finalUnit), outputPath);
+      }
     } catch (IOException e) {
       throw new IllegalStateException("Failed to include concrete handwritten code", e);
     }
   }
 
-  /**
-   * Adds generated Java sources to the staged output without replacing handwritten code.
-   *
-   * <p>Targets are derived from declared packages and traversed deterministically. Two generated
-   * sources that claim the same target must be byte-identical; a differing pair is rejected.
-   * Existing staged files are authoritative HWC and are retained when generator output differs.
-   */
-  void mergeGeneratedFiles(Path generatedSourceRoot, Path stagingRoot) {
-    Path normalizedGeneratedRoot = generatedSourceRoot.toAbsolutePath().normalize();
-    Path normalizedStagingRoot = stagingRoot.toAbsolutePath().normalize();
-    if (!Files.isDirectory(normalizedGeneratedRoot)) {
-      throw new CodeAdaptationException(
-          "Generated source directory does not exist: " + normalizedGeneratedRoot);
-    }
-    try {
-      Files.createDirectories(normalizedStagingRoot);
-      Map<Path, Path> generatedSourcesByTarget = new LinkedHashMap<>();
-      try (var paths = Files.walk(normalizedGeneratedRoot)) {
-        for (Path source :
-            paths
-                .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().endsWith(".java"))
-                .sorted(Comparator.comparing(Path::toString))
-                .toList()) {
-          Path target =
-              javaPackageTarget(source, normalizedStagingRoot)
-                  .toAbsolutePath()
-                  .normalize();
-          requireContained(normalizedStagingRoot, target);
-          Path existingGeneratedSource = generatedSourcesByTarget.putIfAbsent(target, source);
-          if (existingGeneratedSource != null
-              && Files.mismatch(existingGeneratedSource, source) != -1L) {
-            throw new CodeAdaptationException(
-                "Generated files '"
-                    + existingGeneratedSource
-                    + "' and '"
-                    + source
-                    + "' both target '"
-                    + target
-                    + "' but have different content");
-          }
-        }
-      }
-
-      for (Map.Entry<Path, Path> entry : generatedSourcesByTarget.entrySet()) {
-        Path target = entry.getKey();
-        Path source = entry.getValue();
-        Files.createDirectories(target.getParent());
-        if (!Files.exists(target)) {
-          Files.copy(source, target);
-        }
-        // A staged file is authoritative handwritten code. Identical generated content is simply
-        // deduplicated; differing generated content must never overwrite it.
-      }
-    } catch (IOException exception) {
-      throw new CodeAdaptationException("Failed to merge generated Java sources", exception);
-    }
-  }
-
   /** Removes adapter-only annotations/imports and performs the updater's final source cleanup. */
   void cleanCode(Path codePath) {
+    cleanCode(codePath, Map.of());
+  }
+
+  /** Cleans final Java and applies self-type bindings recorded by TOP composition. */
+  void cleanCode(Path codePath, Map<String, String> topToPublicSelfTypes) {
     CodeUpdaterMill.reset();
     try {
       CodeUpdater updater = CodeUpdaterMill.getUpdater();
-      updater.cleanCode(codePath);
+      updater.cleanCode(codePath, topToPublicSelfTypes);
     } finally {
       CodeUpdaterMill.reset();
     }
+  }
+
+  private ASTOrdinaryCompilationUnit loadConcreteJava(Path source) {
+    try {
+      return JavaLoader.loadJava(source.toFile());
+    } catch (RuntimeException | AssertionError parseFailure) {
+      throw new IllegalStateException(
+          "Failed to determine declarations in concrete Java file " + source, parseFailure);
+    }
+  }
+
+  private ASTOrdinaryCompilationUnit compilationUnitForType(
+      ASTOrdinaryCompilationUnit source, String typeName) {
+    ASTOrdinaryCompilationUnit split = source.deepClone();
+    for (ASTTypeDeclaration type :
+        new java.util.ArrayList<>(split.getTypeDeclarationList())) {
+      if (!type.getName().equals(typeName)) {
+        split.removeTypeDeclaration(type);
+      }
+    }
+    return split;
+  }
+
+  private Path concreteTypeTarget(
+      ASTOrdinaryCompilationUnit unit, String typeName, Path outputPath) {
+    if (unit.isPresentPackageDeclaration()) {
+      Path packagePath =
+          Path.of(
+              unit.getPackageDeclaration()
+                  .getMCQualifiedName()
+                  .getQName()
+                  .replace('.', File.separatorChar));
+      return outputPath.resolve(packagePath).resolve(typeName + ".java");
+    }
+    return outputPath.resolve(typeName + ".java");
+  }
+
+  private void registerUniqueTarget(
+      Map<Path, Path> ownersByTarget, Path target, Path source) {
+    Path existingSource = ownersByTarget.putIfAbsent(target, source);
+    if (existingSource != null) {
+      throw targetCollision(existingSource, source, target);
+    }
+  }
+
+  private IllegalStateException targetCollision(
+      Path existingSource, Path source, Path target) {
+    return new IllegalStateException(
+        "Concrete files '"
+            + existingSource
+            + "' and '"
+            + source
+            + "' both target '"
+            + target
+            + "' but declare overlapping Java output");
   }
 
   private Path concreteCopyTarget(Path conHwcPath, Path source, Path outputPath) {
@@ -164,28 +193,4 @@ final class OutputCodeService {
     return outputPath.resolve(conHwcPath.relativize(source));
   }
 
-  private Path javaPackageTarget(Path source, Path outputRoot) {
-    try {
-      ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(source.toFile());
-      if (ast.isPresentPackageDeclaration()) {
-        Path packagePath =
-            Path.of(
-                ast.getPackageDeclaration()
-                    .getMCQualifiedName()
-                    .getQName()
-                    .replace('.', File.separatorChar));
-        return outputRoot.resolve(packagePath).resolve(source.getFileName());
-      }
-      return outputRoot.resolve(source.getFileName());
-    } catch (RuntimeException | AssertionError parseFailure) {
-      throw new CodeAdaptationException(
-          "Failed to determine package for generated Java file " + source, parseFailure);
-    }
-  }
-
-  private static void requireContained(Path parent, Path child) {
-    if (!child.startsWith(parent) || child.equals(parent)) {
-      throw new CodeAdaptationException("Generated source target escapes staging: " + child);
-    }
-  }
 }

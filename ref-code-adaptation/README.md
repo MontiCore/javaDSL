@@ -13,11 +13,12 @@ Required inputs:
 - adapter/reference Java source directory
 - output directory
 
-The API accepts an optional concrete Java source directory. When it is omitted,
-does not exist, or contains no Java files, `CodeAdapter` generates the concrete
-Java baseline from the final concrete CD. A supplied directory that contains
-Java remains authoritative handwritten concrete code. The CLI still requires
-its existing concrete-code argument.
+The API can run without a concrete Java source directory. In that case it emits
+only Java obtained by adapting the reference implementation; it does not run a
+regular model-to-Java generator. `adapt(...)` retains the legacy member-merge
+behavior, while `adaptWithTopSeparation(...)` keeps matching concrete HWC and
+adapted implementations in separate TOP-related classes. The CLI still exposes
+only its existing merge workflow and requires a concrete-code argument.
 
 The class diagrams define which reference classes, fields, and methods incarnate as concrete Java elements. Java code is parsed and transformed with MontiCore JavaDSL and Spoon.
 
@@ -29,22 +30,21 @@ The class diagrams define which reference classes, fields, and methods incarnate
    a staging workspace or changing existing output.
 4. Copy and filter reference adapter code for the active mapping.
 5. Adapt types, fields, methods, parameters, constructor calls, and pattern-derived members.
-6. Merge adapted code with existing concrete code, when present.
-7. Clean staged handwritten Java:
+6. Apply the final API-selected composition:
+   - merge adapted members into concrete HWC for `adapt(...)`, or
+   - keep HWC separate through `Concrete extends ConcreteTOP` for
+     `adaptWithTopSeparation(...)`.
+7. Copy remaining concrete files and clean staged Java:
    - remove `@Adapt` annotations with Spoon
    - remove invalid generated imports through JavaDSL import declarations
    - preserve valid existing imports without inventing imports for unresolved
      simple names
    - keep Spoon as the only whole-file formatter; import cleanup edits only
      import declaration source ranges
-8. If no concrete Java was supplied, serialize the final concrete CD and run
-   CD4Code with the staged adapted code as handwritten code. Merge generated
-   `*TOP.java` companions and model-only declarations without overwriting the
-   staged handwritten implementation.
-9. Clean the combined Java tree and publish the completed staging directory
-   transactionally, restoring the
+8. Publish the completed staging directory transactionally, restoring the
    previous output if publication fails.
-10. Compile and structurally verify generated Java in tests.
+9. Compile and structurally verify generated Java in tests where all external
+   regular-generator dependencies are supplied.
 
 The context-building step depends on the `useConcretization` argument of
 `CodeAdapter.adapt(...)`.
@@ -69,6 +69,37 @@ This mode delegates model repair to cdconcretization before code adaptation:
 
 Use this mode when the concrete CD may need deterministic model-level repair
 before Java adaptation.
+
+#### Persisting the concretized CD
+
+The full adapter APIs accept `persistConcretizedCD` as their final boolean
+argument:
+
+```java
+adapter.adapt(
+    referenceCD,
+    concreteCD,
+    mappings,
+    referenceCodePath,
+    concreteCodePath,
+    outputPath,
+    true,   // run cdconcretization
+    true,   // allow exact common-parent grouping
+    false); // do not persist the concretized CD
+```
+
+When `persistConcretizedCD` is `true`, the working concrete CD is written to the
+output directory under the input concrete CD's filename. It is also written
+when concretization or a later adaptation step fails, so the partial model can
+help diagnose the failure. Set the argument to `false` to suppress both the
+successful-output file and this failure diagnostic. The argument is ignored
+when `useConcretization` is `false`.
+
+Existing overloads without this argument remain available and default to
+persisting the CD. The option applies to `adapt(...)`,
+`adaptWithoutConcreteCode(...)`, and both `adaptWithTopSeparation(...)` forms.
+For the CLI, persistence is enabled with `--concretize` unless
+`--no-persist-concretized-cd` is supplied.
 
 ### `useConcretization=false`
 
@@ -129,17 +160,100 @@ The implementation then follows one transactional pipeline:
 5. Normal isolated mapping passes transform the reference Java. With no
    concrete Java base, this adapted result becomes the staged authoritative
    handwritten code.
-6. `ConcreteCodeGenerationService` serializes the unchanged concrete CD and
-   runs CD4Code in a separate JVM, using the staged adapted Java as HWC.
-   `OutputCodeService` keeps that HWC and adds generated `*TOP.java` companions,
-   association fields, and model-only declarations.
-7. The combined sources are cleaned and published only after the entire run
-   succeeds. Empty reference Java still reaches generation, so the concrete CD
-   alone can produce a model baseline.
+6. The adapted Java is cleaned and published directly. No model-only types,
+   association fields, or generated TOP bases are synthesized. An empty
+   reference Java directory therefore produces no Java output.
 
 R-026 is intentionally a concretization-mode feature. Its transitive
 Java-helper selection is not used by the manual path above; unmatched manual
 helpers must still satisfy the normal manual validation policy.
+
+#### TOP separation
+
+```java
+adapter.adaptWithTopSeparation(
+    referenceCD,
+    concreteCD,
+    mappings,
+    referenceCodePath,
+    concreteCodePath, // omit this argument when no concrete HWC exists
+    outputPath);
+```
+
+TOP decisions are made per adapted concrete type. Without matching HWC, the
+adapted `Concrete` declaration is emitted directly. With matching HWC, the
+adapter emits the implementation as `ConcreteTOP` and adds or retains
+`extends ConcreteTOP` on handwritten `Concrete`. If ordinary adaptation had
+already produced `Concrete extends ConcreteTOP`, the separated implementation
+becomes `ConcreteTOP extends ConcreteTOPTOP`.
+
+The four supported cases can be illustrated by adapting the reference
+`Builder` pattern to the concrete `Person` entity. The adapted pattern type is
+called `PersonBuilder`. The concrete CD containing `Person` is mandatory in
+every case; "concrete HWC" below means optional handwritten Java.
+
+1. **Concrete HWC exists but does not use TOP yet.** The adapted and
+   handwritten declarations would both be named `PersonBuilder`. The adapter
+   moves the adapted implementation to `PersonBuilderTOP` and adds the
+   inheritance relationship to the copied HWC:
+
+   ```java
+   class PersonBuilder extends PersonBuilderTOP { /* concrete HWC */ }
+   class PersonBuilderTOP { /* adapted Builder pattern */ }
+   ```
+
+2. **No concrete HWC exists.** There is no Java-name collision, so the adapted
+   implementation keeps its ordinary name:
+
+   ```java
+   class PersonBuilder { /* adapted Builder pattern */ }
+   ```
+
+3. **Concrete HWC already explicitly uses TOP.** The handwritten Java already
+   contains `extends PersonBuilderTOP`, but normally no corresponding TOP
+   source file exists yet. The adapter retains that relationship and produces
+   the expected class from the adapted pattern implementation:
+
+   ```java
+   class PersonBuilder extends PersonBuilderTOP { /* concrete HWC */ }
+   class PersonBuilderTOP { /* adapted Builder pattern */ }
+   ```
+
+   Unlike case 1, the adapter does not need to add the `extends` clause. If a
+   concrete `PersonBuilderTOP.java` already exists, producing the adapted class
+   with the same identity is rejected as a collision rather than merged or
+   overwritten.
+
+4. **The reference code already uses TOP.** For example, reference HWC may
+   declare `Builder extends BuilderTOP`. Without concrete HWC, adaptation emits
+   `PersonBuilder extends PersonBuilderTOP` unchanged. If concrete HWC also
+   owns `PersonBuilder`, the adapted reference HWC is moved into the middle
+   layer:
+
+   ```java
+   class PersonBuilder extends PersonBuilderTOP { /* concrete HWC */ }
+   class PersonBuilderTOP extends PersonBuilderTOPTOP {
+     /* adapted reference HWC */
+   }
+   ```
+
+   Renaming the adapted declaration to `PersonBuilderTOP` would otherwise
+   create the invalid self-inheritance `PersonBuilderTOP extends
+   PersonBuilderTOP`. The adapter therefore changes that parent reference to
+   `PersonBuilderTOPTOP`. It does not generate the actual
+   `PersonBuilderTOPTOP` class; an external regular generator must supply it.
+
+The adapter renames only the implementation declaration and its constructors;
+ordinary references remain references to public `Concrete`. Fields and methods
+are not merged or compared across the two classes. Consequently, Java's normal
+override, hiding, and type-checking rules apply to the resulting hierarchy.
+Explicit `this` values in an implementation moved to `ConcreteTOP` are emitted
+as `(Concrete) this`. This preserves public self-return types and fluent APIs;
+targets such as `this.field` remain unchanged so they still select the adapted
+TOP member. Exact package-qualified HWC matches also work for generated pattern
+types, such as `PersonBuilder`, that are not declarations in the concrete CD.
+`ConcreteTOPTOP` and other regular-generator artifacts must be supplied
+externally when the selected reference-code structure requires them.
 
 ## Association Adaptation
 
@@ -149,14 +263,15 @@ Associations affect Java through navigable role fields. For example,
 association [1] User -> (roles) Role [*];
 ```
 
-is generated by the CD4Code configuration as a collection-valued
+can be generated by an external CD4Code configuration as a collection-valued
 field comparable to `Set<Role> roles` on `User`. `CodeAdapter` and CD4Code have
 separate responsibilities:
 
 - `CodeAdapter` adapts handwritten Java that uses an association. It updates
   endpoint type references and owner-scoped direct role-field reads or writes,
   such as `this.roles`.
-- CD4Code creates the role-derived fields with `--fieldfromrole navigable`.
+- An external CD4Code invocation can create the role-derived fields with
+  `--fieldfromrole navigable`.
   Association fields are not projected as ordinary CD attributes by
   `CodeAdapter`.
 
@@ -179,9 +294,10 @@ assignments are rewritten only inside that owning Java type.
   once from the reference source snapshot and selects mapping-specific helper
   closures in concretization mode. Ambiguous source-local type resolution is
   rejected deterministically.
-- `ConcreteCodeGenerationService` runs CD4Code in an isolated JVM and workspace when
-  the API receives no concrete Java. `OutputCodeService` merges its result with
-  staged handwritten code, which always has precedence.
+- `TopCodeComposer` analyzes all per-type TOP decisions before modifying cloned
+  ASTs. It adds or deduplicates HWC inheritance, renames only adapted
+  declarations and their constructors, and leaves ordinary references pointing
+  to the public concrete type.
 - `CDTypeRelations` centralizes direct generated-AST access for interfaces,
   superclasses, modifiers, and type-reference printing. Runtime Java reflection
   is not used by the adapter.

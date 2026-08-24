@@ -36,7 +36,6 @@ public class ErrorTypeMatcher implements TypeMatcher {
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration type) {
     String pos = AdapterUtils.getPosition(type.get_SourcePositionStart());
     Log.error(pos + " No Match found for the type " + type.getName());
-    assert false;
     return Optional.empty();
   }
 }

@@ -77,6 +77,25 @@ public final class JavaSourceNames {
     return TypeKey.from(type).render(false, false, false);
   }
 
+  /** Renders a return type, including {@code void}, while preserving qualified names. */
+  public static String printQualifiedReturnType(ASTCDMethod method) {
+    return TypeKey.from(method.getMCReturnType()).render(false, false, false);
+  }
+
+  /**
+   * Parses and deterministically renders a type without discarding package qualification.
+   * Malformed input is returned trimmed so callers can reject it without guessing.
+   */
+  public static String canonicalType(String type) {
+    if (type == null || type.isBlank()) {
+      return "Object";
+    }
+    String trimmed = type.trim();
+    return parseTypeKey(trimmed)
+        .map(key -> key.render(false, false, false))
+        .orElse(trimmed);
+  }
+
   /** Renders the normalized type of a CD attribute. */
   public static String printNormalizedFieldType(ASTCDAttribute attribute) {
     return printNormalizedType(attribute.getMCType());
@@ -130,16 +149,29 @@ public final class JavaSourceNames {
    */
   public static String replaceSimpleTypeNames(
       String rawType, Function<String, Optional<String>> replacementForSimpleName) {
+    return replaceTypeNames(
+        rawType, reference -> replacementForSimpleName.apply(reference.simpleName()));
+  }
+
+  /**
+   * Rewrites named type leaves while exposing their original qualification. This is the preferred
+   * operation for import-aware resolution because an already-qualified leaf must not be rebound by
+   * an unrelated same-simple-name import.
+   */
+  public static String replaceTypeNames(
+      String rawType, Function<TypeReferenceName, Optional<String>> replacementForType) {
     if (rawType == null || rawType.isEmpty()) {
       return rawType;
     }
     Optional<TypeKey> parsed = parseTypeKey(rawType.trim());
     if (parsed.isEmpty()) {
+      String trimmed = rawType.trim();
       Optional<String> replacement =
-          replacementForSimpleName.apply(fallbackSimpleName(rawType.trim()));
+          replacementForType.apply(
+              new TypeReferenceName(trimmed, fallbackSimpleName(trimmed), trimmed.contains(".")));
       return replacement.orElse(rawType);
     }
-    RewriteResult rewritten = parsed.get().rewrite(replacementForSimpleName);
+    RewriteResult rewritten = parsed.get().rewrite(replacementForType);
     return rewritten.changed() ? rewritten.type().render(false, true, false) : rawType;
   }
 
@@ -164,6 +196,28 @@ public final class JavaSourceNames {
     List<TypeReferenceName> references = new ArrayList<>();
     parsed.get().collectReferences(references);
     return List.copyOf(references);
+  }
+
+  /** Parser-derived erasure information for classpath assignability checks. */
+  public record ErasedType(String name, int arrayDimensions, List<String> typeArguments) {}
+
+  /**
+   * Returns the outer named type, array rank, and canonical generic arguments without guessing for
+   * malformed input.
+   */
+  public static Optional<ErasedType> erasedType(String rawType) {
+    if (rawType == null || rawType.isBlank()) {
+      return Optional.empty();
+    }
+    return parseTypeKey(rawType.trim())
+        .map(
+            key ->
+                new ErasedType(
+                    key.name(),
+                    key.arrayDimensions(),
+                    key.arguments().stream()
+                        .map(argument -> argument.render(false, false))
+                        .toList()));
   }
 
   private static Optional<TypeKey> parseTypeKey(String rawType) {
@@ -303,10 +357,13 @@ public final class JavaSourceNames {
       return result.toString();
     }
 
-    private RewriteResult rewrite(Function<String, Optional<String>> replacementForSimpleName) {
+    private RewriteResult rewrite(
+        Function<TypeReferenceName, Optional<String>> replacementForType) {
       boolean changed = false;
       String rewrittenName = name;
-      Optional<String> replacement = replacementForSimpleName.apply(simpleName());
+      Optional<String> replacement =
+          replacementForType.apply(
+              new TypeReferenceName(name, simpleName(), name.contains(".")));
       if (replacement.isPresent()) {
         rewrittenName = replacement.get();
         changed = true;
@@ -314,7 +371,7 @@ public final class JavaSourceNames {
 
       List<TypeArgumentKey> rewrittenArguments = new ArrayList<>();
       for (TypeArgumentKey argument : arguments) {
-        TypeArgumentRewrite rewritten = argument.rewrite(replacementForSimpleName);
+        TypeArgumentRewrite rewritten = argument.rewrite(replacementForType);
         rewrittenArguments.add(rewritten.argument());
         changed |= rewritten.changed();
       }
@@ -383,7 +440,8 @@ public final class JavaSourceNames {
 
     String render(boolean normalizeNames, boolean spaced);
 
-    TypeArgumentRewrite rewrite(Function<String, Optional<String>> replacementForSimpleName);
+    TypeArgumentRewrite rewrite(
+        Function<TypeReferenceName, Optional<String>> replacementForType);
 
     void collectReferences(List<TypeReferenceName> references);
   }
@@ -396,8 +454,8 @@ public final class JavaSourceNames {
 
     @Override
     public TypeArgumentRewrite rewrite(
-        Function<String, Optional<String>> replacementForSimpleName) {
-      RewriteResult rewritten = type.rewrite(replacementForSimpleName);
+        Function<TypeReferenceName, Optional<String>> replacementForType) {
+      RewriteResult rewritten = type.rewrite(replacementForType);
       return new TypeArgumentRewrite(new ConcreteTypeArgument(rewritten.type()), rewritten.changed());
     }
 
@@ -420,11 +478,11 @@ public final class JavaSourceNames {
 
     @Override
     public TypeArgumentRewrite rewrite(
-        Function<String, Optional<String>> replacementForSimpleName) {
+        Function<TypeReferenceName, Optional<String>> replacementForType) {
       if (bound.isEmpty()) {
         return new TypeArgumentRewrite(this, false);
       }
-      RewriteResult rewritten = bound.get().rewrite(replacementForSimpleName);
+      RewriteResult rewritten = bound.get().rewrite(replacementForType);
       return new TypeArgumentRewrite(
           new WildcardTypeArgument(Optional.of(rewritten.type()), upper), rewritten.changed());
     }
@@ -443,8 +501,8 @@ public final class JavaSourceNames {
 
     @Override
     public TypeArgumentRewrite rewrite(
-        Function<String, Optional<String>> replacementForSimpleName) {
-      String rewritten = replaceSimpleTypeNames(raw, replacementForSimpleName);
+        Function<TypeReferenceName, Optional<String>> replacementForType) {
+      String rewritten = replaceTypeNames(raw, replacementForType);
       return new TypeArgumentRewrite(new UnknownTypeArgument(rewritten), !rewritten.equals(raw));
     }
 

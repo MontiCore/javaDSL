@@ -139,6 +139,19 @@ public interface CodeUpdater {
   }
 
   /**
+   * Cleans generated Java and repairs explicit self values moved into TOP implementations.
+   *
+   * @param topToPublicSelfTypes qualified generated TOP type to its qualified public HWC subtype
+   */
+  default void cleanCode(Path codePath, Map<String, String> topToPublicSelfTypes) {
+    if (topToPublicSelfTypes == null || topToPublicSelfTypes.isEmpty()) {
+      cleanCode(codePath);
+      return;
+    }
+    throw unsupported("cleanCode with TOP self-type bindings");
+  }
+
+  /**
    * Configures incarnation-type to grouping-type replacements for the current updater pass.
    *
    * <p>Keys identify individual concrete incarnations and values identify the common concrete type
@@ -183,6 +196,17 @@ public interface CodeUpdater {
    */
   default void registerMethodRewrite(StableElementKey referenceMethod, StableElementKey concreteMethod) {
     throw unsupported("registerMethodRewrite");
+  }
+
+  /**
+   * Registers a method rewrite anchored to the exact Java source owner. Implementations should use
+   * the source declaration to retain package identity even when the CD owner is unqualified.
+   */
+  default void registerMethodRewrite(
+      ASTTypeDeclaration sourceOwner,
+      StableElementKey referenceMethod,
+      StableElementKey concreteMethod) {
+    registerMethodRewrite(referenceMethod, concreteMethod);
   }
 
   /**

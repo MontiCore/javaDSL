@@ -31,6 +31,7 @@ import de.monticore.codeAdaption.validator.cocos.OneVarInDeclaration;
 import de.monticore.codeAdaption.validator.cocos.ValidAnnotation;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTImportDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
@@ -243,6 +244,7 @@ public class CodeValidator {
       // Collect every declared type before matching. This lets the matchers recognize references
       // to other supplied source files and distinguish them from unknown external types.
       Set<ASTTypeDeclaration> allTypes = new LinkedHashSet<>();
+      Map<String, ASTTypeDeclaration> sourceTypesByIdentity = new LinkedHashMap<>();
       Map<ASTOrdinaryCompilationUnit, JavaAstElemCollector> collectors = new LinkedHashMap<>();
       for (ASTOrdinaryCompilationUnit ast : asts) {
         JavaAstElemCollector collector = new JavaAstElemCollector();
@@ -252,6 +254,9 @@ public class CodeValidator {
 
         collectors.put(ast, collector);
         allTypes.addAll(collector.getAllTypeDeclarations());
+        collector
+            .getAllTypeDeclarations()
+            .forEach(type -> sourceTypesByIdentity.put(qualifiedTypeIdentity(ast, type), type));
       }
       typeMatcher.setAllTypeDeclarations(allTypes);
 
@@ -260,13 +265,16 @@ public class CodeValidator {
       for (Map.Entry<ASTOrdinaryCompilationUnit, JavaAstElemCollector> entry :
           collectors.entrySet()) {
         ASTOrdinaryCompilationUnit unit = entry.getKey();
+        typeMatcher.setAllTypeDeclarations(visibleSourceTypes(unit, sourceTypesByIdentity));
         checkAllMatching(
             entry.getValue(),
             type ->
                 selectedTopLevelTypeIdentities == null
                     || selectedTopLevelTypeIdentities.contains(qualifiedTypeIdentity(unit, type)),
-            selectedTopLevelTypeIdentities);
+            selectedTopLevelTypeIdentities,
+            sourceTypesByIdentity.keySet());
       }
+      typeMatcher.setAllTypeDeclarations(allTypes);
       valid = Log.getErrorCount() == errorsBefore;
       if (!valid) {
         diagnostics =
@@ -313,13 +321,14 @@ public class CodeValidator {
    * Member and variable matchers are only queried when their enclosing type or method matched.
    */
   protected void checkAllMatching(JavaAstElemCollector collector) {
-    checkAllMatching(collector, type -> true, null);
+    checkAllMatching(collector, type -> true, null, Set.of());
   }
 
   private void checkAllMatching(
       JavaAstElemCollector collector,
       java.util.function.Predicate<ASTTypeDeclaration> validateType,
-      Set<String> selectedTopLevelTypeIdentities) {
+      Set<String> selectedTopLevelTypeIdentities,
+      Set<String> sourceTypeIdentities) {
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
       if (!validateType.test(type)) {
         continue;
@@ -329,8 +338,9 @@ public class CodeValidator {
             .getAllFSuperTypeDeclarations(type)
             .forEach(
                 supertype -> {
-                  if (!isSelectedQualifiedSourceSupertype(
-                      supertype, selectedTopLevelTypeIdentities)) {
+                  if (!isQualifiedSourceSupertype(supertype, sourceTypeIdentities)
+                      && !isSelectedQualifiedSourceSupertype(
+                          supertype, selectedTopLevelTypeIdentities)) {
                     validationSupertypeMatcher.getMatchedSupertype(type, supertype);
                   }
                 });
@@ -367,6 +377,86 @@ public class CodeValidator {
         .printQualifiedType(supertype)
         .replace('$', '.');
     return printed.contains(".") && selectedTopLevelTypeIdentities.contains(printed);
+  }
+
+  /** Returns whether a qualified supertype is declared by another supplied source unit. */
+  private boolean isQualifiedSourceSupertype(
+      ASTMCType supertype, Set<String> sourceTypeIdentities) {
+    String printed =
+        de.monticore.codeAdaption.utils.JavaSourceNames
+            .printQualifiedType(supertype)
+            .replace('$', '.');
+    int typeArguments = printed.indexOf('<');
+    String rawType = typeArguments < 0 ? printed : printed.substring(0, typeArguments);
+    return rawType.contains(".") && sourceTypeIdentities.contains(rawType);
+  }
+
+  /**
+   * Returns source declarations visible from one compilation unit according to package and import
+   * bindings. A single-type import is authoritative for its simple name, even when that imported
+   * type is external to the supplied source batch.
+   */
+  private Set<ASTTypeDeclaration> visibleSourceTypes(
+      ASTOrdinaryCompilationUnit unit,
+      Map<String, ASTTypeDeclaration> sourceTypesByIdentity) {
+    String packageName =
+        unit.isPresentPackageDeclaration()
+            ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
+            : "";
+    Map<String, ASTTypeDeclaration> visibleBySimpleName = new LinkedHashMap<>();
+    sourceTypesByIdentity.forEach(
+        (identity, declaration) -> {
+          if (packageName.equals(packageName(identity))) {
+            visibleBySimpleName.putIfAbsent(declaration.getName(), declaration);
+          }
+        });
+
+    Set<String> explicitBindings = new LinkedHashSet<>();
+    unit.getImportDeclarationList().stream()
+        .filter(importDeclaration -> !importDeclaration.isStatic())
+        .filter(importDeclaration -> !importDeclaration.isSTAR())
+        .forEach(
+            importDeclaration -> {
+              String identity = importDeclaration.getMCQualifiedName().getQName();
+              String simpleName =
+                  de.monticore.codeAdaption.utils.JavaSourceNames.simpleName(identity);
+              explicitBindings.add(simpleName);
+              visibleBySimpleName.remove(simpleName);
+              ASTTypeDeclaration declaration = sourceTypesByIdentity.get(identity);
+              if (declaration != null) {
+                visibleBySimpleName.put(simpleName, declaration);
+              }
+            });
+
+    Map<String, Set<ASTTypeDeclaration>> wildcardCandidates = new LinkedHashMap<>();
+    unit.getImportDeclarationList().stream()
+        .filter(importDeclaration -> !importDeclaration.isStatic())
+        .filter(ASTImportDeclaration::isSTAR)
+        .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
+        .forEach(
+            importedPackage ->
+                sourceTypesByIdentity.forEach(
+                    (identity, declaration) -> {
+                      if (importedPackage.equals(packageName(identity))
+                          && !explicitBindings.contains(declaration.getName())) {
+                        wildcardCandidates
+                            .computeIfAbsent(
+                                declaration.getName(), ignored -> new LinkedHashSet<>())
+                            .add(declaration);
+                      }
+                    }));
+    wildcardCandidates.forEach(
+        (simpleName, candidates) -> {
+          if (!visibleBySimpleName.containsKey(simpleName) && candidates.size() == 1) {
+            visibleBySimpleName.put(simpleName, candidates.iterator().next());
+          }
+        });
+    return new LinkedHashSet<>(visibleBySimpleName.values());
+  }
+
+  private static String packageName(String qualifiedTypeIdentity) {
+    int separator = qualifiedTypeIdentity.lastIndexOf('.');
+    return separator < 0 ? "" : qualifiedTypeIdentity.substring(0, separator);
   }
 
   /** Builds the package-qualified top-level type name used by dependency selection. */

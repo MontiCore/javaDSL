@@ -4,9 +4,13 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.AdapterAbstractTest;
+import de.monticore.codeAdaption.matcher.errorMatcher.ErrorTypeMatcher;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
+import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.io.IOException;
@@ -127,6 +131,27 @@ class CodeValidatorTest extends AdapterAbstractTest {
                 IGNORE_NON_MATCHED_VAR));
 
     Assertions.assertTrue(ignoredMembers.isValid(cd, sources));
+  }
+
+  @Test
+  void unrelatedSameNamedSourceTypeDoesNotSatisfyAnImportedExternalSupertype()
+      throws IOException {
+    Path sources = Files.createDirectory(tempDir.resolve("validator-owner"));
+    Path unrelated = Files.createDirectories(sources.resolve("unrelated"));
+    Path consumer = Files.createDirectories(sources.resolve("consumer"));
+    Files.writeString(unrelated.resolve("Base.java"), "package unrelated; class Base {}");
+    Files.writeString(
+        consumer.resolve("Child.java"),
+        "package consumer; import external.Base; class Child extends Base {}");
+    Path modelFile = tempDir.resolve("ExternalSupertype.cd");
+    Files.writeString(modelFile, "classdiagram ExternalSupertype {}");
+    ASTCDCompilationUnit model = JavaLoader.parseCD(modelFile.toString());
+    CodeValidator strictMembers =
+        new CodeValidator(model, Set.of(IGNORE_NON_MATCHED_TYPE, IGNORE_NON_MATCHED_VAR));
+
+    Assertions.assertFalse(
+        strictMembers.isValid(model, sources),
+        "An unrelated source package must not satisfy the imported external supertype");
   }
 
   private ASTOrdinaryCompilationUnit javaSource(String fileName, String source) throws IOException {

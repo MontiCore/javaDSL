@@ -1,7 +1,6 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
-import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -96,16 +95,48 @@ final class SpoonGenerationService {
     if (interfaceType || target.isInterface()) {
       boolean present =
           target.getSuperInterfaces().stream()
-              .anyMatch(
-                  existing ->
-                      JavaSourceNames.simpleName(existing.getQualifiedName())
-                          .equals(JavaSourceNames.simpleName(superTypeName)));
+              .anyMatch(existing -> sameSuperInterface(existing, reference, target));
       if (!present) {
         target.addSuperInterface(reference);
       }
     } else {
       target.setSuperclass(reference);
     }
+  }
+
+  /** Compares interfaces by resolved Java identity. */
+  private boolean sameSuperInterface(
+      CtTypeReference<?> existing, CtTypeReference<?> requested, CtType<?> target) {
+    return superTypeIdentity(existing, target).equals(superTypeIdentity(requested, target));
+  }
+
+  private String superTypeIdentity(CtTypeReference<?> reference, CtType<?> target) {
+    try {
+      CtType<?> declaration = reference.getTypeDeclaration();
+      if (declaration != null && declaration.getQualifiedName() != null) {
+        return declaration.getQualifiedName().replace('$', '.');
+      }
+    } catch (RuntimeException ignored) {
+      // Resolve no-classpath references from the loaded model below.
+    }
+    String qualifiedName = reference.getQualifiedName();
+    if (qualifiedName != null && qualifiedName.contains(".")) {
+      return qualifiedName.replace('$', '.');
+    }
+    List<String> modelMatches =
+        workspace.model().getAllTypes().stream()
+            .filter(type -> reference.getSimpleName().equals(type.getSimpleName()))
+            .map(CtType::getQualifiedName)
+            .distinct()
+            .toList();
+    if (modelMatches.size() == 1) {
+      return modelMatches.get(0).replace('$', '.');
+    }
+    String packageName =
+        target.getPackage() == null ? "" : target.getPackage().getQualifiedName();
+    return packageName.isEmpty()
+        ? reference.getSimpleName()
+        : packageName + "." + reference.getSimpleName();
   }
 
   /** Reconciles a generated Java class modifier with the authoritative target CD type. */

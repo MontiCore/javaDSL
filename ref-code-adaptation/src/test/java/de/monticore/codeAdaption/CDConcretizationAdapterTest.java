@@ -26,6 +26,7 @@ import de.monticore.codeAdaption.testutil.CDConcretizationTestCases;
 import de.monticore.codeAdaption.testutil.CDConcretizationFixtureWorkspace;
 import de.monticore.codeAdaption.testutil.GeneratedJavaStructureOracle;
 import de.monticore.codeAdaption.utils.AdapterParam;
+import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.LogStub;
 import java.io.IOException;
@@ -95,6 +96,12 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
                 true),
         () -> "Adaptation failed for " + materializedTestCase.displayName());
 
+    Path persistedCD = persistedCD(materializedTestCase);
+    assertTrue(
+        Files.isRegularFile(persistedCD),
+        () -> "No concretized CD persisted for " + materializedTestCase.displayName());
+    assertDoesNotThrow(() -> JavaLoader.parseCD(persistedCD.toString()));
+
     List<java.nio.file.Path> javaFiles =
         generatedJavaFiles(materializedTestCase, materializedTestCase.outputPath());
     assertFalse(
@@ -113,6 +120,31 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
                     () -> "No expected-output model or documented reason for " + testCase));
 
     assertGeneratedJavaCompiles(compilationSources(javaFiles, materializedTestCase));
+  }
+
+  @Test
+  void persistsTheCompletedModelRatherThanTheConcreteInput() {
+    CDConcretizationTestCase testCase = attributeInheritanceTestCase();
+    CDConcretizationTestCase materializedTestCase =
+        CDConcretizationFixtureWorkspace.materialize(testCase);
+    cleanPreviousOutput(materializedTestCase);
+
+    new CodeAdapter(
+            adapterParams,
+            defaultConformanceParams(materializedTestCase.strictParameterOrder()))
+        .adapt(
+            materializedTestCase.refCd().toFile(),
+            materializedTestCase.concCd().toFile(),
+            materializedTestCase.mappings(),
+            materializedTestCase.adapterPath(),
+            materializedTestCase.concretePath(),
+            materializedTestCase.outputPath(),
+            true,
+            true);
+
+    CDModelIndex persisted =
+        CDModelIndex.of(JavaLoader.parseCD(persistedCD(materializedTestCase).toString()));
+    assertEquals(Set.of("Person"), persisted.directParentNames("Teacher"));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -222,6 +254,28 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
                 true));
     assertTrue(Files.exists(marker), "A failed run must preserve the previous output");
     assertEquals("preserve", Files.readString(marker, StandardCharsets.UTF_8));
+    Path persistedCD = persistedCD(materializedTestCase);
+    assertTrue(
+        Files.isRegularFile(persistedCD),
+        "A failed concretization must persist its working concrete CD");
+    assertDoesNotThrow(() -> JavaLoader.parseCD(persistedCD.toString()));
+  }
+
+  private static Path persistedCD(CDConcretizationTestCase testCase) {
+    return testCase.outputPath().resolve(testCase.concCd().getFileName());
+  }
+
+  private static CDConcretizationTestCase attributeInheritanceTestCase() {
+    return CDConcretizationTestCases.allCases().stream()
+        .filter(
+            candidate ->
+                candidate
+                    .concCd()
+                    .toString()
+                    .replace('\\', '/')
+                    .endsWith("inheritance/AttributeInheritanceConc.cd"))
+        .findFirst()
+        .orElseThrow();
   }
 
   private static Set<CDConfParameter> defaultConformanceParams(boolean strictParameterOrder) {

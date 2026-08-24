@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -37,6 +38,8 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
   private static final Path EVALUATION_ROOT =
       Path.of("src/test/resources/de/monticore/codeAdaption/evaluation");
   private static final Set<String> MAPPINGS = Set.of("ref");
+
+  @TempDir Path temporaryDirectory;
 
   private Set<CDConfParameter> confParams;
 
@@ -164,7 +167,7 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
   @Test
   public void detectsMissingForEachMappingBeforeCleaningExistingOutput() throws IOException {
-    Path output = Path.of("target/codeAdapter/forEachConflictPreserve");
+    Path output = temporaryDirectory.resolve("forEachConflictPreserve");
     Files.createDirectories(output);
     Path marker = output.resolve("marker.txt");
     Files.writeString(marker, "keep");
@@ -194,7 +197,7 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
   @Test
   public void codeAdapterFailsBeforeCleaningExistingOutput() throws IOException {
-    Path output = Path.of("target/codeAdapter/conflictDetectorPreserve");
+    Path output = temporaryDirectory.resolve("conflictDetectorPreserve");
     Files.createDirectories(output);
     Path marker = output.resolve("marker.txt");
     Files.writeString(marker, "keep");

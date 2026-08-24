@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
 import de.monticore.codeAdaption.context.AdaptationContextFactory;
@@ -37,7 +38,8 @@ import static java.util.stream.Collectors.toCollection;
  * Adapts handwritten reference Java to a concrete class diagram through
  * mapping-specific transformation passes.
  *
- * <p>A failed run never publishes its staging directory over existing output.
+ * <p>A failed run never publishes its staging directory over existing output. In concretization
+ * mode, only the completed or partially completed concrete CD is retained there as a diagnostic.
  */
 public class CodeAdapter {
   /** Maximum number of Cartesian multi-incarnation selections accepted for one source unit. */
@@ -45,6 +47,18 @@ public class CodeAdapter {
 
   private final Set<AdapterParam> adapterParams;
   private final Set<CDConfParameter> confParams;
+
+  @FunctionalInterface
+  private interface FinalCodeComposer {
+    FinalCodeComposition compose(
+        AdaptedCodeMerger merger,
+        Set<ASTOrdinaryCompilationUnit> concreteCode,
+        Set<ASTOrdinaryCompilationUnit> adaptedCode,
+        CDModelIndex concreteIndex);
+  }
+
+  private record FinalCodeComposition(
+      Set<ASTOrdinaryCompilationUnit> code, Map<String, String> topToPublicSelfTypes) {}
 
   /**
    * Creates an adapter with explicit Java matching and CD-conformance policies.
@@ -80,8 +94,7 @@ public class CodeAdapter {
   }
 
   /**
-   * Adapts reference Java and generates the concrete Java baseline when no handwritten concrete
-   * source tree exists.
+   * Adapts reference Java without a concrete handwritten-code source tree.
    *
    * @param referenceCD reference class diagram
    * @param concreteCD concrete class diagram
@@ -97,6 +110,43 @@ public class CodeAdapter {
       Path outputPath) {
     adaptWithoutConcreteCode(
         referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
+  }
+
+  /**
+   * Adapts reference Java without concrete HWC.
+   *
+   * <p>This overload is the no-concrete-input form of TOP separation. Because no concrete HWC
+   * declarations exist, every adapted type is emitted directly under its adapted concrete name.
+   */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath) {
+    adaptWithTopSeparation(
+        referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
+  }
+
+  /**
+   * Keeps adapted implementations separate from matching concrete HWC through TOP inheritance.
+   */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath) {
+    adaptWithTopSeparation(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        false,
+        true);
   }
 
   /**
@@ -134,6 +184,34 @@ public class CodeAdapter {
       Path outputPath,
       boolean useConcretization,
       boolean useCommonParentForMultipleIncarnations) {
+    adapt(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        true);
+  }
+
+  /**
+   * Full adaptation API with explicit control over persistence of the concretized class diagram.
+   *
+   * @param persistConcretizedCD whether to write the working concrete CD to the output directory;
+   *     ignored when {@code useConcretization} is false
+   */
+  public void adapt(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations,
+      boolean persistConcretizedCD) {
     adaptInternal(
         referenceCD,
         concreteCD,
@@ -142,12 +220,13 @@ public class CodeAdapter {
         Optional.of(Objects.requireNonNull(conHwcPath, "conHwcPath")),
         outputPath,
         useConcretization,
-        useCommonParentForMultipleIncarnations);
+        useCommonParentForMultipleIncarnations,
+        persistConcretizedCD,
+        CodeAdapter::mergeFinalCode);
   }
 
   /**
-   * Adapts reference Java without a concrete handwritten-code input and generates concrete model
-   * code before transactional publication.
+   * Adapts reference Java without a concrete handwritten-code input.
    */
   public void adaptWithoutConcreteCode(
       File referenceCD,
@@ -157,6 +236,27 @@ public class CodeAdapter {
       Path outputPath,
       boolean useConcretization,
       boolean useCommonParentForMultipleIncarnations) {
+    adaptWithoutConcreteCode(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        true);
+  }
+
+  /** No-concrete-code API with explicit control over concretized-CD persistence. */
+  public void adaptWithoutConcreteCode(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations,
+      boolean persistConcretizedCD) {
     adaptInternal(
         referenceCD,
         concreteCD,
@@ -165,7 +265,100 @@ public class CodeAdapter {
         Optional.empty(),
         outputPath,
         useConcretization,
-        useCommonParentForMultipleIncarnations);
+        useCommonParentForMultipleIncarnations,
+        persistConcretizedCD,
+        CodeAdapter::directFinalCode);
+  }
+
+  /** Full TOP-separation API without a concrete handwritten-code source tree. */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations) {
+    adaptWithTopSeparation(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        true);
+  }
+
+  /**
+   * Full TOP-separation API without concrete HWC and with explicit concretized-CD persistence.
+   */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations,
+      boolean persistConcretizedCD) {
+    adaptInternal(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        Optional.empty(),
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        persistConcretizedCD,
+        CodeAdapter::composeWithTopSeparation);
+  }
+
+  /** Full TOP-separation API with an optional-per-type concrete HWC source tree. */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations) {
+    adaptWithTopSeparation(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        conHwcPath,
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        true);
+  }
+
+  /** Full TOP-separation API with explicit control over concretized-CD persistence. */
+  public void adaptWithTopSeparation(
+      File referenceCD,
+      File concreteCD,
+      Set<String> mappings,
+      Path refHwcPath,
+      Path conHwcPath,
+      Path outputPath,
+      boolean useConcretization,
+      boolean useCommonParentForMultipleIncarnations,
+      boolean persistConcretizedCD) {
+    adaptInternal(
+        referenceCD,
+        concreteCD,
+        mappings,
+        refHwcPath,
+        Optional.of(Objects.requireNonNull(conHwcPath, "conHwcPath")),
+        outputPath,
+        useConcretization,
+        useCommonParentForMultipleIncarnations,
+        persistConcretizedCD,
+        CodeAdapter::composeWithTopSeparation);
   }
 
   private void adaptInternal(
@@ -176,15 +369,15 @@ public class CodeAdapter {
       Optional<Path> conHwcPath,
       Path outputPath,
       boolean useConcretization,
-      boolean useCommonParentForMultipleIncarnations) {
+      boolean useCommonParentForMultipleIncarnations,
+      boolean persistConcretizedCD,
+      FinalCodeComposer finalCodeComposer) {
     AdaptationWorkspace workspace =
         new AdaptationWorkspace(refHwcPath, conHwcPath, outputPath);
     workspace.validateReadOnlyInput(referenceCD.toPath(), "reference class diagram");
     workspace.validateReadOnlyInput(concreteCD.toPath(), "concrete class diagram");
     Path normalizedRefHwcPath = workspace.referenceSource();
     Optional<Path> normalizedConHwcPath = workspace.concreteSourceOptional();
-    boolean hasConcreteJavaInput =
-        normalizedConHwcPath.map(CodeAdapter::containsJavaFiles).orElse(false);
     SortedSet<String> validatedMappingsInOrder = validatedMappings(mappings);
 
     // load CD models
@@ -193,11 +386,24 @@ public class CodeAdapter {
     CDModelIndex inputConcreteIndex = CDModelIndex.of(conCD);
     CDModelIndex referenceIndex = CDModelIndex.of(refCD);
     MappingConformanceService conformanceService = new MappingConformanceService(confParams);
+    Path concretizedCDFileName = concreteCD.toPath().getFileName();
 
     if (useConcretization) {
-      conCD =
-          new ConcretizationService(confParams)
-              .completeConcreteCD(conCD, refCD, validatedMappingsInOrder);
+      ASTCDCompilationUnit completedCD = conCD.deepClone();
+      try {
+        new ConcretizationService(confParams)
+            .completeConcreteCDInPlace(completedCD, refCD, validatedMappingsInOrder);
+      } catch (RuntimeException | Error failure) {
+        if (persistConcretizedCD) {
+          persistConcretizedCDAfterFailure(
+              completedCD, workspace.output().resolve(concretizedCDFileName), failure);
+        }
+        throw failure;
+      }
+      conCD = completedCD;
+      if (persistConcretizedCD) {
+        persistConcretizedCD(conCD, workspace.output().resolve(concretizedCDFileName));
+      }
     }
     CDModelIndex conIndex = CDModelIndex.of(conCD);
     AdaptedCodeMerger codeMerger = new AdaptedCodeMerger();
@@ -334,34 +540,25 @@ public class CodeAdapter {
         adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, mappingAdaptedCode);
       }
 
-      // Final output to destination
-      if (!adaptedCode.isEmpty()) {
-        Set<ASTOrdinaryCompilationUnit> concreteCode =
-            normalizedConHwcPath.filter(Files::exists)
-                .map(JavaLoader::readJavaCode)
-                .orElseGet(LinkedHashSet::new);
-        Set<ASTOrdinaryCompilationUnit> finalCode =
-            codeMerger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, conIndex);
-
+      // Composition is selected by the public API, while mapping and adaptation stay identical.
+      Set<ASTOrdinaryCompilationUnit> concreteCode =
+          normalizedConHwcPath.filter(Files::exists)
+              .map(JavaLoader::readJavaCode)
+              .orElseGet(LinkedHashSet::new);
+      concreteCode = codeMerger.splitCompilationUnitsByType(concreteCode);
+      FinalCodeComposition finalComposition =
+          finalCodeComposer.compose(codeMerger, concreteCode, adaptedCode, conIndex);
+      Set<ASTOrdinaryCompilationUnit> finalCode = finalComposition.code();
+      if (!finalCode.isEmpty()) {
         JavaLoader.printAST(finalCode, stagingPath);
       }
       normalizedConHwcPath.ifPresent(path -> outputCode.copyConcreteFiles(path, stagingPath));
       if (containsJavaFiles(stagingPath)) {
-        // Clean HWC before CD4Code consumes it and remove adapter-only metadata in both modes.
-        outputCode.cleanCode(stagingPath);
+        // Cleanup runs once after the selected composition has produced the complete Java tree.
+        outputCode.cleanCode(stagingPath, finalComposition.topToPublicSelfTypes());
       }
-      if (!hasConcreteJavaInput) {
-        Path generationWorkspace = workspace.createGenerationDirectory(stagingPath);
-        try {
-          Path generatedSourceRoot =
-              new ConcreteCodeGenerationService().generate(conCD, stagingPath, generationWorkspace);
-          outputCode.mergeGeneratedFiles(generatedSourceRoot, stagingPath);
-        } finally {
-          workspace.discard(generationWorkspace);
-        }
-      }
-      if (containsJavaFiles(stagingPath)) {
-        outputCode.cleanCode(stagingPath);
+      if (useConcretization && persistConcretizedCD) {
+        persistConcretizedCD(conCD, stagingPath.resolve(concretizedCDFileName));
       }
       workspace.publish(stagingPath);
       published = true;
@@ -370,6 +567,50 @@ public class CodeAdapter {
         workspace.discard(stagingPath);
       }
     }
+  }
+
+  private static void persistConcretizedCD(ASTCDCompilationUnit concreteCD, Path target) {
+    JavaLoader.writeFile(target, CD4CodeMill.prettyPrint(concreteCD, true));
+  }
+
+  private static void persistConcretizedCDAfterFailure(
+      ASTCDCompilationUnit concreteCD, Path target, Throwable originalFailure) {
+    try {
+      persistConcretizedCD(concreteCD, target);
+    } catch (RuntimeException | Error persistenceFailure) {
+      originalFailure.addSuppressed(persistenceFailure);
+    }
+  }
+
+  private static FinalCodeComposition mergeFinalCode(
+      AdaptedCodeMerger merger,
+      Set<ASTOrdinaryCompilationUnit> concreteCode,
+      Set<ASTOrdinaryCompilationUnit> adaptedCode,
+      CDModelIndex concreteIndex) {
+    return new FinalCodeComposition(
+        merger.mergeAdaptedCodeIntoConcreteBase(concreteCode, adaptedCode, concreteIndex),
+        Map.of());
+  }
+
+  private static FinalCodeComposition directFinalCode(
+      AdaptedCodeMerger merger,
+      Set<ASTOrdinaryCompilationUnit> concreteCode,
+      Set<ASTOrdinaryCompilationUnit> adaptedCode,
+      CDModelIndex concreteIndex) {
+    LinkedHashSet<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>(concreteCode);
+    result.addAll(adaptedCode);
+    return new FinalCodeComposition(result, Map.of());
+  }
+
+  private static FinalCodeComposition composeWithTopSeparation(
+      AdaptedCodeMerger merger,
+      Set<ASTOrdinaryCompilationUnit> concreteCode,
+      Set<ASTOrdinaryCompilationUnit> adaptedCode,
+      CDModelIndex concreteIndex) {
+    TopCodeComposer.CompositionResult result =
+        new TopCodeComposer(merger)
+            .composeWithSelfTypeBindings(concreteCode, adaptedCode, concreteIndex);
+    return new FinalCodeComposition(result.code(), result.topToPublicSelfTypes());
   }
 
   static void validatePaths(Path refHwcPath, Path conHwcPath, Path outputPath) {
@@ -402,7 +643,13 @@ public class CodeAdapter {
     for (ASTOrdinaryCompilationUnit unit : units) {
       for (var type : unit.getTypeDeclarationList()) {
         Optional<CodeMatching> matching = validator.getMatchedType(type);
-        if (matching.isEmpty() || !matching.get().mustBePerform()) {
+        if (matching.isEmpty()) {
+          continue;
+        }
+        if (!matching.get().mustBePerform()) {
+          if (matching.get().isExplicitAnnotation()) {
+            roots.add(qualifiedTypeIdentity(unit, type.getName()));
+          }
           continue;
         }
         boolean mapped =

@@ -26,6 +26,8 @@ import org.apache.commons.io.FileUtils;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtExpression;
+import spoon.reflect.code.CtTargetedExpression;
+import spoon.reflect.code.CtThisAccess;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtMethod;
@@ -149,6 +151,10 @@ final class SpoonWorkspace {
   }
 
   void clean(Path codePath) {
+    clean(codePath, Map.of());
+  }
+
+  void clean(Path codePath, Map<String, String> topToPublicSelfTypes) {
     Path sourcePath = codePath.toAbsolutePath().normalize();
     if (!Files.isDirectory(sourcePath)) {
       throw new IllegalArgumentException("Code path is not a directory: " + sourcePath);
@@ -168,6 +174,7 @@ final class SpoonWorkspace {
       FileUtils.copyDirectory(sourcePath.toFile(), stagedPath.toFile());
       Map<Path, Path> originals = javaFilesByRelativePath(sourcePath);
       Launcher cleanupLauncher = cleanupLauncher(sourcePath);
+      repairTopSelfReferences(cleanupLauncher, topToPublicSelfTypes);
       List<CtAnnotation<?>> annotations =
           new ArrayList<>(cleanupLauncher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
       cleanAdaptAnnotations(cleanupLauncher, annotations);
@@ -200,6 +207,55 @@ final class SpoonWorkspace {
     } finally {
       if (transactionRoot != null && !preserveTransaction) {
         FileUtils.deleteQuietly(transactionRoot.toFile());
+      }
+    }
+  }
+
+  /**
+   * Preserves the public self type when an adapted implementation is moved from {@code X} to
+   * {@code XTOP}. Explicit {@code this} values become {@code (X) this}; member-access targets such
+   * as {@code this.field} stay untouched so field lookup remains anchored in the TOP class.
+   */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void repairTopSelfReferences(
+      Launcher cleanupLauncher, Map<String, String> topToPublicSelfTypes) {
+    if (topToPublicSelfTypes == null || topToPublicSelfTypes.isEmpty()) {
+      return;
+    }
+    Map<String, CtType<?>> typesByIdentity = new LinkedHashMap<>();
+    cleanupLauncher
+        .getModel()
+        .getAllTypes()
+        .forEach(type -> typesByIdentity.put(type.getQualifiedName(), type));
+
+    for (Map.Entry<String, String> binding : topToPublicSelfTypes.entrySet()) {
+      CtType<?> topType = typesByIdentity.get(binding.getKey());
+      CtType<?> publicType = typesByIdentity.get(binding.getValue());
+      if (topType == null || publicType == null) {
+        throw new IllegalStateException(
+            "Cannot repair TOP self type '"
+                + binding.getKey()
+                + "' -> '"
+                + binding.getValue()
+                + "' because one declaration is missing");
+      }
+      CtTypeReference<?> publicReference = publicType.getReference();
+      for (CtThisAccess<?> thisAccess :
+          topType.getElements(new TypeFilter<>(CtThisAccess.class))) {
+        if (thisAccess.isImplicit() || thisAccess.getParent(CtType.class) != topType) {
+          continue;
+        }
+        // Do not turn this.field into ((X) this).field: that could select a hidden HWC field.
+        if (thisAccess.getParent() instanceof CtTargetedExpression targeted
+            && targeted.getTarget() == thisAccess) {
+          continue;
+        }
+        boolean alreadyRepaired =
+            thisAccess.getTypeCasts().stream()
+                .anyMatch(cast -> cast.getQualifiedName().equals(publicReference.getQualifiedName()));
+        if (!alreadyRepaired) {
+          thisAccess.addTypeCast(publicReference.clone());
+        }
       }
     }
   }
@@ -330,11 +386,30 @@ final class SpoonWorkspace {
   }
 
   private static void moveDirectory(Path source, Path target) throws IOException {
-    try {
-      Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
-    } catch (AtomicMoveNotSupportedException ignored) {
-      Files.move(source, target);
+    IOException lastException = null;
+    for (int attempt = 0; attempt < 5; attempt++) {
+      try {
+        try {
+          Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+          Files.move(source, target);
+        }
+        return;
+      } catch (IOException exception) {
+        // A successful rename must not be retried merely because the provider reported late.
+        if (!Files.exists(source) && Files.exists(target)) {
+          return;
+        }
+        lastException = exception;
+        try {
+          Thread.sleep(50L * (attempt + 1));
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          throw exception;
+        }
+      }
     }
+    throw lastException;
   }
 
   private static void copyReplacingWithRetry(Path source, Path target) throws IOException {

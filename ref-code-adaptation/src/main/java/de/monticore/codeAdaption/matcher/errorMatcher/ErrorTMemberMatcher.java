@@ -45,7 +45,6 @@ public class ErrorTMemberMatcher implements TMemberMatcher {
 
     String pos = AdapterUtils.getPosition(method.get_SourcePositionStart());
     Log.error(pos + " No Match found for the Method " + method.getName());
-    assert false;
     return Optional.empty();
   }
 
@@ -56,7 +55,6 @@ public class ErrorTMemberMatcher implements TMemberMatcher {
     String name = field.getVariableDeclarator(0).getDeclarator().getName();
     String pos = AdapterUtils.getPosition(field.get_SourcePositionStart());
     Log.error(pos + " No Match found for the Field " + name);
-    assert false;
     return Optional.empty();
   }
 

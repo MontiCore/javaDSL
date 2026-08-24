@@ -152,4 +152,21 @@ class InfixMatcherTest extends MatcherAbstractTest {
         "Entity${cap_first}",
         MatcherHelper.fillTemplate("${}${cap_first}", List.of(entity.getSymbol())));
   }
+
+  @Test
+  void caseInsensitiveInfixMatchProducesAReplacementTemplate() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    CodeMatching matching =
+        MatcherHelper.mkMatchingFromInfixRef(
+                List.of(entity.getSymbol()), "ENTITYRepository")
+            .orElseThrow();
+
+    Assertions.assertEquals("${}Repository", matching.getTemplate());
+  }
 }

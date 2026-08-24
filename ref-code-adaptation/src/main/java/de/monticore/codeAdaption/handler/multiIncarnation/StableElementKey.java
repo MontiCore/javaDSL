@@ -33,6 +33,7 @@ public final class StableElementKey {
   private final String name;
   private final String fieldKind;
   private final List<String> parameterTypes;
+  private final List<String> parameterTypeIdentities;
   private final List<String> parameterTypeSources;
   private final String returnType;
 
@@ -46,17 +47,23 @@ public final class StableElementKey {
     this.kind = Objects.requireNonNull(kind);
     this.ownerType = normalize(ownerType);
     this.name = normalize(name);
-    this.fieldKind = normalizeType(fieldKind);
+    this.fieldKind = normalizeTypeIdentity(fieldKind);
     this.parameterTypes =
         parameterTypes == null
             ? List.of()
-            : Collections.unmodifiableList(parameterTypes.stream().map(StableElementKey::normalizeType).toList());
+            : Collections.unmodifiableList(
+                parameterTypes.stream().map(StableElementKey::normalizeType).toList());
+    this.parameterTypeIdentities =
+        parameterTypes == null
+            ? List.of()
+            : Collections.unmodifiableList(
+                parameterTypes.stream().map(StableElementKey::normalizeParameterIdentity).toList());
     this.parameterTypeSources =
         parameterTypes == null
             ? List.of()
             : Collections.unmodifiableList(
                 parameterTypes.stream().map(StableElementKey::normalizeTypeSource).toList());
-    this.returnType = normalizeType(returnType);
+    this.returnType = normalizeTypeIdentity(returnType);
   }
 
   /** Creates a stable key for a CD type AST. */
@@ -71,7 +78,10 @@ public final class StableElementKey {
 
   /** Creates an owner-aware stable key for a CD attribute AST. */
   public static StableElementKey field(ASTCDType owner, ASTCDAttribute attribute) {
-    return field(owner.getName(), attribute.getName(), JavaSourceNames.printNormalizedFieldType(attribute));
+    return field(
+        owner.getName(),
+        attribute.getName(),
+        JavaSourceNames.printQualifiedType(attribute.getMCType()));
   }
 
   /** Creates an owner-aware field key from normalized identity components. */
@@ -83,9 +93,9 @@ public final class StableElementKey {
   public static StableElementKey method(ASTCDType owner, ASTCDMethod method) {
     List<String> parameters = new ArrayList<>();
     for (ASTCDParameter parameter : method.getCDParameterList()) {
-      parameters.add(JavaSourceNames.printNormalizedType(parameter.getMCType()));
+      parameters.add(JavaSourceNames.printQualifiedType(parameter.getMCType()));
     }
-    String returnType = JavaSourceNames.printNormalizedReturnType(method);
+    String returnType = JavaSourceNames.printQualifiedReturnType(method);
     return method(owner.getName(), method.getName(), parameters, returnType);
   }
 
@@ -133,15 +143,18 @@ public final class StableElementKey {
     return Optional.ofNullable(fieldKind);
   }
 
+  /**
+   * Returns normalized simple-name parameter types for Java mutation and lookup consumers.
+   * Equality and hashing use a separate qualification-preserving identity.
+   */
   public List<String> getParameterTypes() {
     return parameterTypes;
   }
 
   /**
-   * Returns the supplied parameter spellings with qualification intact. Stable-key equality still
-   * uses {@link #getParameterTypes() normalized simple-name identities}; consumers that create Java
-   * type references need these source spellings to distinguish types such as {@code alpha.Role}
-   * and {@code beta.Role}.
+   * Returns the supplied parameter spellings with qualification intact. Stable-key equality uses a
+   * normalized form of these source identities so overloads such as {@code alpha.Role} and {@code
+   * beta.Role} remain distinct.
    */
   public List<String> getParameterTypeSources() {
     return parameterTypeSources;
@@ -151,13 +164,27 @@ public final class StableElementKey {
     return Optional.ofNullable(returnType);
   }
 
+  /** Returns the same member identity anchored to a resolved Java declaring type. */
+  public StableElementKey withOwnerType(String resolvedOwnerType) {
+    if (kind == Kind.TYPE) {
+      throw new IllegalStateException("A type key has no declaring owner");
+    }
+    return new StableElementKey(
+        kind,
+        resolvedOwnerType,
+        name,
+        fieldKind,
+        parameterTypeSources,
+        returnType);
+  }
+
   /** Returns whether both keys identify the same element without considering method return type. */
   public boolean sameSignatureIgnoringReturn(StableElementKey other) {
     return other != null
         && kind == other.kind
         && Objects.equals(ownerType, other.ownerType)
         && Objects.equals(name, other.name)
-        && Objects.equals(parameterTypes, other.parameterTypes);
+        && Objects.equals(parameterTypeIdentities, other.parameterTypeIdentities);
   }
 
   /** Returns the deterministic owner/name/type signature used in diagnostics and sorting. */
@@ -168,7 +195,7 @@ public final class StableElementKey {
     if (kind == Kind.FIELD) {
       return ownerType + "." + name + ":" + fieldKind;
     }
-    return ownerType + "." + name + "(" + String.join(",", parameterTypes) + ")";
+    return ownerType + "." + name + "(" + String.join(",", parameterTypeIdentities) + ")";
   }
 
   @Override
@@ -183,13 +210,13 @@ public final class StableElementKey {
         && Objects.equals(ownerType, other.ownerType)
         && Objects.equals(name, other.name)
         && Objects.equals(fieldKind, other.fieldKind)
-        && Objects.equals(parameterTypes, other.parameterTypes)
+        && Objects.equals(parameterTypeIdentities, other.parameterTypeIdentities)
         && Objects.equals(returnType, other.returnType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(kind, ownerType, name, fieldKind, parameterTypes, returnType);
+    return Objects.hash(kind, ownerType, name, fieldKind, parameterTypeIdentities, returnType);
   }
 
   @Override
@@ -215,5 +242,14 @@ public final class StableElementKey {
   private static String normalizeTypeSource(String value) {
     String normalized = normalize(value);
     return normalized == null ? "Object" : normalized;
+  }
+
+  private static String normalizeParameterIdentity(String value) {
+    return JavaSourceNames.canonicalType(normalizeTypeSource(value));
+  }
+
+  private static String normalizeTypeIdentity(String value) {
+    String normalized = normalize(value);
+    return normalized == null ? null : JavaSourceNames.canonicalType(normalized);
   }
 }

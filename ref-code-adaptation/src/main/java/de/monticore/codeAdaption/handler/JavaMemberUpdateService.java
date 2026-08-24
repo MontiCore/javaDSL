@@ -185,7 +185,7 @@ final class JavaMemberUpdateService {
       }
 
       if (concreteMethod.isPresent()) {
-        symbols.registerConcreteMethodSignature(referenceMethod, concreteMethod.get());
+        symbols.registerConcreteMethodSignature(type, referenceMethod, concreteMethod.get());
         ASTCDMethod concreteDeclaration = (ASTCDMethod) concreteMethod.get().getAstNode();
         List<ASTFormalParameter> sourceParameters = collector.getAllParameters(type, method);
         if (sourceParameters.size() != concreteDeclaration.getCDParameterList().size()) {

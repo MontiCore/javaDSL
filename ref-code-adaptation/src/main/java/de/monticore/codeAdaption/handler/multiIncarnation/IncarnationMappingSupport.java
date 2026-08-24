@@ -266,7 +266,18 @@ final class IncarnationMappingSupport {
             new IncarnationContext.MappedElement(
                 StableElementKey.type(groupingType), groupingType.getSymbol());
         for (String target : targets) {
-          result.put(StableElementKey.type(target), grouping);
+          StableElementKey targetKey = StableElementKey.type(target);
+          IncarnationContext.MappedElement previous = result.putIfAbsent(targetKey, grouping);
+          if (previous != null && !previous.key().equals(grouping.key())) {
+            throw new IllegalStateException(
+                "Ambiguous grouping for concrete type '"
+                    + target
+                    + "': '"
+                    + previous.key().getName()
+                    + "' and '"
+                    + grouping.key().getName()
+                    + "'");
+          }
         }
       }
     }

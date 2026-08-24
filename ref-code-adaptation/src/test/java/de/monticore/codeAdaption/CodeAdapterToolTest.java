@@ -1,17 +1,21 @@
 package de.monticore.codeAdaption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class CodeAdapterToolTest extends AdapterAbstractTest {
 
   private static final Path RESOURCES =
       Path.of("src/test/resources/de/monticore/codeAdaption");
+
+  @TempDir Path temporaryDirectory;
 
   @BeforeEach
   void setUp() {
@@ -20,7 +24,7 @@ class CodeAdapterToolTest extends AdapterAbstractTest {
 
   @Test
   void commandLineInvocationProducesAdaptedOutput() {
-    Path output = Path.of("target/adapter/cli");
+    Path output = temporaryDirectory.resolve("cli-output");
     deleteRecursively(output);
 
     int exitCode =
@@ -40,11 +44,14 @@ class CodeAdapterToolTest extends AdapterAbstractTest {
                   "--mapping",
                   "ref",
                   "--matching",
-                  "name"
+                  "name",
+                  "--concretize",
+                  "--no-persist-concretized-cd"
                 });
 
     assertEquals(0, exitCode);
     assertTrue(Files.exists(findGeneratedFile(output, "Student.java")));
+    assertFalse(Files.exists(output.resolve("UniApp.cd")));
     assertGeneratedJavaCompiles(output);
   }
 

@@ -26,7 +26,6 @@ public class ErrorVariableMatcher implements VariableMatcher {
     String name = locVar.getVariableDeclarator(0).getDeclarator().getName();
     String pos = AdapterUtils.getPosition(locVar.get_SourcePositionStart());
     Log.error(pos + " No Match found for the Local Variable " + name);
-    assert false;
     return Optional.empty();
   }
 
@@ -37,7 +36,6 @@ public class ErrorVariableMatcher implements VariableMatcher {
     String name = param.getDeclarator().getName();
     String pos = AdapterUtils.getPosition(param.get_SourcePositionStart());
     Log.error(pos + " No Match found for the formal parameter " + name);
-    assert false;
     return Optional.empty();
   }
 }

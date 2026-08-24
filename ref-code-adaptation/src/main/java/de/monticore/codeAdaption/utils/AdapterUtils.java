@@ -4,8 +4,11 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
+import de.monticore.codeAdaption.matcher.MatcherHelper;
 import de.se_rwth.commons.logging.Log;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
+import de.monticore.codeAdaption.utils.visitors.AnnotationRemover;
+import de.monticore.ast.ASTNode;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
@@ -158,6 +161,8 @@ public class AdapterUtils {
               + ")");
     }
 
+    TypeIdentityScope leftTypes = TypeIdentityScope.from(leftAST);
+    TypeIdentityScope rightTypes = TypeIdentityScope.from(rightAST);
     mergeImports(leftAST, rightAST);
 
     JavaAstElemCollector lCollector = new JavaAstElemCollector();
@@ -185,6 +190,8 @@ public class AdapterUtils {
             lType.get(),
             rCollector,
             right,
+            leftTypes,
+            rightTypes,
             getFileName(leftAST),
             getFileName(rightAST),
             preferLeftOnConflict);
@@ -256,6 +263,8 @@ public class AdapterUtils {
       ASTTypeDeclaration lefType,
       JavaAstElemCollector rCollector,
       ASTTypeDeclaration rightType,
+      TypeIdentityScope leftTypes,
+      TypeIdentityScope rightTypes,
       String leftSource,
       String rightSource,
       boolean preferLeftOnConflict) {
@@ -278,17 +287,33 @@ public class AdapterUtils {
               typeName, leftSource, rightSource));
     }
 
-    mergeTypeRelationships(lefType, rightType);
+    mergeTypeRelationships(
+        lefType,
+        rightType,
+        leftTypes,
+        rightTypes,
+        leftSource,
+        rightSource,
+        preferLeftOnConflict);
 
     // Java overload identity is the method name plus normalized parameter types. A same-name
     // method with different parameters is a valid overload and must be retained.
-    Map<String, ASTMethodDeclaration> leftMethodsBySignature = new LinkedHashMap<>();
+    List<MethodEntry> leftMethodsBySignature = new ArrayList<>();
     for (ASTMethodDeclaration method : lMethods) {
-      leftMethodsBySignature.put(getMethodSignature(method), method);
+      leftMethodsBySignature.add(new MethodEntry(methodIdentity(method, leftTypes), method));
     }
     for (ASTMethodDeclaration rMeth : rMethods) {
-      String rSignature = getMethodSignature(rMeth);
-      ASTMethodDeclaration existingMethod = leftMethodsBySignature.get(rSignature);
+      MethodIdentity rightIdentity = methodIdentity(rMeth, rightTypes);
+      List<MethodEntry> signatureMatches =
+          leftMethodsBySignature.stream()
+              .filter(entry -> entry.identity().collidesWith(rightIdentity))
+              .toList();
+      if (signatureMatches.size() > 1) {
+        throw new IllegalStateException(
+            "Ambiguous method identity '" + rightIdentity + "' in type '" + typeName + "'");
+      }
+      ASTMethodDeclaration existingMethod =
+          signatureMatches.isEmpty() ? null : signatureMatches.get(0).method();
 
       if (existingMethod == null) {
         if (lefType instanceof ASTClassDeclaration) {
@@ -300,13 +325,25 @@ public class AdapterUtils {
               .getInterfaceBody()
               .addInterfaceBodyDeclaration(rMeth.deepClone());
         }
-        leftMethodsBySignature.put(rSignature, rMeth);
-      } else if (!normalizedReturnType(existingMethod).equals(normalizedReturnType(rMeth))
-          && !preferLeftOnConflict) {
-        throw new IllegalStateException(
-            String.format(
-                "Conflicting method '%s' in type '%s': return types differ between '%s' and '%s'",
-                rSignature, typeName, leftSource, rightSource));
+        leftMethodsBySignature.add(new MethodEntry(rightIdentity, rMeth));
+      } else if (!preferLeftOnConflict
+          && !equivalentWithoutAdaptationMetadata(existingMethod, rMeth)) {
+        MergeOrigin existingOrigin = mergeOrigin(existingMethod);
+        MergeOrigin incomingOrigin = mergeOrigin(rMeth);
+        if (existingOrigin == incomingOrigin) {
+          throw new IllegalStateException(
+              String.format(
+                  "Conflicting method '%s' in type '%s': declarations differ between '%s' and '%s'",
+                  rightIdentity, typeName, leftSource, rightSource));
+        }
+        // A reference-derived declaration carries the Adapt marker that identifies it as the
+        // authoritative template result. This is explicit provenance, not a name-based guess.
+        if (incomingOrigin == MergeOrigin.REFERENCE_DERIVED) {
+          ASTMethodDeclaration replacement =
+              replaceMethodDeclaration(lefType, existingMethod, rMeth);
+          int entryIndex = leftMethodsBySignature.indexOf(signatureMatches.get(0));
+          leftMethodsBySignature.set(entryIndex, new MethodEntry(rightIdentity, replacement));
+        }
       }
     }
 
@@ -314,16 +351,25 @@ public class AdapterUtils {
     // never expose them through the compilation-unit collector.
     if (lefType instanceof ASTClassDeclaration leftClass
         && rightType instanceof ASTClassDeclaration rightClass) {
-      Set<String> leftNestedNames = new LinkedHashSet<>();
+      Map<String, ASTTypeDeclaration> leftNestedTypes = new LinkedHashMap<>();
       for (var declaration : leftClass.getClassBody().getClassBodyDeclarationList()) {
         if (declaration instanceof ASTTypeDeclaration nested) {
-          leftNestedNames.add(nested.getName());
+          leftNestedTypes.put(nested.getName(), nested);
         }
       }
       for (var declaration : rightClass.getClassBody().getClassBodyDeclarationList()) {
-        if (declaration instanceof ASTTypeDeclaration nested
-            && leftNestedNames.add(nested.getName())) {
-          leftClass.getClassBody().addClassBodyDeclaration(declaration.deepClone());
+        if (declaration instanceof ASTTypeDeclaration nested) {
+          ASTTypeDeclaration existingNested = leftNestedTypes.get(nested.getName());
+          if (existingNested == null) {
+            leftNestedTypes.put(nested.getName(), nested);
+            leftClass.getClassBody().addClassBodyDeclaration(declaration.deepClone());
+          } else if (!preferLeftOnConflict
+              && !equivalentWithoutAdaptationMetadata(existingNested, nested)) {
+            throw new IllegalStateException(
+                String.format(
+                    "Conflicting nested type '%s.%s': declarations differ between '%s' and '%s'",
+                    typeName, nested.getName(), leftSource, rightSource));
+          }
         }
       }
     }
@@ -343,12 +389,12 @@ public class AdapterUtils {
               .getClassBody()
               .addClassBodyDeclaration(rf.deepClone());
         }
-      } else if (!normalizedFieldType(leftFieldsByName.get(rFieldName))
-              .equals(normalizedFieldType(rf))
-          && !preferLeftOnConflict) {
+      } else if (!preferLeftOnConflict
+          && !equivalentWithoutAdaptationMetadata(
+              leftFieldsByName.get(rFieldName), rf)) {
         throw new IllegalStateException(
             String.format(
-                "Conflicting field '%s' in type '%s': types differ between '%s' and '%s'",
+                "Conflicting field '%s' in type '%s': declarations differ between '%s' and '%s'",
                 rFieldName, typeName, leftSource, rightSource));
       }
     }
@@ -357,22 +403,47 @@ public class AdapterUtils {
   }
 
   private static void mergeTypeRelationships(
-      ASTTypeDeclaration leftType, ASTTypeDeclaration rightType) {
+      ASTTypeDeclaration leftType,
+      ASTTypeDeclaration rightType,
+      TypeIdentityScope leftTypes,
+      TypeIdentityScope rightTypes,
+      String leftSource,
+      String rightSource,
+      boolean preferLeftOnConflict) {
     if (leftType instanceof ASTClassDeclaration leftClass
         && rightType instanceof ASTClassDeclaration rightClass) {
       mergeCompletedAbstractModifier(leftClass, rightClass);
-      if (!leftClass.isPresentSuperClass() && rightClass.isPresentSuperClass()) {
+      if (leftClass.isPresentSuperClass()
+          && rightClass.isPresentSuperClass()
+          && !leftTypes.identity(leftClass.getSuperClass())
+              .sameTypeAs(rightTypes.identity(rightClass.getSuperClass()))
+          && !preferLeftOnConflict) {
+        throw new IllegalStateException(
+            String.format(
+                "Conflicting superclass of type '%s': declarations differ between '%s' and '%s'",
+                leftType.getName(), leftSource, rightSource));
+      } else if (!leftClass.isPresentSuperClass() && rightClass.isPresentSuperClass()) {
         leftClass.setSuperClass(rightClass.getSuperClass().deepClone());
       }
       mergeTypes(
-          leftClass.getImplementedInterfaceList(), rightClass.getImplementedInterfaceList());
+          leftClass.getImplementedInterfaceList(),
+          rightClass.getImplementedInterfaceList(),
+          leftTypes,
+          rightTypes);
     } else if (leftType instanceof ASTInterfaceDeclaration leftInterface
         && rightType instanceof ASTInterfaceDeclaration rightInterface) {
       mergeTypes(
-          leftInterface.getExtendedInterfaceList(), rightInterface.getExtendedInterfaceList());
+          leftInterface.getExtendedInterfaceList(),
+          rightInterface.getExtendedInterfaceList(),
+          leftTypes,
+          rightTypes);
     } else if (leftType instanceof ASTEnumDeclaration leftEnum
         && rightType instanceof ASTEnumDeclaration rightEnum) {
-      mergeTypes(leftEnum.getImplementedInterfaceList(), rightEnum.getImplementedInterfaceList());
+      mergeTypes(
+          leftEnum.getImplementedInterfaceList(),
+          rightEnum.getImplementedInterfaceList(),
+          leftTypes,
+          rightTypes);
       Set<String> constants =
           leftEnum.getEnumConstantDeclarationList().stream()
               .map(constant -> constant.getName())
@@ -417,15 +488,20 @@ public class AdapterUtils {
         .ifPresent(concreteClass::addJavaModifier);
   }
 
-  private static void mergeTypes(List<ASTMCType> left, List<ASTMCType> right) {
-    Set<String> existing =
-        left.stream()
-            .map(JavaSourceNames::printNormalizedType)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-    right.stream()
-        .filter(type -> existing.add(JavaSourceNames.printNormalizedType(type)))
-        .map(ASTMCType::deepClone)
-        .forEach(left::add);
+  private static void mergeTypes(
+      List<ASTMCType> left,
+      List<ASTMCType> right,
+      TypeIdentityScope leftTypes,
+      TypeIdentityScope rightTypes) {
+    List<TypeIdentity> existing =
+        left.stream().map(leftTypes::identity).collect(java.util.stream.Collectors.toList());
+    for (ASTMCType candidate : right) {
+      TypeIdentity identity = rightTypes.identity(candidate);
+      if (existing.stream().noneMatch(current -> current.sameTypeAs(identity))) {
+        left.add(candidate.deepClone());
+        existing.add(identity);
+      }
+    }
   }
 
   /**
@@ -433,21 +509,219 @@ public class AdapterUtils {
    * Format: "methodName(paramType1,paramType2)"
    * Uses method name + parameter types (not return type) for comparison.
    */
-  private static String getMethodSignature(ASTMethodDeclaration method) {
-    List<String> parameterTypes = new ArrayList<>();
+  private static MethodIdentity methodIdentity(
+      ASTMethodDeclaration method, TypeIdentityScope types) {
+    List<TypeIdentity> parameterTypes = new ArrayList<>();
     if (method.getFormalParameters().isPresentFormalParameterListing()) {
       method.getFormalParameters().getFormalParameterListing().getFormalParameterList()
-          .forEach(p -> parameterTypes.add(JavaSourceNames.printNormalizedType(p.getMCType())));
+          .forEach(parameter -> parameterTypes.add(types.identity(parameter.getMCType())));
     }
-    return method.getName() + "(" + String.join(",", parameterTypes) + ")";
+    return new MethodIdentity(method.getName(), List.copyOf(parameterTypes));
   }
 
-  private static String normalizedReturnType(ASTMethodDeclaration method) {
-    return JavaSourceNames.normalizeType(JavaLoader.print(method.getMCReturnType()));
+  private static boolean equivalentWithoutAdaptationMetadata(
+      ASTNode left, ASTNode right) {
+    ASTNode cleanedLeft = left.deepClone();
+    ASTNode cleanedRight = right.deepClone();
+    removeAdaptationMetadata(cleanedLeft);
+    removeAdaptationMetadata(cleanedRight);
+    return cleanedLeft.deepEquals(cleanedRight, true);
   }
 
-  private static String normalizedFieldType(ASTFieldDeclaration field) {
-    return JavaSourceNames.printNormalizedType(field.getMCType());
+  private record MethodEntry(MethodIdentity identity, ASTMethodDeclaration method) {}
+
+  private enum MergeOrigin {
+    REFERENCE_DERIVED,
+    GENERATED_OR_CONCRETE
+  }
+
+  private static MergeOrigin mergeOrigin(ASTMethodDeclaration method) {
+    return MatcherHelper.getInfoAnnotation(method.getMCModifierList()).isPresent()
+        ? MergeOrigin.REFERENCE_DERIVED
+        : MergeOrigin.GENERATED_OR_CONCRETE;
+  }
+
+  private static ASTMethodDeclaration replaceMethodDeclaration(
+      ASTTypeDeclaration owner,
+      ASTMethodDeclaration existing,
+      ASTMethodDeclaration replacement) {
+    ASTMethodDeclaration replacementCopy = replacement.deepClone();
+    List<? extends ASTNode> declarations;
+    if (owner instanceof ASTClassDeclaration classDeclaration) {
+      declarations = classDeclaration.getClassBody().getClassBodyDeclarationList();
+      int index = declarations.indexOf(existing);
+      if (index >= 0) {
+        classDeclaration.getClassBody().getClassBodyDeclarationList().set(index, replacementCopy);
+        return replacementCopy;
+      }
+    } else if (owner instanceof ASTInterfaceDeclaration interfaceDeclaration) {
+      declarations = interfaceDeclaration.getInterfaceBody().getInterfaceBodyDeclarationList();
+      int index = declarations.indexOf(existing);
+      if (index >= 0) {
+        interfaceDeclaration
+            .getInterfaceBody()
+            .getInterfaceBodyDeclarationList()
+            .set(index, replacementCopy);
+        return replacementCopy;
+      }
+    }
+    throw new IllegalStateException(
+        "Cannot replace method '"
+            + methodIdentity(existing, TypeIdentityScope.empty())
+            + "' because it is not a direct member of type '"
+            + owner.getName()
+            + "'");
+  }
+
+  private record MethodIdentity(String name, List<TypeIdentity> parameters) {
+    private boolean collidesWith(MethodIdentity other) {
+      if (!name.equals(other.name) || parameters.size() != other.parameters.size()) {
+        return false;
+      }
+      for (int index = 0; index < parameters.size(); index++) {
+        if (!parameters.get(index).sameErasureAs(other.parameters.get(index))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return name
+          + "("
+          + parameters.stream()
+              .map(TypeIdentity::canonical)
+              .collect(java.util.stream.Collectors.joining(","))
+          + ")";
+    }
+  }
+
+  private record TypeIdentity(String canonical, String simpleName, boolean resolved) {
+    private boolean sameTypeAs(TypeIdentity other) {
+      return canonical.equals(other.canonical);
+    }
+
+    private boolean sameErasureAs(TypeIdentity other) {
+      if (canonical.equals(other.canonical)) {
+        return true;
+      }
+      if (resolved && other.resolved) {
+        return false;
+      }
+      // An unresolved same-leaf type might denote the qualified type. Treat it as a collision so
+      // the merger fails safely instead of emitting an illegal duplicate-erasure overload.
+      return simpleName.equals(other.simpleName);
+    }
+  }
+
+  /** Import-aware, parser-backed type identities for one original compilation unit. */
+  private record TypeIdentityScope(
+      Map<String, Set<String>> explicitImports, Set<String> wildcardPackages) {
+
+    private static TypeIdentityScope empty() {
+      return new TypeIdentityScope(Map.of(), Set.of());
+    }
+
+    private static TypeIdentityScope from(ASTOrdinaryCompilationUnit unit) {
+      Map<String, Set<String>> explicit = new LinkedHashMap<>();
+      Set<String> wildcards = new LinkedHashSet<>();
+      for (ASTImportDeclaration declaration : unit.getImportDeclarationList()) {
+        if (declaration.isStatic()) {
+          continue;
+        }
+        String imported = declaration.getMCQualifiedName().getQName();
+        if (declaration.isSTAR()) {
+          wildcards.add(imported);
+        } else {
+          explicit
+              .computeIfAbsent(JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
+              .add(imported);
+        }
+      }
+      return new TypeIdentityScope(
+          explicit.entrySet().stream()
+              .collect(
+                  java.util.stream.Collectors.toUnmodifiableMap(
+                      Map.Entry::getKey, entry -> Set.copyOf(entry.getValue()))),
+          Set.copyOf(wildcards));
+    }
+
+    private TypeIdentity identity(ASTMCType type) {
+      String resolvedSource =
+          JavaSourceNames.replaceTypeNames(
+              JavaSourceNames.printQualifiedType(type), this::resolveReference);
+      JavaSourceNames.ErasedType erased =
+          JavaSourceNames.erasedType(resolvedSource)
+              .orElseThrow(
+                  () -> new IllegalStateException("Cannot parse Java type '" + resolvedSource + "'"));
+      String canonical =
+          erased.name().replace('$', '.') + "[]".repeat(erased.arrayDimensions());
+      boolean resolved =
+          erased.name().contains(".") || isPrimitiveOrVoid(erased.name());
+      return new TypeIdentity(
+          canonical,
+          JavaSourceNames.simpleName(erased.name()) + "[]".repeat(erased.arrayDimensions()),
+          resolved);
+    }
+
+    private Optional<String> resolveReference(JavaSourceNames.TypeReferenceName reference) {
+      if (reference.qualified() || isPrimitiveOrVoid(reference.originalName())) {
+        return Optional.empty();
+      }
+      Set<String> explicit = explicitImports.get(reference.simpleName());
+      if (explicit != null && !explicit.isEmpty()) {
+        return uniqueBinding(reference.simpleName(), explicit);
+      }
+      LinkedHashSet<String> classpathBindings = new LinkedHashSet<>();
+      String javaLang = "java.lang." + reference.simpleName();
+      if (classpathTypeExists(javaLang)) {
+        classpathBindings.add(javaLang);
+      }
+      for (String wildcardPackage : wildcardPackages) {
+        String candidate = wildcardPackage + "." + reference.simpleName();
+        if (classpathTypeExists(candidate)) {
+          classpathBindings.add(candidate);
+        }
+      }
+      return uniqueBinding(reference.simpleName(), classpathBindings);
+    }
+
+    private static Optional<String> uniqueBinding(String simpleName, Set<String> bindings) {
+      if (bindings.isEmpty()) {
+        return Optional.empty();
+      }
+      if (bindings.size() == 1) {
+        return Optional.of(bindings.iterator().next());
+      }
+      throw new IllegalStateException(
+          "Ambiguous Java type '" + simpleName + "' resolves to " + bindings);
+    }
+
+    private static boolean classpathTypeExists(String qualifiedName) {
+      try {
+        Class.forName(qualifiedName, false, AdapterUtils.class.getClassLoader());
+        return true;
+      } catch (ClassNotFoundException | LinkageError ignored) {
+        return false;
+      }
+    }
+
+    private static boolean isPrimitiveOrVoid(String name) {
+      return Set.of(
+              "boolean", "byte", "short", "int", "long", "float", "double", "char", "void")
+          .contains(name);
+    }
+  }
+
+  private static void removeAdaptationMetadata(ASTNode node) {
+    AnnotationRemover remover = new AnnotationRemover();
+    JavaDSLTraverser traverser = JavaDSLMill.traverser();
+    traverser.add4JavaDSL(remover);
+    traverser.add4JavaLight(remover);
+    traverser.add4MCCommonStatements(remover);
+    traverser.add4MCVarDeclarationStatements(remover);
+    node.accept(traverser);
   }
 
 }
