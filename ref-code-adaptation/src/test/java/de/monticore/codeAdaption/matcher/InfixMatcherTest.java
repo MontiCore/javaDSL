@@ -3,12 +3,15 @@ package de.monticore.codeAdaption.matcher;
 import static de.monticore.codeAdaption.utils.AdapterParam.INFIX_MATCHING;
 
 import de.monticore.codeAdaption.validator.CodeValidator;
+import de.monticore.codeAdaption.utils.AdapterUtils;
+import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.*;
 
@@ -91,5 +94,79 @@ class InfixMatcherTest extends MatcherAbstractTest {
     Assertions.assertEquals("Entity", matching.get().getReferences().get(0).getName());
     Assertions.assertEquals("${uncap_first}", matching.get().getTemplate());
     Assertions.assertTrue(matching.get().mustBePerform());
+  }
+
+  @Test
+  void repeatedInfixesProduceOneReferencePerPlaceholder() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    CodeMatching matching =
+        MatcherHelper.mkMatchingFromInfixRef(
+                List.of(entity.getSymbol()), "EntityToEntity")
+            .orElseThrow();
+
+    Assertions.assertEquals("${}To${}", matching.getTemplate());
+    Assertions.assertEquals(2, matching.getReferences().size());
+    Assertions.assertEquals(
+        "EntityToEntity",
+        MatcherHelper.fillTemplate(matching.getTemplate(), matching.getReferences()));
+  }
+
+  @Test
+  void referencesAreOrderedByTheirNonOverlappingPositions() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+    ASTCDType application =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Application".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    List<de.monticore.symboltable.ISymbol> references =
+        MatcherHelper.cleanReferences(
+            "EntityApplicationEntity", List.of(application.getSymbol(), entity.getSymbol()));
+
+    Assertions.assertEquals(List.of("Entity", "Application", "Entity"),
+        references.stream().map(de.monticore.symboltable.ISymbol::getName).toList());
+  }
+
+  @Test
+  void unmatchedTemplatePlaceholdersRemainVisible() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    Assertions.assertEquals(
+        "Entity${cap_first}",
+        MatcherHelper.fillTemplate("${}${cap_first}", List.of(entity.getSymbol())));
+  }
+
+  @Test
+  void caseInsensitiveInfixMatchProducesAReplacementTemplate() {
+    init("/infixMatcher/EntityRepository.java");
+    ASTCDType entity =
+        AdapterUtils.getAllCDTypes(cd).stream()
+            .filter(type -> "Entity".equals(type.getName()))
+            .findFirst()
+            .orElseThrow();
+
+    CodeMatching matching =
+        MatcherHelper.mkMatchingFromInfixRef(
+                List.of(entity.getSymbol()), "ENTITYRepository")
+            .orElseThrow();
+
+    Assertions.assertEquals("${}Repository", matching.getTemplate());
   }
 }

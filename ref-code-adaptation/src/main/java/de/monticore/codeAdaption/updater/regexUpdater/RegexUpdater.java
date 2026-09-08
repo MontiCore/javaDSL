@@ -13,6 +13,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 
+// Fixme: RegExUpdater needs to be repaired
+@Deprecated()
 public class RegexUpdater implements CodeUpdater {
   protected Set<File> code;
 
@@ -44,6 +46,12 @@ public class RegexUpdater implements CodeUpdater {
       ASTTypeDeclaration srcType, ASTFieldDeclaration srcField, String newName) {
     String srcName = srcField.getVariableDeclarator(0).getDeclarator().getName();
     updateElement(srcName, newName);
+  }
+
+  @Override
+  public void updateAssociationRole(
+      ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
+    updateElement(sourceRole, concreteRole);
   }
 
   @Override

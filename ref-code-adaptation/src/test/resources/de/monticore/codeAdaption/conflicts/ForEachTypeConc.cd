@@ -1,0 +1,4 @@
+classdiagram ForEachTypeConc {
+  <<ref="DataClass">> class Employee;
+  <<ref="DataClass">> class Department;
+}

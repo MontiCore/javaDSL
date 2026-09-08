@@ -1,272 +1,224 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
-import static de.monticore.codeAdaption.utils.JavaLoader.print;
-
 import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.codeAdaption.updater.CodeUpdater;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.*;
-import spoon.Launcher;
-import spoon.refactoring.CtRenameGenericVariableRefactoring;
-import spoon.refactoring.Refactoring;
-import spoon.reflect.CtModel;
-import spoon.reflect.code.CtLocalVariable;
-import spoon.reflect.declaration.*;
-import spoon.reflect.reference.CtTypeReference;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import spoon.reflect.declaration.CtType;
 
+/** Spoon-backed facade for loading, transforming, generating and printing Java source code. */
 public class SpoonUpdater implements CodeUpdater {
-  private File outputDir;
-  private Launcher launcher;
-  private CtModel spoonModel;
-  private final Map<ASTTypeDeclaration, CtType<?>> typeMap = new LinkedHashMap<>();
-  private final Map<ASTMethodDeclaration, CtMethod<?>> methodMap = new LinkedHashMap<>();
+  private final SpoonWorkspace workspace;
+  private final SpoonElementResolver elementResolver;
+  private final SpoonExecutableRepairService executableRepairs;
+  private final SpoonTransformationService transformations;
+  private final SpoonGenerationService generation;
+
+  public SpoonUpdater() {
+    workspace = new SpoonWorkspace();
+    elementResolver = new SpoonElementResolver(workspace::model);
+    executableRepairs = new SpoonExecutableRepairService(workspace, elementResolver);
+    transformations =
+        new SpoonTransformationService(workspace, elementResolver, executableRepairs);
+    generation = new SpoonGenerationService(workspace, elementResolver);
+  }
 
   @Override
   public void setCodePath(Path path) {
-    // init spoon environment
-    launcher = new Launcher();
-    launcher.getEnvironment().setAutoImports(true);
-    launcher.getEnvironment().setShouldCompile(true);
-
-    // add code to the environment
-    launcher.addInputResource(path.toAbsolutePath().toString());
-
-    // build model
-    launcher.buildModel();
-    spoonModel = launcher.getModel();
+    workspace.load(path);
+    elementResolver.reset();
+    transformations.reset();
+    executableRepairs.reset();
   }
 
   @Override
   public Set<File> printCode() {
-    launcher.setSourceOutputDirectory(outputDir);
-    launcher.prettyprint();
-    return JavaLoader.readJavaFile(outputDir.toPath());
+    transformations.prepareForPrint();
+    return workspace.print();
+  }
+
+  @Override
+  public void cleanCode(Path codePath) {
+    workspace.clean(codePath);
+  }
+
+  @Override
+  public void cleanCode(Path codePath, Map<String, String> topToPublicSelfTypes) {
+    workspace.clean(codePath, topToPublicSelfTypes);
+  }
+
+  @Override
+  public void setGroupingMappings(Map<String, String> mappings) {
+    transformations.setGroupingMappings(mappings);
+  }
+
+  @Override
+  public void registerConcreteMethodSignature(String methodName, List<String> parameterTypes) {
+    executableRepairs.registerConcreteMethodSignature(methodName, parameterTypes);
+  }
+
+  @Override
+  public void registerMethodRewrite(
+      StableElementKey referenceMethod, StableElementKey concreteMethod) {
+    executableRepairs.registerMethodRewrite(referenceMethod, concreteMethod);
+  }
+
+  @Override
+  public void registerMethodRewrite(
+      ASTTypeDeclaration sourceOwner,
+      StableElementKey referenceMethod,
+      StableElementKey concreteMethod) {
+    CtType<?> sourceType = elementResolver.getSpoonType(sourceOwner);
+    String referenceOwnerIdentity = sourceType.getQualifiedName();
+    String concreteOwnerIdentity = concreteOwnerIdentity(sourceType, concreteMethod);
+    executableRepairs.registerMethodRewrite(
+        referenceMethod.withOwnerType(referenceOwnerIdentity),
+        concreteMethod.withOwnerType(concreteOwnerIdentity));
+  }
+
+  private static String concreteOwnerIdentity(
+      CtType<?> sourceType, StableElementKey concreteMethod) {
+    String requestedOwner = concreteMethod.getOwnerType().orElse(sourceType.getSimpleName());
+    if (requestedOwner.contains(".") || requestedOwner.contains("$")) {
+      return requestedOwner;
+    }
+    if (sourceType.getDeclaringType() != null) {
+      return sourceType.getDeclaringType().getQualifiedName() + "$" + requestedOwner;
+    }
+    String packageName =
+        sourceType.getPackage() == null ? "" : sourceType.getPackage().getQualifiedName();
+    return packageName.isEmpty() ? requestedOwner : packageName + "." + requestedOwner;
   }
 
   @Override
   public void updateType(ASTTypeDeclaration source, String newName) {
-    CtType<?> type = getSpoonType(source);
-    Refactoring.changeTypeName(type, newName);
+    transformations.updateType(source, newName);
   }
 
   @Override
   public void updateMethod(
-      ASTTypeDeclaration srcType, ASTMethodDeclaration srcMethod, String newName) {
-    CtMethod<?> method = getSpoonMethod(srcType, srcMethod);
-    Refactoring.changeMethodName(method, newName);
+      ASTTypeDeclaration sourceType, ASTMethodDeclaration sourceMethod, String newName) {
+    transformations.updateMethod(sourceType, sourceMethod, newName);
   }
 
   @Override
   public void updateField(
-      ASTTypeDeclaration srcType, ASTFieldDeclaration srcField, String newName) {
+      ASTTypeDeclaration sourceType, ASTFieldDeclaration sourceField, String newName) {
+    transformations.updateField(sourceType, sourceField, newName);
+  }
 
-    // get Spoon Variable
-    String srcName = srcField.getVariableDeclarator(0).getDeclarator().getName();
-    CtVariable<?> attribute = getSpoonType(srcType).getField(srcName);
-
-    // perform update
-    CtRenameGenericVariableRefactoring refactor = new CtRenameGenericVariableRefactoring();
-    refactor.setTarget(attribute).setNewName(newName).refactor();
+  @Override
+  public void updateAssociationRole(
+      ASTTypeDeclaration sourceType, String sourceRole, String concreteRole) {
+    transformations.updateAssociationRole(sourceType, sourceRole, concreteRole);
   }
 
   @Override
   public void updateSuperType(ASTTypeDeclaration type, ASTMCType supertype, String newName) {
-    String srcName = JavaLoader.print(supertype);
-    CtType<?> spoonType = getSpoonType(type);
-
-    // case super class
-    CtTypeReference<?> superType = spoonType.getSuperclass();
-    if (superType != null && superType.getSimpleName().equals(srcName)) {
-      spoonType.getSuperclass().setSimpleName(newName);
-      return;
-    }
-
-    // case super interface
-    for (CtTypeReference<?> superType2 : spoonType.getSuperInterfaces()) {
-      if (superType2.getSimpleName().equals(srcName)) {
-        superType2.setSimpleName(newName);
-      }
-    }
+    transformations.updateSuperType(type, supertype, newName);
   }
 
   @Override
   public void updateLocalVariable(
-      ASTTypeDeclaration srcType,
-      ASTMethodDeclaration srcMethod,
-      ASTLocalVariableDeclaration sourceVar,
+      ASTTypeDeclaration sourceType,
+      ASTMethodDeclaration sourceMethod,
+      ASTLocalVariableDeclaration sourceVariable,
       String newName) {
-
-    // get spoon local-variable
-    CtMethod<?> spoonMethod = getSpoonMethod(srcType, srcMethod);
-    List<CtLocalVariable<?>> localVars = spoonMethod.getElements(Objects::nonNull);
-    String varName = sourceVar.getVariableDeclarator(0).getDeclarator().getName();
-    Optional<CtLocalVariable<?>> var =
-        localVars.stream().filter(v -> v.getSimpleName().equals(varName)).findAny();
-    assert var.isPresent();
-
-    // perform update
-    CtRenameGenericVariableRefactoring refactor = new CtRenameGenericVariableRefactoring();
-    refactor.setTarget(var.get()).setNewName(newName).refactor();
+    transformations.updateLocalVariable(
+        sourceType, sourceMethod, sourceVariable, newName);
   }
 
   @Override
   public void updateMethodParameter(
-      ASTTypeDeclaration srcType,
-      ASTMethodDeclaration srcMethod,
-      ASTFormalParameter srcParam,
+      ASTTypeDeclaration sourceType,
+      ASTMethodDeclaration sourceMethod,
+      ASTFormalParameter sourceParameter,
       String newName) {
-
-    // get spoon formal parameter of method
-    CtMethod<?> spoonMethod = getSpoonMethod(srcType, srcMethod);
-    List<CtParameter<?>> params = spoonMethod.getElements(Objects::nonNull);
-    String srcVarName = srcParam.getDeclarator().getName();
-    Optional<CtParameter<?>> param =
-        params.stream().filter(v -> v.getSimpleName().equals(srcVarName)).findAny();
-
-    if (param.isPresent()) {
-      // perform update
-      CtRenameGenericVariableRefactoring refactor = new CtRenameGenericVariableRefactoring();
-      refactor.setTarget(param.get()).setNewName(newName).refactor();
-
-    } else {
-
-      // case formal param in for loop
-      List<CtLocalVariable<?>> localVars = spoonMethod.getElements(Objects::nonNull);
-      Optional<CtLocalVariable<?>> localvar =
-          localVars.stream().filter(v -> v.getSimpleName().equals(srcVarName)).findAny();
-      assert localvar.isPresent();
-
-      // case formal param in for loop
-      CtRenameGenericVariableRefactoring refactor = new CtRenameGenericVariableRefactoring();
-      refactor.setTarget(localvar.get()).setNewName(newName).refactor();
-    }
+    transformations.updateMethodParameter(
+        sourceType, sourceMethod, sourceParameter, newName);
   }
 
   @Override
-  public void updateCDType(ASTCDType cdType, String newName) {
-    List<CtTypeReference<?>> refTypes = spoonModel.getElements(Objects::nonNull);
-
-    for (CtTypeReference<?> typeRef : refTypes) {
-      if (typeRef.getSimpleName().equals(cdType.getName())) {
-        typeRef.setSimpleName(newName);
-      }
-    }
-
-    //  for ()
+  public void updateCDType(ASTCDType type, String newName) {
+    transformations.updateCDType(type, newName);
   }
 
   @Override
   public void setOutputDirectory(Path outputPath) {
-    this.outputDir = outputPath.toFile();
+    workspace.setOutputDirectory(outputPath);
   }
 
-  /***
-   * Retrieves the spoonType from the Spoon Model based on the provided mcType.
-   * Saves the found spoonType in the type map.
-   *
-   * @param mcType The ASTTypeDeclaration representing the type to be searched
-   *               for in the Spoon model.
-   * @return The corresponding CtType<?> found in the Spoon model for the
-   *         given mcType.
-   * @throws AssertionError if no matching CtType<?> is found in the Spoon
-   *         model (assert will fail).
-   */
-  private CtType<?> getSpoonType(ASTTypeDeclaration mcType) {
-    // cas already found
-    if (typeMap.containsKey(mcType)) {
-      return typeMap.get(mcType);
-    }
-    // search in the spoon model
-    Optional<CtType<?>> type =
-        spoonModel.getAllTypes().stream().filter(t -> compare(mcType, t)).findFirst();
-    assert type.isPresent();
-    typeMap.put(mcType, type.get());
-    return type.get();
+  @Override
+  public void addField(
+      ASTTypeDeclaration targetType,
+      ASTFieldDeclaration templateField,
+      String newName,
+      String newType,
+      boolean isStatic) {
+    generation.addField(targetType, templateField, newName, newType, isStatic);
   }
 
-  /***
-   * Retrieves the spoonMethod from the Spoon Model based on the provided
-   * mcType and mcMethod. Saves the found spoonMethod in the method map.
-   *
-   * @param mcType The ASTTypeDeclaration representing the type to which
-   *               the method belongs.
-   * @param mcMethod The ASTMethodDeclaration representing the method to be
-   *                 searched for in the Spoon model.
-   * @return The corresponding CtMethod found in the Spoon model for the
-   *         given mcType and mcMethod.
-   * @throws AssertionError if no matching CtMethod is found in the
-   *                        Spoon model (assert will fail).
-   */
-  public CtMethod<?> getSpoonMethod(ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
-    // cas method was already found
-    if (methodMap.containsKey(mcMethod)) {
-      return methodMap.get(mcMethod);
-    }
-
-    // search method in the spoonType
-    CtType<?> spoonType = getSpoonType(mcType);
-    Optional<CtMethod<?>> method =
-        spoonType.getAllMethods().stream()
-            .filter(spMethod -> compare(mcMethod, spMethod))
-            .findFirst();
-
-    assert method.isPresent();
-    methodMap.put(mcMethod, method.get());
-    return method.get();
+  @Override
+  public void addType(ASTTypeDeclaration templateType, String newName) {
+    generation.addType(templateType, newName);
   }
 
-  /**
-   * Compares a mcType and spoonType and returns true if both are identical.
-   *
-   * @param type The ASTTypeDeclaration representing the type to be compared.
-   * @param spoonType The CtType representing the spoon type to be compared.
-   * @return True if the file name of the mcType ends with the simple name of the spoonType followed
-   *     by ".java"; otherwise false.
-   */
-  protected boolean compare(ASTTypeDeclaration type, CtType<?> spoonType) {
-    String fileName = type.get_SourcePositionStart().getFileName().orElse(type.getName());
-    return fileName.replaceAll("\\\\", ".").endsWith(spoonType.getSimpleName() + ".java");
+  @Override
+  public void addSuperType(
+      ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
+    generation.addSuperType(targetType, superTypeName, interfaceType);
   }
 
-  /**
-   * Compares a spoonMethod and mcMethod and returns true if both are identical.
-   *
-   * @param mcMethod The ASTMethodDeclaration representing the method to be compared.
-   * @param spoonMethod The CtMethod representing the spoon method to be compared.
-   * @return True if the names, parameter count, and parameter types of both methods match;
-   *     otherwise false.
-   */
-  protected boolean compare(ASTMethodDeclaration mcMethod, CtMethod<?> spoonMethod) {
-    // compare names
-    if (!mcMethod.getName().endsWith(spoonMethod.getSimpleName())) {
-      return false;
-    }
-    // is present parameters ?
-    if (!mcMethod.getFormalParameters().isPresentFormalParameterListing()) {
-      return spoonMethod.getParameters().isEmpty();
-    }
-    // same number of parameters ?
-    List<ASTFormalParameter> mcParams =
-        mcMethod.getFormalParameters().getFormalParameterListing().getFormalParameterList();
-    if (spoonMethod.getParameters().size() != mcParams.size()) {
-      return false;
-    }
-    // parameters have the same type ?
-    for (int i = 0; i < spoonMethod.getParameters().size(); i++) {
-      if (!(spoonMethod.getParameters().get(i).getType().getSimpleName())
-          .equals(print(mcParams.get(i).getMCType()))) {
-        return false;
-      }
-    }
-
-    return true;
+  @Override
+  public void setTypeAbstract(ASTTypeDeclaration targetType, boolean isAbstract) {
+    generation.setTypeAbstract(targetType, isAbstract);
   }
+
+  @Override
+  public void addEnumConstant(
+      ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
+    generation.addEnumConstant(targetType, constantName, expectedIndex);
+  }
+
+  @Override
+  public void addMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> parameterTypes,
+      List<String> parameterNames,
+      String returnType,
+      boolean isStatic,
+      MethodBodySpec methodBody) {
+    generation.addMethod(
+        targetType,
+        templateMethod,
+        newName,
+        parameterTypes,
+        parameterNames,
+        returnType,
+        isStatic,
+        methodBody);
+  }
+
+  @Override
+  public void removeField(ASTTypeDeclaration targetType, ASTFieldDeclaration field) {
+    generation.removeField(targetType, field);
+  }
+
+  @Override
+  public void removeMethod(ASTTypeDeclaration targetType, ASTMethodDeclaration method) {
+    generation.removeMethod(targetType, method);
+  }
+
 }

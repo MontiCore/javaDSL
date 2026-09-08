@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/***
- * compose matching Strategy for Types.
- * allow trying several matching strategies until a matching is found.
+/**
+ * Applies type-matching strategies in configured precedence order and returns the first result.
+ *
+ * <p>A present ignored matching is still a result and stops the chain. The validator therefore
+ * installs annotation/name/infix strategies first and an ignore-or-error policy last.
  */
 public class CompTypeMatcher implements TypeMatcher {
   protected List<TypeMatcher> matchers;

@@ -14,9 +14,13 @@ import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.List;
 import java.util.Optional;
 
-/***
- * match an Attributes and method in the reference code to elements
- * in the reference class Diagram by analyzing the infix.
+/**
+ * Matches handwritten fields, methods, and declared supertypes by reference-CD names embedded in
+ * their Java names or types.
+ *
+ * <p>For example, {@code getEntity()} may reference type {@code Entity}, while {@code getId()} may
+ * reference attribute {@code id}. Method candidates are additionally restricted by parameter
+ * count so overloads with different arity do not all become references.
  */
 public class InfixTMemberMatcher implements TMemberMatcher {
   protected ASTCDCompilationUnit cd;
@@ -41,27 +45,30 @@ public class InfixTMemberMatcher implements TMemberMatcher {
     return typeMatcher;
   }
 
-  /***
-   * match method to a type or an attribute in the reference class diagram.
-   * eg:     getId  to id ;
-   *     getEntity  to Entity
-   */
+  /** Matches a method name to embedded reference fields, types, and same-arity methods. */
   @Override
   public Optional<CodeMatching> getMatchedMethod(
       ASTTypeDeclaration type, ASTMethodDeclaration method) {
 
-    // resolve references
+    // Get parameter count from the Java method for overloaded method matching
+    int paramCount = getMethodParameterCount(method);
+
+    // resolve references with parameter count filtering for overloaded methods
     List<ISymbol> references = resolveFieldReferencesOf(type, method.getName(), this::match);
     references.addAll(resolveTypeReferencesOf(type, method.getName(), this::match));
+    references.addAll(resolveMethodReferencesOf(type, method.getName(), this::match, paramCount));
 
     return MatcherHelper.mkMatchingFromInfixRef(references, method.getName());
   }
 
-  /***
-   * match field to a type or an attribute in the reference class diagram.
-   * eg: entityList to Entity
-   *         longId to id
-   */
+  private int getMethodParameterCount(ASTMethodDeclaration method) {
+    if (!method.getFormalParameters().isPresentFormalParameterListing()) {
+      return 0;
+    }
+    return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().size();
+  }
+
+  /** Matches a field through reference names embedded in its name and declared type. */
   @Override
   public Optional<CodeMatching> getMatchedField(
       ASTTypeDeclaration type, ASTFieldDeclaration field) {
@@ -75,11 +82,7 @@ public class InfixTMemberMatcher implements TMemberMatcher {
     return MatcherHelper.mkMatchingFromInfixRef(references, name);
   }
 
-  /***
-   * match field to a type or an attribute in the reference class diagram.
-   * eg: entityList to Entity
-   *         longId to id
-   */
+  /** Matches a declared Java supertype to embedded reference-CD type names. */
   @Override
   public Optional<CodeMatching> getMatchedSupertype(ASTTypeDeclaration type, ASTMCType superType) {
     String name = JavaLoader.print(superType);

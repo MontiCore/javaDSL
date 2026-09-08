@@ -1,0 +1,6 @@
+
+classdiagram AttributeTypeUnderspecifiedRef {
+  class DataClass {
+    any attribute;
+  }
+}

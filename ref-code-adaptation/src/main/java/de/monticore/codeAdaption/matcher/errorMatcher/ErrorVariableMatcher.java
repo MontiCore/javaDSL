@@ -11,9 +11,9 @@ import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 
-/***
- *throws an error when the previous strategy didn't find machining for local-variables
- * and method parameters.
+/**
+ * Terminal fallback that reports unmatched local variables and formal parameters as validation
+ * errors. It is installed when {@code IGNORE_NON_MATCHED_VAR} is not enabled.
  */
 public class ErrorVariableMatcher implements VariableMatcher {
   @Override
@@ -26,7 +26,6 @@ public class ErrorVariableMatcher implements VariableMatcher {
     String name = locVar.getVariableDeclarator(0).getDeclarator().getName();
     String pos = AdapterUtils.getPosition(locVar.get_SourcePositionStart());
     Log.error(pos + " No Match found for the Local Variable " + name);
-    assert false;
     return Optional.empty();
   }
 
@@ -37,7 +36,6 @@ public class ErrorVariableMatcher implements VariableMatcher {
     String name = param.getDeclarator().getName();
     String pos = AdapterUtils.getPosition(param.get_SourcePositionStart());
     Log.error(pos + " No Match found for the formal parameter " + name);
-    assert false;
     return Optional.empty();
   }
 }

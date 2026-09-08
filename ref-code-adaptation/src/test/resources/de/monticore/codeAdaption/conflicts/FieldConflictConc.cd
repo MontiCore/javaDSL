@@ -1,0 +1,10 @@
+import java.lang.String;
+classdiagram FieldConflictConc {
+  class Base {
+    int id;
+  }
+
+  <<ref="Person">> class Employee extends Base {
+    String id;
+  }
+}

@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/***
- * match a type in the reference code to elements
- * in the reference class Diagram by analyzing the infix.
+/**
+ * Matches a handwritten type when its name contains one or more reference-CD type names,
+ * case-insensitively.
+ *
+ * <p>For example, {@code EntityRepository} can reference {@code Entity}. When candidate names
+ * overlap, {@link MatcherHelper} gives longer matches precedence while building the template.
  */
 public class InfixTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;
@@ -41,9 +44,7 @@ public class InfixTypeMatcher implements TypeMatcher {
     this.cd = cd;
   }
 
-  /***
-   * match a type to a type in the class diagram with the same suffix.
-   */
+  /** Returns an infix-derived matching for all reference-CD type names found in the Java name. */
   @Override
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration type) {
     List<ISymbol> references = new ArrayList<>();

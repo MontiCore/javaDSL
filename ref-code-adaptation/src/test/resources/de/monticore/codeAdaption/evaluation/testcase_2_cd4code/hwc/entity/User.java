@@ -1,4 +1,4 @@
-package de.monticore.codeAdaption.evaluation.testcase_2_cd4code.Concrete;
+package Concrete;
 
 import de.monticore.codeAdaption.utils.Adapt;
 

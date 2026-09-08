@@ -1,0 +1,12 @@
+
+classdiagram ForEachAttributeDifferentTypeRef {
+  class DataClass {
+    any attribute;
+  }
+
+  class Builder {
+    // Incarnations will all have the type 'boolean' as the referenced attribute does not have the
+    // same type as the annotated attribute!
+    <<forEach="DataClass.attribute">> boolean hasModifiedAttribute;
+  }
+}

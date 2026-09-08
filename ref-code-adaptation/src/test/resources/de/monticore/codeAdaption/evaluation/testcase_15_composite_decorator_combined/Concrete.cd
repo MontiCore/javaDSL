@@ -1,0 +1,43 @@
+import java.lang.String;
+import java.util.List;
+
+classdiagram Concrete {
+  <<composite="Component", decorator="Component">> interface Renderable {
+    <<composite="operation", decorator="operation">> String render(int depth);
+  }
+
+  <<composite="Leaf">> class TextNode implements Renderable {
+    String text;
+    <<composite="operation">> String render(int depth);
+  }
+
+  <<composite="Leaf">> class ImageNode implements Renderable {
+    String source;
+    <<composite="operation">> String render(int depth);
+  }
+
+  <<composite="Composite">> class GroupNode implements Renderable {
+    List<Renderable> nodes;
+    <<composite="add">> void attach(Renderable node);
+    <<composite="remove">> void detach(Renderable node);
+    <<composite="operation">> String render(int depth);
+  }
+
+  <<decorator="Decorator">> abstract class RenderDecorator implements Renderable {
+    Renderable wrapped;
+    RenderDecorator(Renderable wrapped);
+    <<decorator="operation">> String render(int depth);
+  }
+
+  <<decorator="Decorator">> class BorderDecorator extends RenderDecorator {
+    String borderStyle;
+    BorderDecorator(Renderable wrapped);
+    <<decorator="operation">> String render(int depth);
+  }
+
+  <<decorator="Decorator">> class ShadowDecorator extends RenderDecorator {
+    int radius;
+    ShadowDecorator(Renderable wrapped);
+    <<decorator="operation">> String render(int depth);
+  }
+}

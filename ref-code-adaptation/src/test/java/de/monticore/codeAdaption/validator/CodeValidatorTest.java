@@ -4,20 +4,31 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.AdapterAbstractTest;
+import de.monticore.codeAdaption.matcher.errorMatcher.ErrorTypeMatcher;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
+import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class CodeValidatorTest extends AdapterAbstractTest {
+  @TempDir Path tempDir;
+
   protected String baseDir = "src/test/resources/de/monticore/codeAdaption/validator/";
   protected CodeValidator validator;
   protected ASTCDCompilationUnit cd;
@@ -41,31 +52,112 @@ class CodeValidatorTest extends AdapterAbstractTest {
         Arguments.of("MissingTemplateArgument.java", "0xRC001"));
   }
 
-  public static Stream<Arguments> invalidFiles2() {
-    return Stream.of(Arguments.of("InvalidTemplate.java", "0xRC003"));
-  }
-
   @ParameterizedTest
   @MethodSource("invalidFiles1")
   public void checkAnnotationPhase1(String filename, String errorCode) {
 
     String fileName = baseDir + "invalid/" + filename;
     ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(new File(fileName));
-    validator.runCoCosPhase1(ast, cd);
+    validator.runAdapterCoCos(ast, cd);
 
     Assertions.assertEquals(1, Log.getErrorCount());
     Assertions.assertTrue(Log.getFindings().get(0).getMsg().startsWith(errorCode));
   }
 
-  @ParameterizedTest
-  @MethodSource("invalidFiles2")
-  public void checkAnnotationPhase2(String filename, String errorCode) {
+  @Test
+  void literalDollarDoesNotCountAsTemplatePlaceholder() throws IOException {
+    ASTOrdinaryCompilationUnit ast =
+        javaSource(
+            "LiteralDollar.java",
+            """
+            import de.monticore.codeAdaption.utils.Adapt;
+            @Adapt(ref = "Entity", template = "Price$${}", genTemplate = "Generated$${}")
+            class LiteralDollar {}
+            """);
 
-    String fileName = baseDir + "invalid/" + filename;
-    ASTOrdinaryCompilationUnit ast = JavaLoader.loadJava(new File(fileName));
-    validator.runCoCosPhase2(ast, cd);
+    validator.runAdapterCoCos(ast, cd);
 
-    Assertions.assertEquals(5, Log.getErrorCount());
-    Log.getFindings().forEach(f -> Assertions.assertTrue(f.getMsg().startsWith(errorCode)));
+    Assertions.assertEquals(0, Log.getErrorCount());
   }
+
+  @Test
+  void generatedTemplateMustMatchReferenceArity() throws IOException {
+    ASTOrdinaryCompilationUnit ast =
+        javaSource(
+            "InvalidGeneratedTemplate.java",
+            """
+            import de.monticore.codeAdaption.utils.Adapt;
+            @Adapt(ref = "Entity", template = "${}", genTemplate = "${}${}")
+            class InvalidGeneratedTemplate {}
+            """);
+
+    validator.runAdapterCoCos(ast, cd);
+
+    Assertions.assertEquals(1, Log.getErrorCount());
+    Assertions.assertTrue(Log.getFindings().get(0).getMsg().startsWith("0xRC001"));
+  }
+
+  @Test
+  void validationInitializesSourceTypesBeforeCheckingSupertypes() throws IOException {
+    Path sources = Files.createDirectory(tempDir.resolve("source-local-supertype"));
+    Files.writeString(sources.resolve("Base.java"), "class Base {}");
+    Files.writeString(sources.resolve("Child.java"), "class Child extends Base {}");
+    CodeValidator strictMembers =
+        new CodeValidator(cd, Set.of(IGNORE_NON_MATCHED_TYPE, IGNORE_NON_MATCHED_VAR));
+
+    Assertions.assertTrue(strictMembers.isValid(cd, sources));
+  }
+
+  @Test
+  void validationRejectsUnmatchedExternalSupertype() throws IOException {
+    Path sources = Files.createDirectory(tempDir.resolve("external-supertype"));
+    Files.writeString(sources.resolve("Child.java"), "class Child extends ExternalBase {}");
+    CodeValidator strictMembers =
+        new CodeValidator(cd, Set.of(IGNORE_NON_MATCHED_TYPE, IGNORE_NON_MATCHED_VAR));
+
+    Assertions.assertFalse(strictMembers.isValid(cd, sources));
+  }
+
+  @Test
+  void validationCanIgnoreUnmatchedExternalSupertype() throws IOException {
+    Path sources = Files.createDirectory(tempDir.resolve("ignored-supertype"));
+    Files.writeString(sources.resolve("Child.java"), "class Child extends ExternalBase {}");
+    CodeValidator ignoredMembers =
+        new CodeValidator(
+            cd,
+            Set.of(
+                IGNORE_NON_MATCHED_TYPE,
+                IGNORE_NON_MATCHED_TYPE_MEMBER,
+                IGNORE_NON_MATCHED_VAR));
+
+    Assertions.assertTrue(ignoredMembers.isValid(cd, sources));
+  }
+
+  @Test
+  void unrelatedSameNamedSourceTypeDoesNotSatisfyAnImportedExternalSupertype()
+      throws IOException {
+    Path sources = Files.createDirectory(tempDir.resolve("validator-owner"));
+    Path unrelated = Files.createDirectories(sources.resolve("unrelated"));
+    Path consumer = Files.createDirectories(sources.resolve("consumer"));
+    Files.writeString(unrelated.resolve("Base.java"), "package unrelated; class Base {}");
+    Files.writeString(
+        consumer.resolve("Child.java"),
+        "package consumer; import external.Base; class Child extends Base {}");
+    Path modelFile = tempDir.resolve("ExternalSupertype.cd");
+    Files.writeString(modelFile, "classdiagram ExternalSupertype {}");
+    ASTCDCompilationUnit model = JavaLoader.parseCD(modelFile.toString());
+    CodeValidator strictMembers =
+        new CodeValidator(model, Set.of(IGNORE_NON_MATCHED_TYPE, IGNORE_NON_MATCHED_VAR));
+
+    Assertions.assertFalse(
+        strictMembers.isValid(model, sources),
+        "An unrelated source package must not satisfy the imported external supertype");
+  }
+
+  private ASTOrdinaryCompilationUnit javaSource(String fileName, String source) throws IOException {
+    Path file = tempDir.resolve(fileName);
+    Files.writeString(file, source);
+    return JavaLoader.loadJava(file.toFile());
+  }
+
 }

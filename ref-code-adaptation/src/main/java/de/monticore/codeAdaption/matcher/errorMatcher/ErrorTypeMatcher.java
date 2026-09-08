@@ -9,8 +9,9 @@ import de.se_rwth.commons.logging.Log;
 import java.util.Optional;
 import java.util.Set;
 
-/***
- *throws an error when the previous strategy didn't find machining for types
+/**
+ * Terminal fallback that reports an unmatched Java type as a validation error.
+ * It is installed when {@code IGNORE_NON_MATCHED_TYPE} is not enabled.
  */
 public class ErrorTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;
@@ -35,7 +36,6 @@ public class ErrorTypeMatcher implements TypeMatcher {
   public Optional<CodeMatching> getMatchedType(ASTTypeDeclaration type) {
     String pos = AdapterUtils.getPosition(type.get_SourcePositionStart());
     Log.error(pos + " No Match found for the type " + type.getName());
-    assert false;
     return Optional.empty();
   }
 }
