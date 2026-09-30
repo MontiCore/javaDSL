@@ -3,14 +3,16 @@ package de.monticore.java;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 import de.se_rwth.commons.logging.Log;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@TestWithMCLanguage(JavaDSLMill.class)
 public final class JavaDSLAssertions {
 
   public static void assertParsingFailure(Path pathToModel) {

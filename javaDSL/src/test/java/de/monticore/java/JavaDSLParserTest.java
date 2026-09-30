@@ -8,6 +8,7 @@ import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.java.util.JavaSourceTest;
 import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -17,11 +18,11 @@ import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static de.monticore.java.JavaDSLAssertions.*;
-
+import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JavaDSLParserTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public class JavaDSLParserTest {
 
   @JavaSourceTest(basePath = "src/test/resources/de/monticore/java/parser",
       files = {

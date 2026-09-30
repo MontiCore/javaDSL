@@ -1,11 +1,13 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.util.JavaSourceTest;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 
 import java.nio.file.Path;
 
-import static de.monticore.java.JavaDSLAssertions.*;
+import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
 
 /**
  * Performs tests on a large corpus of open-source libraries. The source
@@ -15,7 +17,8 @@ import static de.monticore.java.JavaDSLAssertions.*;
  * <p>To add or remove libraries to the corpus, add a dependency to the "corpus"
  * configuration in the build script.</p>
  */
-public final class CorpusTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public final class CorpusTest {
 
   /*
    * To learn more about corpus tests, please refer to:

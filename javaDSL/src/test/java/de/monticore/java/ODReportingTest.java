@@ -1,8 +1,6 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import java.nio.file.Path;
-
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
@@ -12,12 +10,16 @@ import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
 import de.monticore.java.reporting.JavaDSL2ODReporter;
 import de.monticore.java.reporting.JavaDSLNodeIdentHelper;
 import de.monticore.java.util.JavaSourceTest;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 import org.junit.jupiter.api.io.TempDir;
 
-import static de.monticore.java.JavaDSLAssertions.*;
+import java.nio.file.Path;
+
+import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ODReportingTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public class ODReportingTest {
   
   @TempDir
   private Path outputDir;

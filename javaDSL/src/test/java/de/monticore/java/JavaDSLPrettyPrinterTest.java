@@ -5,6 +5,9 @@ import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.util.JavaSourceTest;
+import de.monticore.runtime.junit.TestWithMCLanguage;
+import de.se_rwth.commons.logging.Log;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -12,14 +15,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import de.monticore.java.util.JavaSourceTest;
-import de.se_rwth.commons.logging.Log;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-public final class JavaDSLPrettyPrinterTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public final class JavaDSLPrettyPrinterTest {
 
   @JavaSourceTest(basePath = "src/test/resources/de/monticore/java/parser", files = {
       "ASTClassDeclaration.java", "ParseException.java", "TokenMgrError.java" })

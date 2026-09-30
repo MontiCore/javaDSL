@@ -3,7 +3,10 @@ package de.monticore.java._symboltable;
 import de.monticore.expressions.uglyexpressions._ast.ASTCreatorExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
-import de.monticore.java.javadsl._symboltable.*;
+import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
+import de.monticore.java.javadsl._symboltable.IJavaDSLScope;
+import de.monticore.java.javadsl._symboltable.JavaDSLScope;
+import de.monticore.java.javadsl._symboltable.TypeDeclarationSymbol;
 import de.monticore.java.util.JavaSourceTest;
 import de.monticore.java.utils.JavaDSLSymbolTableUtil;
 import de.monticore.javalight._ast.ASTConstDeclaration;
@@ -25,12 +28,13 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 
 import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
 import static org.junit.jupiter.api.Assertions.*;

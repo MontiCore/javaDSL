@@ -1,6 +1,8 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
+import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 import de.se_rwth.commons.logging.Log;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -8,8 +10,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -20,7 +20,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-public class JavaDSLToolTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public class JavaDSLToolTest {
 
   @TempDir
   private Path OUTPUT_DIR;
