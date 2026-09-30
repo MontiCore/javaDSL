@@ -1,3 +1,7 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+apply plugin:"com.github.johnrengelman.shadow"
+
 description = "MontiCore: Java DSL"
 
 def grammarsDir = "src/main/grammars"
@@ -47,11 +51,26 @@ tasks.withType(Test).configureEach {
     dependsOn(extractCorpus)
 }
 
+tasks.register('buildJavaDSLTool', ShadowJar) {
+    minimize()
+    group = 'mc'
+    archiveFileName = 'MCJavaDSL.jar'
+    archiveClassifier = 'javadsl-mc-tool'
+    manifest {
+        attributes('Main-Class':'de.monticore.java.JavaDSLTool')
+    }
+    from sourceSets.main.output
+    configurations = [project.configurations.runtimeClasspath]
+}
+jar.dependsOn(buildJavaDSLTool)
+
 dependencies {
     implementation "de.monticore.lang:cd4analysis:$mc_version"
+    implementation "de.monticore:class2mc:$mc_version"
 
     grammar "de.monticore:monticore-grammar:$mc_version"
 
+    testImplementation testFixtures("de.monticore:monticore-grammar:$mc_version")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit_version"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_version"

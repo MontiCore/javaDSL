@@ -71,6 +71,7 @@ package de.monticore.java;
  *     |-> de.monticore.types.MCBasicTypes (*)
  * |-> de.monticore.types.MCFullGenericTypes (*)
  * |-> de.monticore.types.TypeParameters (*)
+ * |-> de.monticore.types.MCStructuralTypes
  *
  * (*) Repeated Dependencies are omitted.
  */
@@ -78,12 +79,13 @@ grammar JavaDSL extends
     de.monticore.java.TextBlock,
     de.monticore.literals.MCJavaLiterals,
     de.monticore.JavaLight,
-	de.monticore.expressions.BitExpressions,
-	de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
-	de.monticore.statements.MCFullJavaStatements,
-	de.monticore.types.MCArrayTypes,
-	de.monticore.types.MCFullGenericTypes,
-	de.monticore.types.TypeParameters {
+	  de.monticore.expressions.BitExpressions,
+	  de.monticore.expressions.LambdaExpressions, // TODO: move to JavaLight?
+	  de.monticore.statements.MCFullJavaStatements,
+	  de.monticore.types.MCArrayTypes,
+	  de.monticore.types.MCFullGenericTypes,
+	  de.monticore.types.TypeParameters,
+	  de.monticore.types.MCStructuralTypes {
 
 start CompilationUnit;
 
@@ -91,7 +93,7 @@ start CompilationUnit;
 interface CompilationUnit;
 
 OrdinaryCompilationUnit implements CompilationUnit
-    = PackageDeclaration? ImportDeclaration* TypeDeclaration*
+    = PackageDeclaration? ImportDeclaration* (TypeDeclaration | ";")*
     ;
 
 ModularCompilationUnit implements CompilationUnit
@@ -122,10 +124,11 @@ RequiresDirective implements ModuleDirective
     = "requires" RequiresModifier? MCQualifiedName ";"
     ;
 
-enum RequiresModifier
-    = "static"
-    | "transitive"
-    ;
+
+interface RequiresModifier;
+
+StaticModifier implements RequiresModifier = ["static"];
+TransitiveModifier implements RequiresModifier = ["transitive"];
 
 ExportsDirective implements ModuleDirective
     = "exports" MCQualifiedName ("to" toModules:(MCQualifiedName || ",")+)? ";"
@@ -152,25 +155,24 @@ nokeyword "uses";
 nokeyword "provides";
 nokeyword "with";
 nokeyword "to";
+nokeyword "transitive";
 
 // Type declarations
-abstract symbol scope TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
+// TODO: Remove Java-specific Interfaces, reuse component grammars and use CoCos for validation?
+abstract symbol scope(shadowing) TypeDeclaration implements ClassMemberDeclaration, InterfaceMemberDeclaration, AnnotationTypeElementDeclaration, MCBlockStatement, OOType = Name ;
 
 symbolrule TypeDeclaration =
-    isAnnotation: boolean ;
+    isAnnotation: boolean
+    isRecord: boolean;
 
-symbol scope ClassDeclaration extends TypeDeclaration
+ClassDeclaration extends TypeDeclaration
     =   JavaModifier* "class" Name TypeParameters?
         ("extends" superClass:MCType)?
         ("implements" implementedInterface:(MCType || ",")+)?
         ClassBody
     ;
 
-symbolrule ClassDeclaration =
-    superInterface:MCType*
-    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
-    methods: de.monticore.javalight._symboltable.JavaMethodSymbol* ;
-
+// TODO Replace with MCJavaBlock? -> with CoCos?
 ClassBody
     =   "{" ClassBodyDeclaration* "}"
     ;
@@ -181,11 +183,15 @@ ClassBody
  * https://docs.oracle.com/javase/specs/jls/se19/html/jls-8.html#jls-8.10
  */
 
-symbol scope RecordDeclaration extends TypeDeclaration
+RecordDeclaration extends TypeDeclaration
     = JavaModifier* "record" Name TypeParameters? RecordHeader
         ("implements" implementedInterface:(MCType || ",")+)?
         RecordBody
     ;
+
+// TODO: "record" is a contextual keyword, but setting it to nokeyword creates conflicts with MethodDeclaration
+//       -> might need to be fixed in MontiCore itself
+//nokeyword "record";
 
 RecordHeader
     = "(" (RecordComponent || ",")* ")"
@@ -200,6 +206,7 @@ astrule RecordComponent =
       return this.isPresentVariableArity();
     };
 
+// TODO Replace with MCJavaBlock? -> with CoCos?
 RecordBody
     = "{" (ClassBodyDeclaration | CompactConstructorDeclaration)* "}"
     ;
@@ -208,27 +215,24 @@ CompactConstructorDeclaration
     = JavaModifier* Name body:MCJavaBlock
     ;
 
-symbol scope InterfaceDeclaration extends TypeDeclaration
+InterfaceDeclaration extends TypeDeclaration
     =   JavaModifier* "interface" Name TypeParameters?
         ("extends" extendedInterface:(MCType || ",")+)?
         InterfaceBody
     ;
 
+// TODO Replace with MCJavaBlock? -> with CoCos?
 InterfaceBody
     =   "{" InterfaceBodyDeclaration* "}"
     ;
 
-symbol scope EnumDeclaration extends TypeDeclaration
+EnumDeclaration extends TypeDeclaration
     =   JavaModifier* "enum" Name
         ("implements" implementedInterface:(MCType || ",")+)?
         "{" (EnumConstantDeclaration || ",")* ","? EnumBody? "}"
     ;
 
-symbolrule EnumDeclaration =
-    constructor: de.monticore.javalight._symboltable.JavaMethodSymbol*
-    methods: de.monticore.javalight._symboltable.JavaMethodSymbol*;
-
-symbol EnumConstantDeclaration
+scope(shadowing) symbol EnumConstantDeclaration implements Field
     =   Annotation* Name Arguments? ClassBody?
     ;
 
@@ -237,8 +241,11 @@ EnumBody
     ;
 
 ClassBlock implements ClassBodyDeclaration
-    =   (["static"])? JavaBlock
+    =   (["static"])? MCJavaBlock
     ;
+
+@Override
+EmptyStatement implements ClassBodyDeclaration;
 
 interface ClassMemberDeclaration extends ClassBodyDeclaration ;
 
@@ -274,20 +281,23 @@ astrule Annotation =
         return -1;
     };
 
-symbol scope AnnotationTypeDeclaration extends TypeDeclaration
+AnnotationTypeDeclaration extends TypeDeclaration
     =   JavaModifier* "@" "interface" Name AnnotationTypeBody
     ;
 
+// TODO Replace with MCJavaBlock? -> with CoCos? | Replace with { InterfaceBodyDeclaration }
 AnnotationTypeBody
     =   "{" (AnnotationTypeElementDeclaration)* "}"
     ;
 
 interface AnnotationTypeElementDeclaration ;
 
-symbol scope AnnotationMethod implements AnnotationTypeElementDeclaration
+// TODO Replace with MethodDeclaration?
+AnnotationMethod implements AnnotationTypeElementDeclaration, JavaMethod
     =   JavaModifier* MCType Name "(" ")" DefaultValue? ";"
     ;
 
+// TODO Replace with ConstDeclaration?
 AnnotationConstant implements AnnotationTypeElementDeclaration
     =   JavaModifier* MCType (VariableDeclarator || ",")+ ";"
     ;
@@ -316,6 +326,15 @@ MCBasicGenericType implements MCGenericType <20>
     = (AnnotatedName || ".")+ "<" (MCTypeArgument || ",")* ">"
     ;
 
+astrule MCBasicGenericType =
+  method public String printWithoutTypeArguments() {
+    java.util.List<String> names = new ArrayList<>();
+    for(ASTAnnotatedName annotatedName : getAnnotatedNameList()) {
+      names.add(annotatedName.getName());
+    }
+    return String.join(".", names);
+  };
+
 @Override
 MCQualifiedType implements MCObjectType
     = (AnnotatedName || ".")+
@@ -323,33 +342,8 @@ MCQualifiedType implements MCObjectType
 
 // STATEMENTS / BLOCKS
 
-interface Statement extends MCBlockStatement ;
-
-scope JavaBlock implements Statement, MethodBody, ConstructorBody, FinallyBlock
-    =   "{" MCBlockStatement* "}"
-    ;
-
-scope TryStatement implements Statement
-    =   "try" JavaBlock ExceptionHandler
-    ;
-
-interface ExceptionHandler ;
-
-CatchExceptionsHandler implements ExceptionHandler
-    =   CatchClause+ ("finally" FinallyBlock)?
-    ;
-
-FinallyBlockOnlyHandler implements ExceptionHandler
-    =   ("finally" FinallyBlock)
-    ;
-
-TryStatementWithResources implements Statement
-    =   "try" "(" (Resource || ";")+ ";"? ")" JavaBlock CatchClause* ("finally" FinallyBlock)?
-    ;
-
-Resource
-    =   JavaModifier* MCType DeclaratorId "=" Expression
-    ;
+@Override
+scope(shadowing) MCJavaBlock implements MethodBody, ConstructorBody;
 
 IdentifierAndTypeArgument
     =   Name TypeArguments?
@@ -359,15 +353,14 @@ TypeArguments
     =   "<" (MCTypeArgument || ",")* ">"
     ;
 
-interface FinallyBlock ;
-
-LabeledStatement implements Statement
-    =   label:Name ":" Statement
-    ;
-
 CreatedName
     =   (IdentifierAndTypeArgument || ".")+
     |   MCPrimitiveType
+    ;
+
+// TODO: might need some attention...can we do that better?
+InnerCreatorExpression implements Expression <275>
+    =   Expression "." "new" InnerCreator
     ;
 
 InnerCreator
@@ -386,10 +379,28 @@ LocalVariableDeclaration
 @Override
 LambdaParameter implements Variable = (["var"] | MCType)? Name;
 
+@Override
+TryLocalVariableDeclaration
+    = JavaModifier* (["var"] | MCType) DeclaratorId "=" Expression ;
+
+// Add support for try-with-resources with external resources
+TryStatement4 implements MCStatement
+    =   "try" "(" resource:Field  ")"
+        core:MCJavaBlock
+        CatchClause*
+        ("finally" finally:MCJavaBlock)? ;
+
+@Override
+EnhancedForControl implements ForControl
+    = EnhancedForControlFormalParameter ":" Expression;
+
+EnhancedForControlFormalParameter
+    = JavaModifier* (["var"] | MCType) Declarator;
+
 nokeyword "var";
 
 
-AnonymousClass implements Creator
+scope(shadowing) AnonymousClass extends ClassCreator implements Creator
     =   MCType Arguments ClassBody?
     ;
 

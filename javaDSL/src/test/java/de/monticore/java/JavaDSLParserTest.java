@@ -3,7 +3,7 @@ package de.monticore.java;
 
 import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
+import de.monticore.java.javadsl._ast.ASTMCJavaBlock;
 import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
@@ -45,7 +45,7 @@ public class JavaDSLParserTest extends AbstractTest {
     buffer.append("}");
     buffer.append("}   ");
     JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTJavaBlock> ast = parser.parseJavaBlock(new StringReader(buffer.toString()));
+    Optional<ASTMCJavaBlock> ast = parser.parseMCJavaBlock(new StringReader(buffer.toString()));
     assertFalse(parser.hasErrors());
     assertTrue(ast.isPresent());
   }
