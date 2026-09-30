@@ -20,7 +20,7 @@ public class Generator {
       "--fieldfromrole",
       "navigable"
     };
-    CD4CodeTool.main(input);
+    new CD4CodeTool().run(input);
 
     // delete hook-points
     JavaLoader.readJavaFile(Path.of("target")).forEach(AdapterUtils::removeComments);
