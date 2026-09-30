@@ -10,7 +10,7 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@ParameterizedTest
+@ParameterizedTest(name = "{0}")
 @ArgumentsSource(JavaSourceArgumentsProvider.class)
 public @interface JavaSourceTests {
 
