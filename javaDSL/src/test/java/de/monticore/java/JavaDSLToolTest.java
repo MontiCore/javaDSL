@@ -39,7 +39,7 @@ public class JavaDSLToolTest extends AbstractTest {
   }
   
   @ParameterizedTest
-  @MethodSource
+  @MethodSource("testTool")
   public void testTool(Path inputPath, List<Path> relOutputPaths) {
     ArrayList<String> path = new ArrayList<>();
     Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator)).forEach(p -> {

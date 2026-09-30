@@ -6,6 +6,7 @@ import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTMCJavaBlock;
 import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.util.JavaSourceTest;
 import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import static de.monticore.java.JavaDSLAssertions.*;
@@ -21,14 +23,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaDSLParserTest extends AbstractTest {
 
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
-      "src/test/resources/de/monticore/java/parser/ParseException.java",
-      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
-      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
+  @JavaSourceTest(basePath = "src/test/resources/de/monticore/java/parser",
+      files = {
+      "ASTClassDeclaration.java", "ParseException.java", "TokenMgrError.java"
   })
-  public void testParser(String path) throws IOException {
+  @JavaSourceTest(basePath = "src/test/resources/parsableAndCompilableModels/simpleTestClasses",
+      files = {"HelloWorld.java"})
+  public void testParser(Path path) throws IOException {
     assertParsingSuccess(path);
   }
 
@@ -89,11 +90,8 @@ public class JavaDSLParserTest extends AbstractTest {
     assertTrue(parser.parse_StringExpression(input).isPresent());
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/moduleDeclaration/module-info.java"
-  })
-  public void testModuleDeclaration(String path) {
+  @JavaSourceTest(basePath = "src/test/resources/moduleDeclaration", files = {"module-info.java"})
+  public void testModuleDeclaration(Path path) {
     assertParsingSuccess(path);
   }
 

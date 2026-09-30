@@ -1,10 +1,7 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import de.monticore.generating.templateengine.reporting.commons.ReportingRepository;
 import de.monticore.java.javadsl.JavaDSLMill;
@@ -14,23 +11,20 @@ import de.monticore.java.javadsl._symboltable.IJavaDSLGlobalScope;
 import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitorDelegator;
 import de.monticore.java.reporting.JavaDSL2ODReporter;
 import de.monticore.java.reporting.JavaDSLNodeIdentHelper;
+import de.monticore.java.util.JavaSourceTest;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import static de.monticore.java.JavaDSLAssertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class ODReportingTest extends AbstractTest {
   
   @TempDir
   private Path outputDir;
   
-  private static void createAstAndST(Path pathName, String modelName, Path outputDir) {
+  private static void createAstAndST(Path model, String modelName, Path outputDir) {
     ASTCompilationUnit compilationUnit =
-        assertParsingSuccess(pathName + File.separator + modelName + ".java");
+        assertParsingSuccess(model);
     
     ReportingRepository reporting = new ReportingRepository(new JavaDSLNodeIdentHelper());
     JavaDSL2ODReporter reporter =
@@ -45,18 +39,13 @@ public class ODReportingTest extends AbstractTest {
     
     reporter.flush(compilationUnit);
   }
-  
-  public static Stream<Arguments> testReporting() {
-    Path resourcePath = Paths.get("src", "test", "resources", "parsableAndCompilableModels");
-    return Stream.of(arguments(resourcePath.resolve("simpleTestClasses"), "HelloWorld"),
-        arguments(resourcePath.resolve("simpleTestClasses"), "GenericClass"),
-        arguments(resourcePath.resolve("stressfulPackage"), "StressfulSyntax"));
-  }
-  
-  @ParameterizedTest
-  @MethodSource
-  public void testReporting(Path basePath, String modelName) {
-    createAstAndST(basePath, modelName, outputDir);
+
+  @JavaSourceTest(basePath = "src/test/resources/parsableAndCompilableModels", files = {
+      "simpleTestClasses/HelloWorld.java", "simpleTestClasses/GenericClass.java",
+      "stressfulPackage/StressfulSyntax.java" })
+  public void testReporting(Path model) {
+    String modelName = model.getFileName().toString().split(".java")[0];
+    createAstAndST(model, modelName, outputDir);
     
     Path expectedOutputDir = outputDir.resolve("reports").resolve(modelName);
     Path expectedOutputFile = expectedOutputDir.resolve(modelName + "_AST.od");

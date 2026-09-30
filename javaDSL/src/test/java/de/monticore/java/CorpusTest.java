@@ -1,16 +1,9 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import de.monticore.java.util.JavaSourceTest;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.monticore.java.JavaDSLAssertions.*;
 
@@ -29,17 +22,9 @@ public final class CorpusTest extends AbstractTest {
    * /src/main/grammars/de/monticore/java/JavaDSL.md
    */
 
-  private static List<String> provideFilesForCorpusTests() throws IOException {
-    try (Stream<Path> stream = Files.walk(Path.of("target/corpus"))) {
-      return stream.map(path -> Files.isRegularFile(path) ? path.toAbsolutePath().toString() : null)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toUnmodifiableList());
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideFilesForCorpusTests")
-  public void testParsing(String path) {
+  @JavaSourceTest(basePath = "target/corpus/guava-31.1-jre-sources")
+  @JavaSourceTest(basePath = "target/corpus/monticore-runtime-7.8.0-sources")
+  public void testParsing(Path path) {
     assertParsingSuccess(path);
   }
 

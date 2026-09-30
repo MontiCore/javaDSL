@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import de.monticore.java.util.JavaSourceTest;
 import de.se_rwth.commons.logging.Log;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -19,14 +20,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class JavaDSLPrettyPrinterTest extends AbstractTest {
-  
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
-      "src/test/resources/de/monticore/java/parser/ParseException.java",
-      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
-      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
-  })
+
+  @JavaSourceTest(basePath = "src/test/resources/de/monticore/java/parser", files = {
+      "ASTClassDeclaration.java", "ParseException.java", "TokenMgrError.java" })
+  @JavaSourceTest(basePath = "src/test/resources/parsableAndCompilableModels/simpleTestClasses",
+      files = {"HelloWorld.java"})
   public void testPrettyPrinter(String path) throws IOException {
     // Parse input
     ASTJavaDSLNode ast = parse(path);

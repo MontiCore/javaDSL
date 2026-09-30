@@ -4,6 +4,7 @@ import de.monticore.expressions.uglyexpressions._ast.ASTCreatorExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._symboltable.*;
+import de.monticore.java.util.JavaSourceTest;
 import de.monticore.java.utils.JavaDSLSymbolTableUtil;
 import de.monticore.javalight._ast.ASTConstDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
@@ -28,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
@@ -40,24 +42,24 @@ public class JavaDSLSymbolTableTest {
   void setUp() {
     JavaDSLSymbolTableUtil.prepareMill(true);
   }
-  
-  @ParameterizedTest
-  @ValueSource(strings = {
-      // Symbol table
-      "src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaEnum.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaInterface.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/resolve/GeneralResolveTestClass.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/resolve/TypeVariableShadowingTestClass.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeParameterTestClass.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/MethodParametersAndLocalVariablesAreDefinedInSameScope.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/ScopesSymbolTableTestClass.java",
-      "src/test/resources/parsableAndCompilableModels/symbolTable/VariablesTestClass.java" })
-  public void testSymbolTableCreation(String path) {
+
+  @JavaSourceTest(basePath = "src/test/resources/parsableAndCompilableModels/symbolTable",
+  files = {
+      "enums/EnumViaJavaEnum.java",
+      "enums/EnumViaJavaInterface.java",
+      "resolve/GeneralResolveTestClass.java",
+      "resolve/TypeVariableShadowingTestClass.java",
+      "typeArgumentsAndParameters/TypeArgumentTestClass.java",
+      "typeArgumentsAndParameters/TypeParameterTestClass.java",
+      "MethodParametersAndLocalVariablesAreDefinedInSameScope.java",
+      "ScopesSymbolTableTestClass.java",
+      "VariablesTestClass.java"
+  })
+  public void testSymbolTableCreation(Path path) {
     parseAndCreateST(path);
   }
   
-  protected IJavaDSLArtifactScope parseAndCreateST(String path) {
+  protected IJavaDSLArtifactScope parseAndCreateST(Path path) {
     ASTCompilationUnit ast = assertParsingSuccess(path);
     return JavaDSLSymbolTableUtil.buildSymbolTable(ast);
   }
@@ -67,7 +69,7 @@ public class JavaDSLSymbolTableTest {
   public void test_simpleTestClasses_types_SimpleAnnotationTestModel()
       throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleAnnotationTestModel.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleAnnotationTestModel.java"));
     
     Optional<TypeDeclarationSymbol> annotationSymbol =
         scope.resolveTypeDeclaration("SimpleAnnotationTestModel");
@@ -91,7 +93,7 @@ public class JavaDSLSymbolTableTest {
   public void test_simpleTestClasses_types_SimpleClassTestModel()
       throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleClassTestModel.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleClassTestModel.java"));
     
     Optional<TypeSymbol> classSymbol = scope.resolveTypeLocally("SimpleClassTestModel");
     assertTrue(classSymbol.isPresent());
@@ -112,7 +114,7 @@ public class JavaDSLSymbolTableTest {
   public void test_simpleTestClasses_types_SimpleInterfaceTestModel()
       throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleInterfaceTestModel.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/types/SimpleInterfaceTestModel.java"));
     
     assertEquals(1, scope.getSubScopes().size());
     IJavaDSLScope interfaceScope = scope.getSubScopes().get(0);
@@ -134,7 +136,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_EmptyClass() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/EmptyClass.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/EmptyClass.java"));
     assertEquals(1, scope.getSubScopes().size());
     
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
@@ -146,7 +148,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_ExtendsObject() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/ExtendsObject.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/ExtendsObject.java"));
     assertEquals(2, scope.getSubScopes().size());
     
     Optional<TypeSymbol> class1Symbol = scope.resolveType("ExtendsObject");
@@ -163,7 +165,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_ImportJavaLang() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/ImportJavaLang.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/ImportJavaLang.java"));
     assertEquals(1, scope.getSubScopes().size());
     
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
@@ -177,7 +179,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_HelloWorld() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"));
     assertEquals(1, scope.getSubScopes().size());
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
     assertEquals(1, classScope.getSubScopes().size());
@@ -196,8 +198,8 @@ public class JavaDSLSymbolTableTest {
   
   @Test
   public void test_simpleTestClasses_MethodWithEllipsis() throws RecognitionException, IOException {
-    IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/MethodWithEllipsis.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/MethodWithEllipsis.java");
+    IJavaDSLArtifactScope scope = parseAndCreateST(modelPath);
     assertEquals(1, scope.getSubScopes().size());
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
     assertEquals(1, classScope.getSubScopes().size());
@@ -213,7 +215,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_OneFieldClass() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/OneFieldClass.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/OneFieldClass.java"));
     assertEquals(1, scope.getSubScopes().size());
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
     assertEquals(1, classScope.getSymbolsSize());
@@ -226,7 +228,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_simpleTestClasses_QualifiedNameTestClass() throws RecognitionException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/simpleTestClasses/QualifiedNameTestClass.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/simpleTestClasses/QualifiedNameTestClass.java"));
     assertEquals(1, scope.getSubScopes().size());
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
     assertEquals(5, classScope.getSymbolsSize());
@@ -256,7 +258,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_symbolTable_enums_EnumViaJavaEnum() {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaEnum.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaEnum.java"));
     Optional<OOTypeSymbol> enumViaJavaEnumSymbol = scope.resolveOOType("EnumViaJavaEnum");
     assertTrue(enumViaJavaEnumSymbol.isPresent());
     
@@ -286,7 +288,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_symbolTable_enums_EnumViaJavaInterface() throws RecognitionException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaInterface.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/enums/EnumViaJavaInterface.java"));
     Optional<TypeSymbol> enumViaJavaInterfaceSymbol = scope.resolveType("EnumViaJavaInterface");
     assertTrue(enumViaJavaInterfaceSymbol.isPresent());
     assertInstanceOf(JavaDSLScope.class, enumViaJavaInterfaceSymbol.get().getSpannedScope());
@@ -322,8 +324,8 @@ public class JavaDSLSymbolTableTest {
   public void test_symbolTable_resolve_GeneralResolveTestClass()
       throws RecognitionException, IOException {
     // There should be four scopes (not counting global scope)
-    IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/resolve/GeneralResolveTestClass.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/resolve/GeneralResolveTestClass.java");
+    IJavaDSLArtifactScope scope = parseAndCreateST(modelPath);
     IJavaDSLScope superClassScope = scope.getSubScopes().get(0);
     assertEquals("SuperClass", superClassScope.getSpanningSymbol().getName());
     IJavaDSLScope classScope = scope.getSubScopes().get(1);
@@ -389,8 +391,8 @@ public class JavaDSLSymbolTableTest {
   public void test_symbolTable_resolve_TypeVariableShadowingTestClass()
       throws RecognitionException, IOException {
     // There should be nine scopes (not counting global scope)
-    IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/resolve/TypeVariableShadowingTestClass.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/resolve/TypeVariableShadowingTestClass.java");
+    IJavaDSLArtifactScope scope = parseAndCreateST(modelPath);
     IJavaDSLScope outerMostTClassScope = scope.getSubScopes().get(0);
     assertEquals("symbolTable.resolve.T", outerMostTClassScope.getSpanningSymbol().getFullName());
     
@@ -418,8 +420,8 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_symbolTable_typeArgumentsAndParameters_TypeArgumentTestClass()
       throws RecognitionException, IOException {
-    IJavaDSLArtifactScope artifactScope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeArgumentTestClass.java");
+    IJavaDSLArtifactScope artifactScope = parseAndCreateST(modelPath);
     IJavaDSLScope globalScope = artifactScope.getEnclosingScope();
     IJavaDSLScope scope = globalScope.getSubScopes().get(0);
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
@@ -586,7 +588,7 @@ public class JavaDSLSymbolTableTest {
   public void test_symbolTable_typeArgumentsAndParameters_TypeParameterTestClass()
       throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeParameterTestClass");
+        Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/typeArgumentsAndParameters/TypeParameterTestClass"));
     
     Optional<TypeSymbol> resolve = scope.resolveType("TypeParameterTestClass");
     assertTrue(resolve.isPresent());
@@ -599,7 +601,7 @@ public class JavaDSLSymbolTableTest {
   public void test_symbolTable_ScopesSymbolTableTestClass()
       throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/ScopesSymbolTableTestClass.java");
+        Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/ScopesSymbolTableTestClass.java"));
     assertEquals(3, scope.getSubScopes().size());
     IJavaDSLScope someInterfaceScope = scope.getSubScopes().get(0);
     assertEquals(0, someInterfaceScope.getSymbolsSize());
@@ -626,8 +628,8 @@ public class JavaDSLSymbolTableTest {
   
   @Test
   public void test_symbolTable_VariablesTestClass() throws RecognitionException, IOException {
-    IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/VariablesTestClass.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/VariablesTestClass.java");
+    IJavaDSLArtifactScope scope = parseAndCreateST(modelPath);
     assertEquals(2, scope.getSubScopes().size());
     IJavaDSLScope classScope = scope.getSubScopes().get(0);
     
@@ -742,7 +744,7 @@ public class JavaDSLSymbolTableTest {
   @Test
   public void test_symbolTable_typevariableUpperbounds() throws RecognitionException, IOException {
     IJavaDSLArtifactScope scope =
-        parseAndCreateST("src/test/resources/generics/IComplexComponent.java");
+        parseAndCreateST(Path.of("src/test/resources/generics/IComplexComponent.java"));
     
     Optional<TypeSymbol> interf = scope.resolveTypeLocally("IComplexComponent");
     assertTrue(interf.isPresent());
@@ -767,8 +769,8 @@ public class JavaDSLSymbolTableTest {
   
   @Test
   public void testMethodParametersAndLocalVariablesAreDefinedInSameScope() throws IOException {
-    IJavaDSLArtifactScope scope = parseAndCreateST(
-        "src/test/resources/parsableAndCompilableModels/symbolTable/MethodParametersAndLocalVariablesAreDefinedInSameScope.java");
+    Path modelPath = Path.of("src/test/resources/parsableAndCompilableModels/symbolTable/MethodParametersAndLocalVariablesAreDefinedInSameScope.java");
+    IJavaDSLArtifactScope scope = parseAndCreateST(modelPath);
     
     Optional<TypeSymbol> typeSymbol =
         scope.resolveType("MethodParametersAndLocalVariablesAreDefinedInSameScope");

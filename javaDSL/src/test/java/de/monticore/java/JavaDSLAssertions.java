@@ -6,19 +6,20 @@ import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.se_rwth.commons.logging.Log;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class JavaDSLAssertions {
 
-  public static void assertParsingFailure(String pathToModel) {
+  public static void assertParsingFailure(Path pathToModel) {
     JavaDSLParser parser = JavaDSLMill.parser();
 
     Optional<ASTCompilationUnit> optCompilationUnit;
 
     try {
-      optCompilationUnit = parser.parse(pathToModel);
+      optCompilationUnit = parser.parse(pathToModel.toString());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -28,14 +29,14 @@ public final class JavaDSLAssertions {
     }
   }
 
-  public static ASTCompilationUnit assertParsingSuccess(String pathToModel) {
+  public static ASTCompilationUnit assertParsingSuccess(Path pathToModel) {
     JavaDSLParser parser = JavaDSLMill.parser();
 
     Optional<ASTCompilationUnit> optCompilationUnit;
     Throwable cause = null;
 
     try {
-      optCompilationUnit = parser.parse(pathToModel);
+      optCompilationUnit = parser.parse(pathToModel.toString());
     } catch (IOException e) {
       optCompilationUnit = Optional.empty();
       cause = e;
