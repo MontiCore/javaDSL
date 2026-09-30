@@ -1,123 +1,69 @@
+/* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java._symboltable;
 
 import de.monticore.java.javadsl._symboltable.JavaDSLArtifactScope;
 import de.monticore.symboltable.ImportStatement;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 public class JavaDSLArtifactScopeTest {
-  
-  @Test
-  void testImports1() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "List";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util", true));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "java.util.List");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
+
+  private static final String PACKAGE = "de.monticore.java._symboltable";
+
+  static Stream<Arguments> calculateQualifiedNames() {
+    return Stream.of(
+        argumentSet("star import",
+            "List", imports("java.util.*"),
+            List.of("java.util.List")),
+        argumentSet("single type import among others",
+            "List", imports("java.util.Iterator", "java.util.List", "java.util.Set"),
+            List.of("java.util.List")),
+        argumentSet("single type import",
+            "Map", imports("java.util.Map"),
+            List.of("java.util.Map")),
+        argumentSet("inner type via star import",
+            "Map.Entry", imports("java.util.*"),
+            List.of("java.util.Map.Entry")),
+        argumentSet("inner type via import of outer type",
+            "Map.Entry", imports("java.util.Map", "java.util.List", "java.util.Set"),
+            List.of("java.util.Map.Entry")),
+        argumentSet("qualified name matching an imported inner type",
+            "Map.Entry", imports("java.util.Map.Entry", "java.util.List", "java.util.Set"),
+            List.of()),
+        argumentSet("imports sharing a prefix",
+            "X.Y.Z", imports("A.B", "A.B.C", "A.B.C.X"),
+            List.of("A.B.C.X.Y.Z"))
+    );
   }
-  
-  @Test
-  void testImports2() {
+
+  /**
+   * The calculated names always start with the name itself and the name within the current
+   * package, followed by the names derived from the imports.
+   */
+  @ParameterizedTest
+  @MethodSource
+  void calculateQualifiedNames(String name, List<ImportStatement> imports,
+      List<String> expectedNamesFromImports) {
     JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "List";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util.Iterator", false),
-        new ImportStatement("java.util.List", false), new ImportStatement("java.util.Set", false));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "java.util.List");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
+
+    List<String> expected = Stream.concat(
+        Stream.of(name, PACKAGE + "." + name), expectedNamesFromImports.stream()).toList();
+    assertIterableEquals(expected, scope.calculateQualifiedNames(name, PACKAGE, imports));
   }
-  
-  @Test
-  void testImports3() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "Map";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util.Map", false));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "java.util.Map");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
-  }
-  
-  @Test
-  void testImports4() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "Map.Entry";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util", true));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "java.util.Map.Entry");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
-  }
-  
-  @Test
-  void testImports5() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "Map.Entry";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util.Map", false),
-        new ImportStatement("java.util.List", false), new ImportStatement("java.util.Set", false));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "java.util.Map.Entry");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
-  }
-  
-  @Test
-  void testImports6() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "Map.Entry";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("java.util.Map.Entry", false),
-        new ImportStatement("java.util.List", false), new ImportStatement("java.util.Set", false));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name);
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
-  }
-  
-  @Test
-  void testImports7() {
-    JavaDSLArtifactScope scope = new JavaDSLArtifactScope();
-    String name = "X.Y.Z";
-    String packageName = "de.monticore.java._symboltable";
-    List<ImportStatement> imports = List.of(new ImportStatement("A.B", false),
-        new ImportStatement("A.B.C", false), new ImportStatement("A.B.C.X", false));
-    Set<String> calculatedQualifiedNames =
-        scope.calculateQualifiedNames(name, packageName, imports);
-    
-    List<String> expectedQualifiedNames =
-        List.of(name, packageName + "." + name, "A.B.C.X.Y.Z");
-    assertEquals(expectedQualifiedNames.size(), calculatedQualifiedNames.size());
-    assertIterableEquals(expectedQualifiedNames, calculatedQualifiedNames);
+
+  /** Creates import statements; a trailing {@code .*} denotes a star import. */
+  private static List<ImportStatement> imports(String... statements) {
+    return Stream.of(statements)
+        .map(s -> s.endsWith(".*")
+            ? new ImportStatement(s.substring(0, s.length() - 2), true)
+            : new ImportStatement(s, false))
+        .toList();
   }
 }
