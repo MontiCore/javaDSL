@@ -203,6 +203,51 @@ public class TypeDeclarationSymbolTest {
       assertTrue(typeDeclaration("a.Outer.I").isIsStatic(), "interface");
     }
 
+    /** An enum with a constant body is not final, but sealed (JLS 8.9). */
+    @Test
+    void enumWithConstantBodyIsNotFinal() {
+      SymbolTables.fromSource("package a; enum E { X { }, Y }");
+      assertFalse(typeDeclaration("a.E").isIsFinal());
+    }
+
+    /** Member classes and local classes are not implicitly static. */
+    @Test
+    void classesAreNotImplicitlyStatic() {
+      SymbolTables.fromSource("""
+          package a;
+          class Outer {
+            class Inner { }
+            void m() { class Local { } }
+          }
+          """);
+
+      assertFalse(typeDeclaration("a.Outer.Inner").isIsStatic(), "inner class");
+      assertFalse(typeDeclaration("a.Outer").isIsStatic(), "top level class");
+      assertFalse(typeDeclaration("a.Outer.Inner").isIsFinal(), "inner class is not final");
+    }
+
+    /**
+     * Elements of annotation interfaces are public and abstract, their constants public, static,
+     * and final (JLS 9.6.1, 9.3).
+     */
+    @Test
+    void elementsOfAnnotationTypes() {
+      SymbolTables.fromSource("""
+          package a;
+          @interface A {
+            int DEFAULT = 1;
+            int value() default DEFAULT;
+          }
+          """);
+
+      var value = method("a.A.value");
+      assertTrue(value.isIsPublic() && value.isIsAbstract(), "public abstract element");
+      var constant = field("a.A.DEFAULT");
+      assertTrue(constant.isIsPublic() && constant.isIsStatic() && constant.isIsFinal(),
+          "public static final constant");
+      assertTrue(typeDeclaration("a.A").isIsAbstract(), "annotation interface is abstract");
+    }
+
     /** Enums without constant bodies and records are implicitly final (JLS 8.9, 8.10). */
     @Test
     void enumsAndRecordsAreImplicitlyFinal() {

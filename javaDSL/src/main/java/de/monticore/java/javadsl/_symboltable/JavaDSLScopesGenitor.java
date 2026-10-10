@@ -54,6 +54,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+    addImplicitModifiers(node);
   }
   
   @Override
@@ -65,6 +66,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+    addImplicitModifiers(node);
   }
   
   @Override
@@ -76,6 +78,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+    addImplicitModifiers(node);
   }
   
   @Override
@@ -87,6 +90,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+    addImplicitModifiers(node);
   }
   
   @Override
@@ -151,6 +155,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+    addImplicitModifiers(node);
   }
   
   /**
@@ -167,6 +172,40 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
       if (enclosingScope instanceof IJavaDSLArtifactScope) {
         enclosingScope.setName(node.getName());
       }
+    }
+  }
+  
+  /**
+   * Adds the modifiers that types have implicitly, depending on their kind and location.
+   */
+  private void addImplicitModifiers(ASTTypeDeclaration node) {
+    TypeDeclarationSymbol symbol = node.getSymbol();
+    boolean isInterface = symbol.isIsInterface() || symbol.isIsAnnotation();
+    IJavaDSLScope enclosingScope = node.getEnclosingScope();
+    boolean isTopLevel = enclosingScope instanceof IJavaDSLArtifactScope;
+    if (isInterface) {
+      // JLS 9.1.1.1
+      symbol.setIsAbstract(true);
+    }
+    if (!isTopLevel && (isInterface || symbol.isIsEnum() || symbol.isIsRecord())) {
+      // JLS 8.9, 8.10, 9.1.1.3 (member types), and 14.3 (local types)
+      symbol.setIsStatic(true);
+    }
+    if (symbol.isIsRecord()) {
+      // JLS 8.10
+      symbol.setIsFinal(true);
+    }
+    if (node instanceof ASTEnumDeclaration enumDeclaration && enumDeclaration
+        .getEnumConstantDeclarationList().stream().noneMatch(c -> c.isPresentClassBody())) {
+      // JLS 8.9: an enum is final, unless a constant has a class body (then it is sealed)
+      symbol.setIsFinal(true);
+    }
+    if (enclosingScope.isPresentAstNode()
+        && (enclosingScope.getAstNode() instanceof ASTInterfaceDeclaration
+        || enclosingScope.getAstNode() instanceof ASTAnnotationTypeDeclaration)) {
+      // JLS 9.5: member types of interfaces are public and static
+      symbol.setIsPublic(true);
+      symbol.setIsStatic(true);
     }
   }
   

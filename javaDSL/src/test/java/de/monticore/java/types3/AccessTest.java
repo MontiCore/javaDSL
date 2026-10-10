@@ -35,6 +35,7 @@ public class AccessTest {
             private int privM() { return 0; }
             public static class PublicNested { public PublicNested() { } }
             static class PackageNested { PackageNested() { } }
+            public Api api;
             public Owner() { }
             Owner(int x) { }
             void probe(Owner other) { /*Owner*/ }
@@ -53,6 +54,13 @@ public class AccessTest {
           package b;
           class OtherPackage {
             void probe(a.Owner other) { /*OtherPackage*/ }
+          }
+          """,
+      "Api", """
+          package a;
+          public interface Api {
+            int CONSTANT = 1;
+            int call();
           }
           """,
       "SubClass", """
@@ -92,6 +100,8 @@ public class AccessTest {
       OtherPackage => a.Owner.staticPub
       OtherPackage => new a.Owner()
       OtherPackage => new a.Owner.PublicNested()
+      OtherPackage => a.Api.CONSTANT
+      OtherPackage => other.api.call()
       SubClass     => pub
       SubClass     => prot
       SubClass     => this.prot

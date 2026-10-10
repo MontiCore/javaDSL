@@ -4,7 +4,10 @@ import de.monticore.ast.ASTNode;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
 import de.monticore.javalight._ast.ASTAnnotation;
+import de.monticore.javalight._ast.ASTConstDeclaration;
 import de.monticore.javalight._ast.ASTConstructorDeclaration;
+import de.monticore.javalight._ast.ASTInterfaceBodyDeclaration;
+import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mcarraystatements._ast.ASTArrayDeclaratorId;
@@ -275,6 +278,17 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
           .ifPresent(object -> supertypes.add(SymTypeExpressionFactory.createTypeObject(object)));
     }
     symbol.setSuperTypesList(supertypes);
+    
+    for (ASTInterfaceBodyDeclaration member : node.getInterfaceBody()
+        .getInterfaceBodyDeclarationList()) {
+      if (member instanceof ASTMethodDeclaration method) {
+        addImplicitModifiersOfInterfaceMethod(method.getSymbol(), method.isPresentMCJavaBlock());
+      }
+      else if (member instanceof ASTConstDeclaration constant) {
+        constant.getLocalVariableDeclaration().getVariableDeclaratorList()
+            .forEach(v -> addImplicitModifiersOfInterfaceField(v.getDeclarator().getSymbol()));
+      }
+    }
   }
   
   @Override
@@ -283,6 +297,38 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
     resolveJdkType(node.getSymbol(), "java.lang.annotation.Annotation")
         .ifPresent(annotation -> node.getSymbol().setSuperTypesList(
             List.of(SymTypeExpressionFactory.createTypeObject(annotation))));
+    
+    for (ASTAnnotationTypeElementDeclaration element : node.getAnnotationTypeBody()
+        .getAnnotationTypeElementDeclarationList()) {
+      if (element instanceof ASTAnnotationMethod method) {
+        addImplicitModifiersOfInterfaceMethod(method.getSymbol(), false);
+      }
+      else if (element instanceof ASTAnnotationConstant constant) {
+        constant.getVariableDeclaratorList()
+            .forEach(v -> addImplicitModifiersOfInterfaceField(v.getDeclarator().getSymbol()));
+      }
+    }
+  }
+  
+  /**
+   * Interface methods are public unless they are private, and abstract if they have no body
+   * (JLS 9.4).
+   */
+  protected void addImplicitModifiersOfInterfaceMethod(JavaMethodSymbol method,
+      boolean hasBody) {
+    if (!method.isIsPrivate()) {
+      method.setIsPublic(true);
+    }
+    if (!hasBody) {
+      method.setIsAbstract(true);
+    }
+  }
+  
+  /** Interface fields are public, static, and final (JLS 9.3). */
+  protected void addImplicitModifiersOfInterfaceField(FieldSymbol field) {
+    field.setIsPublic(true);
+    field.setIsStatic(true);
+    field.setIsFinal(true);
   }
   
   /**

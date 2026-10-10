@@ -82,7 +82,6 @@ are examples, as most issues affect several tests.
 
 | Issue | Example tests |
 |---|---|
-| Implicit modifiers are missing: interface members are public (fields also static final, member types static), interfaces abstract, nested enums/records/interfaces static, enums/records final | `TypeDeclarationSymbolTest$Modifiers`, `MethodSymbolTest.interfaceMethodsAreImplicitlyPublic`, `VariableSymbolTest.fieldsOfInterfacesArePublicStaticFinal` |
 | Annotation types are not interfaces | `TypeDeclarationSymbolTest$Kinds` |
 | Trailing array dimensions are ignored for local variables, parameters, and methods (`int e[]`, `int m()[]`) | `severalDeclaratorsInOneDeclaration`, `parameters`, `signatures` |
 | A variable arity parameter `String... rest` has the type `String` instead of `String[]` | `variableArityParameterIsArray`, `ExpressionTypeTest` `params` |
@@ -99,7 +98,6 @@ are examples, as most issues affect several tests.
 | Private and package private members of a super class are accessible in a sub class of another package | `AccessTest` (`SubClass`) |
 | class2mc: nested JDK types have wrong full names (`java.util.Entry` instead of `java.util.Map.Entry`), `Map.Entry<K, V>` is not resolvable in declarations (`0xA0323`), types outside of `java.base` (e.g., `java.sql`) are not found | `VariableSymbolTest` `Map.Entry`, `java.sql.Connection`, `ExpressionTypeTest` `msi.entrySet()` |
 | Static imports are not supported (`TODO` in `JavaDSLScopesGenitor`) | `ExpressionTypeTest.staticImports` |
-| Local records, enums, and interfaces are not implicitly static | `localRecordsEnumsAndInterfaces` |
 | Parser: the Java 14, 17, and 21 features listed above, receiver parameters, and `record` as identifier | `LanguageFeaturesTest`, `switchExpressionsAndPatterns`, `validArrowAndPatternSwitch`, `calculator` |
 
 ### Type check
