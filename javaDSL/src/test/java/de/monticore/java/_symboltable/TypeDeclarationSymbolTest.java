@@ -179,11 +179,17 @@ public class TypeDeclarationSymbolTest {
     /** Member types of interfaces are implicitly public and static (JLS 9.5). */
     @Test
     void memberTypesOfInterfacesAreImplicitlyPublicAndStatic() {
-      SymbolTables.fromSource("package a; interface I { class C { } }");
+      SymbolTables.fromSource("""
+          package a;
+          interface I { class C { } }
+          @interface A { enum E { X } }
+          """);
 
-      TypeDeclarationSymbol c = typeDeclaration("a.I.C");
-      assertTrue(c.isIsPublic(), "public");
-      assertTrue(c.isIsStatic(), "static");
+      for (String name : List.of("a.I.C", "a.A.E")) {
+        TypeDeclarationSymbol type = typeDeclaration(name);
+        assertTrue(type.isIsPublic(), name + " is public");
+        assertTrue(type.isIsStatic(), name + " is static");
+      }
     }
 
     /** Nested enums, records, and interfaces are implicitly static (JLS 8.9, 8.10, 9.1.1.3). */

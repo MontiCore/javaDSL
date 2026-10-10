@@ -151,6 +151,8 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     super.visit(node);
     
     TypeDeclarationSymbol symbol = node.getSymbol();
+    // JLS 9.6: an annotation interface is a special kind of interface
+    symbol.setIsInterface(true);
     symbol.setIsAnnotation(true);
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
@@ -180,14 +182,13 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
    */
   private void addImplicitModifiers(ASTTypeDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
-    boolean isInterface = symbol.isIsInterface() || symbol.isIsAnnotation();
     IJavaDSLScope enclosingScope = node.getEnclosingScope();
     boolean isTopLevel = enclosingScope instanceof IJavaDSLArtifactScope;
-    if (isInterface) {
+    if (symbol.isIsInterface()) {
       // JLS 9.1.1.1
       symbol.setIsAbstract(true);
     }
-    if (!isTopLevel && (isInterface || symbol.isIsEnum() || symbol.isIsRecord())) {
+    if (!isTopLevel && (symbol.isIsInterface() || symbol.isIsEnum() || symbol.isIsRecord())) {
       // JLS 8.9, 8.10, 9.1.1.3 (member types), and 14.3 (local types)
       symbol.setIsStatic(true);
     }
@@ -200,9 +201,9 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
       // JLS 8.9: an enum is final, unless a constant has a class body (then it is sealed)
       symbol.setIsFinal(true);
     }
-    if (enclosingScope.isPresentAstNode()
-        && (enclosingScope.getAstNode() instanceof ASTInterfaceDeclaration
-        || enclosingScope.getAstNode() instanceof ASTAnnotationTypeDeclaration)) {
+    if (enclosingScope.isPresentSpanningSymbol()
+        && enclosingScope.getSpanningSymbol() instanceof TypeDeclarationSymbol enclosingType
+        && enclosingType.isIsInterface()) {
       // JLS 9.5: member types of interfaces are public and static
       symbol.setIsPublic(true);
       symbol.setIsStatic(true);

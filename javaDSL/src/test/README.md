@@ -82,7 +82,6 @@ are examples, as most issues affect several tests.
 
 | Issue | Example tests |
 |---|---|
-| Annotation types are not interfaces | `TypeDeclarationSymbolTest$Kinds` |
 | Trailing array dimensions are ignored for local variables, parameters, and methods (`int e[]`, `int m()[]`) | `severalDeclaratorsInOneDeclaration`, `parameters`, `signatures` |
 | A variable arity parameter `String... rest` has the type `String` instead of `String[]` | `variableArityParameterIsArray`, `ExpressionTypeTest` `params` |
 | `for (var x : list)` gets the type of the list instead of its element type | `varLoopVariables` |
