@@ -7,6 +7,7 @@ import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
 import de.monticore.runtime.junit.MCAssertions;
 import de.monticore.runtime.junit.PrettyPrinterTester.ParseFunction;
+import de.monticore.types.check.SymTypeExpression;
 import de.se_rwth.commons.logging.Finding;
 
 import java.io.IOException;
@@ -79,5 +80,20 @@ public final class JavaDSLAssertions {
   public static <T> T assertPresent(Optional<T> optional, String description) {
     assertTrue(optional.isPresent(), "Expected " + description + " to be present");
     return optional.get();
+  }
+
+  /**
+   * Asserts that the type is printed as expected using fully qualified names, e.g.,
+   * {@code int[]}, {@code java.util.List<? extends java.lang.Number>}, or
+   * {@code (int, java.lang.String...) -> void}.
+   */
+  public static void assertType(String expected, SymTypeExpression actual) {
+    if (actual == null) {
+      MCAssertions.failAndPrintFindings("Expected type " + expected + ", but the type is not set");
+    }
+    else if (!expected.equals(actual.printFullName())) {
+      MCAssertions.failAndPrintFindings(
+          "Expected type " + expected + ", but was " + actual.printFullName());
+    }
   }
 }

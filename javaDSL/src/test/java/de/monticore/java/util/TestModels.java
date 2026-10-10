@@ -17,9 +17,13 @@ public final class TestModels {
 
   public static final String SIMPLE_TEST_CLASSES = PARSABLE_AND_COMPILABLE + "/simpleTestClasses";
 
-  public static final String SYMBOL_TABLE = PARSABLE_AND_COMPILABLE + "/symbolTable";
-
   public static final String UNPARSABLE = RESOURCES + "/unparsableModels";
+
+  /** Valid Java projects (one per directory) for symbol table and type check tests. */
+  public static final String TYPECHECK_VALID = RESOURCES + "/typecheck/valid";
+
+  /** Invalid Java models with error markers, see {@code TypeCheckModelsTest}. */
+  public static final String TYPECHECK_INVALID = RESOURCES + "/typecheck/invalid";
 
   /** Sources of the corpus libraries, extracted by the {@code extractCorpus} Gradle task. */
   public static final String CORPUS = "target/corpus";
