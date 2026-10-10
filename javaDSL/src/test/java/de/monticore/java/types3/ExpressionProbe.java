@@ -70,6 +70,11 @@ final class ExpressionProbe {
         public static <E> Box<E> of(E element) { return new Box<>(element); }
       }
 
+      record Point(int x, int y) {
+        public Point { }
+        public int sum() { return x + y; }
+      }
+
       class Secret {
         private int hidden;
         private static int staticHidden;
@@ -86,7 +91,7 @@ final class ExpressionProbe {
         int[] ia; int[][] iaa; String[] sa;
         List<String> ls; ArrayList<Integer> ali; Map<String, Integer> msi; Set<? extends Number> sn;
         Box<String> bs; Box<Box<Integer>> bbi;
-        Color color; Shape shape; Runnable runnable; Function<String, Integer> fsi;
+        Color color; Shape shape; Runnable runnable; Function<String, Integer> fsi; Point point;
         static int staticField;
         static final String CONSTANT = "constant";
 

@@ -67,7 +67,7 @@ State of 2026-10:
 | Java 10/11: `var` (also in lambda parameters) | yes | yes |
 | Java 14: switch expressions, `yield`, arrow labels, several constants per label | **no** | |
 | Java 15: text blocks | yes | yes |
-| Java 16: records | yes | yes (but see the known issues of records) |
+| Java 16: records | yes | yes |
 | Java 16: pattern matching for `instanceof`, local records/enums/interfaces, static members of inner classes | yes | yes |
 | Java 17: sealed classes and interfaces (`sealed`, `non-sealed`, `permits`) | **no** | |
 | Java 21: pattern matching for switch (`case null`, guards with `when`), record patterns | **no** | |
@@ -83,10 +83,9 @@ are examples, as most issues affect several tests.
 | Issue | Example tests |
 |---|---|
 | Implicit modifiers are missing: interface members are public (fields also static final, member types static), interfaces abstract, nested enums/records/interfaces static, enums/records final | `TypeDeclarationSymbolTest$Modifiers`, `MethodSymbolTest.interfaceMethodsAreImplicitlyPublic`, `VariableSymbolTest.fieldsOfInterfacesArePublicStaticFinal` |
-| Implicit super classes `Object`, `Enum<E>`, `Record` are missing; hence also `ordinal()`, `name()` of enums; `values()`/`valueOf()` are missing | `TypeDeclarationSymbolTest$SuperTypes.implicit*`, `implicitMethodsOfEnum` |
+| Implicit super classes `Object`, `Enum<E>`, `Record` are missing; hence also `ordinal()`, `name()` of enums; `values()`/`valueOf()` are missing; model types are no sub types of `Object` (e.g., `point.equals(point)` is not applicable) | `TypeDeclarationSymbolTest$SuperTypes.implicit*`, `implicitMethodsOfEnum` |
 | Super interfaces of interfaces (`interface J extends I`) are not set | `superInterfacesOfInterface` |
 | Annotation types are not interfaces | `TypeDeclarationSymbolTest$Kinds` |
-| Record components are no fields; no accessors, no canonical constructor | `recordComponentsAreFields`, `implicitMembersOfRecord` |
 | Trailing array dimensions are ignored for local variables, parameters, and methods (`int e[]`, `int m()[]`) | `severalDeclaratorsInOneDeclaration`, `parameters`, `signatures` |
 | A variable arity parameter `String... rest` has the type `String` instead of `String[]` | `variableArityParameterIsArray`, `ExpressionTypeTest` `params` |
 | `for (var x : list)` gets the type of the list instead of its element type | `varLoopVariables` |
@@ -122,7 +121,7 @@ are examples, as most issues affect several tests.
 | Casts from `Object` to interfaces and arrays are rejected; `(Integer) l`, `(Long) i` and incompatible `instanceof` are accepted | `ExpressionTypeTest.castsAndInstanceOf`, `InvalidExpressionTest.castsAndInstanceOf` |
 | `boxedInt++` has the type `int` instead of `Integer` | `ExpressionTypeTest.arithmetic` |
 | Assignments: constant narrowing (`byte x = 1`) is rejected; `boxedLong = 1`, assignments to non-variables (`1 = i`) and to final variables are accepted | `StatementTypeCheckTest`, `InvalidExpressionTest.assignments*` |
-| A field access to a method name (`s.length`) yields a function type; a `long` array index is accepted | `InvalidExpressionTest` |
+| A field access to a method name (`s.length`, or `point.x` for the private record field `x`) yields a function type; a `long` array index is accepted | `InvalidExpressionTest` |
 | `var x = s.length();` causes `0xFD111` (typeOf without target type in phase 3, then with target type in the CoCo) | `StatementTypeCheckTest` |
 
 ### CoCos of the MontiCore grammar library

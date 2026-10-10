@@ -143,6 +143,7 @@ public class InvalidExpressionTest {
       "Secret.staticHidden",
       "Secret.create().hide()",
       "new Secret()",
+      "point.x",
   })
   void privateMembers(String expression) {
     check(expression);

@@ -452,6 +452,21 @@ public class ExpressionTypeTest {
     check(expression, expectedType);
   }
 
+  /** Records with their implicit canonical constructor and accessors (Java 16, JLS 8.10). */
+  @ParameterizedTest(name = "{0} : {1}")
+  @CsvSource(delimiterString = "=>", quoteCharacter = '`', textBlock = """
+      new Point(1, 2)             => p.Point
+      new Point(1, 2).x()         => int
+      point.y()                   => int
+      point.sum()                 => int
+      point.equals(point)         => boolean
+      point.hashCode()            => int
+      point.toString()            => java.lang.String
+      """)
+  void records(String expression, String expectedType) {
+    check(expression, expectedType);
+  }
+
   /** Members imported by single static imports and static imports on demand (JLS 7.5.3). */
   @ParameterizedTest(name = "{0} : {1}")
   @CsvSource(delimiterString = "=>", quoteCharacter = '`', textBlock = """

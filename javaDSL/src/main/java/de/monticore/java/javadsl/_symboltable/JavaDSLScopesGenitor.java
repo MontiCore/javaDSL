@@ -1,7 +1,6 @@
 package de.monticore.java.javadsl._symboltable;
 
 import de.monticore.java.javadsl._ast.*;
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.javalight._ast.ASTClassBodyDeclaration;
 import de.monticore.javalight._ast.ASTConstructorDeclaration;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
@@ -9,7 +8,6 @@ import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
 import de.monticore.symboltable.ImportStatement;
-import de.monticore.types.check.SymTypeExpressionFactory;
 
 import java.util.List;
 
@@ -97,7 +95,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
         getConstructors(node.getClassBody().getClassBodyDeclarationList());
     if (constructors.isEmpty()) {
       // JLS 8.8.9: the default constructor has the access modifier of the class
-      JavaMethodSymbol constructor = addDefaultConstructor(node.getSymbol());
+      JavaMethodSymbol constructor = ImplicitMembers.addConstructor(node.getSymbol());
       constructor.setIsPublic(node.getSymbol().isIsPublic());
       constructor.setIsProtected(node.getSymbol().isIsProtected());
       constructor.setIsPrivate(node.getSymbol().isIsPrivate());
@@ -111,7 +109,7 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
         ? node.getEnumBody().getClassBodyDeclarationList() : List.of());
     if (constructors.isEmpty()) {
       // JLS 8.9.2: the default constructor of an enum is private
-      addDefaultConstructor(node.getSymbol()).setIsPrivate(true);
+      ImplicitMembers.addConstructor(node.getSymbol()).setIsPrivate(true);
     }
     super.endVisit(node);
   }
@@ -133,26 +131,6 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
         .toList();
     constructors.forEach(constructor -> constructor.getSymbol().setIsConstructor(true));
     return constructors;
-  }
-  
-  /**
-   * Adds the implicit constructor without parameters to the type, if it does not declare a
-   * constructor (JLS 8.8.9).
-   */
-  private JavaMethodSymbol addDefaultConstructor(TypeDeclarationSymbol type) {
-    IJavaDSLScope spannedScope = JavaDSLMill.scope();
-    spannedScope.setShadowing(true);
-    spannedScope.setExportingSymbols(false);
-    spannedScope.setEnclosingScope(type.getSpannedScope());
-    JavaMethodSymbol constructor = JavaDSLMill.javaMethodSymbolBuilder()
-        .setName(type.getName())
-        .setIsConstructor(true)
-        .setType(SymTypeExpressionFactory.createFromSymbol(type))
-        .setSpannedScope(spannedScope)
-        .build();
-    spannedScope.setSpanningSymbol(constructor);
-    type.getSpannedScope().add(constructor);
-    return constructor;
   }
   
   @Override

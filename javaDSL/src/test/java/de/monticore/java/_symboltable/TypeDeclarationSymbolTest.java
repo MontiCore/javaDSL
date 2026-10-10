@@ -6,6 +6,7 @@ import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.java.javadsl._symboltable.IJavaDSLScope;
 import de.monticore.java.javadsl._symboltable.TypeDeclarationSymbol;
 import de.monticore.java.util.SymbolTables;
+import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.runtime.junit.TestWithMCLanguage;
 import de.monticore.symbols.basicsymbols._symboltable.TypeVarSymbol;
 import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
@@ -567,6 +568,100 @@ public class TypeDeclarationSymbolTest {
       assertType("() -> int", method("a.Point.x").getFunctionType());
       assertType("() -> java.lang.String", method("a.Point.name").getFunctionType());
       assertType("(int, java.lang.String) -> a.Point", method("a.Point.Point").getFunctionType());
+      assertTrue(method("a.Point.x").isIsPublic(), "accessor is public");
+      assertTrue(method("a.Point.Point").isIsConstructor());
+      assertEquals(List.of("x", "name"), method("a.Point.Point").getParameterList().stream()
+          .map(p -> p.getName()).toList());
+    }
+
+    /** The implicit canonical constructor has the access modifier of the record (JLS 8.10.4). */
+    @Test
+    void accessOfImplicitCanonicalConstructor() {
+      SymbolTables.fromSource("""
+          package a;
+          public record Public(int x) { }
+          class Outer { private record Private(int x) { } }
+          """);
+
+      assertTrue(method("a.Public.Public").isIsPublic());
+      assertTrue(method("a.Outer.Private.Private").isIsPrivate());
+    }
+
+    @Test
+    void canonicalConstructorOfGenericAndVariableArityRecords() {
+      SymbolTables.fromSource("""
+          package a;
+          record Pair<A, B>(A first, B second) { }
+          record Names(int count, String... names) { }
+          """);
+
+      assertType("(a.Pair.A, a.Pair.B) -> a.Pair<a.Pair.A,a.Pair.B>",
+          method("a.Pair.Pair").getFunctionType());
+      assertType("() -> a.Pair.A", method("a.Pair.first").getFunctionType());
+      assertType("(int, java.lang.String...) -> a.Names", method("a.Names.Names").getFunctionType());
+      assertTrue(method("a.Names.Names").isIsElliptic());
+      assertType("() -> java.lang.String[]", method("a.Names.names").getFunctionType());
+    }
+
+    /**
+     * Explicitly declared accessors and canonical constructors replace the implicit ones; a
+     * compact constructor declares the canonical constructor (JLS 8.10.3, 8.10.4).
+     */
+    @Test
+    void explicitAccessorsAndCanonicalConstructors() {
+      SymbolTables.fromSource("""
+          package a;
+          record Explicit(int x, String name) {
+            Explicit(int x, String name) { this.x = x; this.name = name.trim(); }
+            Explicit(int x) { this(x, ""); }
+            public int x() { return x; }
+          }
+          record Compact(int x) {
+            public Compact { if (x < 0) throw new IllegalArgumentException(); }
+          }
+          record Names(String... names) {
+            Names(String... names) { this.names = names.clone(); }
+          }
+          """);
+
+      assertEquals(List.of("(int, java.lang.String) -> a.Explicit", "int -> a.Explicit"),
+          methods("a.Explicit.Explicit").stream()
+              .map(m -> m.getFunctionType().printFullName()).toList());
+      assertEquals(1, methods("a.Explicit.x").size(), "accessors of x");
+      assertTrue(method("a.Explicit.x").isPresentAstNode(), "declared accessor of x");
+      assertFalse(method("a.Explicit.name").isPresentAstNode(), "implicit accessor of name");
+
+      JavaMethodSymbol compact = method("a.Compact.Compact");
+      assertType("int -> a.Compact", compact.getFunctionType());
+      assertTrue(compact.isIsPublic(), "access modifier of the compact constructor");
+
+      assertEquals(1, methods("a.Names.Names").size(), "canonical constructors of Names");
+    }
+
+    /**
+     * Records have the methods equals, hashCode, and toString, unless they are declared
+     * explicitly (JLS 8.10.3).
+     */
+    @Test
+    void implicitObjectMethodsOfRecord() {
+      SymbolTables.fromSource("""
+          package a;
+          record Implicit(int x) { }
+          record Explicit(int x) {
+            public String toString() { return "explicit"; }
+            public boolean equals(Object other) { return false; }
+            public boolean equals(Explicit other) { return true; }
+          }
+          """);
+
+      assertType("java.lang.Object -> boolean", method("a.Implicit.equals").getFunctionType());
+      assertType("() -> int", method("a.Implicit.hashCode").getFunctionType());
+      assertType("() -> java.lang.String", method("a.Implicit.toString").getFunctionType());
+      assertTrue(method("a.Implicit.toString").isIsPublic());
+
+      assertTrue(method("a.Explicit.toString").isPresentAstNode(), "declared toString");
+      assertEquals(2, methods("a.Explicit.equals").size(), "declared equals methods only");
+      assertFalse(method("a.Explicit.hashCode").isPresentAstNode(), "implicit hashCode");
     }
 
     @Test

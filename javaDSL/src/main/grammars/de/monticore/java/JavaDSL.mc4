@@ -197,7 +197,8 @@ RecordHeader
     = "(" (RecordComponent || ",")* ")"
     ;
 
-RecordComponent
+// record components define the (private final) fields of the record
+RecordComponent implements Field
     = JavaModifier* MCType (arrayAnnotations:Annotation* variableArity:"...")? Name
     ;
 
