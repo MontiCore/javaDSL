@@ -12,6 +12,7 @@ import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableDeclarator;
 import de.monticore.symbols.basicsymbols.BasicSymbolsMill;
+import de.monticore.symbols.basicsymbols._symboltable.TypeSymbol;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.types.check.SymTypeExpression;
 import de.monticore.types.check.SymTypeExpressionFactory;
@@ -23,7 +24,6 @@ import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor2 {
   
@@ -31,19 +31,50 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
   public void endVisit(ASTEnumDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
     
-    List<SymTypeExpression> supertypes =
-        node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
-            .collect(Collectors.toList());
+    List<SymTypeExpression> supertypes = new ArrayList<>();
+    // JLS 8.9: the direct super class of an enum E is Enum<E>
+    resolveJdkType(symbol, "java.lang.Enum").ifPresent(enumType -> supertypes.add(
+        SymTypeExpressionFactory.createGenerics(enumType,
+            SymTypeExpressionFactory.createFromSymbol(symbol))));
+    supertypes.addAll(node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
+        .toList());
     symbol.setSuperTypesList(supertypes);
+    addImplicitEnumMethods(symbol);
+  }
+  
+  /**
+   * An enum E has the methods {@code public static E[] values()} and
+   * {@code public static E valueOf(String name)} (JLS 8.9.3).
+   */
+  protected void addImplicitEnumMethods(TypeDeclarationSymbol enumType) {
+    SymTypeExpression type = SymTypeExpressionFactory.createFromSymbol(enumType);
+    if (!declaresMethod(enumType, "values", List.of())) {
+      JavaMethodSymbol values = ImplicitMembers.addMethod(enumType, "values",
+          SymTypeExpressionFactory.createTypeArray(type, 1));
+      values.setIsPublic(true);
+      values.setIsStatic(true);
+    }
+    Optional<TypeSymbol> string = resolveJdkType(enumType, "java.lang.String");
+    if (string.isPresent() && !declaresMethod(enumType, "valueOf",
+        List.of(SymTypeExpressionFactory.createTypeObject(string.get())))) {
+      JavaMethodSymbol valueOf = ImplicitMembers.addMethod(enumType, "valueOf", type);
+      ImplicitMembers.addParameter(valueOf, "name",
+          SymTypeExpressionFactory.createTypeObject(string.get()));
+      valueOf.setIsPublic(true);
+      valueOf.setIsStatic(true);
+    }
   }
   
   @Override
   public void endVisit(ASTRecordDeclaration node) {
     TypeDeclarationSymbol symbol = node.getSymbol();
     
-    List<SymTypeExpression> supertypes =
-        node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
-            .collect(Collectors.toList());
+    List<SymTypeExpression> supertypes = new ArrayList<>();
+    // JLS 8.10: the direct super class of a record is Record
+    resolveJdkType(symbol, "java.lang.Record")
+        .ifPresent(record -> supertypes.add(SymTypeExpressionFactory.createTypeObject(record)));
+    supertypes.addAll(node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
+        .toList());
     symbol.setSuperTypesList(supertypes);
     
     List<ASTRecordComponent> components = node.getRecordHeader().getRecordComponentList();
@@ -222,9 +253,44 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
     if (node.isPresentSuperClass()) {
       supertypes.add(TypeCheck3.symTypeFromAST(node.getSuperClass()));
     }
+    else if (!symbol.getFullName().equals("java.lang.Object")) {
+      // JLS 8.1.4: the direct super class of a class without extends clause is Object
+      resolveJdkType(symbol, "java.lang.Object")
+          .ifPresent(object -> supertypes.add(SymTypeExpressionFactory.createTypeObject(object)));
+    }
     supertypes.addAll(node.getImplementedInterfaceList().stream().map(TypeCheck3::symTypeFromAST)
         .toList());
     symbol.setSuperTypesList(supertypes);
+  }
+  
+  @Override
+  public void endVisit(ASTInterfaceDeclaration node) {
+    TypeDeclarationSymbol symbol = node.getSymbol();
+    
+    List<SymTypeExpression> supertypes = new ArrayList<>(
+        node.getExtendedInterfaceList().stream().map(TypeCheck3::symTypeFromAST).toList());
+    if (supertypes.isEmpty()) {
+      // JLS 4.10.2: Object is the direct super type of an interface without super interfaces
+      resolveJdkType(symbol, "java.lang.Object")
+          .ifPresent(object -> supertypes.add(SymTypeExpressionFactory.createTypeObject(object)));
+    }
+    symbol.setSuperTypesList(supertypes);
+  }
+  
+  @Override
+  public void endVisit(ASTAnnotationTypeDeclaration node) {
+    // JLS 9.6: the direct super interface of an annotation interface is Annotation
+    resolveJdkType(node.getSymbol(), "java.lang.annotation.Annotation")
+        .ifPresent(annotation -> node.getSymbol().setSuperTypesList(
+            List.of(SymTypeExpressionFactory.createTypeObject(annotation))));
+  }
+  
+  /**
+   * Resolves a type of the JDK; it is not available if the JDK types are not loaded (e.g.,
+   * class2mc is disabled), then the implicit super type is omitted.
+   */
+  protected Optional<TypeSymbol> resolveJdkType(TypeDeclarationSymbol type, String name) {
+    return type.getEnclosingScope().resolveType(name);
   }
   
   @Override

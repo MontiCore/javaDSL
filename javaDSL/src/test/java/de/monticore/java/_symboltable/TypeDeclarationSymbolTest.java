@@ -296,6 +296,25 @@ public class TypeDeclarationSymbolTest {
       assertType("java.lang.Enum<a.E>", e.getSuperClass());
     }
 
+    /**
+     * Object is the direct super type of an interface without super interfaces (JLS 4.10.2);
+     * Annotation is the one of an annotation interface (JLS 9.6).
+     */
+    @Test
+    void implicitSuperTypesOfInterfaceAndAnnotation() {
+      SymbolTables.fromSource("""
+          package a;
+          interface I { }
+          interface J extends I { }
+          @interface A { }
+          """);
+
+      assertTypes(List.of("java.lang.Object"), typeDeclaration("a.I").getSuperTypesList());
+      assertTypes(List.of("a.I"), typeDeclaration("a.J").getSuperTypesList());
+      assertTypes(List.of("java.lang.annotation.Annotation"),
+          typeDeclaration("a.A").getSuperTypesList());
+    }
+
     /** The direct super class of a record is Record (JLS 8.10). */
     @Test
     void implicitSuperClassOfRecord() {
@@ -545,7 +564,7 @@ public class TypeDeclarationSymbolTest {
 
       assertType("a.E[]", method("a.E.values").getType());
       assertTrue(method("a.E.values").isIsStatic());
-      assertType("(java.lang.String) -> a.E", method("a.E.valueOf").getFunctionType());
+      assertType("java.lang.String -> a.E", method("a.E.valueOf").getFunctionType());
     }
 
     /** Record components define private final fields (JLS 8.10.3). */

@@ -83,8 +83,6 @@ are examples, as most issues affect several tests.
 | Issue | Example tests |
 |---|---|
 | Implicit modifiers are missing: interface members are public (fields also static final, member types static), interfaces abstract, nested enums/records/interfaces static, enums/records final | `TypeDeclarationSymbolTest$Modifiers`, `MethodSymbolTest.interfaceMethodsAreImplicitlyPublic`, `VariableSymbolTest.fieldsOfInterfacesArePublicStaticFinal` |
-| Implicit super classes `Object`, `Enum<E>`, `Record` are missing; hence also `ordinal()`, `name()` of enums; `values()`/`valueOf()` are missing; model types are no sub types of `Object` (e.g., `point.equals(point)` is not applicable) | `TypeDeclarationSymbolTest$SuperTypes.implicit*`, `implicitMethodsOfEnum` |
-| Super interfaces of interfaces (`interface J extends I`) are not set | `superInterfacesOfInterface` |
 | Annotation types are not interfaces | `TypeDeclarationSymbolTest$Kinds` |
 | Trailing array dimensions are ignored for local variables, parameters, and methods (`int e[]`, `int m()[]`) | `severalDeclaratorsInOneDeclaration`, `parameters`, `signatures` |
 | A variable arity parameter `String... rest` has the type `String` instead of `String[]` | `variableArityParameterIsArray`, `ExpressionTypeTest` `params` |
@@ -118,7 +116,7 @@ are examples, as most issues affect several tests.
 | `0x7A017` (multiple super classes) in `JavaDSLOOWithinTypeBasicSymbolsResolver` for class2mc types such as `StringBuilder` | `ExpressionTypeTest` `new StringBuilder().append(i)` |
 | String concatenation is rejected for operands that are not String or numeric (`s + o`, `s + null`, `s + bool`) | `ExpressionTypeTest.stringConcatenation` |
 | Arrays: `.length` and array creation with initializer (`new int[] {1}`) are not supported | `ExpressionTypeTest.arrays` |
-| Casts from `Object` to interfaces and arrays are rejected; `(Integer) l`, `(Long) i` and incompatible `instanceof` are accepted | `ExpressionTypeTest.castsAndInstanceOf`, `InvalidExpressionTest.castsAndInstanceOf` |
+| Casts from `Object` to arrays are rejected; `(Integer) l`, `(Long) i` and incompatible `instanceof` are accepted | `ExpressionTypeTest.castsAndInstanceOf`, `InvalidExpressionTest.castsAndInstanceOf` |
 | `boxedInt++` has the type `int` instead of `Integer` | `ExpressionTypeTest.arithmetic` |
 | Assignments: constant narrowing (`byte x = 1`) is rejected; `boxedLong = 1`, assignments to non-variables (`1 = i`) and to final variables are accepted | `StatementTypeCheckTest`, `InvalidExpressionTest.assignments*` |
 | A field access to a method name (`s.length`, or `point.x` for the private record field `x`) yields a function type; a `long` array index is accepted | `InvalidExpressionTest` |

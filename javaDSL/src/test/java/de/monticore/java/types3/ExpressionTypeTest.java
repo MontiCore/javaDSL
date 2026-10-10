@@ -452,6 +452,25 @@ public class ExpressionTypeTest {
     check(expression, expectedType);
   }
 
+  /**
+   * Members inherited from the implicit super types: Object for classes and interfaces
+   * (JLS 4.10.2, 8.1.4), Enum&lt;E&gt; for enums (JLS 8.9).
+   */
+  @ParameterizedTest(name = "{0} : {1}")
+  @CsvSource(delimiterString = "=>", quoteCharacter = '`', textBlock = """
+      bs.toString()               => java.lang.String
+      bs.equals(o)                => boolean
+      shape.toString()            => java.lang.String
+      shape.hashCode()            => int
+      o = shape                   => java.lang.Object
+      o = color                   => java.lang.Object
+      color.compareTo(Color.GREEN) => int
+      color.getDeclaringClass()   => java.lang.Class<p.Color>
+      """)
+  void inheritedFromImplicitSuperTypes(String expression, String expectedType) {
+    check(expression, expectedType);
+  }
+
   /** Records with their implicit canonical constructor and accessors (Java 16, JLS 8.10). */
   @ParameterizedTest(name = "{0} : {1}")
   @CsvSource(delimiterString = "=>", quoteCharacter = '`', textBlock = """

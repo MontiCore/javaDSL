@@ -37,9 +37,13 @@ public final class Symbols {
         "type declaration " + fullName);
   }
 
-  /** A type declared in a model or loaded via class2mc. */
+  /**
+   * A type declared in a model or loaded via class2mc (which is registered as resolver of type
+   * symbols, hence the type is resolved as such).
+   */
   public static OOTypeSymbol type(String fullName) {
-    return assertPresent(JavaDSLMill.globalScope().resolveOOType(fullName), "type " + fullName);
+    return assertInstanceOf(OOTypeSymbol.class,
+        assertPresent(JavaDSLMill.globalScope().resolveType(fullName), "type " + fullName));
   }
 
   public static TypeVarSymbol typeVar(String fullName) {
