@@ -236,6 +236,34 @@ public class MethodSymbolTest {
     assertType("int -> a.E", enumConstructor.getFunctionType());
   }
 
+  /** Explicitly declared (non-canonical) constructors of records (JLS 8.10.4). */
+  @Test
+  void constructorsOfRecords() {
+    SymbolTables.fromSource("""
+        package a;
+        record Point(int x, int y) {
+          Point(int both) { this(both, both); }
+        }
+        record Pair<A>(A first) {
+          Pair(A first, int ignored) { this(first); }
+        }
+        """);
+
+    JavaMethodSymbol point = declaredConstructor("a.Point.Point");
+    assertTrue(point.isIsConstructor());
+    assertType("int -> a.Point", point.getFunctionType());
+    assertType("(a.Pair.A, int) -> a.Pair<a.Pair.A>",
+        declaredConstructor("a.Pair.Pair").getFunctionType());
+  }
+
+  /** The constructor that is declared in the model (records may also have implicit ones). */
+  private static JavaMethodSymbol declaredConstructor(String fullName) {
+    List<MethodSymbol> declared = methods(fullName).stream()
+        .filter(MethodSymbol::isPresentAstNode).toList();
+    assertEquals(1, declared.size(), "declared constructors of " + fullName);
+    return assertInstanceOf(JavaMethodSymbol.class, declared.get(0));
+  }
+
   @Test
   void constructorOfGenericClass() {
     SymbolTables.fromSource("""

@@ -79,8 +79,10 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
           symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingClass.getSymbol()));
       case ASTEnumDeclaration enclosingEnum ->
           symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingEnum.getSymbol()));
+      case ASTRecordDeclaration enclosingRecord ->
+          symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingRecord.getSymbol()));
       default -> Log.error(
-          "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a ASTClassDeclaration");
+          "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a class, enum, or record declaration");
     }
   }
   

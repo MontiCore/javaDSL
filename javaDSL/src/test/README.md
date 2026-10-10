@@ -67,7 +67,7 @@ State of 2026-10:
 | Java 10/11: `var` (also in lambda parameters) | yes | yes |
 | Java 14: switch expressions, `yield`, arrow labels, several constants per label | **no** | |
 | Java 15: text blocks | yes | yes |
-| Java 16: records | yes | **no** (`0x7A004` for constructors) |
+| Java 16: records | yes | yes (but see the known issues of records) |
 | Java 16: pattern matching for `instanceof`, local records/enums/interfaces, static members of inner classes | yes | yes |
 | Java 17: sealed classes and interfaces (`sealed`, `non-sealed`, `permits`) | **no** | |
 | Java 21: pattern matching for switch (`case null`, guards with `when`), record patterns | **no** | |
