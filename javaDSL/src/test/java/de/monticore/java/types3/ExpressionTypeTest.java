@@ -403,6 +403,34 @@ public class ExpressionTypeTest {
   }
 
   /**
+   * Explicitly typed lambdas without target type have a function type. The return type of a block
+   * body is derived from the return statements of the lambda itself, i.e., not from those of
+   * nested lambdas or of methods of local classes. The second column is a functional interface
+   * that is used for javac only.
+   */
+  @ParameterizedTest(name = "{0} : {2}")
+  @CsvSource(delimiterString = "=>", quoteCharacter = '`', textBlock = """
+      () -> 1                                    => IntSupplier       => () -> int
+      (int x) -> x * 2                           => IntUnaryOperator  => int -> int
+      (String a, String b) -> a + b              => BinaryOperator<String> => (java.lang.String, java.lang.String) -> java.lang.String
+      (int x) -> { }                             => IntConsumer       => int -> void
+      (int x) -> { return; }                     => IntConsumer       => int -> void
+      (int x) -> { return x + 1; }               => IntUnaryOperator  => int -> int
+      (int x) -> { if (x > 0) { return x; } return 0; } => IntUnaryOperator => int -> int
+      # the return statements of nested lambdas and local classes do not count
+      (int x) -> { Supplier<String> inner = () -> { return s; }; return x; } => IntUnaryOperator => int -> int
+      (int x) -> { IntSupplier a = () -> { Supplier<String> b = () -> { return s; }; return 1; }; return x; } => IntUnaryOperator => int -> int
+      (int x) -> { Supplier<String> inner = () -> { return s; }; } => IntConsumer => int -> void
+      (int x) -> { class Local { String m() { return s; } } return x; } => IntUnaryOperator => int -> int
+      (String t) -> { Runnable r = () -> { return; }; return t; } => UnaryOperator<String> => java.lang.String -> java.lang.String
+      """)
+  void lambdaFunctionTypes(String expression, String javaType, String expectedType) {
+    Javac.assertCompiles(ExpressionProbe.model(expression, javaType));
+    assertType(expectedType, ExpressionProbe.typeOf(expression, javaType));
+    MCAssertions.assertNoFindings();
+  }
+
+  /**
    * Switch expressions (Java 14, JLS 15.28) and patterns (Java 16/21, JLS 14.30). The type of a
    * standalone switch expression follows the rules of the conditional expression.
    */

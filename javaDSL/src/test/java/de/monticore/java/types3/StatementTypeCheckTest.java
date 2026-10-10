@@ -152,6 +152,12 @@ public class StatementTypeCheckTest {
       "int r(boolean c) { if (c) { return 1; } else { return 2; } }",
       "int r() { throw new RuntimeException(); }",
       "int r() { while (true) { } }",
+      "Object r() { return this; }",
+      "String r() { return super.toString(); }",
+      "int r() { return this.i + super.hashCode(); }",
+      // return statements of lambdas do not belong to the method
+      "void r() { java.util.function.Supplier<String> f = () -> { return \"\"; }; }",
+      "int r() { java.util.function.Supplier<String> f = () -> { return \"\"; }; return 1; }",
   })
   void validMembers(String members) {
     checkValid(members, "");
@@ -251,6 +257,8 @@ public class StatementTypeCheckTest {
       int r() { return "a"; }                 => 0xA0912
       String r() { return i; }                => 0xA0912
       List<String> r() { return ia; }         => 0xA0912
+      static Object r() { return this; }      => 0x7A020
+      static void r() { super.toString(); }   => 0x7A020
       """)
   void invalidMembers(String members, String expectedError) {
     checkInvalid(members, "", expectedError);

@@ -111,7 +111,8 @@ are examples, as most issues affect several tests.
 
 | Issue | Example tests |
 |---|---|
-| `JavaDSLTypeCheck3` does not register the type visitors of `BitExpressions`, `JavaClassExpressions`, and `LambdaExpressions`: bit operations, `this`, `super`, class literals, `instanceof` with pattern, `Context.<T>m()`, `outer.new Inner()`, lambdas, and method references are not typed (`0x7C001 ... TypeCheck misconfigured?`); `this.x` even throws a `NoSuchElementException` | `ExpressionTypeTest` `i & l`, `this`, `String.class`, `targetTyped` |
+| Not supported: qualified `Outer.this` and `Outer.super`, explicit type arguments (`Context.<T>m()`), `outer.new Inner()`, and method references (no type visitor); MontiCore's `JavaClassExpressionsTypeVisitor` does not support `this`/`super` at all, hence `JavaDSLJavaClassExpressionsTypeVisitor` implements the unqualified forms | `ExpressionTypeTest` `Context.this`, `this.new Inner()`, `targetTyped` |
+| Function types of lambdas are not compatible with functional interfaces (`() -> void` vs. `Runnable`) | `ExpressionTypeTest.targetTyped`, `StatementTypeCheckTest.validMembers` |
 | String literals have the regex type `R"..."` instead of `String` (also the type of `var x = "..."`) | `ExpressionTypeTest` `"text"`, `typeOfVarWithStringLiteral` |
 | Conditional expressions have union types (`int \| long`) instead of the Java types | `ExpressionTypeTest.conditional` |
 | Type inference does not box primitive type arguments (`id(1)` is `int`) | `ExpressionTypeTest` `id(1)`, `Box.of(Box.of(1))` |
@@ -132,5 +133,5 @@ are examples, as most issues affect several tests.
 |---|---|
 | `ForEachIsValid` throws a `NullPointerException`, as the JavaDSL overrides `EnhancedForControl` | `StatementTypeCheckTest.validForEach`, `ForEach.java` |
 | `SwitchStatementValid` rejects switch on `String`; enum constants in `case` labels are not resolved | `StatementTypeCheckTest.validSwitch` |
-| `ReturnTypeAssignmentIsValid` reports methods that end with `throw` or an infinite loop | `StatementTypeCheckTest.validMembers` |
+| `ReturnTypeAssignmentIsValid` reports methods that end with `throw` or an infinite loop, and it attributes the return statements of lambdas within the method to the method (a JavaDSL variant could use `ReturnStatementCollector`) | `StatementTypeCheckTest.validMembers` |
 | Several errors are logged without source position (`0xA0921`, `0xA0906`, `0xA0917`, `0xA0925`, `0xFD44E`), so the error markers of the invalid models can not be matched | `TypeCheckModelsTest` (`Initializers.java`, `Expressions.java`) |

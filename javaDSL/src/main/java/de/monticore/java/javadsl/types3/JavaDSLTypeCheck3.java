@@ -1,6 +1,7 @@
 package de.monticore.java.javadsl.types3;
 
 import de.monticore.expressions.assignmentexpressions.types3.AssignmentExpressionsCTTIVisitor;
+import de.monticore.expressions.bitexpressions.types3.BitExpressionsTypeVisitor;
 import de.monticore.expressions.commonexpressions.types3.CommonExpressionsCTTIVisitor;
 import de.monticore.expressions.expressionsbasis.types3.ExpressionBasisCTTIVisitor;
 import de.monticore.expressions.uglyexpressions.types3.UglyExpressionsCTTIVisitor;
@@ -60,6 +61,20 @@ public class JavaDSLTypeCheck3 extends MapBasedTypeCheck3 {
     
     
     // Expressions
+    
+    BitExpressionsTypeVisitor visBitExpressions = new BitExpressionsTypeVisitor();
+    visBitExpressions.setType4Ast(type4Ast);
+    traverser.add4BitExpressions(visBitExpressions);
+    
+    JavaDSLJavaClassExpressionsTypeVisitor visJavaClassExpressions =
+        new JavaDSLJavaClassExpressionsTypeVisitor();
+    visJavaClassExpressions.setType4Ast(type4Ast);
+    traverser.add4JavaClassExpressions(visJavaClassExpressions);
+    
+    JavaDSLLambdaExpressionsTypeVisitor visLambdaExpressions =
+        new JavaDSLLambdaExpressionsTypeVisitor();
+    visLambdaExpressions.setType4Ast(type4Ast);
+    traverser.add4LambdaExpressions(visLambdaExpressions);
     
     AssignmentExpressionsCTTIVisitor visAssignmentExpressions = new AssignmentExpressionsCTTIVisitor();
     visAssignmentExpressions.setType4Ast(type4Ast);
