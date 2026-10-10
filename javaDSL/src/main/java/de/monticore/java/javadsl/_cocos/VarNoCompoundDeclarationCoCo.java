@@ -12,7 +12,8 @@ public class VarNoCompoundDeclarationCoCo implements JavaDSLASTLocalVariableDecl
   @Override
   public void check(ASTLocalVariableDeclaration node) {
     if (node.isVar() && node.sizeVariableDeclarators() > 1) {
-      Log.error(ERROR_CODE + ERROR_MSG_FORMAT, node.get_SourcePositionStart());
+      Log.error(ERROR_CODE + ERROR_MSG_FORMAT,
+          node.get_SourcePositionStart(), node.get_SourcePositionEnd());
     }
   }
 }

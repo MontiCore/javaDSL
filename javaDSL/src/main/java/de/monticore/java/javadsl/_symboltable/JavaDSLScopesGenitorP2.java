@@ -226,8 +226,8 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
       symbol.setType(typeObject);
     }
     else {
-      Log.error("0x0x7A003: Could not resolve enclosing enum declaration",
-          node.get_SourcePositionStart());
+      Log.error("0x7A003: Could not resolve enclosing enum declaration",
+          node.get_SourcePositionStart(), node.get_SourcePositionEnd());
     }
   }
 
@@ -244,7 +244,8 @@ public class JavaDSLScopesGenitorP2 implements JavaDSLVisitor2, JavaLightVisitor
       case ASTRecordDeclaration enclosingRecord ->
           symbol.setType(SymTypeExpressionFactory.createFromSymbol(enclosingRecord.getSymbol()));
       default -> Log.error(
-          "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a class, enum, or record declaration");
+          "0x7A004: Could not set ASTConstructorDeclaration type as it is not a direct child of a class, enum, or record declaration",
+          node.get_SourcePositionStart(), node.get_SourcePositionEnd());
     }
   }
   

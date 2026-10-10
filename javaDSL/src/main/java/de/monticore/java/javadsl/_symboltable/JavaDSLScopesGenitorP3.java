@@ -25,24 +25,30 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
   @Override
   public void endVisit(ASTLocalVariableDeclaration node) {
     if (node.isVar()) {
-      // we assume that there is just a single VariableDeclarator, as a CoCo prevents the
-      // declaration of multiple variables with a single var
-      ASTVariableDeclarator declarator = node.getVariableDeclarator(0);
+      // several declarators are reported by the VarNoCompoundDeclarationCoCo, nevertheless, the
+      // types of all of them are inferred to obtain a complete symbol table
+      node.getVariableDeclaratorList().forEach(this::inferVarType);
+    }
+  }
+  
+  protected void inferVarType(ASTVariableDeclarator declarator) {
+    SymTypeExpression targetType = SymTypeExpressionFactory.createObscureType();
+    // a missing initializer is reported by the VarUsedWithoutInitializerCoCo
+    if (declarator.isPresentVariableInit()) {
       ASTVariableInit variableInit = declarator.getVariableInit();
-      
-      SymTypeExpression targetType = SymTypeExpressionFactory.createObscureType();
       if (variableInit instanceof ASTSimpleInit simpleInit) {
         targetType = TypeCheck3.typeOf(simpleInit.getExpression());
+        if (targetType.isObscureType()) {
+          Log.error("0x7A002: Could not determine type of 'var' variable",
+              declarator.get_SourcePositionStart(), declarator.get_SourcePositionEnd());
+        }
       }
       else {
-        Log.error("0x7A001: Unsupported ASTVariableInit type");
+        Log.error("0x7A001: Unsupported ASTVariableInit type",
+            variableInit.get_SourcePositionStart(), variableInit.get_SourcePositionEnd());
       }
-      
-      if (targetType.isObscureType()) {
-        Log.error("0x7A002: Could not determine type of 'var' variable");
-      }
-      declarator.getDeclarator().getSymbol().setType(targetType);
     }
+    declarator.getDeclarator().getSymbol().setType(targetType);
   }
   
   @Override
@@ -60,12 +66,12 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
         }
         else {
           Log.error("0x7A013: Only EnhancedForControl support the 'var' keyword",
-              node.get_SourcePositionStart());
+              node.get_SourcePositionStart(), node.get_SourcePositionEnd());
         }
       }
       else {
         Log.error("0x7A014: Encountered FormalParameter with 'var' in unsupported position",
-            node.get_SourcePositionStart());
+            node.get_SourcePositionStart(), node.get_SourcePositionEnd());
       }
     }
   }

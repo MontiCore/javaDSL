@@ -15,7 +15,8 @@ public class VarUsedWithoutInitializerCoCo implements JavaDSLASTLocalVariableDec
     if (node.isVar() && node.sizeVariableDeclarators() > 0) {
       ASTVariableDeclarator variableDeclarator = node.getVariableDeclarator(0);
       if (!variableDeclarator.isPresentVariableInit()) {
-        Log.error(ERROR_CODE + ERROR_MSG_FORMAT, node.get_SourcePositionStart());
+        Log.error(ERROR_CODE + ERROR_MSG_FORMAT,
+            node.get_SourcePositionStart(), node.get_SourcePositionEnd());
       }
     }
   }

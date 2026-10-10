@@ -68,7 +68,7 @@ public class JavaDSLMCBasicTypesTypeVisitor extends MCBasicTypesTypeVisitor {
           }
         }
         else {
-          Log.error("0x7A010 unexpected access \"."
+          Log.error("0x7A022 unexpected access \"."
                   + name
                   + "\" for type "
                   + prefixType.printFullName(),
