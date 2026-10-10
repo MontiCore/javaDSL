@@ -1,10 +1,15 @@
 package de.monticore.java.javadsl._symboltable;
 
 import de.monticore.java.javadsl._ast.*;
+import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.javalight._ast.ASTClassBodyDeclaration;
+import de.monticore.javalight._ast.ASTConstructorDeclaration;
+import de.monticore.javalight._symboltable.JavaMethodSymbol;
 import de.monticore.javalight._visitor.JavaLightVisitor2;
 import de.monticore.statements.mccommonstatements._ast.*;
 import de.monticore.symbols.oosymbols._symboltable.OOTypeSymbol;
 import de.monticore.symboltable.ImportStatement;
+import de.monticore.types.check.SymTypeExpressionFactory;
 
 import java.util.List;
 
@@ -84,6 +89,70 @@ public final class JavaDSLScopesGenitor extends JavaDSLScopesGenitorTOP
     
     tryToUpdateScopeName(node, node.getJavaModifierList());
     updateModifiers(symbol, node.getJavaModifierList());
+  }
+  
+  @Override
+  public void endVisit(ASTClassDeclaration node) {
+    List<ASTConstructorDeclaration> constructors =
+        getConstructors(node.getClassBody().getClassBodyDeclarationList());
+    if (constructors.isEmpty()) {
+      // JLS 8.8.9: the default constructor has the access modifier of the class
+      JavaMethodSymbol constructor = addDefaultConstructor(node.getSymbol());
+      constructor.setIsPublic(node.getSymbol().isIsPublic());
+      constructor.setIsProtected(node.getSymbol().isIsProtected());
+      constructor.setIsPrivate(node.getSymbol().isIsPrivate());
+    }
+    super.endVisit(node);
+  }
+  
+  @Override
+  public void endVisit(ASTEnumDeclaration node) {
+    List<ASTConstructorDeclaration> constructors = getConstructors(node.isPresentEnumBody()
+        ? node.getEnumBody().getClassBodyDeclarationList() : List.of());
+    if (constructors.isEmpty()) {
+      // JLS 8.9.2: the default constructor of an enum is private
+      addDefaultConstructor(node.getSymbol()).setIsPrivate(true);
+    }
+    super.endVisit(node);
+  }
+  
+  @Override
+  public void endVisit(ASTRecordDeclaration node) {
+    getConstructors(node.getRecordBody().getClassBodyDeclarationList());
+    super.endVisit(node);
+  }
+  
+  /**
+   * Returns the constructors among the members and marks their symbols as constructors.
+   */
+  private List<ASTConstructorDeclaration> getConstructors(
+      List<? extends ASTClassBodyDeclaration> members) {
+    List<ASTConstructorDeclaration> constructors = members.stream()
+        .filter(ASTConstructorDeclaration.class::isInstance)
+        .map(ASTConstructorDeclaration.class::cast)
+        .toList();
+    constructors.forEach(constructor -> constructor.getSymbol().setIsConstructor(true));
+    return constructors;
+  }
+  
+  /**
+   * Adds the implicit constructor without parameters to the type, if it does not declare a
+   * constructor (JLS 8.8.9).
+   */
+  private JavaMethodSymbol addDefaultConstructor(TypeDeclarationSymbol type) {
+    IJavaDSLScope spannedScope = JavaDSLMill.scope();
+    spannedScope.setShadowing(true);
+    spannedScope.setExportingSymbols(false);
+    spannedScope.setEnclosingScope(type.getSpannedScope());
+    JavaMethodSymbol constructor = JavaDSLMill.javaMethodSymbolBuilder()
+        .setName(type.getName())
+        .setIsConstructor(true)
+        .setType(SymTypeExpressionFactory.createFromSymbol(type))
+        .setSpannedScope(spannedScope)
+        .build();
+    spannedScope.setSpanningSymbol(constructor);
+    type.getSpannedScope().add(constructor);
+    return constructor;
   }
   
   @Override

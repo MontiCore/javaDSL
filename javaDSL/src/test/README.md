@@ -82,8 +82,6 @@ are examples, as most issues affect several tests.
 
 | Issue | Example tests |
 |---|---|
-| Constructor symbols are not marked with `isConstructor`, hence `new` of model classes never resolves (`0xFD557`) | `MethodSymbolTest.constructors`, `ExpressionTypeTest` `new Context()` |
-| No implicit default constructor (JLS 8.8.9) | `MethodSymbolTest.defaultConstructor` |
 | Implicit modifiers are missing: interface members are public (fields also static final, member types static), interfaces abstract, nested enums/records/interfaces static, enums/records final | `TypeDeclarationSymbolTest$Modifiers`, `MethodSymbolTest.interfaceMethodsAreImplicitlyPublic`, `VariableSymbolTest.fieldsOfInterfacesArePublicStaticFinal` |
 | Implicit super classes `Object`, `Enum<E>`, `Record` are missing; hence also `ordinal()`, `name()` of enums; `values()`/`valueOf()` are missing | `TypeDeclarationSymbolTest$SuperTypes.implicit*`, `implicitMethodsOfEnum` |
 | Super interfaces of interfaces (`interface J extends I`) are not set | `superInterfacesOfInterface` |
@@ -100,7 +98,7 @@ are examples, as most issues affect several tests.
 | A type parameter shadows a member type of the same name, but javac resolves the member type (the old test expected the wrong behavior) | `typeParameterAndMemberTypeWithSameName` |
 | A single type import does not shadow a type of the same package | `singleTypeImportShadowsTypeOfSamePackage` |
 | Member types inherited from a super class are not resolvable | `inheritedNestedTypeIsVisibleInSubClass` |
-| Package private (and protected) members are not accessible from other classes of the same package; this also affects nested types like `D.Nested` | `AccessTest` (`SamePackage`) |
+| Package private (and protected) members are not accessible from other classes of the same package (`TypeContextCalculator`: "missing: package_local"); this also affects nested types like `D.Nested` and the (default) constructors of package private classes like `new Base()` | `AccessTest` (`SamePackage`) |
 | Private and package private members of a super class are accessible in a sub class of another package | `AccessTest` (`SubClass`) |
 | class2mc: nested JDK types have wrong full names (`java.util.Entry` instead of `java.util.Map.Entry`), `Map.Entry<K, V>` is not resolvable in declarations (`0xA0323`), types outside of `java.base` (e.g., `java.sql`) are not found | `VariableSymbolTest` `Map.Entry`, `java.sql.Connection`, `ExpressionTypeTest` `msi.entrySet()` |
 | Static imports are not supported (`TODO` in `JavaDSLScopesGenitor`) | `ExpressionTypeTest.staticImports` |

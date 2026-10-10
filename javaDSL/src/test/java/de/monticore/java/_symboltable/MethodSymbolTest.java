@@ -247,18 +247,56 @@ public class MethodSymbolTest {
     assertType("a.Box.T -> a.Box<a.Box.T>", method("a.Box.Box").getFunctionType());
   }
 
-  /** A class without constructor declaration has an implicit default constructor (JLS 8.8.9). */
+  /**
+   * A class without constructor declaration has an implicit default constructor with the access
+   * modifier of the class (JLS 8.8.9); the one of an enum is private (JLS 8.9.2).
+   */
   @Test
   void defaultConstructor() {
     SymbolTables.fromSource("""
         package a;
-        public class C { }
+        public class Public { }
+        class PackagePrivate { }
+        class Outer {
+          protected static class Protected { }
+          private class Private { }
+        }
+        class Box<T> { }
+        enum E { X }
         """);
 
-    JavaMethodSymbol constructor = method("a.C.C");
-    assertTrue(constructor.isIsConstructor());
-    assertTrue(constructor.isIsPublic(), "has the access modifier of the class");
-    assertType("() -> a.C", constructor.getFunctionType());
+    JavaMethodSymbol publicConstructor = method("a.Public.Public");
+    assertTrue(publicConstructor.isIsConstructor());
+    assertTrue(publicConstructor.isIsPublic());
+    assertType("() -> a.Public", publicConstructor.getFunctionType());
+    assertTrue(publicConstructor.getParameterList().isEmpty());
+
+    JavaMethodSymbol packagePrivate = method("a.PackagePrivate.PackagePrivate");
+    assertFalse(packagePrivate.isIsPublic() || packagePrivate.isIsProtected()
+        || packagePrivate.isIsPrivate());
+    assertTrue(method("a.Outer.Protected.Protected").isIsProtected());
+    assertTrue(method("a.Outer.Private.Private").isIsPrivate());
+    assertType("() -> a.Box<a.Box.T>", method("a.Box.Box").getFunctionType());
+
+    JavaMethodSymbol enumConstructor = method("a.E.E");
+    assertTrue(enumConstructor.isIsConstructor());
+    assertTrue(enumConstructor.isIsPrivate());
+    assertType("() -> a.E", enumConstructor.getFunctionType());
+  }
+
+  /** There is no default constructor if a constructor is declared. */
+  @Test
+  void noDefaultConstructorBesidesDeclaredConstructors() {
+    SymbolTables.fromSource("""
+        package a;
+        class C { C(int x) { } }
+        enum E { X(1); E(int x) { } }
+        """);
+
+    assertEquals(List.of("int -> a.C"), methods("a.C.C").stream()
+        .map(m -> m.getFunctionType().printFullName()).toList());
+    assertEquals(List.of("int -> a.E"), methods("a.E.E").stream()
+        .map(m -> m.getFunctionType().printFullName()).toList());
   }
 
   @Test
@@ -286,7 +324,9 @@ public class MethodSymbolTest {
         """);
 
     assertEquals(List.of("m"), typeDeclaration("a.C").getSpannedScope()
-        .getLocalJavaMethodSymbols().stream().map(JavaMethodSymbol::getName).toList());
+        .getLocalJavaMethodSymbols().stream()
+        .filter(m -> !m.isIsConstructor())
+        .map(JavaMethodSymbol::getName).toList());
     assertTrue(methods("a.C.run").isEmpty());
   }
 }
