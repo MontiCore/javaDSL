@@ -27,12 +27,16 @@ public class JavaDSLSymbolTableUtil {
     }
   }
   
+  /**
+   * Builds the symbol table of a single model. Use {@link #buildSymbolTable(List)} for models
+   * that refer to each other, as each phase has to be completed for all models before the next
+   * one starts.
+   */
   public static IJavaDSLArtifactScope buildSymbolTable(ASTCompilationUnit ast) {
-    IJavaDSLArtifactScope as = runSymTabGenitor(ast);
-    runSymTabCompleter(ast);
-    return as;
+    return buildSymbolTable(List.of(ast)).get(0);
   }
-  
+
+  /** Builds the symbol tables of the models in three phases. */
   public static List<IJavaDSLArtifactScope> buildSymbolTable(List<ASTCompilationUnit> asts) {
     Stopwatch stopwatch = Stopwatch.createStarted();
     Log.info("Build - Phase 1", "SymbolTableConstruction");
@@ -56,7 +60,7 @@ public class JavaDSLSymbolTableUtil {
   }
   
   public static void runSymTabCompleter(ASTCompilationUnit ast) {
-    JavaDSLScopesGenitorP2Delegator p2Genitor = new JavaDSLScopesGenitorP2Delegator();
+    JavaDSLScopesGenitorP2Delegator p2Genitor = JavaDSLMill.scopesGenitorP2Delegator();
     p2Genitor.createFromAST(ast);
   }
   

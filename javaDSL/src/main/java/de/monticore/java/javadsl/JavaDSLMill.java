@@ -68,6 +68,8 @@ public class JavaDSLMill extends JavaDSLMillTOP {
   
   public static void initMe(JavaDSLMill a) {
     JavaDSLMillTOP.initMe(a);
+    millJavaDSLScopesGenitorP2 = a;
+    millJavaDSLScopesGenitorP2Delegator = a;
     millJavaDSLScopesGenitorP3 = a;
     millJavaDSLScopesGenitorP3Delegator = a;
   }
@@ -75,6 +77,8 @@ public class JavaDSLMill extends JavaDSLMillTOP {
   public static void reset() {
     JavaDSLMillTOP.reset();
     JavaDSLTypeCheck3.reset();
+    millJavaDSLScopesGenitorP2 = null;
+    millJavaDSLScopesGenitorP2Delegator = null;
     millJavaDSLScopesGenitorP3 = null;
     millJavaDSLScopesGenitorP3Delegator = null;
   }
