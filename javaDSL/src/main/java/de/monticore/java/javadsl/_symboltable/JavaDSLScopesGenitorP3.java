@@ -1,5 +1,6 @@
 package de.monticore.java.javadsl._symboltable;
 
+import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl._ast.ASTEnhancedForControlFormalParameter;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTryLocalVariableDeclaration;
@@ -14,8 +15,12 @@ import de.monticore.statements.mcvardeclarationstatements._ast.ASTVariableInit;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.types.check.SymTypeExpression;
 import de.monticore.types.check.SymTypeExpressionFactory;
+import de.monticore.types.check.SymTypeOfWildcard;
+import de.monticore.types3.SymTypeRelationsOfIterables;
 import de.monticore.types3.TypeCheck3;
 import de.se_rwth.commons.logging.Log;
+
+import java.util.Optional;
 
 public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
   
@@ -61,8 +66,7 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
         ASTForControl forControl = forStatement.getForControl();
         
         if (forControl instanceof ASTEnhancedForControl enhancedForControl) {
-          SymTypeExpression forExprType = TypeCheck3.typeOf(enhancedForControl.getExpression());
-          symbol.setType(forExprType);
+          symbol.setType(inferLoopVariableType(node, enhancedForControl.getExpression()));
         }
         else {
           Log.error("0x7A013: Only EnhancedForControl support the 'var' keyword",
@@ -76,6 +80,34 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
     }
   }
   
+  /**
+   * The type of a 'var' loop variable is the element type of the array or {@code Iterable}, a
+   * wildcard is replaced by its upper bound (JLS 14.14.2).
+   */
+  protected SymTypeExpression inferLoopVariableType(ASTEnhancedForControlFormalParameter node,
+      ASTExpression expression) {
+    SymTypeExpression expressionType = TypeCheck3.typeOf(expression);
+    if (expressionType.isObscureType()) {
+      // the error has already been logged by the type check
+      return expressionType;
+    }
+    Optional<SymTypeExpression> elementType =
+        SymTypeRelationsOfIterables.getIterationType(expressionType);
+    if (elementType.isEmpty()) {
+      Log.error("0x7A023: Can not iterate over an expression of type "
+              + expressionType.printFullName() + ", an array or Iterable is required",
+          expression.get_SourcePositionStart(), expression.get_SourcePositionEnd());
+      return SymTypeExpressionFactory.createObscureType();
+    }
+    if (elementType.get().isWildcard()) {
+      SymTypeOfWildcard wildcard = elementType.get().asWildcard();
+      return wildcard.hasBound() && wildcard.isUpper() ? wildcard.getBound()
+          : SymTypeExpressionFactory.createTypeObjectViaSurrogate("java.lang.Object",
+              node.getEnclosingScope());
+    }
+    return elementType.get();
+  }
+
   @Override
   public void endVisit(ASTTryLocalVariableDeclaration node) {
     if (node.isVar()) {

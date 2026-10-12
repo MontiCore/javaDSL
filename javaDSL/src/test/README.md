@@ -84,7 +84,6 @@ are examples, as most issues affect several tests.
 |---|---|
 | Trailing array dimensions are ignored for local variables, parameters, and methods (`int e[]`, `int m()[]`) | `severalDeclaratorsInOneDeclaration`, `parameters`, `signatures` |
 | A variable arity parameter `String... rest` has the type `String` instead of `String[]` | `variableArityParameterIsArray`, `ExpressionTypeTest` `params` |
-| `for (var x : list)` gets the type of the list instead of its element type | `varLoopVariables` |
 | `JavaDSLSymbolTableUtil.buildSymbolTable(ASTCompilationUnit)` skips phase 3, i.e., `var` stays untyped | `buildSymbolTableOfSingleModelInfersVar` |
 | Lambda parameters without explicit type (`x -> ...`, `(var x) -> ...`) have no type | `lambdaParameters`, `TypeCheckModelsTest` (bank, geometry) |
 | Catch parameters are not part of the symbol table | `resourcesAndCatchParameters` |

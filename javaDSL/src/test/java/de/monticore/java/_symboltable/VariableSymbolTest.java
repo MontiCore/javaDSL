@@ -4,9 +4,11 @@ package de.monticore.java._symboltable;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._symboltable.TypeDeclarationSymbol;
+import de.monticore.java.util.Javac;
 import de.monticore.java.util.SymbolTables;
 import de.monticore.java.utils.JavaDSLSymbolTableUtil;
 import de.monticore.javalight._symboltable.JavaMethodSymbol;
+import de.monticore.runtime.junit.MCAssertions;
 import de.monticore.runtime.junit.TestWithMCLanguage;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import org.junit.jupiter.api.Test;
@@ -321,6 +323,54 @@ public class VariableSymbolTest {
     assertType("int", localVariable(m, "e").getType());
     assertType("java.lang.String", localVariable(m, "key").getType());
     assertType("int", localVariable(m, "i").getType());
+  }
+
+  /** The type of a 'var' loop variable is the element type of the array or Iterable. */
+  @Test
+  void varLoopVariablesOfOtherIterables() {
+    SymbolTables.fromSource("""
+        package a;
+        import java.util.*;
+        class Numbers implements Iterable<Integer> {
+          public Iterator<Integer> iterator() { return null; }
+        }
+        class C {
+          void m(int[][] matrix, Numbers numbers, List<? extends Number> upper,
+              List<? super Integer> lower, List<?> unbounded, Map<String, Integer> map) {
+            for (var row : matrix) { }
+            for (var number : numbers) { }
+            for (var u : upper) { }
+            for (var l : lower) { }
+            for (var o : unbounded) { }
+            for (var entry : map.values()) { }
+          }
+        }
+        """);
+
+    JavaMethodSymbol m = method("a.C.m");
+    assertType("int[]", localVariable(m, "row").getType());
+    assertType("java.lang.Integer", localVariable(m, "number").getType());
+    assertType("java.lang.Number", localVariable(m, "u").getType());
+    assertType("java.lang.Object", localVariable(m, "l").getType());
+    assertType("java.lang.Object", localVariable(m, "o").getType());
+    assertType("java.lang.Integer", localVariable(m, "entry").getType());
+  }
+
+  @Test
+  void varLoopVariableOfNonIterableIsReported() {
+    String model = """
+        package a;
+        class C {
+          void m(String s) {
+            for (var c : s) { }
+          }
+        }
+        """;
+    Javac.assertDoesNotCompile(model);
+    SymbolTables.fromUncheckedSources(model);
+
+    MCAssertions.assertHasFindingStartingWith("0x7A023");
+    assertTrue(localVariable(method("a.C.m"), "c").getType().isObscureType());
   }
 
   @Test
