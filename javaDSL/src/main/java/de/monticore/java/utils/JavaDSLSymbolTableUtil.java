@@ -21,8 +21,9 @@ public class JavaDSLSymbolTableUtil {
     BasicSymbolsMill.initializePrimitives();
     
     if (enableC2MC) {
-      Class2MCResolver resolver = new OOClass2MCResolver();
+      OOClass2MCResolver resolver = new OOClass2MCResolver();
       JavaDSLMill.globalScope().addAdaptedTypeSymbolResolver(resolver);
+      JavaDSLMill.globalScope().addAdaptedOOTypeSymbolResolver(resolver);
     }
   }
   
