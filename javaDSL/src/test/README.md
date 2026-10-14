@@ -102,7 +102,7 @@ are examples, as most issues affect several tests.
 | Issue | Example tests |
 |---|---|
 | Not supported: qualified `Outer.this` and `Outer.super`, explicit type arguments (`Context.<T>m()`), `outer.new Inner()`, and method references (no type visitor); MontiCore's `JavaClassExpressionsTypeVisitor` does not support `this`/`super` at all, hence `JavaDSLJavaClassExpressionsTypeVisitor` implements the unqualified forms | `ExpressionTypeTest` `Context.this`, `this.new Inner()`, `targetTyped` |
-| Function types of lambdas are not compatible with functional interfaces (`() -> void` vs. `Runnable`) | `ExpressionTypeTest.targetTyped`, `StatementTypeCheckTest.validMembers` |
+| Function types of lambdas are not compatible with functional interfaces (`() -> void` vs. `Runnable`) | `ExpressionTypeTest.targetTyped`, `StatementTypeCheckTest.validMembers`, `VarNoForbiddenInitializerCoCoTest` |
 | String literals have the regex type `R"..."` instead of `String` (also the type of `var x = "..."`) | `ExpressionTypeTest` `"text"`, `typeOfVarWithStringLiteral` |
 | Conditional expressions have union types (`int \| long`) instead of the Java types | `ExpressionTypeTest.conditional` |
 | Type inference does not box primitive type arguments (`id(1)` is `int`) | `ExpressionTypeTest` `id(1)`, `Box.of(Box.of(1))` |
@@ -111,7 +111,7 @@ are examples, as most issues affect several tests.
 | `0x7A017` (multiple super classes) in `JavaDSLOOWithinTypeBasicSymbolsResolver` for class2mc types such as `StringBuilder` | `ExpressionTypeTest` `new StringBuilder().append(i)` |
 | String concatenation is rejected for operands that are not String or numeric (`s + o`, `s + null`, `s + bool`) | `ExpressionTypeTest.stringConcatenation` |
 | Arrays: `.length` and array creation with initializer (`new int[] {1}`) are not supported | `ExpressionTypeTest.arrays` |
-| Casts from `Object` to arrays are rejected; `(Integer) l`, `(Long) i` and incompatible `instanceof` are accepted | `ExpressionTypeTest.castsAndInstanceOf`, `InvalidExpressionTest.castsAndInstanceOf` |
+| Casts from `Object` to arrays and casts of `null` (`(Object) null`) are rejected; `(Integer) l`, `(Long) i` and incompatible `instanceof` are accepted | `ExpressionTypeTest.castsAndInstanceOf`, `InvalidExpressionTest.castsAndInstanceOf`, `VarNoForbiddenInitializerCoCoTest` |
 | `boxedInt++` has the type `int` instead of `Integer` | `ExpressionTypeTest.arithmetic` |
 | Assignments: constant narrowing (`byte x = 1`) is rejected; `boxedLong = 1`, assignments to non-variables (`1 = i`) and to final variables are accepted | `StatementTypeCheckTest`, `InvalidExpressionTest.assignments*` |
 | A field access to a method name (`s.length`, or `point.x` for the private record field `x`) yields a function type; a `long` array index is accepted | `InvalidExpressionTest` |

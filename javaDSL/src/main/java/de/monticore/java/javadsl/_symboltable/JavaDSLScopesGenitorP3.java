@@ -5,6 +5,7 @@ import de.monticore.java.javadsl._ast.ASTEnhancedForControlFormalParameter;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTryLocalVariableDeclaration;
 import de.monticore.java.javadsl._visitor.JavaDSLVisitor2;
+import de.monticore.statements.mcarraystatements._ast.ASTArrayInit;
 import de.monticore.statements.mccommonstatements._ast.ASTEnhancedForControl;
 import de.monticore.statements.mccommonstatements._ast.ASTForControl;
 import de.monticore.statements.mccommonstatements._ast.ASTForStatement;
@@ -48,7 +49,8 @@ public class JavaDSLScopesGenitorP3 implements JavaDSLVisitor2 {
               declarator.get_SourcePositionStart(), declarator.get_SourcePositionEnd());
         }
       }
-      else {
+      // an array initializer is reported by the VarNoForbiddenInitializerCoCo
+      else if (!(variableInit instanceof ASTArrayInit)) {
         Log.error("0x7A001: Unsupported ASTVariableInit type",
             variableInit.get_SourcePositionStart(), variableInit.get_SourcePositionEnd());
       }

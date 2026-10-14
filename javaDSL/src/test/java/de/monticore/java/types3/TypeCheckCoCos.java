@@ -4,6 +4,8 @@ package de.monticore.java.types3;
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
 import de.monticore.java.javadsl._cocos.JavaDSLVarDeclarationInitializationHasCorrectType;
+import de.monticore.java.javadsl._cocos.VarNoForbiddenInitializerCoCo;
+import de.monticore.java.javadsl._cocos.VarResourceNoForbiddenInitializerCoCo;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.javalight.cocos.ReturnTypeAssignmentIsValid;
 import de.monticore.statements.mccommonstatements.cocos.*;
@@ -24,6 +26,9 @@ final class TypeCheckCoCos {
     checker.addCoCo(new ExpressionStatementIsValid());
     checker.addCoCo(new JavaDSLVarDeclarationInitializationHasCorrectType());
     checker.addCoCo(new ReturnTypeAssignmentIsValid());
+    // var
+    checker.addCoCo(new VarNoForbiddenInitializerCoCo());
+    checker.addCoCo(new VarResourceNoForbiddenInitializerCoCo());
     // conditions
     checker.addCoCo(new IfConditionHasBooleanType());
     checker.addCoCo(new WhileConditionHasBooleanType());

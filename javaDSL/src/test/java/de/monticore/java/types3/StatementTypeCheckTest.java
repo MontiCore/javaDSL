@@ -240,6 +240,11 @@ public class StatementTypeCheckTest {
       byte x = i;                             => 0xA0921
       Integer x = 1L;                         => 0xA0921
       List<String> x = new ArrayList<Integer>(); => error
+      var x = {1};                            => 0x7A024
+      var x = () -> 1;                        => 0x7A024
+      var x = null;                           => 0x7A024
+      var x = nothing();                      => 0x7A024
+      try (var r = null) { }                  => 0x7A024
       s.unknown();                            => error
       ls.add(1);                              => error
       """)
