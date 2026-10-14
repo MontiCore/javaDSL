@@ -115,7 +115,6 @@ are examples, as most issues affect several tests.
 | `boxedInt++` has the type `int` instead of `Integer` | `ExpressionTypeTest.arithmetic` |
 | Assignments: constant narrowing (`byte x = 1`) is rejected; `boxedLong = 1`, assignments to non-variables (`1 = i`) and to final variables are accepted | `StatementTypeCheckTest`, `InvalidExpressionTest.assignments*` |
 | A field access to a method name (`s.length`, or `point.x` for the private record field `x`) yields a function type; a `long` array index is accepted | `InvalidExpressionTest` |
-| `var x = s.length();` causes `0xFD111` (typeOf without target type in phase 3, then with target type in the CoCo) | `StatementTypeCheckTest` |
 
 ### CoCos of the MontiCore grammar library
 

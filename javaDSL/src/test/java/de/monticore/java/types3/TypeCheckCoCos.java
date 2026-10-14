@@ -3,10 +3,10 @@ package de.monticore.java.types3;
 
 import de.monticore.java.javadsl._ast.ASTCompilationUnit;
 import de.monticore.java.javadsl._cocos.JavaDSLCoCoChecker;
+import de.monticore.java.javadsl._cocos.JavaDSLVarDeclarationInitializationHasCorrectType;
 import de.monticore.java.javadsl._symboltable.IJavaDSLArtifactScope;
 import de.monticore.javalight.cocos.ReturnTypeAssignmentIsValid;
 import de.monticore.statements.mccommonstatements.cocos.*;
-import de.monticore.statements.mcvardeclarationstatements._cocos.VarDeclarationInitializationHasCorrectType;
 
 /**
  * The context conditions of the MontiCore grammar library that type check statements and
@@ -22,7 +22,7 @@ final class TypeCheckCoCos {
     JavaDSLCoCoChecker checker = new JavaDSLCoCoChecker();
     // expressions
     checker.addCoCo(new ExpressionStatementIsValid());
-    checker.addCoCo(new VarDeclarationInitializationHasCorrectType());
+    checker.addCoCo(new JavaDSLVarDeclarationInitializationHasCorrectType());
     checker.addCoCo(new ReturnTypeAssignmentIsValid());
     // conditions
     checker.addCoCo(new IfConditionHasBooleanType());
