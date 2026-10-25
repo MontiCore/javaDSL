@@ -6,6 +6,7 @@ import de.monticore.cd4code.CD4CodeMill;
 import de.monticore.cd4code._parser.CD4CodeParser;
 import de.monticore.cd4code._symboltable.CD4CodeSymbolTableCompleter;
 import de.monticore.cd4code._symboltable.ICD4CodeArtifactScope;
+import de.monticore.cd4code.types3.CD4CodeTypeCheck3;
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl.JavaDSLTool;
@@ -93,6 +94,9 @@ public class JavaLoader {
 
   /** Rebuilds the symbol table for a parsed or cloned class-diagram AST. */
   public static void initializeCDSymbolTable(ASTCDCompilationUnit ast) {
+    // Completion may mutate existing type nodes. Their cached Types3 results must not survive
+    // rebuilding the scopes, otherwise an earlier type (e.g. int before a change to long) is reused.
+    CD4CodeTypeCheck3.init();
     BuiltInTypes.addBuiltInTypes(CD4CodeMill.globalScope());
     ICD4CodeArtifactScope as = CD4CodeMill.scopesGenitorDelegator().createFromAST(ast);
     CD4CodeSymbolTableCompleter c = new CD4CodeSymbolTableCompleter(ast);

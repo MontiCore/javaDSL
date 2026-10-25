@@ -39,11 +39,13 @@ public class SpoonUpdater implements CodeUpdater {
     elementResolver.reset();
     transformations.reset();
     executableRepairs.reset();
+    generation.reset();
   }
 
   @Override
   public Set<File> printCode() {
     transformations.prepareForPrint();
+    generation.prepareForPrint();
     return workspace.print();
   }
 

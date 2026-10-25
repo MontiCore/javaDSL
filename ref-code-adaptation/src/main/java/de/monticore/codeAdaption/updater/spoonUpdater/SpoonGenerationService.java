@@ -20,6 +20,7 @@ import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtEnumValue;
+import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
@@ -39,10 +40,20 @@ import spoon.refactoring.Refactoring;
 final class SpoonGenerationService {
   private final SpoonWorkspace workspace;
   private final SpoonElementResolver resolver;
+  private final List<CtMethod<?>> pendingPrimitiveReturnRepairs = new ArrayList<>();
 
   SpoonGenerationService(SpoonWorkspace workspace, SpoonElementResolver resolver) {
     this.workspace = workspace;
     this.resolver = resolver;
+  }
+
+  void reset() {
+    pendingPrimitiveReturnRepairs.clear();
+  }
+
+  void prepareForPrint() {
+    pendingPrimitiveReturnRepairs.forEach(this::repairNullPrimitiveReturns);
+    pendingPrimitiveReturnRepairs.clear();
   }
 
   void addField(
@@ -266,6 +277,9 @@ final class SpoonGenerationService {
         existingMethod.setType(workspace.createTypeReference(returnType));
       }
       setStatic(existingMethod, isStatic);
+      // Later incarnations still clone this template. Repair its placeholder only after all
+      // projections, so an int default cannot leak into a later String-returning method.
+      pendingPrimitiveReturnRepairs.add(existingMethod);
       return existingMethod;
     }
     if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
@@ -287,7 +301,6 @@ final class SpoonGenerationService {
             parameterTypes,
             parameterNames,
             returnType,
-            hasReplacementBody(methodBody),
             strictIdentity);
     setStatic(clone, isStatic);
     if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
@@ -295,6 +308,7 @@ final class SpoonGenerationService {
       clone.removeModifier(ModifierKind.ABSTRACT);
     }
     applyMethodBodySpec(targetType, clone, methodBody);
+    repairNullPrimitiveReturns(clone);
     spoonType.addMethod(clone);
     return clone;
   }
@@ -409,7 +423,6 @@ final class SpoonGenerationService {
       List<String> parameterTypes,
       List<String> parameterNames,
       String returnType,
-      boolean replacementBody,
       boolean strictIdentity) {
     CtType<?> target = resolver.getSpoonType(targetType);
     CtMethod<?> clone =
@@ -449,27 +462,11 @@ final class SpoonGenerationService {
         && (!strictIdentity || !matchesType(target, clone.getType(), returnType))) {
       clone.setType(workspace.createTypeReference(returnType));
     }
-    boolean primitiveBodyReturnsNull =
-        !replacementBody
-            && clone.getType() != null
-            && clone.getType().isPrimitive()
-            && clone.getElements(new spoon.reflect.visitor.filter.TypeFilter<>(CtReturn.class))
-                .stream()
-                .map(CtReturn::getReturnedExpression)
-                .anyMatch(
-                    expression ->
-                        expression == null
-                            || (expression instanceof CtLiteral<?> literal
-                                && literal.getValue() == null)
-                            || "null".equals(expression.toString())
-                            || "<nulltype>".equals(expression.toString()));
     if (requiresSignatureOnlyMethod(targetType, templateMethod)) {
       clone.setBody(null);
       if (!target.isInterface()) {
         clone.addModifier(ModifierKind.ABSTRACT);
       }
-    } else if (primitiveBodyReturnsNull) {
-      clone.setBody(safeDefaultBody(returnType));
     } else if (clone.getBody() == null && !"void".equals(returnType)) {
       CtBlock<?> body = workspace.factory().Core().createBlock();
       CtReturn<?> returnStatement = workspace.factory().Core().createReturn();
@@ -480,6 +477,31 @@ final class SpoonGenerationService {
       clone.setBody(workspace.factory().Core().createBlock());
     }
     return clone;
+  }
+
+  /** Repairs placeholder returns after either cloning or reusing a concretized method. */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private void repairNullPrimitiveReturns(CtMethod<?> method) {
+    if (method.getType() == null || !isPrimitiveOrVoid(method.getType())) {
+      return;
+    }
+    for (CtReturn<?> statement :
+        method.getElements(new spoon.reflect.visitor.filter.TypeFilter<>(CtReturn.class))) {
+      if (statement.getParent(CtExecutable.class) != method) {
+        continue;
+      }
+      CtExpression<?> expression = statement.getReturnedExpression();
+      if (expression == null
+          || (expression instanceof CtLiteral<?> literal && literal.getValue() == null)
+          || "null".equals(expression.toString())
+          || "<nulltype>".equals(expression.toString())) {
+        statement
+            .setReturnedExpression(
+                "void".equals(method.getType().getSimpleName())
+                    ? null
+                    : (CtExpression) workspace.defaultExpression(typeName(method.getType())));
+      }
+    }
   }
 
   private void updateParameter(
@@ -515,11 +537,6 @@ final class SpoonGenerationService {
       body.addStatement(returnStatement);
     }
     return body;
-  }
-
-  private static boolean hasReplacementBody(MethodBodySpec methodBody) {
-    return methodBody.kind() != MethodBodySpec.Kind.EMPTY
-        && methodBody.kind() != MethodBodySpec.Kind.INTERFACE_CONTRACT;
   }
 
   /** Checks inherited declarations without ever mutating the declaring supertype. */
