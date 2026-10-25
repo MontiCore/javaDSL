@@ -1,0 +1,22 @@
+import java.lang.String;
+
+classdiagram Concrete {
+  <<adapter="Target", factory="Target">> interface ShippingPort {
+    <<adapter="request", factory="request">> boolean ship(String label, boolean insured);
+  }
+
+  <<adapter="Adaptee", factory="Adaptee">> class LegacyCarrier {
+    String endpoint;
+    <<adapter="specificRequest", factory="specificRequest">> boolean dispatch(String label, boolean insured);
+  }
+
+  <<adapter="Adapter", factory="Adapter">> class CarrierAdapter implements ShippingPort {
+    <<adapter="adaptee", factory="adaptee">> LegacyCarrier carrier;
+    CarrierAdapter(LegacyCarrier carrier);
+    <<adapter="request", factory="request">> boolean ship(String label, boolean insured);
+  }
+
+  <<factory="Creator">> class ShippingFactory {
+    <<factory="create">> ShippingPort createCarrier(LegacyCarrier carrier);
+  }
+}

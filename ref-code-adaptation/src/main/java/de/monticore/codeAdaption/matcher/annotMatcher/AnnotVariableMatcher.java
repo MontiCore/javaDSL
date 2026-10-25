@@ -11,9 +11,9 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import java.util.Optional;
 
-/***
- * match a methods parameters and local variables in the reference code to elements
- * in the reference class Diagram form annotations.
+/**
+ * Matches handwritten formal parameters and local variables through explicit {@code @Adapt}
+ * annotations whose references are resolved against the reference CD.
  */
 public class AnnotVariableMatcher implements VariableMatcher {
   protected ASTCDCompilationUnit cd;
@@ -23,7 +23,9 @@ public class AnnotVariableMatcher implements VariableMatcher {
   }
 
   @Override
-  public void setReferenceCD(ASTCDCompilationUnit cd) {}
+  public void setReferenceCD(ASTCDCompilationUnit cd) {
+    this.cd = cd;
+  }
 
   @Override
   public Optional<CodeMatching> getMatchedLocalVariable(

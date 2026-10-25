@@ -1,0 +1,35 @@
+import java.lang.String;
+import java.lang.Object;
+
+
+classdiagram Concrete {
+
+  <<buildPat="Builder", observer="Subject">> class Controller {
+    <<buildPat="attribute">> String id;
+    <<buildPat="attribute">> String status;
+    <<buildPat="setAttribute">> void sX(Object x);
+  }
+
+  interface WorkerInterface {
+    void work();
+  }
+
+  <<buildPat="Builder", observer="Observer">> class WorkerA implements WorkerInterface {
+    <<buildPat="attribute">> String name;
+    <<buildPat="setAttribute">> void sX(Object x);
+    void work();
+  }
+
+  <<buildPat="Builder", observer="Observer">> class WorkerB implements WorkerInterface {
+    <<buildPat="attribute">> String name;
+    <<buildPat="setAttribute">> void sX(Object x);
+    void work();
+  }
+}
+
+
+
+
+
+
+

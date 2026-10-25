@@ -1,6 +1,10 @@
 package de.monticore.codeAdaption.utils;
 
-public class Constants {
+/** Names and placeholder syntax shared by {@link Adapt} parsing and matcher templates. */
+public final class Constants {
+
+  private Constants() {}
+
   public static final String TEMPLATE = "template";
   public static final String REFERENCE = "ref";
   public static final String ANNOT_NAME = "Adapt";
@@ -13,4 +17,5 @@ public class Constants {
   public static final String SIMPLE_PLACE_HOLDER = "${}";
   public static final String CAP_FIRST_PLACE_HOLDER = "${" + CAP_FIRST + "}";
   public static final String UNCAP_FIRST_PLACE_HOLDER = "${" + UNCAP_FIRST + "}";
+  public static final String GENERATE_TEMPLATE = "genTemplate";
 }

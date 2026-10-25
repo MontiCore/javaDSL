@@ -1,0 +1,6 @@
+classdiagram EnumOrderRef {
+  enum Status {
+    NEW,
+    DONE;
+  }
+}

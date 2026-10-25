@@ -1,0 +1,9 @@
+classdiagram ForEachAttributeRef {
+  class DataClass {
+    any attribute;
+  }
+
+  class Builder {
+    <<forEach="DataClass.attribute">> any attribute;
+  }
+}

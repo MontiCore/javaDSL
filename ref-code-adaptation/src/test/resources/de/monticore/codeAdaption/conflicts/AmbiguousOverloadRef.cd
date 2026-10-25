@@ -1,0 +1,6 @@
+classdiagram AmbiguousOverloadRef {
+  class Service {
+    void sync();
+    void sync(int value);
+  }
+}

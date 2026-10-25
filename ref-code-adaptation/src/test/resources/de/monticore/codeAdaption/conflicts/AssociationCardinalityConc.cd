@@ -1,0 +1,6 @@
+classdiagram AssociationCardinalityConc {
+  <<ref="Company">> class Company;
+  <<ref="Employee">> class Employee;
+
+  association Company (company) -- (employees) Employee [1];
+}

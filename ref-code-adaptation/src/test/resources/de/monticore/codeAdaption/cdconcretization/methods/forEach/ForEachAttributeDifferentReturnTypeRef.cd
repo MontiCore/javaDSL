@@ -1,0 +1,8 @@
+
+classdiagram ForEachAttributeDifferentReturnTypeRef {
+  class DataClass {
+    any attribute;
+
+    <<forEach="DataClass.attribute">> boolean isAttributeModified();
+  }
+}

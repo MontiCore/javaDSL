@@ -1,0 +1,6 @@
+classdiagram UnknownExplicitRef {
+  class Known {
+    int value;
+    void run();
+  }
+}

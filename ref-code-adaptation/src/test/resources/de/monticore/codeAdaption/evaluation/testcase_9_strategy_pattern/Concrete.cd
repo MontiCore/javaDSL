@@ -1,0 +1,28 @@
+import java.lang.String;
+
+classdiagram Concrete {
+
+  <<strategy="Context">> class PaymentProcessor {
+    String merchantId;
+    <<strategy="execute">> void processPayment(double amount);
+  }
+
+  <<strategy="Strategy">> interface PaymentStrategy {
+    <<strategy="execute">> void pay(double amount);
+  }
+
+  class CreditCardStrategy implements PaymentStrategy {
+    String cardNumber;
+    void pay(double amount);
+  }
+
+  class PayPalStrategy implements PaymentStrategy {
+    String email;
+    void pay(double amount);
+  }
+
+  class BitcoinStrategy implements PaymentStrategy {
+    String walletAddress;
+    void pay(double amount);
+  }
+}

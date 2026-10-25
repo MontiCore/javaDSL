@@ -1,0 +1,9 @@
+import java.lang.String;
+
+classdiagram Reference {
+  class MyClass {
+      String oldField;
+      void oldMethod();
+      String sharedField;
+  }
+}

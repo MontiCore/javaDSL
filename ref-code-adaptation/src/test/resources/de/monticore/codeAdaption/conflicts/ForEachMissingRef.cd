@@ -1,0 +1,9 @@
+classdiagram ForEachMissingRef {
+  class DataClass {
+    any attribute;
+  }
+
+  class Builder {
+    <<forEach="DataClass.missing">> any attribute;
+  }
+}

@@ -1,0 +1,4 @@
+classdiagram Concrete {
+  <<ref="Service">> class PrimaryService;
+  <<ref="Service">> class BackupService;
+}

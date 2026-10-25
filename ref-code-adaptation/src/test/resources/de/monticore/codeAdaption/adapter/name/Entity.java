@@ -1,7 +1,4 @@
-
-
-
-
-public class Entity {
+public class Entity { 
   String id;
-}
+
+} 

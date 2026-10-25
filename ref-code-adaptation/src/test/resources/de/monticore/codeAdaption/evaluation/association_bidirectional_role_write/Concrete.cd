@@ -1,0 +1,6 @@
+classdiagram Concrete {
+  <<ref="Project">> class Sprint;
+  <<ref="Task">> class Ticket;
+
+  association [1] Sprint (sprint) <-> (tickets) Ticket [1];
+}

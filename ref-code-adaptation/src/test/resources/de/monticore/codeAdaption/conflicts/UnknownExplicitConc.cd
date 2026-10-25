@@ -1,0 +1,6 @@
+classdiagram UnknownExplicitConc {
+  <<ref="MissingType">> class ConcreteType {
+    <<ref="missingField">> int value;
+    <<ref="missingMethod()">> void run();
+  }
+}

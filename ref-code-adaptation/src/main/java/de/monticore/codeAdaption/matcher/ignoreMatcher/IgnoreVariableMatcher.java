@@ -9,10 +9,11 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import java.util.Optional;
 
-/***
- *Return an empty-matching with the ignore flag set as true.
- *When the previous strategy didn't find machining for a local-variable or a method-parameter.
- *The adaption will ignore the corresponding element.
+/**
+ * Terminal fallback that accepts unmatched local variables and formal parameters unchanged.
+ *
+ * <p>It is installed by {@code IGNORE_NON_MATCHED_VAR} after all enabled variable matching
+ * strategies.
  */
 public class IgnoreVariableMatcher implements VariableMatcher {
   @Override

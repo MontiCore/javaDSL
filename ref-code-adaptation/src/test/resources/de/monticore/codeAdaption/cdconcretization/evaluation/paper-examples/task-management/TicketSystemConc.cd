@@ -1,0 +1,15 @@
+import java.lang.String;
+/* (c) https://github.com/MontiCore/monticore */
+
+classdiagram TicketSystemConc {
+
+  <<ref="Task">> class Ticket {
+    <<ref="title">> String summary;
+    <<ref="description">> String detail;
+  }
+
+  <<ref="Project">> class Workspace {
+    <<ref="name">> String label;
+    boolean archived;
+  }
+}

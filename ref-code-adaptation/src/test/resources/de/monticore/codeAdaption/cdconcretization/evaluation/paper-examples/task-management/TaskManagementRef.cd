@@ -1,0 +1,28 @@
+import java.lang.String;
+/* (c) https://github.com/MontiCore/monticore */
+
+classdiagram TaskManagementRef {
+
+  class Task {
+    String title;
+    String description;
+    TaskStatus status;
+  }
+
+  class Member {
+    String name;
+    String email;
+  }
+
+  class Project {
+    String name;
+  }
+
+  enum TaskStatus {
+    Open, InProgress, Done;
+  }
+
+  association Member -> (assignedTasks) Task [*];
+  association Project -> (members) Member [*];
+  association Project -> Task [*];
+}

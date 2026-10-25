@@ -1,0 +1,10 @@
+classdiagram Adapter {
+
+  interface Target { void operation(); }
+
+  class Adapter implements Target ;
+
+  class Adaptee;
+
+  association Adapter -> Adaptee [1];
+}

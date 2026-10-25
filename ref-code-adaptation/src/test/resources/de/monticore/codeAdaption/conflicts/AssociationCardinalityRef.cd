@@ -1,0 +1,6 @@
+classdiagram AssociationCardinalityRef {
+  class Company;
+  class Employee;
+
+  association Company (company) -- (employees) Employee [1..*];
+}

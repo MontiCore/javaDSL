@@ -1,0 +1,7 @@
+classdiagram AssociationRoleConflictConc {
+  <<ref="Observer">> class WiMi;
+  <<ref="Observable">> class StudentData;
+  class Lecture;
+
+  association WiMi -> (observes) Lecture;
+}
