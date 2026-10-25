@@ -1,6 +1,7 @@
 package de.monticore.codeAdaption.updater.spoonUpdater;
 
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
+import de.monticore.codeAdaption.utils.JavaSourceNames;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
@@ -180,26 +181,103 @@ final class SpoonGenerationService {
       String returnType,
       boolean isStatic,
       MethodBodySpec methodBody) {
+    addMethodInternal(
+        targetType,
+        templateMethod,
+        newName,
+        parameterTypes,
+        parameterNames,
+        returnType,
+        isStatic,
+        methodBody,
+        false);
+  }
+
+  boolean projectMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> parameterTypes,
+      List<String> parameterNames,
+      String returnType,
+      boolean isStatic,
+      MethodBodySpec methodBody) {
+    Objects.requireNonNull(templateMethod, "Projection requires a Java template");
+    CtMethod<?> original = resolver.getSpoonMethod(targetType, templateMethod);
+    CtType<?> owner = resolver.getSpoonType(targetType);
+    List<String> resolvedParameters =
+        parameterTypes.stream()
+            .map(type -> SpoonTypeIdentity.canonical(workspace, owner, type))
+            .toList();
+    String resolvedReturn = SpoonTypeIdentity.canonical(workspace, owner, returnType);
+    CtMethod<?> projected =
+        addMethodInternal(
+            targetType,
+            templateMethod,
+            newName,
+            resolvedParameters,
+            parameterNames,
+            resolvedReturn,
+            isStatic,
+            methodBody,
+            true);
+    if (projected == null
+        || projected.getDeclaringType() == null
+        || projected.getDeclaringType().getMethods().stream()
+            .noneMatch(method -> method == projected)) {
+      throw new IllegalStateException("Projected method is not attached: " + newName);
+    }
+    return projected == original;
+  }
+
+  private CtMethod<?> addMethodInternal(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> parameterTypes,
+      List<String> parameterNames,
+      String returnType,
+      boolean isStatic,
+      MethodBodySpec methodBody,
+      boolean strictIdentity) {
     validateMethodInput(newName, parameterTypes, parameterNames);
     Objects.requireNonNull(methodBody, "Method body specification must not be null");
     if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT && isStatic) {
       throw new IllegalStateException("An interface contract implementation cannot be static");
     }
     CtType<?> spoonType = resolver.getSpoonType(targetType);
-    CtMethod<?> existingMethod = findMethod(spoonType, newName, parameterTypes);
+    CtMethod<?> existingMethod = findMethod(spoonType, newName, parameterTypes, strictIdentity);
     if (existingMethod != null) {
       if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
         completeExistingInterfaceContract(existingMethod, returnType);
-        return;
+        return existingMethod;
       }
-      existingMethod.setType(workspace.createTypeReference(returnType));
+      if (strictIdentity) {
+        for (int index = 0; index < parameterTypes.size(); index++) {
+          // Keep the already resolved type reference; strict matching proved it is equivalent.
+          updateParameter(
+              existingMethod,
+              existingMethod.getParameters().get(index),
+              parameterNames.get(index),
+              null);
+        }
+      }
+      if (!strictIdentity || !matchesType(spoonType, existingMethod.getType(), returnType)) {
+        existingMethod.setType(workspace.createTypeReference(returnType));
+      }
       setStatic(existingMethod, isStatic);
-      return;
+      return existingMethod;
     }
-    if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT
-        && hasInheritedInterfaceImplementation(
-            spoonType, newName, parameterTypes, returnType)) {
-      return;
+    if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
+      CtMethod<?> inherited =
+          findInheritedInterfaceImplementation(
+              spoonType, newName, parameterTypes, returnType, strictIdentity);
+      if (inherited != null) {
+        return inherited;
+      }
+    }
+    if (strictIdentity) {
+      rejectErasedSignatureCollision(spoonType, newName, parameterTypes);
     }
     CtMethod<?> clone =
         cloneConfiguredMethod(
@@ -209,7 +287,8 @@ final class SpoonGenerationService {
             parameterTypes,
             parameterNames,
             returnType,
-            hasReplacementBody(methodBody));
+            hasReplacementBody(methodBody),
+            strictIdentity);
     setStatic(clone, isStatic);
     if (methodBody.kind() == MethodBodySpec.Kind.INTERFACE_CONTRACT) {
       clone.addModifier(ModifierKind.PUBLIC);
@@ -217,6 +296,7 @@ final class SpoonGenerationService {
     }
     applyMethodBodySpec(targetType, clone, methodBody);
     spoonType.addMethod(clone);
+    return clone;
   }
 
   /**
@@ -329,7 +409,8 @@ final class SpoonGenerationService {
       List<String> parameterTypes,
       List<String> parameterNames,
       String returnType,
-      boolean replacementBody) {
+      boolean replacementBody,
+      boolean strictIdentity) {
     CtType<?> target = resolver.getSpoonType(targetType);
     CtMethod<?> clone =
         templateMethod == null
@@ -345,7 +426,11 @@ final class SpoonGenerationService {
           clone,
           clone.getParameters().get(index),
           parameterNames.get(index),
-          parameterTypes.get(index));
+          strictIdentity
+                  && matchesType(
+                      target, clone.getParameters().get(index).getType(), parameterTypes.get(index))
+              ? null
+              : parameterTypes.get(index));
     }
     if (clone.getParameters().size() < parameterNames.size()) {
       for (int index = clone.getParameters().size(); index < parameterNames.size(); index++) {
@@ -359,7 +444,9 @@ final class SpoonGenerationService {
         clone.removeParameter(clone.getParameters().get(clone.getParameters().size() - 1));
       }
     }
-    if (returnType != null && !returnType.isBlank()) {
+    if (returnType != null
+        && !returnType.isBlank()
+        && (!strictIdentity || !matchesType(target, clone.getType(), returnType))) {
       clone.setType(workspace.createTypeReference(returnType));
     }
     boolean primitiveBodyReturnsNull =
@@ -415,7 +502,9 @@ final class SpoonGenerationService {
       }
       parameter.setSimpleName(newName);
     }
-    parameter.setType(workspace.createTypeReference(newType));
+    if (newType != null) {
+      parameter.setType(workspace.createTypeReference(newType));
+    }
   }
 
   private CtBlock<?> safeDefaultBody(String returnType) {
@@ -434,46 +523,86 @@ final class SpoonGenerationService {
   }
 
   /** Checks inherited declarations without ever mutating the declaring supertype. */
-  private boolean hasInheritedInterfaceImplementation(
-      CtType<?> type, String name, List<String> parameterTypes, String returnType) {
+  private CtMethod<?> findInheritedInterfaceImplementation(
+      CtType<?> type,
+      String name,
+      List<String> parameterTypes,
+      String returnType,
+      boolean strictIdentity) {
     CtTypeReference<?> expectedReturn = workspace.createTypeReference(returnType);
     for (CtMethod<?> method : type.getAllMethods()) {
-      if (method.getDeclaringType() == type || !matchesSignature(method, name, parameterTypes)) {
+      if (method.getDeclaringType() == type
+          || !matchesSignature(method, name, parameterTypes, strictIdentity)) {
         continue;
       }
       if (method.hasModifier(ModifierKind.PUBLIC)
           && !method.hasModifier(ModifierKind.STATIC)
           && !method.hasModifier(ModifierKind.ABSTRACT)
           && isCompatibleInterfaceReturn(method.getType(), expectedReturn)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private CtMethod<?> findMethod(CtType<?> type, String name, List<String> parameterTypes) {
-    for (CtMethod<?> method : type.getMethods()) {
-      if (matchesSignature(method, name, parameterTypes)) {
         return method;
       }
     }
     return null;
   }
 
+  private CtMethod<?> findMethod(
+      CtType<?> type, String name, List<String> parameterTypes, boolean strictIdentity) {
+    for (CtMethod<?> method : type.getMethods()) {
+      if (matchesSignature(method, name, parameterTypes, strictIdentity)) {
+        return method;
+      }
+    }
+    return null;
+  }
+
+  /** Distinct generic signatures cannot be installed as overloads with the same Java erasure. */
+  private void rejectErasedSignatureCollision(
+      CtType<?> owner, String name, List<String> parameterTypes) {
+    List<String> expected = parameterTypes.stream().map(type -> erasedIdentity(owner, type)).toList();
+    for (CtMethod<?> method : owner.getMethodsByName(name)) {
+      List<String> actual =
+          method.getParameters().stream()
+              .map(
+                  parameter ->
+                      erasedIdentity(owner, SpoonTypeIdentity.qualifiedSource(parameter.getType())))
+              .toList();
+      if (actual.equals(expected)) {
+        throw new IllegalStateException(
+            "Projected method conflicts with existing erased signature: " + method.getSignature());
+      }
+    }
+  }
+
+  private String erasedIdentity(CtType<?> owner, String source) {
+    String canonical = SpoonTypeIdentity.canonical(workspace, owner, source);
+    return JavaSourceNames.erasedType(canonical)
+        .map(type -> type.name() + "[]".repeat(type.arrayDimensions()))
+        .orElse(canonical);
+  }
+
   private boolean matchesSignature(
-      CtMethod<?> method, String name, List<String> parameterTypes) {
+      CtMethod<?> method, String name, List<String> parameterTypes, boolean strictIdentity) {
     if (!name.equals(method.getSimpleName())
         || method.getParameters().size() != parameterTypes.size()) {
       return false;
     }
     for (int index = 0; index < parameterTypes.size(); index++) {
       CtTypeReference<?> actualType = method.getParameters().get(index).getType();
-      CtTypeReference<?> expectedType = workspace.createTypeReference(parameterTypes.get(index));
-      if (!sameType(actualType, expectedType)) {
+      boolean same =
+          strictIdentity
+              ? matchesType(method.getDeclaringType(), actualType, parameterTypes.get(index))
+              : sameType(actualType, workspace.createTypeReference(parameterTypes.get(index)));
+      if (!same) {
         return false;
       }
     }
     return true;
+  }
+
+  private boolean matchesType(CtType<?> owner, CtTypeReference<?> actual, String expected) {
+    return actual != null
+        && SpoonTypeIdentity.canonical(workspace, owner, SpoonTypeIdentity.qualifiedSource(actual))
+            .equals(SpoonTypeIdentity.canonical(workspace, owner, expected));
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

@@ -212,6 +212,27 @@ public class SpoonUpdater implements CodeUpdater {
   }
 
   @Override
+  public boolean projectMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> parameterTypes,
+      List<String> parameterNames,
+      String returnType,
+      boolean isStatic,
+      MethodBodySpec methodBody) {
+    return generation.projectMethod(
+        targetType,
+        templateMethod,
+        newName,
+        parameterTypes,
+        parameterNames,
+        returnType,
+        isStatic,
+        methodBody);
+  }
+
+  @Override
   public void removeField(ASTTypeDeclaration targetType, ASTFieldDeclaration field) {
     generation.removeField(targetType, field);
   }

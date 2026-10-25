@@ -342,6 +342,42 @@ final class ConcreteSymbolResolver {
     return qualifyCdType(concreteType(type));
   }
 
+  /**
+   * Binds modeled CD signature types to Java declarations without erasing foreign qualification. The
+   * updater resolves a modeled simple name in its current source tree; the final composer
+   * subsequently relocates that declaration and its imports to concrete handwritten packages.
+   */
+  String resolveProjectedMethodType(String type) {
+    String modeledTypes =
+        JavaSourceNames.replaceTypeNames(
+            type,
+            reference -> {
+              List<ASTCDType> candidates =
+                  handler.conIndex.types().stream()
+                      .filter(candidate -> candidate.getName().equals(reference.simpleName()))
+                      .filter(
+                          candidate ->
+                              !reference.qualified()
+                                  || candidate
+                                      .getSymbol()
+                                      .getInternalQualifiedName()
+                                      .equals(reference.originalName())
+                                  || candidate
+                                      .getSymbol()
+                                      .getFullName()
+                                      .equals(reference.originalName()))
+                      .toList();
+              if (candidates.size() > 1) {
+                throw new IllegalStateException(
+                    "Ambiguous modeled method type: " + reference.originalName());
+              }
+              return candidates.size() == 1
+                  ? Optional.of(candidates.get(0).getName())
+                  : Optional.empty();
+            });
+    return qualifyCdType(modeledTypes);
+  }
+
   String replaceConcreteWithGroupingType(String rawType) {
     if (rawType == null
         || rawType.isEmpty()

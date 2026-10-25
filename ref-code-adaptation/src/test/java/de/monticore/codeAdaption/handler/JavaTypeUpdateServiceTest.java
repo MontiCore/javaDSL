@@ -8,6 +8,7 @@ import de.monticore.codeAdaption.utils.JavaLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +76,24 @@ class JavaTypeUpdateServiceTest {
         Arguments.of("int", "long", false),
         Arguments.of("void", "Object", false),
         Arguments.of("Object", "void", false));
+  }
+
+  @Test
+  void projectedMethodTypesPreserveForeignQualificationAndNestedTypeStructure() throws IOException {
+    CDModelIndex model =
+        index("Concrete.cd", "classdiagram Concrete { package model { class Customer; } }");
+    BasicUpdateHandler handler =
+        new BasicUpdateHandler(model, model, model, null, null, null, null, Map.of(), true);
+    ConcreteSymbolResolver resolver = new ConcreteSymbolResolver(handler, model.cd(), model.cd());
+
+    assertEquals("Customer", resolver.resolveProjectedMethodType("model.Customer"));
+    assertEquals("foreign.Customer", resolver.resolveProjectedMethodType("foreign.Customer"));
+    assertEquals(
+        "java.util.List<Customer[]>",
+        resolver.resolveProjectedMethodType("java.util.List<model.Customer[]>"));
+    assertEquals(
+        "java.util.Map<alpha.Role,beta.Role[]>[]",
+        resolver.resolveProjectedMethodType("java.util.Map<alpha.Role,beta.Role[]>[]"));
   }
 
   private CDModelIndex index(String fileName, String source) throws IOException {

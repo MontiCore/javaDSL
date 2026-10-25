@@ -20,6 +20,7 @@ import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.nio.file.Path;
@@ -47,6 +48,12 @@ public class CodeAdapterTool extends CD4CodeTool {
   @Override
   public void run(String[] args) {
     execute(args);
+  }
+
+  @Override
+  public void init() {
+    JavaDSLMill.init();
+    super.init();
   }
 
   /** Executes one CLI invocation and returns a process-style exit code. */
@@ -78,16 +85,7 @@ public class CodeAdapterTool extends CD4CodeTool {
       }
 
       CodeAdapter adapter = new CodeAdapter(adapterParameters, defaultConformanceParameters());
-      adapter.adapt(
-          requiredFile(commandLine, "reference"),
-          requiredFile(commandLine, "concrete"),
-          mappings,
-          requiredPath(commandLine, "reference-code"),
-          requiredPath(commandLine, "concrete-code"),
-          requiredPath(commandLine, "output"),
-          commandLine.hasOption("concretize"),
-          !commandLine.hasOption("no-common-parent"),
-          !commandLine.hasOption("no-persist-concretized-cd"));
+      adapt(adapter, commandLine, mappings);
       return 0;
     } catch (ParseException | IllegalArgumentException | CodeAdaptationException exception) {
       Log.warn("Code adaptation failed: " + exception.getMessage());
@@ -109,7 +107,13 @@ public class CodeAdapterTool extends CD4CodeTool {
     options.addOption(requiredPathOption("r", "reference", "reference class diagram"));
     options.addOption(requiredPathOption("c", "concrete", "concrete class diagram"));
     options.addOption(requiredPathOption("rc", "reference-code", "reference Java source directory"));
-    options.addOption(requiredPathOption("cc", "concrete-code", "concrete Java source directory"));
+    options.addOption(
+        Option.builder("cc")
+            .longOpt("concrete-code")
+            .hasArg()
+            .argName("path")
+            .desc("optional concrete Java source directory")
+            .build());
     options.addOption(requiredPathOption("o", "output", "generated Java output directory"));
     options.addOption(
         Option.builder("m")
@@ -129,6 +133,11 @@ public class CodeAdapterTool extends CD4CodeTool {
         Option.builder().longOpt("concretize").desc("complete the concrete CD first").build());
     options.addOption(
         Option.builder()
+            .longOpt("top-separation")
+            .desc("keep adapted implementations in TOP superclasses instead of merging concrete Java")
+            .build());
+    options.addOption(
+        Option.builder()
             .longOpt("no-persist-concretized-cd")
             .desc("do not write the concretized CD to the output directory")
             .build());
@@ -140,7 +149,7 @@ public class CodeAdapterTool extends CD4CodeTool {
     options.addOption(
         Option.builder()
             .longOpt("ignore-unmatched")
-            .desc("retain unmatched reference-code elements instead of reporting them")
+            .desc("allow unmatched reference-code elements instead of reporting them")
             .build());
     options.addOption(Option.builder("d").longOpt("debug").desc("enable debug logging").build());
     options.addOption(Option.builder("h").longOpt("help").desc("show this help").build());
@@ -155,6 +164,37 @@ public class CodeAdapterTool extends CD4CodeTool {
         .argName("path")
         .desc(description)
         .build();
+  }
+
+  private static void adapt(
+      CodeAdapter adapter, CommandLine commandLine, Set<String> mappings) throws ParseException {
+    File reference = requiredFile(commandLine, "reference");
+    File concrete = requiredFile(commandLine, "concrete");
+    Path referenceCode = requiredPath(commandLine, "reference-code");
+    Path output = requiredPath(commandLine, "output");
+    boolean concretize = commandLine.hasOption("concretize");
+    boolean commonParent = !commandLine.hasOption("no-common-parent");
+    boolean persistCD = !commandLine.hasOption("no-persist-concretized-cd");
+    if (commandLine.hasOption("concrete-code")) {
+      Path concreteCode = requiredPath(commandLine, "concrete-code");
+      if (commandLine.hasOption("top-separation")) {
+        adapter.adaptWithTopSeparation(
+            reference, concrete, mappings, referenceCode, concreteCode, output,
+            concretize, commonParent, persistCD);
+      } else {
+        adapter.adapt(
+            reference, concrete, mappings, referenceCode, concreteCode, output,
+            concretize, commonParent, persistCD);
+      }
+    } else if (commandLine.hasOption("top-separation")) {
+      adapter.adaptWithTopSeparation(
+          reference, concrete, mappings, referenceCode, output,
+          concretize, commonParent, persistCD);
+    } else {
+      adapter.adaptWithoutConcreteCode(
+          reference, concrete, mappings, referenceCode, output,
+          concretize, commonParent, persistCD);
+    }
   }
 
   private static File requiredFile(CommandLine commandLine, String option) throws ParseException {

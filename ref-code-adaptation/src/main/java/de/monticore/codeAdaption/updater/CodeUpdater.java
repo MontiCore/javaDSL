@@ -239,6 +239,27 @@ public interface CodeUpdater {
   }
 
   /**
+   * Projects one concrete method from a Java template and reports its actual declaration lifecycle.
+   *
+   * <p>Returns {@code true} only when the installed target is the original template declaration.
+   * Callers projecting several targets must accumulate this result and remove the template only
+   * after all projections succeed and none retained it. Implementations must preserve the template
+   * body when no replacement body is requested; source-signature equality alone cannot establish
+   * retention after earlier adaptation steps have changed the declaration.
+   */
+  default boolean projectMethod(
+      ASTTypeDeclaration targetType,
+      ASTMethodDeclaration templateMethod,
+      String newName,
+      List<String> paramTypes,
+      List<String> paramNames,
+      String returnType,
+      boolean isStatic,
+      MethodBodySpec methodBody) {
+    throw unsupported("projectMethod");
+  }
+
+  /**
    * Create a new top-level type by cloning the provided template type and giving it the provided name.
    */
   default void addType(ASTTypeDeclaration templateType, String newName) {

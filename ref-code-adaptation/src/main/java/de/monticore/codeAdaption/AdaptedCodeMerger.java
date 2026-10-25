@@ -80,6 +80,7 @@ final class AdaptedCodeMerger {
     for (ASTOrdinaryCompilationUnit original : adaptedByType.values()) {
       String originalKey = compilationUnitKey(original);
       ASTOrdinaryCompilationUnit copy = original.deepClone();
+      relocateExplicitImports(copy, relocations);
       Relocation relocation = relocations.get(originalKey);
       String targetPackage = relocation == null ? packageName(copy) : relocation.targetPackage();
       addRelocationImports(
@@ -188,6 +189,7 @@ final class AdaptedCodeMerger {
     for (ASTOrdinaryCompilationUnit originalAdapted : mergedAdapted.values()) {
       String originalKey = compilationUnitKey(originalAdapted);
       ASTOrdinaryCompilationUnit adaptedUnit = originalAdapted.deepClone();
+      relocateExplicitImports(adaptedUnit, relocations);
       Relocation relocation = relocations.get(originalKey);
       addRelocationImports(
           adaptedUnit,
@@ -494,6 +496,23 @@ final class AdaptedCodeMerger {
       }
     }
     return result;
+  }
+
+  /** Updates known adapted type imports when their declarations move to concrete packages. */
+  private void relocateExplicitImports(
+      ASTOrdinaryCompilationUnit unit, Map<String, Relocation> relocations) {
+    for (ASTImportDeclaration declaration : new ArrayList<>(unit.getImportDeclarationList())) {
+      if (declaration.isStatic() || declaration.isSTAR()) {
+        continue;
+      }
+      Relocation relocation = relocations.get(declaration.getMCQualifiedName().getQName());
+      if (relocation != null) {
+        // Only an exact original identity authorizes rebinding this import. Other explicit
+        // imports, including concrete HWC imports, keep their existing bindings.
+        declaration.setMCQualifiedName(
+            parseImport(relocation.targetKey()).getMCQualifiedName().deepClone());
+      }
+    }
   }
 
   private void addRelocationImports(

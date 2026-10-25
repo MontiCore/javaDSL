@@ -500,31 +500,7 @@ final class SpoonExecutableRepairService {
 
   /** Resolves unqualified type leaves only from unique model declarations or direct java.lang. */
   private String canonicalWorkspaceType(String source) {
-    return JavaSourceNames.canonicalType(
-        JavaSourceNames.replaceTypeNames(
-            source,
-            reference -> {
-              if (reference.qualified()) {
-                return Optional.empty();
-              }
-              List<String> modelTypes =
-                  workspace.model().getAllTypes().stream()
-                      .filter(type -> reference.simpleName().equals(type.getSimpleName()))
-                      .map(CtType::getQualifiedName)
-                      .distinct()
-                      .toList();
-              if (modelTypes.size() == 1) {
-                return Optional.of(modelTypes.get(0));
-              }
-              String javaLang = "java.lang." + reference.simpleName();
-              try {
-                Class.forName(
-                    javaLang, false, SpoonExecutableRepairService.class.getClassLoader());
-                return Optional.of(javaLang);
-              } catch (ClassNotFoundException | LinkageError ignored) {
-                return Optional.empty();
-              }
-            }));
+    return SpoonTypeIdentity.canonical(workspace, source);
   }
 
   /** Method declaration and invocations resolved to it before the rename. */

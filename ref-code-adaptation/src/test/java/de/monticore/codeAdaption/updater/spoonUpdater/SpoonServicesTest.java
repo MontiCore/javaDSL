@@ -5,6 +5,7 @@ import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,8 +30,12 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 class SpoonServicesTest {
@@ -100,6 +105,110 @@ class SpoonServicesTest {
     ASTMethodDeclaration targetRun = loadMethod(source, "Child", "targetRun");
 
     assertEquals("targetRun", resolver.getSpoonMethod(child, targetRun).getSimpleName());
+  }
+
+  @Test
+  void methodProjectionRetainsTheCurrentRenamedTemplateAndItsParameterBinding() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("projection-retained"));
+    Path source = javaSource(sources, "sample", "Echo",
+        "class Echo { String echo(String value) { return value; } }");
+    SpoonWorkspace workspace = loadedWorkspace(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration owner = loadType(source, "Echo");
+    ASTMethodDeclaration template = loadMethod(source, "Echo", "echo");
+    var original = resolver.getSpoonMethod(owner, template);
+    original.setSimpleName("renamedEcho");
+
+    assertTrue(generation.projectMethod(owner, template, "renamedEcho",
+        List.of("String"), List.of("renamedValue"), "String", false, MethodBodySpec.empty()));
+
+    var projected = resolver.getSpoonType(owner).getMethodsByName("renamedEcho").get(0);
+    assertSame(original, projected);
+    assertEquals(1, resolver.getSpoonType(owner).getMethods().size());
+    assertTrue(projected.getBody().toString().contains("return renamedValue"));
+    assertSame(projected.getParameters().get(0), projected.getBody()
+        .getElements(new TypeFilter<>(CtVariableAccess.class)).get(0).getVariable().getDeclaration());
+  }
+
+  @Test
+  void methodProjectionInstallsDistinctReplacementBeforeRemovingItsTemplate() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("projection-replaced"));
+    Path source = javaSource(sources, "sample", "Echo",
+        "class Echo { String echo(String value) { return value; } }");
+    SpoonWorkspace workspace = loadedWorkspace(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration owner = loadType(source, "Echo");
+    ASTMethodDeclaration template = loadMethod(source, "Echo", "echo");
+    var original = resolver.getSpoonMethod(owner, template);
+
+    assertFalse(generation.projectMethod(owner, template, "expanded",
+        List.of("String", "int"), List.of("renamedValue", "extra"), "String",
+        false, MethodBodySpec.empty()));
+    var projected = resolver.getSpoonType(owner).getMethodsByName("expanded").get(0);
+    assertNotSame(original, projected);
+    generation.removeMethod(owner, template);
+
+    assertEquals(1, resolver.getSpoonType(owner).getMethods().size());
+    assertTrue(projected.getBody().toString().contains("return renamedValue"));
+    assertSame(projected.getParameters().get(0), projected.getBody()
+        .getElements(new TypeFilter<>(CtVariableAccess.class)).get(0).getVariable().getDeclaration());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void projectingSeveralTargetsRetainsTheOriginalRegardlessOfTargetOrder(boolean originalFirst)
+      throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("projection-many"));
+    Path source = javaSource(sources, "sample", "Echo",
+        "class Echo { String echo(String value) { return value; } }");
+    SpoonWorkspace workspace = loadedWorkspace(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration owner = loadType(source, "Echo");
+    ASTMethodDeclaration template = loadMethod(source, "Echo", "echo");
+    var original = resolver.getSpoonMethod(owner, template);
+    boolean retained = false;
+    for (String name : originalFirst ? List.of("echo", "copy") : List.of("copy", "echo")) {
+      retained |= generation.projectMethod(owner, template, name,
+          List.of("String"), List.of(name + "Value"), "String", false, MethodBodySpec.empty());
+    }
+    assertTrue(retained);
+    assertEquals(2, resolver.getSpoonType(owner).getMethods().size());
+    assertSame(original, resolver.getSpoonType(owner).getMethodsByName("echo").get(0));
+    for (String name : List.of("echo", "copy")) {
+      var projected = resolver.getSpoonType(owner).getMethodsByName(name).get(0);
+      assertTrue(projected.getBody().toString().contains("return " + name + "Value"));
+      assertSame(projected.getParameters().get(0), projected.getBody()
+          .getElements(new TypeFilter<>(CtVariableAccess.class)).get(0).getVariable().getDeclaration());
+    }
+  }
+
+  @Test
+  void methodProjectionKeepsQualifiedOverloadsDistinct() throws IOException {
+    Path sources = Files.createDirectory(temporaryDirectory.resolve("projection-overloads"));
+    javaSource(sources, "alpha", "Role", "public class Role {}");
+    javaSource(sources, "beta", "Role", "public class Role {}");
+    Path source = javaSource(sources, "sample", "Echo",
+        "class Echo { int template(alpha.Role value) { return 7; } }");
+    SpoonWorkspace workspace = loadedWorkspace(sources);
+    SpoonElementResolver resolver = new SpoonElementResolver(workspace::model);
+    SpoonGenerationService generation = new SpoonGenerationService(workspace, resolver);
+    ASTTypeDeclaration owner = loadType(source, "Echo");
+    ASTMethodDeclaration template = loadMethod(source, "Echo", "template");
+    for (String parameterType : List.of("alpha.Role", "beta.Role")) {
+      assertFalse(generation.projectMethod(owner, template, "echo",
+          List.of(parameterType), List.of("role"), "int", false, MethodBodySpec.empty()));
+    }
+    generation.removeMethod(owner, template);
+
+    var methods = resolver.getSpoonType(owner).getMethodsByName("echo");
+    assertEquals(2, methods.size());
+    assertEquals(java.util.Set.of("alpha.Role", "beta.Role"), methods.stream()
+        .map(method -> method.getParameters().get(0).getType().getQualifiedName())
+        .collect(java.util.stream.Collectors.toSet()));
+    assertTrue(methods.stream().allMatch(method -> method.getBody().toString().contains("return 7")));
   }
 
   @Test

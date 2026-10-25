@@ -10,7 +10,6 @@ import de.monticore.cdinterfaceandenum._ast.ASTCDEnum;
 import de.monticore.cdinterfaceandenum._ast.ASTCDInterface;
 import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.updater.CodeUpdater.MethodBodySpec;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.CDTypeRelations;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -18,7 +17,6 @@ import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
-import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
 import de.monticore.symboltable.ISymbol;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
@@ -587,30 +585,26 @@ final class JavaTypeUpdateService {
         for (ASTCDMethod concreteMethod : concreteMethodsFor(reference)) {
           if (isOwnedBy(concreteMethod, concreteType)) {
             generated = true;
-            boolean selected =
-                isSelectedIncarnation(reference, concreteMethod.getSymbol());
             String concreteReturn =
-                symbols.resolveConcreteCdType(
-                    JavaSourceNames.printNormalizedReturnType(concreteMethod));
+                symbols.resolveProjectedMethodType(
+                    JavaSourceNames.printQualifiedReturnType(concreteMethod));
             retainsTemplate |=
-                selected && matchesMethodShape(template, concreteMethod, type, collector);
-            retainsTemplate |= matches(template, concreteMethod, type, collector);
-            handler.updater.addMethod(
-                type,
-                template,
-                concreteMethod.getName(),
-                concreteMethod.getCDParameterList().stream()
-                    .map(
-                        parameter ->
-                            symbols.resolveConcreteCdType(
-                                JavaSourceNames.printNormalizedType(parameter.getMCType())))
-                    .toList(),
-                concreteMethod.getCDParameterList().stream()
-                    .map(ASTCDParameter::getName)
-                    .toList(),
-                concreteReturn,
-                concreteMethod.getModifier().isStatic(),
-                MethodBodySpec.empty());
+                handler.updater.projectMethod(
+                    type,
+                    template,
+                    concreteMethod.getName(),
+                    concreteMethod.getCDParameterList().stream()
+                        .map(
+                            parameter ->
+                                symbols.resolveProjectedMethodType(
+                                    JavaSourceNames.printQualifiedType(parameter.getMCType())))
+                        .toList(),
+                    concreteMethod.getCDParameterList().stream()
+                        .map(ASTCDParameter::getName)
+                        .toList(),
+                    concreteReturn,
+                    concreteMethod.getModifier().isStatic(),
+                    MethodBodySpec.empty());
           }
         }
       }
@@ -625,35 +619,6 @@ final class JavaTypeUpdateService {
     return templateName.equals(concrete.getName())
         && JavaSourceNames.printNormalizedType(template.getMCType())
             .equals(JavaSourceNames.printNormalizedFieldType(concrete));
-  }
-
-  private boolean matches(
-      ASTMethodDeclaration template,
-      ASTCDMethod concrete,
-      ASTTypeDeclaration owner,
-      JavaAstElemCollector collector) {
-    return template.getName().equals(concrete.getName())
-        && matchesMethodShape(template, concrete, owner, collector);
-  }
-
-  private boolean matchesMethodShape(
-      ASTMethodDeclaration template,
-      ASTCDMethod concrete,
-      ASTTypeDeclaration owner,
-      JavaAstElemCollector collector) {
-    List<String> templateParameters =
-        collector.getAllParameters(owner, template).stream()
-            .map(ASTFormalParameter::getMCType)
-            .map(JavaSourceNames::printNormalizedType)
-            .toList();
-    List<String> concreteParameters =
-        concrete.getCDParameterList().stream()
-            .map(ASTCDParameter::getMCType)
-            .map(JavaSourceNames::printNormalizedType)
-            .toList();
-    return templateParameters.equals(concreteParameters)
-        && JavaSourceNames.normalizeType(JavaLoader.print(template.getMCReturnType()))
-            .equals(JavaSourceNames.printNormalizedReturnType(concrete));
   }
 
   private List<ASTCDAttribute> concreteAttributesFor(ISymbol reference) {
