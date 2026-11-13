@@ -1,21 +1,21 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.java.util.JavaSourceTest;
+import de.monticore.java.util.TestModels;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 
-import static de.monticore.java.JavaDSLAssertions.*;
+import java.nio.file.Path;
 
-public class UnparsableModelsTest extends AbstractTest {
-  
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/unparsableModels/BasicCompilationUnitMissingBracket.java",
-      "src/test/resources/unparsableModels/TwoTimesClass.java",
-      "src/test/resources/unparsableModels/WrongExpression.java",
-      "src/test/resources/unparsableModels/WrongIdentifierName.java"
-  })
-  public void testUnparsableModels(String path) {
+import static de.monticore.java.JavaDSLAssertions.assertParsingFailure;
+
+/** No model in {@link TestModels#UNPARSABLE} may be parsable. */
+@TestWithMCLanguage(JavaDSLMill.class)
+public class UnparsableModelsTest {
+
+  @JavaSourceTest(basePath = TestModels.UNPARSABLE)
+  public void testUnparsableModels(Path path) {
     assertParsingFailure(path);
   }
 }

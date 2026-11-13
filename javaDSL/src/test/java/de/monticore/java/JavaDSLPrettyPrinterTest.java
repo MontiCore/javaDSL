@@ -2,60 +2,29 @@
 package de.monticore.java;
 
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTCompilationUnit;
-import de.monticore.java.javadsl._ast.ASTJavaDSLNode;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.util.JavaSourceTest;
+import de.monticore.java.util.TestModels;
+import de.monticore.runtime.junit.PrettyPrinterTester;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 
 import java.io.IOException;
-import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
 
-import de.se_rwth.commons.logging.Log;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+/** Parses a model, pretty prints it, and checks that the re-parsed AST equals the original. */
+@TestWithMCLanguage(JavaDSLMill.class)
+public final class JavaDSLPrettyPrinterTest {
 
-import static org.junit.jupiter.api.Assertions.*;
-
-public final class JavaDSLPrettyPrinterTest extends AbstractTest {
-  
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
-      "src/test/resources/de/monticore/java/parser/ParseException.java",
-      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
-      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
-  })
-  public void testPrettyPrinter(String path) throws IOException {
-    // Parse input
-    ASTJavaDSLNode ast = parse(path);
-    
-    // Prettyprinting input
-    String output = JavaDSLMill.prettyPrint(ast, false);
-    
-    // Parsing printed input
-    ASTJavaDSLNode printedAST = parse(new StringReader(output));
-    assertTrue(ast.deepEquals(printedAST));
-    assertTrue(Log.getFindings().isEmpty());
-  }
-  
-  private ASTJavaDSLNode parse(String modelName) throws IOException {
-    Path model = Paths.get(modelName);
+  @JavaSourceTest(basePath = TestModels.PARSER, files = {
+      "ASTClassDeclaration.java", "ParseException.java", "TokenMgrError.java" })
+  @JavaSourceTest(basePath = TestModels.SIMPLE_TEST_CLASSES, files = {"HelloWorld.java"})
+  public void testPrettyPrinter(Path path) throws IOException {
     JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(model.toString());
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
-    assertTrue(Log.getFindings().isEmpty());
-    return ast.get();
-  }
-  
-  private ASTJavaDSLNode parse(StringReader reader) throws IOException {
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTCompilationUnit> ast = parser.parse(reader);
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
-    assertTrue(Log.getFindings().isEmpty());
-    return ast.get();
+    PrettyPrinterTester.testPrettyPrinter(
+        Files.readString(path),
+        parser,
+        parser::parse_String,
+        ast -> JavaDSLMill.prettyPrint(ast, false));
   }
 }

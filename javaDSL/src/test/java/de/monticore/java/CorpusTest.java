@@ -1,18 +1,14 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import de.monticore.java.javadsl.JavaDSLMill;
+import de.monticore.java.util.JavaSourceTest;
+import de.monticore.java.util.TestModels;
+import de.monticore.runtime.junit.TestWithMCLanguage;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static de.monticore.java.JavaDSLAssertions.*;
+import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
 
 /**
  * Performs tests on a large corpus of open-source libraries. The source
@@ -20,26 +16,19 @@ import static de.monticore.java.JavaDSLAssertions.*;
  * the {@code extractCorpus} task.
  *
  * <p>To add or remove libraries to the corpus, add a dependency to the "corpus"
- * configuration in the build script.</p>
+ * configuration in the build script. All extracted libraries are tested
+ * automatically.</p>
  */
-public final class CorpusTest extends AbstractTest {
+@TestWithMCLanguage(JavaDSLMill.class)
+public final class CorpusTest {
 
   /*
    * To learn more about corpus tests, please refer to:
    * /src/main/grammars/de/monticore/java/JavaDSL.md
    */
 
-  private static List<String> provideFilesForCorpusTests() throws IOException {
-    try (Stream<Path> stream = Files.walk(Path.of("target/corpus"))) {
-      return stream.map(path -> Files.isRegularFile(path) ? path.toAbsolutePath().toString() : null)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toUnmodifiableList());
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideFilesForCorpusTests")
-  public void testParsing(String path) {
+  @JavaSourceTest(basePath = TestModels.CORPUS)
+  public void testParsing(Path path) {
     assertParsingSuccess(path);
   }
 
