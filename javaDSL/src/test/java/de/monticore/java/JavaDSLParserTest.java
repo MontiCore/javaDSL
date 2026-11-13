@@ -1,74 +1,74 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.java;
 
-import de.monticore.expressions.expressionsbasis._ast.ASTExpression;
 import de.monticore.java.javadsl.JavaDSLMill;
-import de.monticore.java.javadsl._ast.ASTJavaBlock;
 import de.monticore.java.javadsl._ast.ASTTextBlockLiteral;
 import de.monticore.java.javadsl._parser.JavaDSLParser;
+import de.monticore.java.util.JavaSourceTest;
+import de.monticore.java.util.TestModels;
 import de.monticore.literals.mcliteralsbasis._ast.ASTLiteral;
+import de.monticore.runtime.junit.TestWithMCLanguage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Optional;
+import java.nio.file.Path;
 
-import static de.monticore.java.JavaDSLAssertions.*;
+import static de.monticore.java.JavaDSLAssertions.assertParsingSuccess;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import static org.junit.jupiter.api.Assertions.*;
+@TestWithMCLanguage(JavaDSLMill.class)
+public class JavaDSLParserTest {
 
-public class JavaDSLParserTest extends AbstractTest {
+  private JavaDSLParser parser;
 
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/de/monticore/java/parser/ASTClassDeclaration.java",
-      "src/test/resources/de/monticore/java/parser/ParseException.java",
-      "src/test/resources/de/monticore/java/parser/TokenMgrError.java",
-      "src/test/resources/parsableAndCompilableModels/simpleTestClasses/HelloWorld.java"
+  @BeforeEach
+  void createParser() {
+    parser = JavaDSLMill.parser();
+  }
+
+  @JavaSourceTest(basePath = TestModels.PARSER, files = {
+      "ASTClassDeclaration.java", "ParseException.java", "TokenMgrError.java"
   })
-  public void testParser(String path) throws IOException {
+  @JavaSourceTest(basePath = TestModels.SIMPLE_TEST_CLASSES, files = {"HelloWorld.java"})
+  @JavaSourceTest(basePath = TestModels.RESOURCES + "/moduleDeclaration", files = {"module-info.java"})
+  public void testCompilationUnit(Path path) {
     assertParsingSuccess(path);
   }
 
   @Test
-  public void testJavaBlock() throws IOException {
-    StringBuffer buffer = new StringBuffer();
-    buffer.append("{ _channel = HIDDEN;");
-    buffer.append("if (getCompiler() != null) {");
-    buffer.append("  de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());");
-    buffer
-        .append("_comment.set_SourcePositionStart(new de.se_rwth.commons.SourcePosition(getLine(), getCharPositionInLine()));");
-    buffer.append("_comment.set_SourcePositionEnd(getCompiler().computeEndPosition(getToken()));");
-    buffer.append("getCompiler().addComment(_comment);");
-    buffer.append("}");
-    buffer.append("}   ");
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTJavaBlock> ast = parser.parseJavaBlock(new StringReader(buffer.toString()));
-    assertFalse(parser.hasErrors());
-    assertTrue(ast.isPresent());
+  public void testJavaBlock() {
+    String block = """
+        { _channel = HIDDEN;
+          if (getCompiler() != null) {
+            de.monticore.ast.Comment _comment = new de.monticore.ast.Comment(getText());
+            _comment.set_SourcePositionStart(new de.se_rwth.commons.SourcePosition(getLine(), getCharPositionInLine()));
+            _comment.set_SourcePositionEnd(getCompiler().computeEndPosition(getToken()));
+            getCompiler().addComment(_comment);
+          }
+        }
+        """;
+    assertParsingSuccess(block, parser::parse_StringMCJavaBlock);
   }
-  
+
   @ParameterizedTest
   @ValueSource(strings = {
       "ch = str.charAt(i) < 0x20"
   })
-  public void testCondition(String input) throws IOException {
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTExpression> ast = parser.parse_StringExpression(input);
-    assertTrue(ast.isPresent());
+  public void testCondition(String input) {
+    assertParsingSuccess(input, parser::parse_StringExpression);
   }
-  
+
   @ParameterizedTest
   @ValueSource(strings = {
       "foo -> foo",
       "(foo, bar) -> foo",
       "(foo, bar) -> { return foo; }"
   })
-  public void testLambdas(String input) throws IOException {
-    JavaDSLParser parser = JavaDSLMill.parser();
-    assertTrue(parser.parse_StringExpression(input).isPresent());
+  public void testLambdas(String input) {
+    assertParsingSuccess(input, parser::parse_StringExpression);
   }
 
   @ParameterizedTest
@@ -84,37 +84,21 @@ public class JavaDSLParserTest extends AbstractTest {
       "super::toString",
       "Arrays::<String>sort"
   })
-  public void testMethodReferences(String input) throws IOException {
-    JavaDSLParser parser = JavaDSLMill.parser();
-    assertTrue(parser.parse_StringExpression(input).isPresent());
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "src/test/resources/moduleDeclaration/module-info.java"
-  })
-  public void testModuleDeclaration(String path) {
-    assertParsingSuccess(path);
+  public void testMethodReferences(String input) {
+    assertParsingSuccess(input, parser::parse_StringExpression);
   }
 
   @Test
-  public void testTextBlocks() throws IOException {
+  public void testTextBlocks() {
     String textBlock = "\"\"\"" + "\n" +
         "\t\tHello World" + "\n" +
         "\t\t\tIndented" + "\n" +
         "\"\"\"";
 
-    JavaDSLParser parser = JavaDSLMill.parser();
-    Optional<ASTLiteral> optLiteral = parser.parse_StringLiteral(textBlock);
+    ASTLiteral literal = assertParsingSuccess(textBlock, parser::parse_StringLiteral);
 
-    assertTrue(optLiteral.isPresent());
-
-    ASTLiteral literal = optLiteral.get();
-    assertInstanceOf(ASTTextBlockLiteral.class, literal);
-    assertEquals(
-        "Hello World\n\tIndented",
-        ((ASTTextBlockLiteral) literal).getSource()
-    );
+    ASTTextBlockLiteral textBlockLiteral = assertInstanceOf(ASTTextBlockLiteral.class, literal);
+    assertEquals("Hello World\n\tIndented", textBlockLiteral.getSource());
   }
 
 }

@@ -4,10 +4,10 @@ package simpleTestClasses;
 
 import java.util.ArrayList;
 
-public class ExtendsObject {
+public class ExtendsObject extends ArrayList {
   
 }
 
-class DoesntExtendObject extends ArrayList {
+class DoesntExtendObject {
   
 }
