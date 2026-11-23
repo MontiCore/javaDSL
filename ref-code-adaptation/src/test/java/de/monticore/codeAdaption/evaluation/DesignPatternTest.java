@@ -1,8 +1,6 @@
 package de.monticore.codeAdaption.evaluation;
 
-import static de.monticore.cdconformance.CDConfParameter.INHERITANCE;
-import static de.monticore.cdconformance.CDConfParameter.SRC_TARGET_ASSOC_MAPPING;
-import static de.monticore.cdconformance.CDConfParameter.STEREOTYPE_MAPPING;
+import static de.monticore.cdconformance.CDConfParameter.*;
 import static de.monticore.codeAdaption.utils.AdapterParam.ANNOTATION_MATCHING;
 import static de.monticore.codeAdaption.utils.AdapterParam.IGNORE_NON_MATCHED_VAR;
 import static de.monticore.codeAdaption.utils.AdapterParam.INFIX_MATCHING;
@@ -25,7 +23,8 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     initMills();
     adapterParams =
         Set.of(NAME_MATCHING, ANNOTATION_MATCHING, INFIX_MATCHING, IGNORE_NON_MATCHED_VAR);
-    confParameters = Set.of(INHERITANCE, STEREOTYPE_MAPPING, SRC_TARGET_ASSOC_MAPPING);
+    confParameters = Set.of(INHERITANCE, STEREOTYPE_MAPPING, NAME_MAPPING,
+        SRC_TARGET_ASSOC_MAPPING, ADAPTED_NAME_MAPPING);
   }
 
   @Test
@@ -79,6 +78,7 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     deleteRecursively(output);
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     assertDoesNotThrow(
-        () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output));
+        () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output,
+            true, false, true));
   }
 }
