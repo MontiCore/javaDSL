@@ -11,6 +11,8 @@ gradle :ref-code-adaptation:test
 On Windows, use `gradle.bat` instead. Tests need a JDK, including the Java compiler.
 The build uses Java 21 and an installed Gradle (8.8 is used for this project).
 
+The numbered evaluation scenarios and their covering tests are listed in [Evaluation cases](Evaluation.md).
+
 To run just the CLI and association/TOP examples:
 
 ```shell

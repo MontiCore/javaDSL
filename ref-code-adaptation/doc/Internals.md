@@ -3,6 +3,7 @@
 [Back to the overview](../README.md)
 
 This page is for developers extending the adapter. Start with the [quick start](QuickStart.md) to run it first.
+For the full module structure, layer boundaries, and design rules, see [Architecture](Architecture.md).
 
 ## Adaptation pipeline
 

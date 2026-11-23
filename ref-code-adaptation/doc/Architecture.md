@@ -1,5 +1,7 @@
 # ref-code-adaptation Architecture
 
+[Back to the overview](../README.md)
+
 This document describes the intended architecture of `ref-code-adaptation`.
 It records the module boundaries that keep adapter orchestration, matching,
 validation, model analysis, and code rewriting independent from each other.

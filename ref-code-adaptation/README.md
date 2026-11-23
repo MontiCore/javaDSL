@@ -42,7 +42,9 @@ your application. A **mapping** connects them using stereotypes such as
 | Understand mappings and model completion | [Mappings and adaptation modes](doc/Mappings.md) |
 | Keep handwritten and adapted code separate | [TOP separation](doc/TopSeparation.md) |
 | Extend the implementation | [Internals](doc/Internals.md) |
+| Understand module layers and boundaries | [Architecture](doc/Architecture.md) |
 | Run tests and understand supported boundaries | [Testing](doc/Testing.md) |
+| Look up all evaluation cases and their tests | [Evaluation cases](doc/Evaluation.md) |
 
 More runnable scenarios are in the [evaluation fixtures](src/test/resources/de/monticore/codeAdaption/evaluation)
 and [evaluation tests](src/test/java/de/monticore/codeAdaption/evaluation).
