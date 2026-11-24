@@ -18,7 +18,12 @@ final class ForEachConflictCheck implements AdaptationConflictCheck {
       }
       for (ASTCDType referenceType : context.referenceTypes().values()) {
         validateForEachMapping(
-            context, conflicts, mapping, incarnationContext, StableElementKey.type(referenceType), referenceType);
+            context,
+            conflicts,
+            mapping,
+            incarnationContext,
+            StableElementKey.type(referenceType),
+            referenceType);
         for (ASTCDAttribute attribute : referenceType.getCDAttributeList()) {
           validateForEachMapping(
               context,
@@ -56,7 +61,9 @@ final class ForEachConflictCheck implements AdaptationConflictCheck {
       conflicts.conflict(
           mapping,
           "missing forEach incarnation",
-          key.signature() + " declares forEach='" + forEachValue.get()
+          key.signature()
+              + " declares forEach='"
+              + forEachValue.get()
               + "' but no concrete incarnation could be derived");
     }
   }

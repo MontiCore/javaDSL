@@ -61,7 +61,8 @@ final class ConcreteTypeStructureConflictCheck implements AdaptationConflictChec
     }
   }
 
-  private void validateInheritanceCycles(ConflictDetectionContext context, ConflictCollector conflicts) {
+  private void validateInheritanceCycles(
+      ConflictDetectionContext context, ConflictCollector conflicts) {
     Map<String, Set<String>> edges = new LinkedHashMap<>();
     for (ASTCDType type : context.concreteTypes().values()) {
       Set<String> parents = new LinkedHashSet<>();

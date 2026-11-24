@@ -47,9 +47,9 @@ public final class CDImportProjector {
    *
    * <p>For example, if the reference CD imports {@code reference.Customer} and the concrete CD
    * imports {@code concrete.Customer}, a Java unit that uses unqualified {@code Customer} is
-   * ambiguous and causes an exception. If that unit already imports {@code reference.Customer},
-   * the existing Java import wins and no conflicting import is added. A unit that never uses
-   * {@code Customer} receives neither explicit import.
+   * ambiguous and causes an exception. If that unit already imports {@code reference.Customer}, the
+   * existing Java import wins and no conflicting import is added. A unit that never uses {@code
+   * Customer} receives neither explicit import.
    *
    * @param javaUnits handwritten adapter compilation units to update
    * @param classDiagrams class diagrams whose imports are projected
@@ -93,8 +93,7 @@ public final class CDImportProjector {
       for (Map.Entry<String, List<Map.Entry<ImportKey, ASTImportDeclaration>>> candidates :
           explicitImports.entrySet()) {
         String simpleName = candidates.getKey();
-        if (declaredTypeNames.contains(simpleName)
-            || !unqualifiedTypeUses.contains(simpleName)) {
+        if (declaredTypeNames.contains(simpleName) || !unqualifiedTypeUses.contains(simpleName)) {
           continue;
         }
 
@@ -113,7 +112,8 @@ public final class CDImportProjector {
         }
         queueIfMissing(existing, importsToAdd, distinctCandidates.get(0));
       }
-      importsToAdd.forEach(candidate -> unit.addImportDeclaration(candidate.getValue().deepClone()));
+      importsToAdd.forEach(
+          candidate -> unit.addImportDeclaration(candidate.getValue().deepClone()));
     }
   }
 
@@ -141,8 +141,7 @@ public final class CDImportProjector {
   }
 
   private static IllegalStateException ambiguousImport(
-      String simpleName,
-      List<Map.Entry<ImportKey, ASTImportDeclaration>> distinctCandidates) {
+      String simpleName, List<Map.Entry<ImportKey, ASTImportDeclaration>> distinctCandidates) {
     String qualifiedNames =
         distinctCandidates.stream()
             .map(entry -> entry.getKey().qualifiedName())
@@ -155,9 +154,9 @@ public final class CDImportProjector {
   }
 
   /**
-   * Collects simple names from Java type nodes rather than from identifier-shaped source text.
-   * This distinguishes a type use such as {@code Customer value} from a field or method named
-   * {@code Customer}, while still covering types nested in arrays and generic arguments.
+   * Collects simple names from Java type nodes rather than from identifier-shaped source text. This
+   * distinguishes a type use such as {@code Customer value} from a field or method named {@code
+   * Customer}, while still covering types nested in arrays and generic arguments.
    */
   private static Set<String> unqualifiedTypeUses(ASTOrdinaryCompilationUnit unit) {
     Set<String> typeNames = new LinkedHashSet<>();
@@ -249,7 +248,9 @@ public final class CDImportProjector {
       }
       Map<ImportKey, ASTImportDeclaration> result = new LinkedHashMap<>();
       unit.getImportDeclarationList()
-          .forEach(importDeclaration -> result.put(ImportKey.from(importDeclaration), importDeclaration));
+          .forEach(
+              importDeclaration ->
+                  result.put(ImportKey.from(importDeclaration), importDeclaration));
       if (!result.keySet().equals(importKeys)) {
         throw new IllegalStateException("Java parser changed class-diagram import semantics");
       }
@@ -285,5 +286,4 @@ public final class CDImportProjector {
           && !qualifiedName.substring(prefix.length()).contains(".");
     }
   }
-
 }

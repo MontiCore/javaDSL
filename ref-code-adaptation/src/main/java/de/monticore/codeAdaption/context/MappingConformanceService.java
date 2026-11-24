@@ -57,9 +57,7 @@ public final class MappingConformanceService {
               + " - will use validated stereotype-based fallback");
     }
     diagnostics.forEach(
-        diagnostic ->
-            Log.warn(
-                "Conformance check for mapping '" + mapping + "': " + diagnostic));
+        diagnostic -> Log.warn("Conformance check for mapping '" + mapping + "': " + diagnostic));
     return valid;
   }
 }

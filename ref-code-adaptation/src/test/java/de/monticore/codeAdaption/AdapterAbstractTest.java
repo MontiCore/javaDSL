@@ -139,18 +139,15 @@ public abstract class AdapterAbstractTest {
             fileManager.getJavaFileObjectsFromPaths(javaFiles);
         List<String> options =
             List.of(
-                "-d",
-                classesDir.toString(),
-                "-classpath",
-                System.getProperty("java.class.path"));
+                "-d", classesDir.toString(), "-classpath", System.getProperty("java.class.path"));
         Boolean compiled =
-            compiler.getTask(compilerOutput, fileManager, null, options, null, compilationUnits)
+            compiler
+                .getTask(compilerOutput, fileManager, null, options, null, compilationUnits)
                 .call();
         assertEquals(
             Boolean.TRUE,
             compiled,
-            () -> "Generated Java does not compile" + System.lineSeparator()
-                + compilerOutput);
+            () -> "Generated Java does not compile" + System.lineSeparator() + compilerOutput);
       }
     } catch (IOException e) {
       fail("Failed to compile generated Java: " + e.getMessage());
@@ -188,6 +185,11 @@ public abstract class AdapterAbstractTest {
         }
       }
     }
-    fail("Failed to delete path: " + path + " (" + (last == null ? "unknown" : last.getMessage()) + ")");
+    fail(
+        "Failed to delete path: "
+            + path
+            + " ("
+            + (last == null ? "unknown" : last.getMessage())
+            + ")");
   }
 }

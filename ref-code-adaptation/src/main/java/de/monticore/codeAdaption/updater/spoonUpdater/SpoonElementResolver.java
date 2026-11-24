@@ -61,17 +61,14 @@ final class SpoonElementResolver {
                         + "'"));
   }
 
-  Optional<CtMethod<?>> findSpoonMethod(
-      ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
+  Optional<CtMethod<?>> findSpoonMethod(ASTTypeDeclaration mcType, ASTMethodDeclaration mcMethod) {
     if (methodMap.containsKey(mcMethod)) {
       return Optional.of(methodMap.get(mcMethod));
     }
 
     CtType<?> spoonType = getSpoonType(mcType);
     List<CtMethod<?>> candidates =
-        spoonType.getMethods().stream()
-            .filter(candidate -> compare(mcMethod, candidate))
-            .toList();
+        spoonType.getMethods().stream().filter(candidate -> compare(mcMethod, candidate)).toList();
     Optional<CtMethod<?>> method =
         candidates.isEmpty()
             ? Optional.empty()
@@ -152,8 +149,7 @@ final class SpoonElementResolver {
       List<CtType<?>> exact =
           candidates.stream()
               .filter(
-                  candidate ->
-                      spoonSourceFile(candidate).map(expected.get()::equals).orElse(false))
+                  candidate -> spoonSourceFile(candidate).map(expected.get()::equals).orElse(false))
               .toList();
       if (!exact.isEmpty()) {
         return requireUnique(exact, "exact source match for '" + mcType.getName() + "'");

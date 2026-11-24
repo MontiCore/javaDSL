@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Terminal fallback that reports an unmatched Java type as a validation error.
- * It is installed when {@code IGNORE_NON_MATCHED_TYPE} is not enabled.
+ * Terminal fallback that reports an unmatched Java type as a validation error. It is installed when
+ * {@code IGNORE_NON_MATCHED_TYPE} is not enabled.
  */
 public class ErrorTypeMatcher implements TypeMatcher {
   protected ASTCDCompilationUnit cd;

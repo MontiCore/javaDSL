@@ -3,10 +3,10 @@ package de.monticore.codeAdaption.updater;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
+import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.io.File;
 import java.nio.file.Path;
@@ -65,8 +65,8 @@ public interface CodeUpdater {
    * Renames accesses to a field generated from a CD association role.
    *
    * <p>Unlike {@link #updateField}, this operation has no handwritten field declaration to rename:
-   * the declaration will be generated from the concrete CD. The source type scopes the rewrite so
-   * a role such as {@code children} on one owner does not affect another owner's same-named role.
+   * the declaration will be generated from the concrete CD. The source type scopes the rewrite so a
+   * role such as {@code children} on one owner does not affect another owner's same-named role.
    */
   default void updateAssociationRole(
       ASTTypeDeclaration srcType, String sourceRole, String concreteRole) {
@@ -173,8 +173,8 @@ public interface CodeUpdater {
    *
    * <p>For example, registering {@code send(String, boolean)} allows an adapted {@code send(label)}
    * invocation to receive a compatible enclosing {@code boolean} parameter or a Java default value.
-   * Because no owner is supplied, repair is performed only when the method name has one
-   * unambiguous registered signature. New code should prefer {@link #registerMethodRewrite}.
+   * Because no owner is supplied, repair is performed only when the method name has one unambiguous
+   * registered signature. New code should prefer {@link #registerMethodRewrite}.
    *
    * @param methodName concrete method name
    * @param parameterTypes concrete parameter types in declaration order
@@ -194,7 +194,8 @@ public interface CodeUpdater {
    * @param referenceMethod owner- and signature-aware reference-CD method key
    * @param concreteMethod owner- and signature-aware concrete-CD method key
    */
-  default void registerMethodRewrite(StableElementKey referenceMethod, StableElementKey concreteMethod) {
+  default void registerMethodRewrite(
+      StableElementKey referenceMethod, StableElementKey concreteMethod) {
     throw unsupported("registerMethodRewrite");
   }
 
@@ -260,7 +261,8 @@ public interface CodeUpdater {
   }
 
   /**
-   * Create a new top-level type by cloning the provided template type and giving it the provided name.
+   * Create a new top-level type by cloning the provided template type and giving it the provided
+   * name.
    */
   default void addType(ASTTypeDeclaration templateType, String newName) {
     throw unsupported("addType");
@@ -283,16 +285,12 @@ public interface CodeUpdater {
     throw unsupported("addEnumConstant");
   }
 
-  /**
-   * Remove a field from the given target type (by template AST field reference).
-   */
+  /** Remove a field from the given target type (by template AST field reference). */
   default void removeField(ASTTypeDeclaration targetType, ASTFieldDeclaration field) {
     throw unsupported("removeField");
   }
 
-  /**
-   * Remove a method from the given target type (by template AST method reference).
-   */
+  /** Remove a method from the given target type (by template AST method reference). */
   default void removeMethod(ASTTypeDeclaration targetType, ASTMethodDeclaration method) {
     throw unsupported("removeMethod");
   }
@@ -358,8 +356,7 @@ public interface CodeUpdater {
 
     /** Returns a specification for a concrete implementation of an interface contract. */
     public static MethodBodySpec interfaceContract() {
-      return new MethodBodySpec(
-          Kind.INTERFACE_CONTRACT, null, null, null, java.util.List.of());
+      return new MethodBodySpec(Kind.INTERFACE_CONTRACT, null, null, null, java.util.List.of());
     }
 
     /** Returns a builder-style field-assignment specification. */

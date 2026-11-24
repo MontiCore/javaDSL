@@ -45,8 +45,7 @@ public class CodeAdapterTestCase1 extends EvaluationAbstractTest {
         readFileContent(output, "ProfessorRegistration.java")
             .contains("register(Professor professor)"));
     assertTrue(
-        readFileContent(output, "StudentRegistration.java")
-            .contains("register(Student student)"));
+        readFileContent(output, "StudentRegistration.java").contains("register(Student student)"));
     assertGeneratedJavaCompiles(output);
   }
 }

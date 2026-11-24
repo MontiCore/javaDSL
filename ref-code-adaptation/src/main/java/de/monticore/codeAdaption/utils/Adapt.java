@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
  *
  * <p>The annotation may be placed on types, fields, methods, parameters, and local variables.
  * Explicit annotation matching takes precedence when {@link AdapterParam#ANNOTATION_MATCHING} is
- * enabled. Templates consume references from left to right using {@code ${}}, {@code
- * ${cap_first}}, and {@code ${uncap_first}} placeholders.
+ * enabled. Templates consume references from left to right using {@code ${}}, {@code ${cap_first}},
+ * and {@code ${uncap_first}} placeholders.
  */
 @Target({
   ElementType.LOCAL_VARIABLE,

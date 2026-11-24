@@ -85,7 +85,6 @@ class JavaSourceNamesTest {
     assertEquals(
         Optional.empty(),
         JavaMethodSignatures.parseNormalized("update(Map<String,List<Integer>,int)"));
-    assertEquals(
-        Optional.empty(), JavaMethodSignatures.parseNormalized("update(String) trailing"));
+    assertEquals(Optional.empty(), JavaMethodSignatures.parseNormalized("update(String) trailing"));
   }
 }

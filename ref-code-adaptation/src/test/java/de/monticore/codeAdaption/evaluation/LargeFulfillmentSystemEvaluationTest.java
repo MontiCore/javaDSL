@@ -189,12 +189,10 @@ public class LargeFulfillmentSystemEvaluationTest extends EvaluationAbstractTest
     String factory = readFileContent(output, "CarrierGatewayFactory.java");
 
     assertTrue(gateway.contains("public interface CarrierGateway"));
-    assertTrue(
-        gateway.contains("String createConsignment(DeliveryOrder order, String route);"));
+    assertTrue(gateway.contains("String createConsignment(DeliveryOrder order, String route);"));
     assertTrue(carrierAdapter.contains("implements CarrierGateway"));
     assertTrue(carrierAdapter.contains("LegacyCarrierApi legacyCarrier"));
-    assertTrue(
-        carrierAdapter.contains("legacyCarrier.createLegacyConsignment(order, route)"));
+    assertTrue(carrierAdapter.contains("legacyCarrier.createLegacyConsignment(order, route)"));
     assertTrue(factory.contains("CarrierGateway createGateway(LegacyCarrierApi legacyCarrier)"));
     assertTrue(factory.contains("return new LegacyCarrierGatewayAdapter(legacyCarrier);"));
   }

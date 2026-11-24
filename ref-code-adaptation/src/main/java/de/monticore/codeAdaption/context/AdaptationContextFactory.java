@@ -15,9 +15,9 @@ import java.util.Set;
 /**
  * Builds one incarnation context per requested mapping stereotype.
  *
- * <p>For example, mappings {@code [shop, billing]} produce a result map whose keys are {@code
- * shop} and {@code billing}. Each value contains only the incarnations derived for that mapping;
- * mappings are never combined into one context.
+ * <p>For example, mappings {@code [shop, billing]} produce a result map whose keys are {@code shop}
+ * and {@code billing}. Each value contains only the incarnations derived for that mapping; mappings
+ * are never combined into one context.
  */
 public final class AdaptationContextFactory {
 
@@ -92,8 +92,7 @@ public final class AdaptationContextFactory {
             "CodeAdapter");
       }
 
-      boolean conformanceMappingAvailable =
-          mappingValid && checker.getIncarnationMapping() != null;
+      boolean conformanceMappingAvailable = mappingValid && checker.getIncarnationMapping() != null;
       IncarnationContext context;
       if (!conformanceMappingAvailable) {
         context =
@@ -107,9 +106,7 @@ public final class AdaptationContextFactory {
       results.put(
           mapping,
           new AdaptationContextResult(
-              context,
-              conformanceMappingAvailable ? checker : null,
-              conformanceMappingAvailable));
+              context, conformanceMappingAvailable ? checker : null, conformanceMappingAvailable));
     }
 
     return results;

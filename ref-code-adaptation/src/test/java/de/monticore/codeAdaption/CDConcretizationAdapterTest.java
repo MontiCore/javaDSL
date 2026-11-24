@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.testutil.CDConcretizationFixtureWorkspace;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCase;
 import de.monticore.codeAdaption.testutil.CDConcretizationTestCases;
-import de.monticore.codeAdaption.testutil.CDConcretizationFixtureWorkspace;
 import de.monticore.codeAdaption.testutil.GeneratedJavaStructureOracle;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.CDModelIndex;
@@ -112,8 +112,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     CDConcretizationTestCases.expectedOutputModel(testCase)
         .ifPresentOrElse(
             expected ->
-                GeneratedJavaStructureOracle.assertMatches(
-                    testCase.concCd(), expected, javaFiles),
+                GeneratedJavaStructureOracle.assertMatches(testCase.concCd(), expected, javaFiles),
             () ->
                 assertTrue(
                     CDConcretizationTestCases.noExpectedOutputReason(testCase).isPresent(),
@@ -130,8 +129,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     cleanPreviousOutput(materializedTestCase);
 
     new CodeAdapter(
-            adapterParams,
-            defaultConformanceParams(materializedTestCase.strictParameterOrder()))
+            adapterParams, defaultConformanceParams(materializedTestCase.strictParameterOrder()))
         .adapt(
             materializedTestCase.refCd().toFile(),
             materializedTestCase.concCd().toFile(),
@@ -156,8 +154,8 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("unsupportedCases")
-  void rejectsDocumentedUpstreamLimitationWithoutReplacingOutput(
-      CDConcretizationTestCase testCase) throws IOException {
+  void rejectsDocumentedUpstreamLimitationWithoutReplacingOutput(CDConcretizationTestCase testCase)
+      throws IOException {
     assertFalse(CDConcretizationTestCases.unsupportedReason(testCase).isBlank());
     assertRejectedWithoutReplacingOutput(testCase);
   }
@@ -193,9 +191,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     Path adapted =
         write(
             testCase.outputPath().resolve(adaptedPackage + "/UsesConcrete.java"),
-            "package "
-                + adaptedPackage
-                + "; public class UsesConcrete { ConcreteType value; }");
+            "package " + adaptedPackage + "; public class UsesConcrete { ConcreteType value; }");
 
     List<Path> sources = compilationSources(List.of(adapted), testCase);
 
@@ -203,9 +199,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
         sources.stream()
             .anyMatch(
                 path ->
-                    path.toString()
-                        .replace('\\', '/')
-                        .endsWith("/expected/ConcreteType.java")));
+                    path.toString().replace('\\', '/').endsWith("/expected/ConcreteType.java")));
     if (compiles) {
       assertDoesNotThrow(() -> assertGeneratedJavaCompiles(sources));
     } else {
@@ -296,10 +290,14 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   private static void cleanPreviousOutput(CDConcretizationTestCase testCase) {
     deleteOutputPath(testCase.outputPath());
-    deleteOutputPath(testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_formatted"));
-    deleteOutputPath(testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_generated"));
     deleteOutputPath(
-        testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_compile_stubs"));
+        testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_formatted"));
+    deleteOutputPath(
+        testCase.outputPath().resolveSibling(testCase.outputPath().getFileName() + "_generated"));
+    deleteOutputPath(
+        testCase
+            .outputPath()
+            .resolveSibling(testCase.outputPath().getFileName() + "_compile_stubs"));
   }
 
   private static List<Path> compilationSources(
@@ -308,8 +306,8 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     adaptedJava.forEach(path -> sourcesByType.put(sourceTypeName(path), path));
     Path concretePath = testCase.concretePath();
     if (Files.isDirectory(concretePath)) {
-      generatedJavaFilesRecursively(concretePath).forEach(
-          path -> sourcesByType.putIfAbsent(sourceTypeName(path), path));
+      generatedJavaFilesRecursively(concretePath)
+          .forEach(path -> sourcesByType.putIfAbsent(sourceTypeName(path), path));
     }
     addConcreteModelStubs(testCase, sourcesByType);
     return new ArrayList<>(sourcesByType.values());
@@ -374,16 +372,13 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   private static void addModelDeclarations(
       ASTCDCompilationUnit cd, Map<String, String> declarations) {
-    cd
-        .getCDDefinition()
+    cd.getCDDefinition()
         .getCDClassesList()
         .forEach(type -> addModelDeclaration(declarations, type.getName(), "class"));
-    cd
-        .getCDDefinition()
+    cd.getCDDefinition()
         .getCDInterfacesList()
         .forEach(type -> addModelDeclaration(declarations, type.getName(), "interface"));
-    cd
-        .getCDDefinition()
+    cd.getCDDefinition()
         .getCDEnumsList()
         .forEach(type -> addModelDeclaration(declarations, type.getName(), "enum"));
   }
@@ -430,7 +425,8 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
 
   private static void deleteOutputPath(java.nio.file.Path path) {
     if (!path.startsWith(java.nio.file.Path.of(CDConcretizationTestCase.OUTPUT_ROOT))) {
-      throw new IllegalArgumentException("Refusing to delete path outside test output root: " + path);
+      throw new IllegalArgumentException(
+          "Refusing to delete path outside test output root: " + path);
     }
     deleteRecursively(path);
   }
@@ -443,7 +439,8 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
           .sorted()
           .toList();
     } catch (RuntimeException e) {
-      throw new IllegalStateException("Failed to inspect generated output for " + testCase.displayName(), e);
+      throw new IllegalStateException(
+          "Failed to inspect generated output for " + testCase.displayName(), e);
     }
   }
 
@@ -460,16 +457,15 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
   private static void assertNoAdaptMetadata(
       CDConcretizationTestCase testCase, List<java.nio.file.Path> javaFiles) {
     List<java.nio.file.Path> filesWithMetadata =
-        javaFiles.stream()
-            .filter(CDConcretizationAdapterTest::containsAdaptMetadata)
-            .toList();
+        javaFiles.stream().filter(CDConcretizationAdapterTest::containsAdaptMetadata).toList();
 
     assertTrue(
         filesWithMetadata.isEmpty(),
-        () -> "Generated output still contains @Adapt metadata for "
-            + testCase.displayName()
-            + ": "
-            + filesWithMetadata);
+        () ->
+            "Generated output still contains @Adapt metadata for "
+                + testCase.displayName()
+                + ": "
+                + filesWithMetadata);
   }
 
   private static boolean containsAdaptMetadata(java.nio.file.Path path) {
@@ -485,16 +481,15 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
   private static void assertNoWildcardJdkImports(
       CDConcretizationTestCase testCase, List<java.nio.file.Path> javaFiles) {
     List<java.nio.file.Path> filesWithWildcards =
-        javaFiles.stream()
-            .filter(CDConcretizationAdapterTest::containsWildcardJdkImport)
-            .toList();
+        javaFiles.stream().filter(CDConcretizationAdapterTest::containsWildcardJdkImport).toList();
 
     assertTrue(
         filesWithWildcards.isEmpty(),
-        () -> "Generated output contains wildcard JDK imports for "
-            + testCase.displayName()
-            + ": "
-            + filesWithWildcards);
+        () ->
+            "Generated output contains wildcard JDK imports for "
+                + testCase.displayName()
+                + ": "
+                + filesWithWildcards);
   }
 
   private static boolean containsWildcardJdkImport(java.nio.file.Path path) {
@@ -528,5 +523,4 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     Files.writeString(path, content + System.lineSeparator(), StandardCharsets.UTF_8);
     return path;
   }
-
 }

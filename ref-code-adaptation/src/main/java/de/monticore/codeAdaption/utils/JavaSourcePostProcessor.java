@@ -13,11 +13,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /** Import cleanup for generated Java sources, backed by JavaDSL source positions. */
 public final class JavaSourcePostProcessor {
@@ -84,16 +82,14 @@ public final class JavaSourcePostProcessor {
     return new SourceState(cleaned);
   }
 
-  private static Optional<ASTOrdinaryCompilationUnit> parseOrdinaryCompilationUnit(
-      String content) {
+  private static Optional<ASTOrdinaryCompilationUnit> parseOrdinaryCompilationUnit(String content) {
     try {
       Optional<ASTCompilationUnit> ast = JavaDSLMill.parser().parse_StringCompilationUnit(content);
       return ast.filter(ASTOrdinaryCompilationUnit.class::isInstance)
           .map(ASTOrdinaryCompilationUnit.class::cast);
     } catch (IOException | RuntimeException e) {
       Log.debug(
-          "JavaDSL could not parse generated source: " + e.getMessage(),
-          "JavaSourcePostProcessor");
+          "JavaDSL could not parse generated source: " + e.getMessage(), "JavaSourcePostProcessor");
       return Optional.empty();
     }
   }
@@ -248,9 +244,7 @@ public final class JavaSourcePostProcessor {
   }
 
   private static String applyImportEdits(
-      String content,
-      List<ASTImportDeclaration> importsToRemove,
-      ASTOrdinaryCompilationUnit ast) {
+      String content, List<ASTImportDeclaration> importsToRemove, ASTOrdinaryCompilationUnit ast) {
     if (importsToRemove.isEmpty()) {
       return content;
     }
@@ -260,7 +254,8 @@ public final class JavaSourcePostProcessor {
     for (ASTImportDeclaration importToRemove : importsToRemove) {
       int line = importToRemove.get_SourcePositionStart().getLine();
       if (line > 0) {
-        edits.add(new SourceEdit(document.lineStart(line), document.lineEndIncludingEnding(line), ""));
+        edits.add(
+            new SourceEdit(document.lineStart(line), document.lineEndIncludingEnding(line), ""));
       }
     }
 
@@ -333,5 +328,4 @@ public final class JavaSourcePostProcessor {
       return "\n";
     }
   }
-
 }

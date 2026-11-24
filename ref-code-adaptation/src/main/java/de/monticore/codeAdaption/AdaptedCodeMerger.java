@@ -44,13 +44,14 @@ final class AdaptedCodeMerger {
    * remains separate.
    */
   Set<ASTOrdinaryCompilationUnit> mergeAdaptedCode(
-      Set<ASTOrdinaryCompilationUnit> actualCode,
-      Set<ASTOrdinaryCompilationUnit> newAdaptedCode) {
+      Set<ASTOrdinaryCompilationUnit> actualCode, Set<ASTOrdinaryCompilationUnit> newAdaptedCode) {
     Map<String, ASTOrdinaryCompilationUnit> merged = indexAndMerge(actualCode);
     for (ASTOrdinaryCompilationUnit newAdapted : ordered(newAdaptedCode)) {
       String key = compilationUnitKey(newAdapted);
-        merged.compute(
-          key, (k, existing) -> existing == null ? newAdapted : AdapterUtils.mergeAsts(existing, newAdapted));
+      merged.compute(
+          key,
+          (k, existing) ->
+              existing == null ? newAdapted : AdapterUtils.mergeAsts(existing, newAdapted));
     }
     return new LinkedHashSet<>(merged.values());
   }
@@ -135,18 +136,17 @@ final class AdaptedCodeMerger {
               .map(Optional::get)
               .flatMap(matching -> matching.getReferences().stream())
               .anyMatch(
-                  reference -> StableElementKey.fromSymbol(reference, referenceIndex)
-                      .map(context::getIncarnations)
-                      .filter(incarnations -> !incarnations.isEmpty())
-                      .isPresent());
+                  reference ->
+                      StableElementKey.fromSymbol(reference, referenceIndex)
+                          .map(context::getIncarnations)
+                          .filter(incarnations -> !incarnations.isEmpty())
+                          .isPresent());
       boolean ignoredTopLevel =
           collector.getAllTypeDeclarations().stream()
               .map(validator::getMatchedType)
               .filter(Optional::isPresent)
               .map(Optional::get)
-              .anyMatch(
-                  matching ->
-                      !matching.mustBePerform() && matching.isExplicitAnnotation());
+              .anyMatch(matching -> !matching.mustBePerform() && matching.isExplicitAnnotation());
       boolean selectedDependency =
           unit.getTypeDeclarationList().stream()
               .map(type -> qualifiedTypeIdentity(unit, type))
@@ -158,8 +158,7 @@ final class AdaptedCodeMerger {
     return result;
   }
 
-  private String qualifiedTypeIdentity(
-      ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
+  private String qualifiedTypeIdentity(ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
     String typePackage = packageName(unit);
     return typePackage.isBlank() ? type.getName() : typePackage + "." + type.getName();
   }
@@ -203,8 +202,7 @@ final class AdaptedCodeMerger {
         key = relocation.targetKey();
         concreteMatch = result.get(key);
         if (concreteMatch.isPresentPackageDeclaration()) {
-          mergeableAdapted.setPackageDeclaration(
-              concreteMatch.getPackageDeclaration().deepClone());
+          mergeableAdapted.setPackageDeclaration(concreteMatch.getPackageDeclaration().deepClone());
         } else {
           mergeableAdapted.setPackageDeclarationAbsent();
         }
@@ -232,10 +230,9 @@ final class AdaptedCodeMerger {
   }
 
   /**
-   * Imports final concrete declaration locations used by generated fields, methods and
-   * supertypes. Completion can introduce member types after the initial reference-CD import
-   * projection, and relocation can place those types in packages different from their adapted
-   * owner.
+   * Imports final concrete declaration locations used by generated fields, methods and supertypes.
+   * Completion can introduce member types after the initial reference-CD import projection, and
+   * relocation can place those types in packages different from their adapted owner.
    */
   private void repairMemberTypeImports(
       Map<String, ASTOrdinaryCompilationUnit> units,
@@ -265,8 +262,7 @@ final class AdaptedCodeMerger {
       Set<String> existingImports =
           unit.getImportDeclarationList().stream()
               .filter(
-                  importDeclaration ->
-                      !importDeclaration.isStatic() && !importDeclaration.isSTAR())
+                  importDeclaration -> !importDeclaration.isStatic() && !importDeclaration.isSTAR())
               .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
               .filter(qualifiedName -> qualifiedName.contains("."))
               .collect(java.util.stream.Collectors.toSet());
@@ -277,8 +273,7 @@ final class AdaptedCodeMerger {
       Set<String> wildcardImportPackages =
           unit.getImportDeclarationList().stream()
               .filter(
-                  importDeclaration ->
-                      !importDeclaration.isStatic() && importDeclaration.isSTAR())
+                  importDeclaration -> !importDeclaration.isStatic() && importDeclaration.isSTAR())
               .map(importDeclaration -> importDeclaration.getMCQualifiedName().getQName())
               .collect(java.util.stream.Collectors.toSet());
       Map<String, String> requiredImports = new LinkedHashMap<>();
@@ -317,8 +312,7 @@ final class AdaptedCodeMerger {
             wildcardImportPackages.stream()
                 .filter(
                     importedPackage ->
-                        isAvailableThroughWildcardImport(
-                            importedPackage, simpleName, candidates))
+                        isAvailableThroughWildcardImport(importedPackage, simpleName, candidates))
                 .toList();
         if (matchingWildcardPackages.size() == 1) {
           // Unrelated declarations do not make the wildcard binding ambiguous: only declarations
@@ -362,8 +356,7 @@ final class AdaptedCodeMerger {
   private boolean isAvailableThroughWildcardImport(
       String importedPackage, String simpleName, Set<String> outputCandidates) {
     String qualifiedName = qualify(importedPackage, simpleName);
-    return outputCandidates.contains(qualifiedName)
-        || isLoadablePublicTopLevelType(qualifiedName);
+    return outputCandidates.contains(qualifiedName) || isLoadablePublicTopLevelType(qualifiedName);
   }
 
   private boolean isLoadablePublicTopLevelType(String qualifiedName) {
@@ -373,13 +366,12 @@ final class AdaptedCodeMerger {
 
   /**
    * Probes only the JDK platform class loader and does not initialize the class. Nested and
-   * non-public classes are deliberately rejected because a Java wildcard import cannot expose
-   * them as top-level source types.
+   * non-public classes are deliberately rejected because a Java wildcard import cannot expose them
+   * as top-level source types.
    */
   private static boolean loadPublicTopLevelType(String qualifiedName) {
     try {
-      Class<?> type =
-          Class.forName(qualifiedName, false, ClassLoader.getPlatformClassLoader());
+      Class<?> type = Class.forName(qualifiedName, false, ClassLoader.getPlatformClassLoader());
       return type.getEnclosingClass() == null
           && java.lang.reflect.Modifier.isPublic(type.getModifiers());
     } catch (ClassNotFoundException | LinkageError ignored) {
@@ -396,8 +388,7 @@ final class AdaptedCodeMerger {
   }
 
   /** Collects type names appearing in declaration signatures that may require final imports. */
-  private Set<JavaSourceNames.TypeReferenceName> memberTypeNames(
-      ASTOrdinaryCompilationUnit unit) {
+  private Set<JavaSourceNames.TypeReferenceName> memberTypeNames(ASTOrdinaryCompilationUnit unit) {
     Set<JavaSourceNames.TypeReferenceName> names = new LinkedHashSet<>();
     JavaAstElemCollector collector = collect(unit);
     for (ASTTypeDeclaration type : collector.getAllTypeDeclarations()) {
@@ -450,10 +441,7 @@ final class AdaptedCodeMerger {
       String simpleName = adaptedUnit.getTypeDeclarationList().get(0).getName();
       relocations.put(
           entry.getKey(),
-          new Relocation(
-              simpleName,
-              target.get().getKey(),
-              packageName(concreteUnit)));
+          new Relocation(simpleName, target.get().getKey(), packageName(concreteUnit)));
     }
     return relocations;
   }
@@ -467,8 +455,7 @@ final class AdaptedCodeMerger {
    * adapter} to import the relocated type.
    */
   private Map<String, Map<String, String>> adaptedTypeImports(
-      Map<String, ASTOrdinaryCompilationUnit> adaptedCode,
-      Map<String, Relocation> relocations) {
+      Map<String, ASTOrdinaryCompilationUnit> adaptedCode, Map<String, Relocation> relocations) {
     Map<String, Map<String, String>> result = new LinkedHashMap<>();
     for (Map.Entry<String, ASTOrdinaryCompilationUnit> entry : adaptedCode.entrySet()) {
       ASTOrdinaryCompilationUnit unit = entry.getValue();
@@ -516,16 +503,13 @@ final class AdaptedCodeMerger {
   }
 
   private void addRelocationImports(
-      ASTOrdinaryCompilationUnit unit,
-      Map<String, String> relocatedTypes,
-      String finalPackage) {
+      ASTOrdinaryCompilationUnit unit, Map<String, String> relocatedTypes, String finalPackage) {
     Set<String> declaredTypes =
         unit.getTypeDeclarationList().stream()
             .map(ASTTypeDeclaration::getName)
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     Map<String, String> importsBySimpleName = new LinkedHashMap<>();
-    for (ASTImportDeclaration existingImport :
-        new ArrayList<>(unit.getImportDeclarationList())) {
+    for (ASTImportDeclaration existingImport : new ArrayList<>(unit.getImportDeclarationList())) {
       String qualifiedName = existingImport.getMCQualifiedName().getQName();
       String importedSimpleName = simpleName(qualifiedName);
       if (!qualifiedName.contains(".") && relocatedTypes.containsKey(importedSimpleName)) {
@@ -568,7 +552,8 @@ final class AdaptedCodeMerger {
       }
       return unit.getImportDeclaration(0).deepClone();
     } catch (IOException exception) {
-      throw new CodeAdaptationException("Could not create Java import for " + qualifiedName, exception);
+      throw new CodeAdaptationException(
+          "Could not create Java import for " + qualifiedName, exception);
     }
   }
 
@@ -628,8 +613,8 @@ final class AdaptedCodeMerger {
   }
 
   /**
-   * Indexes units by package-qualified top-level identity and merges duplicate identities.
-   * Source paths do not participate in the key.
+   * Indexes units by package-qualified top-level identity and merges duplicate identities. Source
+   * paths do not participate in the key.
    */
   private Map<String, ASTOrdinaryCompilationUnit> indexAndMerge(
       Set<ASTOrdinaryCompilationUnit> files) {
@@ -649,8 +634,7 @@ final class AdaptedCodeMerger {
   private List<ASTOrdinaryCompilationUnit> ordered(Set<ASTOrdinaryCompilationUnit> files) {
     return files.stream()
         .sorted(
-            Comparator.comparing(this::compilationUnitKey)
-                .thenComparing(AdapterUtils::getFileName))
+            Comparator.comparing(this::compilationUnitKey).thenComparing(AdapterUtils::getFileName))
         .toList();
   }
 

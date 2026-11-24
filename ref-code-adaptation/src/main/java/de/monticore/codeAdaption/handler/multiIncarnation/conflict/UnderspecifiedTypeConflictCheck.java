@@ -19,7 +19,9 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
       }
       for (ASTCDType referenceType : context.referenceTypes().values()) {
         boolean ownerMapped =
-            !incarnationContext.getIncarnations(StableElementKey.type(referenceType.getName())).isEmpty();
+            !incarnationContext
+                .getIncarnations(StableElementKey.type(referenceType.getName()))
+                .isEmpty();
         if (!ownerMapped) {
           continue;
         }
@@ -33,20 +35,26 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
             conflicts.conflict(
                 mapping,
                 "underspecified attribute type",
-                referenceType.getName() + "." + attribute.getName()
+                referenceType.getName()
+                    + "."
+                    + attribute.getName()
                     + " uses any without a concrete incarnation");
           }
         }
         for (ASTCDMethod method : referenceType.getCDMethodList()) {
           boolean methodMapped =
-              !incarnationContext.getIncarnations(StableElementKey.method(referenceType, method)).isEmpty();
+              !incarnationContext
+                  .getIncarnations(StableElementKey.method(referenceType, method))
+                  .isEmpty();
           if (context.isAny(JavaLoader.print(method.getMCReturnType()))
               && !methodMapped
               && !hasMappedForEachDerivative(context, incarnationContext, referenceType, method)) {
             conflicts.conflict(
                 mapping,
                 "underspecified method return type",
-                referenceType.getName() + "." + method.getName()
+                referenceType.getName()
+                    + "."
+                    + method.getName()
                     + " returns any without a concrete incarnation");
           }
           for (ASTCDParameter parameter : method.getCDParameterList()) {
@@ -54,7 +62,9 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
               conflicts.conflict(
                   mapping,
                   "underspecified method parameter type",
-                  referenceType.getName() + "." + method.getName()
+                  referenceType.getName()
+                      + "."
+                      + method.getName()
                       + " has parameter "
                       + parameter.getName()
                       + " of type any");
@@ -72,7 +82,8 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
       ASTCDMethod target) {
     String qualifiedTarget = owner.getName() + "." + target.getName();
     for (ASTCDAttribute attribute : owner.getCDAttributeList()) {
-      if (context.forEachValue(attribute)
+      if (context
+              .forEachValue(attribute)
               .filter(value -> value.equals(target.getName()) || value.endsWith(qualifiedTarget))
               .isPresent()
           && !incarnationContext
@@ -91,7 +102,8 @@ final class UnderspecifiedTypeConflictCheck implements AdaptationConflictCheck {
       ASTCDAttribute target) {
     String qualifiedTarget = owner.getName() + "." + target.getName();
     for (ASTCDAttribute attribute : owner.getCDAttributeList()) {
-      if (context.forEachValue(attribute)
+      if (context
+              .forEachValue(attribute)
               .filter(value -> value.equals(target.getName()) || value.equals(qualifiedTarget))
               .isPresent()
           && !incarnationContext

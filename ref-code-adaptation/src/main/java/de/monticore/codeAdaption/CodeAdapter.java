@@ -1,9 +1,12 @@
 package de.monticore.codeAdaption;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import static java.util.stream.Collectors.toCollection;
+
 import de.monticore.cd4code.CD4CodeMill;
+import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
+import de.monticore.codeAdaption.MappingAdaptationRunner.AdaptationPass;
 import de.monticore.codeAdaption.context.AdaptationContextFactory;
 import de.monticore.codeAdaption.context.AdaptationContextFactory.AdaptationContextResult;
 import de.monticore.codeAdaption.context.ConcretizationService;
@@ -11,7 +14,6 @@ import de.monticore.codeAdaption.context.GroupingMappingService;
 import de.monticore.codeAdaption.context.MappingConformanceService;
 import de.monticore.codeAdaption.dependency.ReferenceCodeDependencySelector;
 import de.monticore.codeAdaption.dependency.ReferenceCodeSelection;
-import de.monticore.codeAdaption.MappingAdaptationRunner.AdaptationPass;
 import de.monticore.codeAdaption.handler.multiIncarnation.AdaptationConflictDetector;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import de.monticore.codeAdaption.handler.multiIncarnation.StableElementKey;
@@ -32,11 +34,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static java.util.stream.Collectors.toCollection;
-
 /**
- * Adapts handwritten reference Java to a concrete class diagram through
- * mapping-specific transformation passes.
+ * Adapts handwritten reference Java to a concrete class diagram through mapping-specific
+ * transformation passes.
  *
  * <p>A failed run never publishes its staging directory over existing output. In concretization
  * mode, only the completed or partially completed concrete CD is retained there as a diagnostic.
@@ -103,11 +103,7 @@ public class CodeAdapter {
    * @param outputPath output directory
    */
   public void adaptWithoutConcreteCode(
-      File referenceCD,
-      File concreteCD,
-      Set<String> mappings,
-      Path refHwcPath,
-      Path outputPath) {
+      File referenceCD, File concreteCD, Set<String> mappings, Path refHwcPath, Path outputPath) {
     adaptWithoutConcreteCode(
         referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
   }
@@ -119,18 +115,11 @@ public class CodeAdapter {
    * declarations exist, every adapted type is emitted directly under its adapted concrete name.
    */
   public void adaptWithTopSeparation(
-      File referenceCD,
-      File concreteCD,
-      Set<String> mappings,
-      Path refHwcPath,
-      Path outputPath) {
-    adaptWithTopSeparation(
-        referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
+      File referenceCD, File concreteCD, Set<String> mappings, Path refHwcPath, Path outputPath) {
+    adaptWithTopSeparation(referenceCD, concreteCD, mappings, refHwcPath, outputPath, false, true);
   }
 
-  /**
-   * Keeps adapted implementations separate from matching concrete HWC through TOP inheritance.
-   */
+  /** Keeps adapted implementations separate from matching concrete HWC through TOP inheritance. */
   public void adaptWithTopSeparation(
       File referenceCD,
       File concreteCD,
@@ -139,23 +128,16 @@ public class CodeAdapter {
       Path conHwcPath,
       Path outputPath) {
     adaptWithTopSeparation(
-        referenceCD,
-        concreteCD,
-        mappings,
-        refHwcPath,
-        conHwcPath,
-        outputPath,
-        false,
-        true);
+        referenceCD, concreteCD, mappings, refHwcPath, conHwcPath, outputPath, false, true);
   }
 
   /**
    * Adapts reference Java code to a concrete class diagram.
    *
    * <p>With {@code useConcretization=true}, cdconcretization may complete the concrete CD before
-   * adaptation. With {@code useConcretization=false}, incarnation contexts are derived manually from
-   * stereotypes and deterministic name rules, conflicts are reported before the output directory is
-   * cleaned, and the concrete CD is not changed.
+   * adaptation. With {@code useConcretization=false}, incarnation contexts are derived manually
+   * from stereotypes and deterministic name rules, conflicts are reported before the output
+   * directory is cleaned, and the concrete CD is not changed.
    *
    * <p>{@code useCommonParentForMultipleIncarnations} permits manual adaptation to represent an
    * exact group of concrete incarnations through a common concrete interface. For example, if
@@ -225,9 +207,7 @@ public class CodeAdapter {
         CodeAdapter::mergeFinalCode);
   }
 
-  /**
-   * Adapts reference Java without a concrete handwritten-code input.
-   */
+  /** Adapts reference Java without a concrete handwritten-code input. */
   public void adaptWithoutConcreteCode(
       File referenceCD,
       File concreteCD,
@@ -290,9 +270,7 @@ public class CodeAdapter {
         true);
   }
 
-  /**
-   * Full TOP-separation API without concrete HWC and with explicit concretized-CD persistence.
-   */
+  /** Full TOP-separation API without concrete HWC and with explicit concretized-CD persistence. */
   public void adaptWithTopSeparation(
       File referenceCD,
       File concreteCD,
@@ -372,8 +350,7 @@ public class CodeAdapter {
       boolean useCommonParentForMultipleIncarnations,
       boolean persistConcretizedCD,
       FinalCodeComposer finalCodeComposer) {
-    AdaptationWorkspace workspace =
-        new AdaptationWorkspace(refHwcPath, conHwcPath, outputPath);
+    AdaptationWorkspace workspace = new AdaptationWorkspace(refHwcPath, conHwcPath, outputPath);
     workspace.validateReadOnlyInput(referenceCD.toPath(), "reference class diagram");
     workspace.validateReadOnlyInput(concreteCD.toPath(), "concrete class diagram");
     Path normalizedRefHwcPath = workspace.referenceSource();
@@ -438,8 +415,7 @@ public class CodeAdapter {
         contextResults.entrySet().stream()
             .filter(entry -> !entry.getValue().conformanceValid())
             .map(Map.Entry::getKey)
-            .collect(
-                toCollection(TreeSet::new));
+            .collect(toCollection(TreeSet::new));
     if (!useConcretization || !fallbackMappings.isEmpty()) {
       Set<String> mappingsToValidate =
           useConcretization ? fallbackMappings : validatedMappingsInOrder;
@@ -527,7 +503,8 @@ public class CodeAdapter {
 
       // Composition is selected by the public API, while mapping and adaptation stay identical.
       Set<ASTOrdinaryCompilationUnit> concreteCode =
-          normalizedConHwcPath.filter(Files::exists)
+          normalizedConHwcPath
+              .filter(Files::exists)
               .map(JavaLoader::readJavaCode)
               .orElseGet(LinkedHashSet::new);
       concreteCode = codeMerger.splitCompilationUnitsByType(concreteCode);
@@ -651,8 +628,7 @@ public class CodeAdapter {
     return Set.copyOf(roots);
   }
 
-  private static Set<ASTOrdinaryCompilationUnit> cloneUnits(
-      Set<ASTOrdinaryCompilationUnit> units) {
+  private static Set<ASTOrdinaryCompilationUnit> cloneUnits(Set<ASTOrdinaryCompilationUnit> units) {
     Set<ASTOrdinaryCompilationUnit> clones = new LinkedHashSet<>();
     units.forEach(unit -> clones.add(unit.deepClone()));
     return clones;
@@ -675,9 +651,7 @@ public class CodeAdapter {
       JavaAstElemCollector collector = collectJavaElements(unit);
       for (String identity : topLevelTypeIdentities(unit)) {
         for (String referenceType :
-            codeSelection
-                .referencedCDTypeKeysBySourceType()
-                .getOrDefault(identity, Set.of())) {
+            codeSelection.referencedCDTypeKeysBySourceType().getOrDefault(identity, Set.of())) {
           addRelevantTypeKey(
               StableElementKey.type(referenceType),
               context,
@@ -734,9 +708,7 @@ public class CodeAdapter {
         }
       }
       List<StableElementKey> orderedReferences =
-          relevantTypes.stream()
-              .sorted(Comparator.comparing(StableElementKey::signature))
-              .toList();
+          relevantTypes.stream().sorted(Comparator.comparing(StableElementKey::signature)).toList();
       if (orderedReferences.isEmpty()) {
         hasDefaultPass = true;
         defaultOutputTypeNames.addAll(
@@ -744,11 +716,7 @@ public class CodeAdapter {
       } else {
         for (Map<StableElementKey, IncarnationContext.MappedElement> selection :
             buildCompleteTypeSelections(
-                orderedReferences,
-                context,
-                referenceIndex,
-                concreteIndex,
-                inputConcreteIndex)) {
+                orderedReferences, context, referenceIndex, concreteIndex, inputConcreteIndex)) {
           Set<String> outputIdentities =
               new LinkedHashSet<>(
                   expectedOutputTypeIdentities(
@@ -804,8 +772,7 @@ public class CodeAdapter {
               && isExactGroupingSet(context, incarnations))) {
         continue;
       }
-      StableElementKey.fromSymbol(reference, referenceIndex)
-          .ifPresent(relevantTypes::add);
+      StableElementKey.fromSymbol(reference, referenceIndex).ifPresent(relevantTypes::add);
     }
   }
 
@@ -814,11 +781,9 @@ public class CodeAdapter {
       IncarnationContext context,
       Set<StableElementKey> relevantTypes,
       boolean useCommonParentForMultipleIncarnations) {
-    List<IncarnationContext.MappedElement> incarnations =
-        context.getIncarnations(referenceType);
+    List<IncarnationContext.MappedElement> incarnations = context.getIncarnations(referenceType);
     if (incarnations.size() < 2
-        || (useCommonParentForMultipleIncarnations
-            && isExactGroupingSet(context, incarnations))) {
+        || (useCommonParentForMultipleIncarnations && isExactGroupingSet(context, incarnations))) {
       return;
     }
     relevantTypes.add(referenceType);
@@ -898,8 +863,7 @@ public class CodeAdapter {
               : matching.get().getTemplate();
       if (resolved && template != null) {
         result.add(
-            qualifiedTypeIdentity(
-                unit, MatcherHelper.fillTemplate(template, concreteReferences)));
+            qualifiedTypeIdentity(unit, MatcherHelper.fillTemplate(template, concreteReferences)));
       } else {
         result.add(qualifiedTypeIdentity(unit, type.getName()));
       }
@@ -913,8 +877,7 @@ public class CodeAdapter {
         .collect(toCollection(LinkedHashSet::new));
   }
 
-  private static String qualifiedTypeIdentity(
-      ASTOrdinaryCompilationUnit unit, String simpleName) {
+  private static String qualifiedTypeIdentity(ASTOrdinaryCompilationUnit unit, String simpleName) {
     String packageName =
         unit.isPresentPackageDeclaration()
             ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
@@ -954,17 +917,16 @@ public class CodeAdapter {
 
   private static List<Map<StableElementKey, IncarnationContext.MappedElement>>
       buildCompleteTypeSelections(
-      List<StableElementKey> referenceTypes,
-      IncarnationContext context,
-      CDModelIndex referenceIndex,
-      CDModelIndex concreteIndex,
-      CDModelIndex inputConcreteIndex) {
+          List<StableElementKey> referenceTypes,
+          IncarnationContext context,
+          CDModelIndex referenceIndex,
+          CDModelIndex concreteIndex,
+          CDModelIndex inputConcreteIndex) {
     List<Map<StableElementKey, IncarnationContext.MappedElement>> selections = new ArrayList<>();
     selections.add(new LinkedHashMap<>());
     for (StableElementKey referenceType : referenceTypes) {
       List<IncarnationContext.MappedElement> incarnations =
-          context.getIncarnations(referenceType).stream()
-              .collect(toCollection(ArrayList::new));
+          context.getIncarnations(referenceType).stream().collect(toCollection(ArrayList::new));
       incarnations.removeIf(incarnation -> !concreteIndex.hasType(incarnation.key().getName()));
       String referenceName = referenceType.getName();
       if (incarnations.size() > 1 && !inputConcreteIndex.hasType(referenceName)) {
@@ -1014,8 +976,7 @@ public class CodeAdapter {
     return (reference instanceof de.monticore.cdbasis._ast.ASTCDClass
             && incarnation instanceof de.monticore.cdbasis._ast.ASTCDClass)
         || (reference instanceof de.monticore.cdinterfaceandenum._ast.ASTCDInterface
-            && incarnation
-                instanceof de.monticore.cdinterfaceandenum._ast.ASTCDInterface)
+            && incarnation instanceof de.monticore.cdinterfaceandenum._ast.ASTCDInterface)
         || (reference instanceof de.monticore.cdinterfaceandenum._ast.ASTCDEnum
             && incarnation instanceof de.monticore.cdinterfaceandenum._ast.ASTCDEnum);
   }
@@ -1026,5 +987,4 @@ public class CodeAdapter {
         .getGroupingFor(StableElementKey.type(concreteTypeName))
         .map(grouping -> grouping.key().getName());
   }
-
 }

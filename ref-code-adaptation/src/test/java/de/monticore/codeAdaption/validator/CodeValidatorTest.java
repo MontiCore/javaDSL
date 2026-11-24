@@ -4,13 +4,9 @@ import static de.monticore.codeAdaption.utils.AdapterParam.*;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.AdapterAbstractTest;
-import de.monticore.codeAdaption.matcher.errorMatcher.ErrorTypeMatcher;
 import de.monticore.codeAdaption.utils.AdapterParam;
 import de.monticore.codeAdaption.utils.JavaLoader;
-import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
-import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
-import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.io.IOException;
@@ -126,16 +122,13 @@ class CodeValidatorTest extends AdapterAbstractTest {
         new CodeValidator(
             cd,
             Set.of(
-                IGNORE_NON_MATCHED_TYPE,
-                IGNORE_NON_MATCHED_TYPE_MEMBER,
-                IGNORE_NON_MATCHED_VAR));
+                IGNORE_NON_MATCHED_TYPE, IGNORE_NON_MATCHED_TYPE_MEMBER, IGNORE_NON_MATCHED_VAR));
 
     Assertions.assertTrue(ignoredMembers.isValid(cd, sources));
   }
 
   @Test
-  void unrelatedSameNamedSourceTypeDoesNotSatisfyAnImportedExternalSupertype()
-      throws IOException {
+  void unrelatedSameNamedSourceTypeDoesNotSatisfyAnImportedExternalSupertype() throws IOException {
     Path sources = Files.createDirectory(tempDir.resolve("validator-owner"));
     Path unrelated = Files.createDirectories(sources.resolve("unrelated"));
     Path consumer = Files.createDirectories(sources.resolve("consumer"));
@@ -159,5 +152,4 @@ class CodeValidatorTest extends AdapterAbstractTest {
     Files.writeString(file, source);
     return JavaLoader.loadJava(file.toFile());
   }
-
 }

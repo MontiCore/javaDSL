@@ -59,7 +59,8 @@ public class NameTMemberMatcher implements TMemberMatcher {
   public Optional<CodeMatching> getMatchedMethod(
       ASTTypeDeclaration type, ASTMethodDeclaration method) {
     List<String> parameterTypes = getMethodParameterTypes(method);
-    List<ISymbol> references = resolveMethodReferencesBySignature(type, method.getName(), parameterTypes);
+    List<ISymbol> references =
+        resolveMethodReferencesBySignature(type, method.getName(), parameterTypes);
 
     if (references.size() == 1) {
       return Optional.of(MatcherHelper.mkMatching("${}", references));
@@ -72,7 +73,11 @@ public class NameTMemberMatcher implements TMemberMatcher {
     if (!method.getFormalParameters().isPresentFormalParameterListing()) {
       return new ArrayList<>();
     }
-    return method.getFormalParameters().getFormalParameterListing().getFormalParameterList().stream()
+    return method
+        .getFormalParameters()
+        .getFormalParameterListing()
+        .getFormalParameterList()
+        .stream()
         .map(p -> JavaSourceNames.normalizeType(JavaLoader.print(p.getMCType())))
         .collect(Collectors.toList());
   }
@@ -92,11 +97,12 @@ public class NameTMemberMatcher implements TMemberMatcher {
         ASTCDType cdType = (ASTCDType) symbol.getAstNode();
         for (ASTCDMethod cdMethod : cdType.getCDMethodList()) {
           if (cdMethod.getName().equals(methodName)) {
-            List<String> cdParameterTypes = cdMethod.getCDParameterList().stream()
-                .map(ASTCDParameter::getMCType)
-                .map(JavaLoader::print)
-                .map(JavaSourceNames::normalizeType)
-                .collect(Collectors.toList());
+            List<String> cdParameterTypes =
+                cdMethod.getCDParameterList().stream()
+                    .map(ASTCDParameter::getMCType)
+                    .map(JavaLoader::print)
+                    .map(JavaSourceNames::normalizeType)
+                    .collect(Collectors.toList());
 
             if (parameterTypes.equals(cdParameterTypes)) {
               references.add(cdMethod.getSymbol());
@@ -116,8 +122,8 @@ public class NameTMemberMatcher implements TMemberMatcher {
   }
 
   /**
-   * Matches one equal-name reference attribute within the Java owner's matched reference types.
-   * For example, field {@code id} in {@code EntityBuilder} may refer to attribute {@code Entity.id}.
+   * Matches one equal-name reference attribute within the Java owner's matched reference types. For
+   * example, field {@code id} in {@code EntityBuilder} may refer to attribute {@code Entity.id}.
    */
   @Override
   public Optional<CodeMatching> getMatchedField(

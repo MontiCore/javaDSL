@@ -24,14 +24,14 @@ class GroupingMappingServiceTest {
   }
 
   @Test
-  void mapsConcreteSimpleNamesToGroupingSimpleNamesAndOmitsIdentityMappings()
-      throws IOException {
+  void mapsConcreteSimpleNamesToGroupingSimpleNamesAndOmitsIdentityMappings() throws IOException {
     Path modelFile = temporaryDirectory.resolve("Model.cd");
     Files.writeString(
         modelFile, "classdiagram Model { class Concrete; class Group; class Identity; }");
     ASTCDCompilationUnit model = JavaLoader.parseCD(modelFile.toString());
     var types = model.getCDDefinition().getCDClassesList();
-    var group = types.stream().filter(type -> "Group".equals(type.getName())).findFirst().orElseThrow();
+    var group =
+        types.stream().filter(type -> "Group".equals(type.getName())).findFirst().orElseThrow();
     var identity =
         types.stream().filter(type -> "Identity".equals(type.getName())).findFirst().orElseThrow();
     IncarnationContext context =
@@ -40,7 +40,8 @@ class GroupingMappingServiceTest {
             Map.of(),
             Map.of(
                 StableElementKey.type("Concrete"),
-                new IncarnationContext.MappedElement(StableElementKey.type("Group"), group.getSymbol()),
+                new IncarnationContext.MappedElement(
+                    StableElementKey.type("Group"), group.getSymbol()),
                 StableElementKey.type("Identity"),
                 new IncarnationContext.MappedElement(
                     StableElementKey.type("Identity"), identity.getSymbol())));

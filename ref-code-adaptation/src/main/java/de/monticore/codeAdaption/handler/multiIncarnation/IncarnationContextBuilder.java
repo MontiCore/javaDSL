@@ -32,8 +32,7 @@ public class IncarnationContextBuilder {
   }
 
   /**
-   * Builds a context from checker results and fills checker gaps from explicit mapping
-   * stereotypes.
+   * Builds a context from checker results and fills checker gaps from explicit mapping stereotypes.
    *
    * @param mapping stereotype name whose explicit mappings should be overlaid
    * @return immutable context for the requested mapping
@@ -93,7 +92,9 @@ public class IncarnationContextBuilder {
         }
         for (var incarnation : fieldIncarnations) {
           support.addMapping(
-              result, StableElementKey.field(referenceType, referenceField), incarnation.getSymbol());
+              result,
+              StableElementKey.field(referenceType, referenceField),
+              incarnation.getSymbol());
         }
       }
       for (ASTCDMethod referenceMethod : referenceType.getCDMethodList()) {
@@ -104,7 +105,9 @@ public class IncarnationContextBuilder {
         }
         for (var incarnation : methodIncarnations) {
           support.addMapping(
-              result, StableElementKey.method(referenceType, referenceMethod), incarnation.getSymbol());
+              result,
+              StableElementKey.method(referenceType, referenceMethod),
+              incarnation.getSymbol());
         }
       }
     }
@@ -121,23 +124,20 @@ public class IncarnationContextBuilder {
       Optional<String> referenceTypeName = support.stereotypeValue(concreteType, mapping);
       Optional<StableElementKey> referenceType =
           referenceTypeName.flatMap(support::findReferenceType);
-      referenceType.ifPresent(
-          key -> support.addMapping(result, key, concreteType.getSymbol()));
+      referenceType.ifPresent(key -> support.addMapping(result, key, concreteType.getSymbol()));
 
       List<ASTCDType> referenceOwners = referenceOwners(concreteType, mapping, referenceTypeName);
       for (ASTCDAttribute concreteField : concreteType.getCDAttributeList()) {
         support
             .stereotypeValue(concreteField, mapping)
             .flatMap(name -> support.findReferenceField(referenceOwners, name))
-            .ifPresent(
-                key -> support.addMapping(result, key, concreteField.getSymbol()));
+            .ifPresent(key -> support.addMapping(result, key, concreteField.getSymbol()));
       }
       for (ASTCDMethod concreteMethod : concreteType.getCDMethodList()) {
         support
             .stereotypeValue(concreteMethod, mapping)
             .flatMap(name -> support.findReferenceMethod(referenceOwners, name))
-            .ifPresent(
-                key -> support.addMapping(result, key, concreteMethod.getSymbol()));
+            .ifPresent(key -> support.addMapping(result, key, concreteMethod.getSymbol()));
       }
     }
     return result;
@@ -150,9 +150,7 @@ public class IncarnationContextBuilder {
   private List<ASTCDType> referenceOwners(
       ASTCDType concreteType, String mapping, Optional<String> referenceTypeName) {
     List<ASTCDType> owners = new ArrayList<>();
-    referenceTypeName
-        .flatMap(support.referenceIndex()::type)
-        .ifPresent(owners::add);
+    referenceTypeName.flatMap(support.referenceIndex()::type).ifPresent(owners::add);
     if (owners.isEmpty()) {
       support
           .mappedInterfaceReference(concreteType, mapping)

@@ -36,8 +36,7 @@ abstract class ComparisonEvaluationSupport extends AdapterAbstractTest {
 
   protected static CodeAdapter adapter(Set<AdapterParam> parameters) {
     return new CodeAdapter(
-        parameters,
-        Set.of(NAME_MAPPING, STEREOTYPE_MAPPING, INHERITANCE, STRICT_PARAMETER_ORDER));
+        parameters, Set.of(NAME_MAPPING, STEREOTYPE_MAPPING, INHERITANCE, STRICT_PARAMETER_ORDER));
   }
 
   /** Excludes the optional completed CD, so comparisons concern the emitted Java tree. */
@@ -67,14 +66,17 @@ abstract class ComparisonEvaluationSupport extends AdapterAbstractTest {
                     diagnostics,
                     manager,
                     null,
-                    List.of("-d", classes.toString(), "-classpath", classes.toString(), "-proc:none"),
+                    List.of(
+                        "-d", classes.toString(), "-classpath", classes.toString(), "-proc:none"),
                     null,
                     manager.getJavaFileObjectsFromPaths(generatedJavaFilesRecursively(output)))
                 .call();
-        assertEquals(Boolean.TRUE, compiled, () -> "Standalone Java compilation failed:\n" + diagnostics);
+        assertEquals(
+            Boolean.TRUE, compiled, () -> "Standalone Java compilation failed:\n" + diagnostics);
       }
       try (URLClassLoader loader =
-          new URLClassLoader(new URL[] {classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
+          new URLClassLoader(
+              new URL[] {classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
         Class<?> emittedType = Class.forName("evaluationcomparison." + type, true, loader);
         Object instance = emittedType.getConstructor().newInstance();
         return emittedType.getMethod(method).invoke(instance);

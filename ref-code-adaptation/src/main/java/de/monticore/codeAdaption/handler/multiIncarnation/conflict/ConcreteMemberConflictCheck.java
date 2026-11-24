@@ -29,12 +29,16 @@ final class ConcreteMemberConflictCheck implements AdaptationConflictCheck {
 
       Map<String, String> methods = new LinkedHashMap<>();
       for (ASTCDMethod method : type.getCDMethodList()) {
-        String previous = methods.putIfAbsent(context.methodSignature(method), context.returnType(method));
+        String previous =
+            methods.putIfAbsent(context.methodSignature(method), context.returnType(method));
         if (previous != null && !previous.equals(context.returnType(method))) {
           conflicts.conflict(
               "structure",
               "duplicate method",
-              type.getName() + "." + context.methodSignature(method) + " has incompatible return types");
+              type.getName()
+                  + "."
+                  + context.methodSignature(method)
+                  + " has incompatible return types");
         }
       }
     }
@@ -62,7 +66,9 @@ final class ConcreteMemberConflictCheck implements AdaptationConflictCheck {
           conflicts.conflict(
               "structure",
               "inherited field conflict",
-              type.getName() + "." + inherited.getName()
+              type.getName()
+                  + "."
+                  + inherited.getName()
                   + " conflicts with inherited "
                   + parent.getName()
                   + "."

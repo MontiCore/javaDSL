@@ -46,8 +46,7 @@ class MappingConformanceServiceTest extends AdapterAbstractTest {
     long errorsBefore = Log.getErrorCount();
     Log.enableFailQuick(true);
 
-    boolean valid =
-        service.checkOrFalse(service.newChecker(), concrete, reference, "ref");
+    boolean valid = service.checkOrFalse(service.newChecker(), concrete, reference, "ref");
 
     assertFalse(valid);
     assertTrue(Log.isFailQuickEnabled());
@@ -77,10 +76,8 @@ class MappingConformanceServiceTest extends AdapterAbstractTest {
   void inheritedRoleConformanceDependsOnNameMapping(String mapping, boolean nameMatching) {
     Path fixture =
         Path.of("src/test/resources/de/monticore/codeAdaption/evaluation/confCheckingCD");
-    ASTCDCompilationUnit reference =
-        JavaLoader.parseCD(fixture.resolve("Reference.cd").toString());
-    ASTCDCompilationUnit concrete =
-        JavaLoader.parseCD(fixture.resolve("Concrete.cd").toString());
+    ASTCDCompilationUnit reference = JavaLoader.parseCD(fixture.resolve("Reference.cd").toString());
+    ASTCDCompilationUnit concrete = JavaLoader.parseCD(fixture.resolve("Concrete.cd").toString());
     Set<CDConfParameter> parameters =
         EnumSet.of(INHERITANCE, STEREOTYPE_MAPPING, SRC_TARGET_ASSOC_MAPPING);
     if (nameMatching) {

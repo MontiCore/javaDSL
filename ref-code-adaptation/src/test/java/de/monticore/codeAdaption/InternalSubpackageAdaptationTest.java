@@ -33,8 +33,12 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
       Path.of("src/test/resources/de/monticore/codeAdaption/internalSubpackages");
   private static final Set<CDConfParameter> PARAMETERS =
       Set.of(
-          STEREOTYPE_MAPPING, NAME_MAPPING, ADAPTED_NAME_MAPPING,
-          SRC_TARGET_ASSOC_MAPPING, INHERITANCE, METHOD_OVERLOADING);
+          STEREOTYPE_MAPPING,
+          NAME_MAPPING,
+          ADAPTED_NAME_MAPPING,
+          SRC_TARGET_ASSOC_MAPPING,
+          INHERITANCE,
+          METHOD_OVERLOADING);
 
   @TempDir Path temporaryDirectory;
 
@@ -50,7 +54,8 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
     var original = concrete.deepClone();
 
     var completed =
-        new ConcretizationService(PARAMETERS).completeConcreteCD(concrete, reference, Set.of("ref"));
+        new ConcretizationService(PARAMETERS)
+            .completeConcreteCD(concrete, reference, Set.of("ref"));
 
     var index = CDModelIndex.of(completed);
     assertEquals(Set.of("Customer", "CustomerService"), index.typeNames());
@@ -59,7 +64,12 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
         "int", index.methods("CustomerService", "value").get(0).getMCReturnType().printType());
     assertTrue(index.type("Customer").orElseThrow().getSymbol().getFullName().contains(".model."));
     assertTrue(
-        index.type("CustomerService").orElseThrow().getSymbol().getFullName().contains(".service."));
+        index
+            .type("CustomerService")
+            .orElseThrow()
+            .getSymbol()
+            .getFullName()
+            .contains(".service."));
     assertTrue(new CDConformanceChecker(PARAMETERS).checkConformance(completed, reference, "ref"));
     assertTrue(concrete.deepEquals(original), "Completion must preserve the supplied concrete AST");
   }
@@ -91,10 +101,12 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
     String referenceBefore = Files.readString(FIXTURE.resolve("Reference.cd"));
     String concreteBefore = Files.readString(FIXTURE.resolve("Concrete.cd"));
     String helperBefore =
-        Files.readString(FIXTURE.resolve("reference/reference/service/internal/EntitySupport.java"));
+        Files.readString(
+            FIXTURE.resolve("reference/reference/service/internal/EntitySupport.java"));
 
     CodeAdapter adapter =
-        new CodeAdapter(Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR), PARAMETERS);
+        new CodeAdapter(
+            Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR), PARAMETERS);
     if (topSeparation) {
       adapter.adaptWithTopSeparation(
           FIXTURE.resolve("Reference.cd").toFile(),
@@ -119,7 +131,8 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
 
     assertTrue(Files.isRegularFile(output.resolve("application/model/Customer.java")));
     assertTrue(Files.isRegularFile(output.resolve("application/service/CustomerService.java")));
-    assertTrue(Files.isRegularFile(output.resolve("reference/service/internal/EntitySupport.java")));
+    assertTrue(
+        Files.isRegularFile(output.resolve("reference/service/internal/EntitySupport.java")));
     assertFalse(generatedFileNames(output).contains("UnrelatedSupport.java"));
     assertFalse(generatedFileNames(output).contains("Entity.java"));
     assertFalse(generatedFileNames(output).contains("Service.java"));
@@ -139,14 +152,14 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
     assertEquals(concreteBefore, Files.readString(FIXTURE.resolve("Concrete.cd")));
     assertEquals(
         helperBefore,
-        Files.readString(FIXTURE.resolve("reference/reference/service/internal/EntitySupport.java")));
+        Files.readString(
+            FIXTURE.resolve("reference/reference/service/internal/EntitySupport.java")));
   }
 
   @ParameterizedTest(name = "manual mode, TOP separation = {0}, annotation = {1}")
   @CsvSource({"false, false", "false, true", "true, false", "true, true"})
   void manualModePreservesAQualifiedCrossPackageMethodSignature(
-      boolean topSeparation, boolean explicitAnnotation)
-      throws Exception {
+      boolean topSeparation, boolean explicitAnnotation) throws Exception {
     Path reference = FIXTURE.resolve("ReferenceWithCrossPackageSignature.cd");
     Path concrete = FIXTURE.resolve("ConcreteWithCrossPackageSignature.cd");
     Path fixtureSource = FIXTURE.resolve("manual-reference");
@@ -164,7 +177,8 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
     String concreteBefore = Files.readString(concrete);
     String serviceBefore = Files.readString(source.resolve("reference/service/Service.java"));
     CodeAdapter adapter =
-        new CodeAdapter(Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR), PARAMETERS);
+        new CodeAdapter(
+            Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR), PARAMETERS);
 
     // Both Java matching strategies must preserve the explicitly mapped CD signature and body.
     if (topSeparation) {

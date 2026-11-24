@@ -7,7 +7,6 @@ import de.monticore.codeAdaption.matcher.CodeMatching;
 import de.monticore.codeAdaption.matcher.TypeMatcher;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.javalight._ast.ASTAnnotation;
-
 import java.util.Optional;
 import java.util.Set;
 

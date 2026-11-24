@@ -7,19 +7,19 @@ import static de.monticore.cdconformance.CDConfParameter.STEREOTYPE_MAPPING;
 import static de.monticore.cdconformance.CDConfParameter.STRICT_PARAMETER_ORDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.cdconformance.CDConformanceChecker;
+import de.monticore.cddiff.CDDiffUtil;
 import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.handler.BasicUpdateHandlerTestAccess;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
-import de.monticore.cddiff.CDDiffUtil;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,7 +86,8 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
                 "src/test/resources/de/monticore/codeAdaption/evaluation/testcase_13_template_observer_pattern/Concrete.cd"));
 
     IncarnationContext context = build(refCD, conCD, "observer");
-    StableElementKey referenceMethod = StableElementKey.method("Observer", "update", List.of(), "void");
+    StableElementKey referenceMethod =
+        StableElementKey.method("Observer", "update", List.of(), "void");
 
     List<StableElementKey> targets =
         context.getIncarnations(referenceMethod).stream()
@@ -95,13 +96,16 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
 
     assertTrue(
         targets.contains(
-            StableElementKey.method("PipelineObserver", "onPipelineStage", List.of("String"), "void")));
+            StableElementKey.method(
+                "PipelineObserver", "onPipelineStage", List.of("String"), "void")));
     assertTrue(
         targets.contains(
-            StableElementKey.method("LoggingObserver", "onPipelineStage", List.of("String"), "void")));
+            StableElementKey.method(
+                "LoggingObserver", "onPipelineStage", List.of("String"), "void")));
     assertTrue(
         targets.contains(
-            StableElementKey.method("MetricsObserver", "onPipelineStage", List.of("String"), "void")));
+            StableElementKey.method(
+                "MetricsObserver", "onPipelineStage", List.of("String"), "void")));
     assertEquals(
         "PipelineObserver",
         context
@@ -174,7 +178,8 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
   }
 
   @Test
-  @DisplayName("Common-parent switch controls whether concrete incarnations collapse to a grouping type")
+  @DisplayName(
+      "Common-parent switch controls whether concrete incarnations collapse to a grouping type")
   public void commonParentSwitchControlsGroupingResolution() {
     ASTCDCompilationUnit refCD =
         JavaLoader.loadCD(
@@ -190,8 +195,7 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
     ASTCDType loggingObserver = findType(conCD, "LoggingObserver");
     ASTCDType metricsObserver = findType(conCD, "MetricsObserver");
 
-    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings =
-        new LinkedHashMap<>();
+    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = new LinkedHashMap<>();
     mappings.put(
         StableElementKey.type(observer),
         List.of(
@@ -217,7 +221,9 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
         resolve(context, null, null, Map.of(), true, observer.getSymbol()).orElseThrow().getName());
     assertEquals(
         "LoggingObserver",
-        resolve(context, null, null, Map.of(), false, observer.getSymbol()).orElseThrow().getName());
+        resolve(context, null, null, Map.of(), false, observer.getSymbol())
+            .orElseThrow()
+            .getName());
   }
 
   @Test
@@ -243,8 +249,7 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
                 secondBuilder.getCDAttributeList().get(0).getSymbol(), secondIndex)
             .orElseThrow();
     StableElementKey methodKey =
-        StableElementKey.fromSymbol(
-                secondBuilder.getCDMethodList().get(0).getSymbol(), secondIndex)
+        StableElementKey.fromSymbol(secondBuilder.getCDMethodList().get(0).getSymbol(), secondIndex)
             .orElseThrow();
 
     assertFalse(context.getIncarnations(typeKey).isEmpty());
@@ -254,8 +259,7 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
         UnsupportedOperationException.class,
         () -> context.getMappings().put(StableElementKey.type("Other"), List.of()));
     assertThrows(
-        UnsupportedOperationException.class,
-        () -> context.getIncarnations(fieldKey).clear());
+        UnsupportedOperationException.class, () -> context.getIncarnations(fieldKey).clear());
   }
 
   @Test
@@ -302,7 +306,8 @@ public class IncarnationContextBuilderTest extends AdapterAbstractTest {
             .orElseThrow());
   }
 
-  private IncarnationContext build(ASTCDCompilationUnit refCD, ASTCDCompilationUnit conCD, String mapping) {
+  private IncarnationContext build(
+      ASTCDCompilationUnit refCD, ASTCDCompilationUnit conCD, String mapping) {
     CDConformanceChecker checker = new CDConformanceChecker(confParameters);
     try {
       checker.checkConformance(conCD, refCD, mapping);

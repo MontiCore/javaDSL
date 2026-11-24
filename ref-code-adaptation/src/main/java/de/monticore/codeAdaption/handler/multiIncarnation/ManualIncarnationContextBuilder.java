@@ -30,17 +30,15 @@ public class ManualIncarnationContextBuilder {
    *     same-name fallback when no explicit stereotype is present
    */
   public ManualIncarnationContextBuilder(
-      CDModelIndex referenceIndex,
-      CDModelIndex concreteIndex,
-      Set<CDConfParameter> confParams) {
+      CDModelIndex referenceIndex, CDModelIndex concreteIndex, Set<CDConfParameter> confParams) {
     this.confParams = confParams;
     this.support = new IncarnationMappingSupport(referenceIndex, concreteIndex);
   }
 
   /**
-   * Builds one immutable mapping context without invoking conformance or concretization.
-   * Resolution order is explicit type/member stereotypes, optional same-name mapping, and finally
-   * expansion of reference-side {@code forEach} stereotypes.
+   * Builds one immutable mapping context without invoking conformance or concretization. Resolution
+   * order is explicit type/member stereotypes, optional same-name mapping, and finally expansion of
+   * reference-side {@code forEach} stereotypes.
    *
    * @param mapping stereotype name to read from concrete CD elements
    * @return assembled incarnation and grouping context
@@ -61,11 +59,13 @@ public class ManualIncarnationContextBuilder {
       if (explicit.isPresent()) {
         support
             .findReferenceType(explicit.get())
-            .ifPresent(reference -> support.addMapping(mappings, reference, concreteType.getSymbol()));
+            .ifPresent(
+                reference -> support.addMapping(mappings, reference, concreteType.getSymbol()));
       } else if (confParams.contains(CDConfParameter.NAME_MAPPING)) {
         support
             .findReferenceType(concreteType.getName())
-            .ifPresent(reference -> support.addMapping(mappings, reference, concreteType.getSymbol()));
+            .ifPresent(
+                reference -> support.addMapping(mappings, reference, concreteType.getSymbol()));
       }
     }
   }
@@ -89,11 +89,13 @@ public class ManualIncarnationContextBuilder {
         if (explicit.isPresent()) {
           support
               .findReferenceField(referenceOwners, explicit.get())
-              .ifPresent(reference -> support.addMapping(mappings, reference, concreteField.getSymbol()));
+              .ifPresent(
+                  reference -> support.addMapping(mappings, reference, concreteField.getSymbol()));
         } else if (confParams.contains(CDConfParameter.NAME_MAPPING)) {
           support
               .findSameNameField(referenceOwners, concreteField)
-              .ifPresent(reference -> support.addMapping(mappings, reference, concreteField.getSymbol()));
+              .ifPresent(
+                  reference -> support.addMapping(mappings, reference, concreteField.getSymbol()));
         }
       }
       for (ASTCDMethod concreteMethod : concreteType.getCDMethodList()) {
@@ -101,20 +103,22 @@ public class ManualIncarnationContextBuilder {
         if (explicit.isPresent()) {
           support
               .findReferenceMethod(referenceOwners, explicit.get())
-              .ifPresent(reference -> support.addMapping(mappings, reference, concreteMethod.getSymbol()));
+              .ifPresent(
+                  reference -> support.addMapping(mappings, reference, concreteMethod.getSymbol()));
         } else if (confParams.contains(CDConfParameter.NAME_MAPPING)) {
           support
               .findSameSignatureMethod(referenceOwners, concreteMethod)
-              .ifPresent(reference -> support.addMapping(mappings, reference, concreteMethod.getSymbol()));
+              .ifPresent(
+                  reference -> support.addMapping(mappings, reference, concreteMethod.getSymbol()));
         }
       }
     }
   }
 
   /**
-   * Expands manual {@code <<forEach="...">>} mappings from already-known incarnations. A
-   * {@code forEach} reference may copy a type/member mapping directly or derive concrete accessor
-   * method names from a mapped field.
+   * Expands manual {@code <<forEach="...">>} mappings from already-known incarnations. A {@code
+   * forEach} reference may copy a type/member mapping directly or derive concrete accessor method
+   * names from a mapped field.
    */
   private void collectForEachMappings(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
@@ -126,17 +130,22 @@ public class ManualIncarnationContextBuilder {
               target -> copyIncarnations(mappings, target, StableElementKey.type(referenceType)));
 
       for (ASTCDAttribute referenceField : referenceType.getCDAttributeList()) {
-        support.stereotypeValue(referenceField, "forEach").ifPresent(
-            name -> {
-              Optional<StableElementKey> target =
-                  support.findReferenceField(List.of(referenceType), name);
-              if (target.isEmpty()) {
-                target = support.findReferenceMethod(List.of(referenceType), name);
-              }
-              target.ifPresent(
-                  key -> copyIncarnations(
-                      mappings, key, StableElementKey.field(referenceType, referenceField)));
-            });
+        support
+            .stereotypeValue(referenceField, "forEach")
+            .ifPresent(
+                name -> {
+                  Optional<StableElementKey> target =
+                      support.findReferenceField(List.of(referenceType), name);
+                  if (target.isEmpty()) {
+                    target = support.findReferenceMethod(List.of(referenceType), name);
+                  }
+                  target.ifPresent(
+                      key ->
+                          copyIncarnations(
+                              mappings,
+                              key,
+                              StableElementKey.field(referenceType, referenceField)));
+                });
       }
       for (ASTCDMethod referenceMethod : referenceType.getCDMethodList()) {
         Optional<String> targetName = support.stereotypeValue(referenceMethod, "forEach");
@@ -239,8 +248,8 @@ public class ManualIncarnationContextBuilder {
   }
 
   /**
-   * Replaces only a complete camel-case name segment. For example, replacing {@code User} in
-   * {@code findUserById} yields {@code findCustomerById}, but replacing {@code Us} yields no match.
+   * Replaces only a complete camel-case name segment. For example, replacing {@code User} in {@code
+   * findUserById} yields {@code findCustomerById}, but replacing {@code Us} yields no match.
    */
   private static Optional<String> replaceNameSegment(
       String name, String referenceSegment, String concreteSegment) {

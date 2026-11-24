@@ -2,16 +2,16 @@ package de.monticore.codeAdaption.matcher;
 
 import static de.monticore.codeAdaption.utils.AdapterParam.INFIX_MATCHING;
 
-import de.monticore.codeAdaption.validator.CodeValidator;
-import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.utils.AdapterUtils;
+import de.monticore.codeAdaption.validator.CodeValidator;
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
 import de.monticore.java.javadsl._ast.ASTTypeDeclaration;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.statements.mccommonstatements._ast.ASTFormalParameter;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.*;
 
@@ -106,8 +106,7 @@ class InfixMatcherTest extends MatcherAbstractTest {
             .orElseThrow();
 
     CodeMatching matching =
-        MatcherHelper.mkMatchingFromInfixRef(
-                List.of(entity.getSymbol()), "EntityToEntity")
+        MatcherHelper.mkMatchingFromInfixRef(List.of(entity.getSymbol()), "EntityToEntity")
             .orElseThrow();
 
     Assertions.assertEquals("${}To${}", matching.getTemplate());
@@ -135,7 +134,8 @@ class InfixMatcherTest extends MatcherAbstractTest {
         MatcherHelper.cleanReferences(
             "EntityApplicationEntity", List.of(application.getSymbol(), entity.getSymbol()));
 
-    Assertions.assertEquals(List.of("Entity", "Application", "Entity"),
+    Assertions.assertEquals(
+        List.of("Entity", "Application", "Entity"),
         references.stream().map(de.monticore.symboltable.ISymbol::getName).toList());
   }
 
@@ -163,8 +163,7 @@ class InfixMatcherTest extends MatcherAbstractTest {
             .orElseThrow();
 
     CodeMatching matching =
-        MatcherHelper.mkMatchingFromInfixRef(
-                List.of(entity.getSymbol()), "ENTITYRepository")
+        MatcherHelper.mkMatchingFromInfixRef(List.of(entity.getSymbol()), "ENTITYRepository")
             .orElseThrow();
 
     Assertions.assertEquals("${}Repository", matching.getTemplate());

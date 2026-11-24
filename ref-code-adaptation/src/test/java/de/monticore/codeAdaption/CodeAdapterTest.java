@@ -45,8 +45,7 @@ public class CodeAdapterTest extends AdapterAbstractTest {
     String studentBuilder = readFileContent(outputPath, "StudentBuilder.java");
     Assertions.assertTrue(studentBuilder.contains("public class StudentBuilder"));
     Assertions.assertTrue(studentBuilder.contains("protected String studentId;"));
-    Assertions.assertTrue(
-        studentBuilder.contains("public StudentBuilder setStudentId(String id)"));
+    Assertions.assertTrue(studentBuilder.contains("public StudentBuilder setStudentId(String id)"));
     Assertions.assertTrue(studentBuilder.contains("Student student = new Student();"));
   }
 
@@ -86,12 +85,7 @@ public class CodeAdapterTest extends AdapterAbstractTest {
     Path outputPath = temporaryDirectory.resolve(fixtureName);
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     adapter.adapt(
-        REF_CD,
-        CON_CD,
-        mappings,
-        Path.of(baseDir + "adapter/" + fixtureName),
-        conHwc,
-        outputPath);
+        REF_CD, CON_CD, mappings, Path.of(baseDir + "adapter/" + fixtureName), conHwc, outputPath);
     return outputPath;
   }
 }

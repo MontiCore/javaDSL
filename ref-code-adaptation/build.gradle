@@ -57,6 +57,7 @@ layout.buildDirectory = layout.projectDirectory.dir("target")
 
 
 googleJavaFormat {
+    toolVersion = '1.22.0'
     exclude '**/target/**'
     exclude '**/test/resources/**'
     exclude '***/test/java/model/reference/hwc/Application'

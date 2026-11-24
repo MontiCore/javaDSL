@@ -47,8 +47,7 @@ public final class SpoonReferenceCodeDependencyAnalyzer {
     Set<String> normalizedCDTypeKeys = normalizeSimpleNames(referenceCDTypeKeys);
     Map<String, UnitContext> contexts = sourceContexts(parsedUnits);
     identitiesBySimpleName = indexSimpleNames(contexts.keySet());
-    graph =
-        buildGraph(normalizedRoot, contexts, normalizedCDTypeKeys, identitiesBySimpleName);
+    graph = buildGraph(normalizedRoot, contexts, normalizedCDTypeKeys, identitiesBySimpleName);
   }
 
   public ReferenceCodeSelection select(Set<String> mappedRootTypeIdentities) {
@@ -90,8 +89,7 @@ public final class SpoonReferenceCodeDependencyAnalyzer {
 
     Set<String> helpers = new TreeSet<>(selected);
     helpers.removeAll(roots);
-    return new ReferenceCodeSelection(
-        roots, helpers, selectedEdges, selectedCDKeys, List.of());
+    return new ReferenceCodeSelection(roots, helpers, selectedEdges, selectedCDKeys, List.of());
   }
 
   private String resolveRoot(String requestedRoot) {
@@ -154,8 +152,7 @@ public final class SpoonReferenceCodeDependencyAnalyzer {
       Set<String> diagnostics = new TreeSet<>();
 
       List<CtTypeReference<?>> references =
-          new ArrayList<>(
-              entry.getValue().getElements(new TypeFilter<>(CtTypeReference.class)));
+          new ArrayList<>(entry.getValue().getElements(new TypeFilter<>(CtTypeReference.class)));
       references.sort(Comparator.comparing(SpoonReferenceCodeDependencyAnalyzer::referenceKey));
       for (CtTypeReference<?> reference : references) {
         String referencedSimpleName = reference.getSimpleName();
@@ -357,8 +354,7 @@ public final class SpoonReferenceCodeDependencyAnalyzer {
     return qualifiedName == null ? String.valueOf(reference.getSimpleName()) : qualifiedName;
   }
 
-  private static Map<String, UnitContext> sourceContexts(
-      Set<ASTOrdinaryCompilationUnit> units) {
+  private static Map<String, UnitContext> sourceContexts(Set<ASTOrdinaryCompilationUnit> units) {
     Map<String, UnitContext> result = new TreeMap<>();
     for (ASTOrdinaryCompilationUnit unit : units) {
       String packageName =
@@ -444,7 +440,8 @@ public final class SpoonReferenceCodeDependencyAnalyzer {
 
     private static Resolution unresolvedSourceCandidate(String candidate) {
       return new Resolution(
-          Optional.empty(), Optional.of("candidate '" + candidate + "' is not imported or visible"));
+          Optional.empty(),
+          Optional.of("candidate '" + candidate + "' is not imported or visible"));
     }
   }
 }

@@ -65,7 +65,8 @@ final class OutputCodeService {
             continue;
           }
         }
-        Path target = concreteCopyTarget(conHwcPath, source, outputPath).toAbsolutePath().normalize();
+        Path target =
+            concreteCopyTarget(conHwcPath, source, outputPath).toAbsolutePath().normalize();
         Path existingSource = ownersByTarget.putIfAbsent(target, source);
         if (existingSource != null) {
           if (!splitJavaByTarget.containsKey(target)
@@ -128,8 +129,7 @@ final class OutputCodeService {
   private ASTOrdinaryCompilationUnit compilationUnitForType(
       ASTOrdinaryCompilationUnit source, String typeName) {
     ASTOrdinaryCompilationUnit split = source.deepClone();
-    for (ASTTypeDeclaration type :
-        new java.util.ArrayList<>(split.getTypeDeclarationList())) {
+    for (ASTTypeDeclaration type : new java.util.ArrayList<>(split.getTypeDeclarationList())) {
       if (!type.getName().equals(typeName)) {
         split.removeTypeDeclaration(type);
       }
@@ -151,16 +151,14 @@ final class OutputCodeService {
     return outputPath.resolve(typeName + ".java");
   }
 
-  private void registerUniqueTarget(
-      Map<Path, Path> ownersByTarget, Path target, Path source) {
+  private void registerUniqueTarget(Map<Path, Path> ownersByTarget, Path target, Path source) {
     Path existingSource = ownersByTarget.putIfAbsent(target, source);
     if (existingSource != null) {
       throw targetCollision(existingSource, source, target);
     }
   }
 
-  private IllegalStateException targetCollision(
-      Path existingSource, Path source, Path target) {
+  private IllegalStateException targetCollision(Path existingSource, Path source, Path target) {
     return new IllegalStateException(
         "Concrete files '"
             + existingSource
@@ -192,5 +190,4 @@ final class OutputCodeService {
     }
     return outputPath.resolve(conHwcPath.relativize(source));
   }
-
 }

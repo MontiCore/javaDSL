@@ -33,10 +33,10 @@ public class IncarnationContext {
   /**
    * Creates an immutable context for one mapping.
    *
-   * <p>Example: for mapping {@code "shop"}, {@code mappings} may associate reference type
-   * {@code Payment} with concrete types {@code CreditCard} and {@code Invoice}. If both concrete
-   * types must be used through {@code PaymentMethod}, {@code groupingByIncarnation} contains
-   * {@code CreditCard -> PaymentMethod} and {@code Invoice -> PaymentMethod}.
+   * <p>Example: for mapping {@code "shop"}, {@code mappings} may associate reference type {@code
+   * Payment} with concrete types {@code CreditCard} and {@code Invoice}. If both concrete types
+   * must be used through {@code PaymentMethod}, {@code groupingByIncarnation} contains {@code
+   * CreditCard -> PaymentMethod} and {@code Invoice -> PaymentMethod}.
    *
    * @param mappingName name of the CD stereotype that identifies this mapping, such as {@code shop}
    * @param mappings stable reference-element keys to one or more concrete incarnations; entries may
@@ -54,8 +54,7 @@ public class IncarnationContext {
     this.mappings = immutableMappings(mappings);
     this.groupingByIncarnation =
         Collections.unmodifiableMap(
-            new LinkedHashMap<>(
-                groupingByIncarnation == null ? Map.of() : groupingByIncarnation));
+            new LinkedHashMap<>(groupingByIncarnation == null ? Map.of() : groupingByIncarnation));
   }
 
   /** Returns the mapping stereotype name represented by this context. */
@@ -95,7 +94,9 @@ public class IncarnationContext {
     return groupingByIncarnation;
   }
 
-  /** Copies both map and incarnation lists so callers cannot mutate context state after creation. */
+  /**
+   * Copies both map and incarnation lists so callers cannot mutate context state after creation.
+   */
   private static Map<StableElementKey, List<MappedElement>> immutableMappings(
       Map<StableElementKey, List<MappedElement>> source) {
     Map<StableElementKey, List<MappedElement>> copy = new LinkedHashMap<>();

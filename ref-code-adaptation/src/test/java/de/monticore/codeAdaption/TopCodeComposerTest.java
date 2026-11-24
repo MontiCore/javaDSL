@@ -54,8 +54,7 @@ class TopCodeComposerTest extends AdapterAbstractTest {
             "package target; class Account { Account() {} Account copy(Account value) { return new Account(); } int adapted; }");
 
     Set<ASTOrdinaryCompilationUnit> result =
-        composer.compose(
-            linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
+        composer.compose(linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
 
     String handwritten = JavaLoader.print(unitNamed(result, "Account"));
     String top = JavaLoader.print(unitNamed(result, "AccountTOP"));
@@ -71,8 +70,7 @@ class TopCodeComposerTest extends AdapterAbstractTest {
   @Test
   void keepsExistingReferenceTopWhenNoConcreteHwcExists() throws IOException {
     ASTOrdinaryCompilationUnit adapted =
-        javaSource(
-            "adapted/Account.java", "package target; class Account extends AccountTOP {}");
+        javaSource("adapted/Account.java", "package target; class Account extends AccountTOP {}");
 
     Set<ASTOrdinaryCompilationUnit> result =
         composer.compose(Set.of(), linkedSet(adapted), concreteIndex("class Account;"));
@@ -93,8 +91,7 @@ class TopCodeComposerTest extends AdapterAbstractTest {
             "package target; class Account extends AccountTOP { void adapted() {} }");
 
     Set<ASTOrdinaryCompilationUnit> result =
-        composer.compose(
-            linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
+        composer.compose(linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
 
     String handwritten = JavaLoader.print(unitNamed(result, "Account"));
     String top = JavaLoader.print(unitNamed(result, "AccountTOP"));
@@ -108,12 +105,10 @@ class TopCodeComposerTest extends AdapterAbstractTest {
         javaSource("concrete/Account.java", "package target; class Account {}");
     ASTOrdinaryCompilationUnit adapted =
         javaSource(
-            "adapted/Account.java",
-            "package target; class Account extends external.AccountTOP {}");
+            "adapted/Account.java", "package target; class Account extends external.AccountTOP {}");
 
     Set<ASTOrdinaryCompilationUnit> result =
-        composer.compose(
-            linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
+        composer.compose(linkedSet(concrete), linkedSet(adapted), concreteIndex("class Account;"));
 
     String top = JavaLoader.print(unitNamed(result, "AccountTOP"));
     assertTrue(top.contains("class AccountTOP extends external.AccountTOP"), top);
@@ -137,9 +132,7 @@ class TopCodeComposerTest extends AdapterAbstractTest {
 
     TopCodeComposer.CompositionResult result =
         composer.composeWithSelfTypeBindings(
-            linkedSet(concrete),
-            linkedSet(adapted),
-            concreteIndex("class PersonBuilder;"));
+            linkedSet(concrete), linkedSet(adapted), concreteIndex("class PersonBuilder;"));
     Path output = temporaryDirectory.resolve("fluent-output");
     JavaLoader.printAST(result.code(), output);
     Path packagePath = output.resolve("target");
@@ -227,8 +220,7 @@ class TopCodeComposerTest extends AdapterAbstractTest {
 
   private Set<String> typeNames(Set<ASTOrdinaryCompilationUnit> units) {
     LinkedHashSet<String> names = new LinkedHashSet<>();
-    units.forEach(
-        unit -> unit.getTypeDeclarationList().forEach(type -> names.add(type.getName())));
+    units.forEach(unit -> unit.getTypeDeclarationList().forEach(type -> names.add(type.getName())));
     return names;
   }
 

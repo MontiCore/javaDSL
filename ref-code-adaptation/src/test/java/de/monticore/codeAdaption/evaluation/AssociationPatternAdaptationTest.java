@@ -58,9 +58,7 @@ public class AssociationPatternAdaptationTest extends EvaluationAbstractTest {
     assertTrue(adaptedTeacher.contains("firstMathDept(MathDept fallback)"));
     assertTrue(adaptedTeacher.contains("firstScienceDept(ScienceDept fallback)"));
     assertTrue(adaptedTeacher.contains("for (MathDept department : this.mathDepts)"));
-    assertTrue(
-        adaptedTeacher.contains(
-            "for (ScienceDept department : this.scienceDepts)"));
+    assertTrue(adaptedTeacher.contains("for (ScienceDept department : this.scienceDepts)"));
     assertFalse(adaptedTeacher.contains("this.departments)"));
 
     assertFalse(generatedFileNames(output).contains("TeacherTOP.java"));

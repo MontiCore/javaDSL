@@ -75,8 +75,7 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
             .filter(
                 ignored ->
                     !hasConcreteTarget(
-                        incarnationContext,
-                        StableElementKey.field(concreteType, concreteField)))
+                        incarnationContext, StableElementKey.field(concreteType, concreteField)))
             .ifPresent(
                 target ->
                     conflicts.conflict(
@@ -96,8 +95,7 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
             .filter(
                 ignored ->
                     !hasConcreteTarget(
-                        incarnationContext,
-                        StableElementKey.method(concreteType, concreteMethod)))
+                        incarnationContext, StableElementKey.method(concreteType, concreteMethod)))
             .ifPresent(
                 target ->
                     conflicts.conflict(
@@ -133,14 +131,20 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
       return;
     }
     if (!context.typeKind(reference).equals(context.typeKind(concrete))) {
-      if (canUseCommonParentForTypeMismatch(context, incarnationContext, referenceKey, reference, concrete)) {
+      if (canUseCommonParentForTypeMismatch(
+          context, incarnationContext, referenceKey, reference, concrete)) {
         return;
       }
       conflicts.conflict(
           incarnationContext.getMappingName(),
           "type-kind mismatch",
-          reference.getName() + " is a " + context.typeKind(reference) + " but "
-              + concrete.getName() + " is a " + context.typeKind(concrete));
+          reference.getName()
+              + " is a "
+              + context.typeKind(reference)
+              + " but "
+              + concrete.getName()
+              + " is a "
+              + context.typeKind(concrete));
     }
   }
 
@@ -156,7 +160,8 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
     if (reference instanceof ASTCDClass && concrete instanceof ASTCDInterface) {
       long implementers =
           context.concreteIndex().classes().stream()
-              .filter(type -> context.concreteIndex().isSubtypeOf(type.getName(), concrete.getName()))
+              .filter(
+                  type -> context.concreteIndex().isSubtypeOf(type.getName(), concrete.getName()))
               .count();
       return implementers > 1;
     }
@@ -164,9 +169,7 @@ final class ManualMappingConflictCheck implements AdaptationConflictCheck {
       return false;
     }
     return incarnationContext.getIncarnations(referenceKey).size() > 1
-        && incarnationContext
-            .getGroupingFor(StableElementKey.type(concrete.getName()))
-            .isPresent();
+        && incarnationContext.getGroupingFor(StableElementKey.type(concrete.getName())).isPresent();
   }
 
   private void validateFieldTargets(

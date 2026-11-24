@@ -15,8 +15,8 @@ import de.monticore.javalight._ast.*;
 import de.monticore.statements.mccommonstatements._ast.ASTJavaModifier;
 import de.monticore.statements.mcstatementsbasis._ast.ASTMCModifier;
 import de.monticore.symboltable.ISymbol;
-import de.se_rwth.commons.logging.Log;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
+import de.se_rwth.commons.logging.Log;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,7 +67,10 @@ public final class MatcherHelper {
       if (symbol.isPresent()) {
         matching.addReference(symbol.get());
       } else {
-        Log.warn(String.format("MatcherHelper: could not resolve annotation reference '%s' in reference CD. Skipping this reference.", ref));
+        Log.warn(
+            String.format(
+                "MatcherHelper: could not resolve annotation reference '%s' in reference CD. Skipping this reference.",
+                ref));
       }
     }
 
@@ -96,8 +99,8 @@ public final class MatcherHelper {
    * Replaces occurrences of reference names in a source identifier with matcher placeholders while
    * preserving whether the occurrence starts with upper or lower case.
    *
-   * <p>For example, reference {@code Person} turns {@code PersonRepository} into
-   * {@code ${}Repository} and {@code personRepository} into {@code ${uncap_first}Repository}.
+   * <p>For example, reference {@code Person} turns {@code PersonRepository} into {@code
+   * ${}Repository} and {@code personRepository} into {@code ${uncap_first}Repository}.
    */
   public static String mkTemplateFormInfix(String name, List<ISymbol> infixList) {
     String template = name;
@@ -139,8 +142,8 @@ public final class MatcherHelper {
    * Longer candidate names win when two candidates overlap.
    *
    * <p>For {@code UserRepositoryFactory} with candidates {@code User}, {@code Repository}, and
-   * {@code UserRepository}, the result starts with {@code UserRepository}; the overlapping
-   * {@code User} and {@code Repository} candidates are omitted.
+   * {@code UserRepository}, the result starts with {@code UserRepository}; the overlapping {@code
+   * User} and {@code Repository} candidates are omitted.
    */
   public static List<ISymbol> cleanReferences(String name, List<ISymbol> infixList) {
     String lowerName = name.toLowerCase(Locale.ROOT);
@@ -182,8 +185,7 @@ public final class MatcherHelper {
   public static Optional<ASTAnnotation> getInfoJavaAnnot(List<ASTJavaModifier> mods) {
     for (ASTMCModifier mod : mods) {
       if (mod instanceof ASTAnnotation
-          && AdaptAnnotationNames.matches(
-              ((ASTAnnotation) mod).getAnnotationName().getQName())) {
+          && AdaptAnnotationNames.matches(((ASTAnnotation) mod).getAnnotationName().getQName())) {
         return Optional.of((ASTAnnotation) mod);
       }
     }

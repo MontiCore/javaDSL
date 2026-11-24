@@ -21,8 +21,7 @@ final class ExecutableRewriteRegistry {
   }
 
   void registerConcreteSignature(String methodName, List<String> parameterTypes) {
-    ConcreteMethodSignature signature =
-        ConcreteMethodSignature.create(methodName, parameterTypes);
+    ConcreteMethodSignature signature = ConcreteMethodSignature.create(methodName, parameterTypes);
     legacySignaturesByName
         .computeIfAbsent(signature.methodName(), ignored -> new LinkedHashSet<>())
         .add(signature);

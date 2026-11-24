@@ -141,7 +141,10 @@ final class SpoonTransformationService {
     if (declaration != null) {
       return declaration == ownerField
           || (declaration.getDeclaringType() != null
-              && declaration.getDeclaringType().getQualifiedName().equals(owner.getQualifiedName()));
+              && declaration
+                  .getDeclaringType()
+                  .getQualifiedName()
+                  .equals(owner.getQualifiedName()));
     }
     CtTypeReference<?> declaringType = access.getVariable().getDeclaringType();
     if (declaringType != null
@@ -221,8 +224,7 @@ final class SpoonTransformationService {
               + "' is declared by multiple adapter types "
               + modelDeclarations);
     }
-    String modelIdentity =
-        modelDeclarations.isEmpty() ? null : modelDeclarations.iterator().next();
+    String modelIdentity = modelDeclarations.isEmpty() ? null : modelDeclarations.iterator().next();
     String modelPackage =
         modelIdentity == null || !modelIdentity.contains(".")
             ? ""
@@ -256,9 +258,7 @@ final class SpoonTransformationService {
                           ? ""
                           : owner.getPackage().getQualifiedName();
                   String expectedIdentity =
-                      ownerPackage.isEmpty()
-                          ? type.getName()
-                          : ownerPackage + "." + type.getName();
+                      ownerPackage.isEmpty() ? type.getName() : ownerPackage + "." + type.getName();
                   return expectedIdentity.equals(identity.get());
                 })
             .toList();
@@ -299,8 +299,7 @@ final class SpoonTransformationService {
     typeDeclarationsBySimpleName = new LinkedHashMap<>();
     for (CtType<?> declaration : workspace.model().getAllTypes()) {
       typeDeclarationsBySimpleName
-          .computeIfAbsent(
-              declaration.getSimpleName(), ignored -> new java.util.LinkedHashSet<>())
+          .computeIfAbsent(declaration.getSimpleName(), ignored -> new java.util.LinkedHashSet<>())
           .add(declaration.getQualifiedName());
     }
   }
@@ -467,7 +466,10 @@ final class SpoonTransformationService {
   private static <T> T selectUnique(List<T> matches, String name) {
     if (matches.size() != 1) {
       throw new IllegalStateException(
-          "Expected exactly one Spoon declaration named '" + name + "' but found " + matches.size());
+          "Expected exactly one Spoon declaration named '"
+              + name
+              + "' but found "
+              + matches.size());
     }
     return matches.get(0);
   }
@@ -489,5 +491,4 @@ final class SpoonTransformationService {
     CtRenameGenericVariableRefactoring refactoring = new CtRenameGenericVariableRefactoring();
     refactoring.setTarget(variable).setNewName(newName).refactor();
   }
-
 }

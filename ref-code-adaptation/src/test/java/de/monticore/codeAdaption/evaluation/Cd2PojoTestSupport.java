@@ -59,7 +59,11 @@ final class Cd2PojoTestSupport {
                   diagnostics,
                   manager,
                   null,
-                  List.of("-d", classes.toString(), "-classpath", System.getProperty("java.class.path")),
+                  List.of(
+                      "-d",
+                      classes.toString(),
+                      "-classpath",
+                      System.getProperty("java.class.path")),
                   null,
                   manager.getJavaFileObjectsFromPaths(sources))
               .call(),

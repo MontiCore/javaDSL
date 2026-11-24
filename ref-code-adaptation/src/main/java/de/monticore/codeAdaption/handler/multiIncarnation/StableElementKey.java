@@ -100,14 +100,16 @@ public final class StableElementKey {
   }
 
   /** Creates a method key without return-type identity. */
-  public static StableElementKey method(String ownerType, String methodName, List<String> parameterTypes) {
+  public static StableElementKey method(
+      String ownerType, String methodName, List<String> parameterTypes) {
     return method(ownerType, methodName, parameterTypes, null);
   }
 
   /** Creates a method key with optional return-type identity. */
   public static StableElementKey method(
       String ownerType, String methodName, List<String> parameterTypes, String returnType) {
-    return new StableElementKey(Kind.METHOD, ownerType, methodName, null, parameterTypes, returnType);
+    return new StableElementKey(
+        Kind.METHOD, ownerType, methodName, null, parameterTypes, returnType);
   }
 
   /** Builds a stable key for a symbol using the owning CD index for member ownership. */
@@ -144,8 +146,8 @@ public final class StableElementKey {
   }
 
   /**
-   * Returns normalized simple-name parameter types for Java mutation and lookup consumers.
-   * Equality and hashing use a separate qualification-preserving identity.
+   * Returns normalized simple-name parameter types for Java mutation and lookup consumers. Equality
+   * and hashing use a separate qualification-preserving identity.
    */
   public List<String> getParameterTypes() {
     return parameterTypes;
@@ -170,12 +172,7 @@ public final class StableElementKey {
       throw new IllegalStateException("A type key has no declaring owner");
     }
     return new StableElementKey(
-        kind,
-        resolvedOwnerType,
-        name,
-        fieldKind,
-        parameterTypeSources,
-        returnType);
+        kind, resolvedOwnerType, name, fieldKind, parameterTypeSources, returnType);
   }
 
   /** Returns whether both keys identify the same element without considering method return type. */
@@ -206,7 +203,7 @@ public final class StableElementKey {
     if (!(obj instanceof StableElementKey other)) {
       return false;
     }
-      return kind == other.kind
+    return kind == other.kind
         && Objects.equals(ownerType, other.ownerType)
         && Objects.equals(name, other.name)
         && Objects.equals(fieldKind, other.fieldKind)

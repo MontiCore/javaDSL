@@ -48,8 +48,7 @@ class AnnotMatcherTest extends MatcherAbstractTest {
     init("/annotMatcher/EntityRepository.java");
     var unrelatedCD =
         JavaLoader.loadCD(
-            new File(
-                "src/test/resources/de/monticore/codeAdaption/validator/Validator.cd"));
+            new File("src/test/resources/de/monticore/codeAdaption/validator/Validator.cd"));
     AnnotVariableMatcher matcher = new AnnotVariableMatcher(unrelatedCD);
     matcher.setReferenceCD(cd);
 
@@ -67,8 +66,7 @@ class AnnotMatcherTest extends MatcherAbstractTest {
   private ExpectedMatching expectedMatching(String elementKind, ASTTypeDeclaration type) {
     return switch (elementKind) {
       case "type" ->
-          new ExpectedMatching(
-              validator.getMatchedType(type), List.of("Entity"), "${}Repository");
+          new ExpectedMatching(validator.getMatchedType(type), List.of("Entity"), "${}Repository");
       case "method" -> {
         ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(0);
         yield new ExpectedMatching(
@@ -79,9 +77,7 @@ class AnnotMatcherTest extends MatcherAbstractTest {
       case "field" -> {
         ASTFieldDeclaration field = collector.getAllFieldDeclarations(type).get(0);
         yield new ExpectedMatching(
-            validator.getMatchedField(type, field),
-            List.of("Entity"),
-            "${uncap_first}Set");
+            validator.getMatchedField(type, field), List.of("Entity"), "${uncap_first}Set");
       }
       case "local" -> {
         ASTMethodDeclaration method = collector.getAllMethodDeclarations(type).get(2);

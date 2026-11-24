@@ -34,8 +34,7 @@ class HelperVariantRegistryTest {
     ASTOrdinaryCompilationUnit first =
         parse(
             "first/Support.java",
-            "package shared; // first origin\n"
-                + "class Support { int value() { return 1; } }");
+            "package shared; // first origin\n" + "class Support { int value() { return 1; } }");
     ASTOrdinaryCompilationUnit relocated =
         parse(
             "deeply/nested/second/Support.java",

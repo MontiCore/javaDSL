@@ -57,7 +57,9 @@ public final class JavaMethodSignatures {
 
   private static boolean isMethodName(String name) {
     try {
-      return JavaDSLMill.parser().parse_StringMethodDeclaration("void " + name + "() {}").isPresent();
+      return JavaDSLMill.parser()
+          .parse_StringMethodDeclaration("void " + name + "() {}")
+          .isPresent();
     } catch (IOException | RuntimeException ignored) {
       return false;
     }

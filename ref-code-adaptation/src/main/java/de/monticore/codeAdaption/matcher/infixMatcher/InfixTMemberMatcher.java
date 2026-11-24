@@ -19,8 +19,8 @@ import java.util.Optional;
  * their Java names or types.
  *
  * <p>For example, {@code getEntity()} may reference type {@code Entity}, while {@code getId()} may
- * reference attribute {@code id}. Method candidates are additionally restricted by parameter
- * count so overloads with different arity do not all become references.
+ * reference attribute {@code id}. Method candidates are additionally restricted by parameter count
+ * so overloads with different arity do not all become references.
  */
 public class InfixTMemberMatcher implements TMemberMatcher {
   protected ASTCDCompilationUnit cd;

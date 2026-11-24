@@ -95,9 +95,12 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
 
   @ParameterizedTest(name = "completion = {0}")
   @ValueSource(booleans = {false, true})
-  void retainsHelpersWhenAdaptedImplementationBecomesTop(boolean useConcretization) throws Exception {
+  void retainsHelpersWhenAdaptedImplementationBecomesTop(boolean useConcretization)
+      throws Exception {
     Path concreteCode = Files.createDirectories(temporaryDirectory.resolve("top-concrete"));
-    Files.copy(FIXTURE.resolve("concrete/ConcreteService.java"), concreteCode.resolve("ConcreteService.java"));
+    Files.copy(
+        FIXTURE.resolve("concrete/ConcreteService.java"),
+        concreteCode.resolve("ConcreteService.java"));
     Path output = temporaryDirectory.resolve("top-output");
     CodeAdapter adapter =
         new CodeAdapter(

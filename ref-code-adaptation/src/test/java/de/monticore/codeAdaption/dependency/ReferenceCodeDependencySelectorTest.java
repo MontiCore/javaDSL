@@ -1,8 +1,6 @@
 package de.monticore.codeAdaption.dependency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.codeAdaption.AdapterAbstractTest;
@@ -61,8 +59,7 @@ class ReferenceCodeDependencySelectorTest extends AdapterAbstractTest {
             .select(Set.of("p.Service"));
 
     assertEquals(Set.of("p.Service"), selection.rootTypeIdentities());
-    assertEquals(
-        Set.of("p.ServiceSupport", "q.SupportValue"), selection.helperTypeIdentities());
+    assertEquals(Set.of("p.ServiceSupport", "q.SupportValue"), selection.helperTypeIdentities());
     assertEquals(Set.of("p.ServiceSupport"), selection.dependencyEdges().get("p.Service"));
     assertEquals(Set.of("q.SupportValue"), selection.dependencyEdges().get("p.ServiceSupport"));
     assertEquals(Set.of("Entity"), selection.referencedCDTypeKeys());
@@ -77,14 +74,11 @@ class ReferenceCodeDependencySelectorTest extends AdapterAbstractTest {
         package same;
         class Root { PackagePrivateHelper helper; }
         """);
-    write(
-        "same/PackagePrivateHelper.java",
-        "package same; class PackagePrivateHelper {}");
+    write("same/PackagePrivateHelper.java", "package same; class PackagePrivateHelper {}");
 
     Set<ASTOrdinaryCompilationUnit> units = JavaLoader.readJavaCode(tempDir);
     ReferenceCodeSelection selection =
-        new ReferenceCodeDependencySelector(tempDir, units, Set.of())
-            .select(Set.of("same.Root"));
+        new ReferenceCodeDependencySelector(tempDir, units, Set.of()).select(Set.of("same.Root"));
 
     assertEquals(Set.of("same.PackagePrivateHelper"), selection.helperTypeIdentities());
   }
@@ -96,15 +90,13 @@ class ReferenceCodeDependencySelectorTest extends AdapterAbstractTest {
 
     Set<ASTOrdinaryCompilationUnit> units = JavaLoader.readJavaCode(tempDir);
     ReferenceCodeSelection selection =
-        new ReferenceCodeDependencySelector(tempDir, units, Set.of())
-            .select(Set.of("root.Root"));
+        new ReferenceCodeDependencySelector(tempDir, units, Set.of()).select(Set.of("root.Root"));
 
     assertTrue(selection.helperTypeIdentities().isEmpty());
   }
 
   @Test
-  void ignoresCoincidentalSourceTypeWhenExternalTypeIsExplicitlyImported()
-      throws IOException {
+  void ignoresCoincidentalSourceTypeWhenExternalTypeIsExplicitlyImported() throws IOException {
     write(
         "root/Root.java",
         """
@@ -116,8 +108,7 @@ class ReferenceCodeDependencySelectorTest extends AdapterAbstractTest {
 
     Set<ASTOrdinaryCompilationUnit> units = JavaLoader.readJavaCode(tempDir);
     ReferenceCodeSelection selection =
-        new ReferenceCodeDependencySelector(tempDir, units, Set.of())
-            .select(Set.of("root.Root"));
+        new ReferenceCodeDependencySelector(tempDir, units, Set.of()).select(Set.of("root.Root"));
 
     assertTrue(selection.helperTypeIdentities().isEmpty());
   }

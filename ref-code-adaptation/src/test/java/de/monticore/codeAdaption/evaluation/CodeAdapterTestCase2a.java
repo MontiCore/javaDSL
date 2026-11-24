@@ -35,7 +35,10 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
         Set.of(NAME_MATCHING, ANNOTATION_MATCHING, INFIX_MATCHING, IGNORE_NON_MATCHED_VAR);
     confParameters =
         Set.of(
-            INHERITANCE, STEREOTYPE_MAPPING, NAME_MAPPING, ADAPTED_NAME_MAPPING,
+            INHERITANCE,
+            STEREOTYPE_MAPPING,
+            NAME_MAPPING,
+            ADAPTED_NAME_MAPPING,
             SRC_TARGET_ASSOC_MAPPING);
   }
 
@@ -71,8 +74,8 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
 
   @ParameterizedTest(name = "completion={0}")
   @ValueSource(booleans = {false, true})
-  void suppliedJavaEmptyConcreteDirectoryPreservesResourcesWithoutGeneration(boolean useConcretization)
-      throws IOException {
+  void suppliedJavaEmptyConcreteDirectoryPreservesResourcesWithoutGeneration(
+      boolean useConcretization) throws IOException {
     Path emptyConcrete = Files.createDirectories(temporaryDirectory.resolve("concrete"));
     Files.writeString(emptyConcrete.resolve("settings.txt"), "preserve-me");
     Path generatedOutput = temporaryDirectory.resolve("generated-with-resource");
@@ -103,8 +106,13 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
 
     new CodeAdapter(adapterParams, confParameters)
         .adaptWithoutConcreteCode(
-            referenceCD, concreteCD, Set.of("stud"), emptyReference, generatedOutput,
-            useConcretization, true);
+            referenceCD,
+            concreteCD,
+            Set.of("stud"),
+            emptyReference,
+            generatedOutput,
+            useConcretization,
+            true);
     assertModelConforms(generatedOutput, useConcretization);
 
     assertTrue(generatedJavaFiles(generatedOutput).isEmpty());
@@ -130,7 +138,8 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
         new CDConformanceChecker(confParameters)
             .checkConformance(
                 JavaLoader.parseCD(concreteCD.getPath()),
-                JavaLoader.parseCD(referenceCD.getPath()), "stud"));
+                JavaLoader.parseCD(referenceCD.getPath()),
+                "stud"));
     assertTopWithCd2Pojo(false, "hiwiRoles");
   }
 
@@ -143,16 +152,21 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
 
     new CodeAdapter(adapterParams, confParameters)
         .adaptWithTopSeparation(
-            referenceCD, concreteCD, Set.of("stud"), refCodePath, concrete, topOutput,
-            useConcretization, true);
+            referenceCD,
+            concreteCD,
+            Set.of("stud"),
+            refCodePath,
+            concrete,
+            topOutput,
+            useConcretization,
+            true);
 
     String handwrittenStudent = readFileContent(topOutput, "Student.java");
     String adaptedTop = readFileContent(topOutput, "StudentTOP.java");
     assertTrue(handwrittenStudent.contains("class Student extends StudentTOP"));
     assertTrue(adaptedTop.contains("class StudentTOP extends StudentTOPTOP"));
     assertTrue(adaptedTop.contains("printHiwiRoles()"));
-    assertTrue(
-        adaptedTop.contains("for (HiwiRole hiwiRole : this." + expectedRole + ")"));
+    assertTrue(adaptedTop.contains("for (HiwiRole hiwiRole : this." + expectedRole + ")"));
     if (expectedRole.equals("hiwiRoles")) {
       assertFalse(adaptedTop.contains("this.roles"));
     }
@@ -176,7 +190,13 @@ public class CodeAdapterTestCase2a extends EvaluationAbstractTest {
     var checkedCD = JavaLoader.parseCD(checkedConcrete.toString());
     assertEquals(
         roleName(useConcretization),
-        checkedCD.getCDDefinition().getCDAssociationsList().get(0).getRight().getCDRole().getName());
+        checkedCD
+            .getCDDefinition()
+            .getCDAssociationsList()
+            .get(0)
+            .getRight()
+            .getCDRole()
+            .getName());
     assertTrue(
         new CDConformanceChecker(confParameters)
             .checkConformance(checkedCD, JavaLoader.parseCD(referenceCD.getPath()), "stud"));

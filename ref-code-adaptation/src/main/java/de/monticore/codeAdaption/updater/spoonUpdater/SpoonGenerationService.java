@@ -8,6 +8,7 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import spoon.refactoring.Refactoring;
 import spoon.reflect.code.CtAssignment;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtConstructorCall;
@@ -17,18 +18,17 @@ import spoon.reflect.code.CtReturn;
 import spoon.reflect.code.CtThisAccess;
 import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.code.CtVariableAccess;
-import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtEnumValue;
 import spoon.reflect.declaration.CtExecutable;
+import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
-import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtParameterReference;
+import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtVariableReference;
-import spoon.refactoring.Refactoring;
 
 /**
  * Creates, clones, completes, and removes Spoon declarations and constructs supported method
@@ -87,8 +87,7 @@ final class SpoonGenerationService {
   void addType(ASTTypeDeclaration templateType, String newName) {
     requireName(newName, "Type name");
     CtType<?> source = resolver.getSpoonType(templateType);
-    CtType<?> existing =
-        source.getPackage() == null ? null : source.getPackage().getType(newName);
+    CtType<?> existing = source.getPackage() == null ? null : source.getPackage().getType(newName);
     if (existing != null && existing != source) {
       return;
     }
@@ -99,8 +98,7 @@ final class SpoonGenerationService {
     resolver.cacheType(templateType, source);
   }
 
-  void addSuperType(
-      ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
+  void addSuperType(ASTTypeDeclaration targetType, String superTypeName, boolean interfaceType) {
     requireName(superTypeName, "Supertype name");
     CtType<?> target = resolver.getSpoonType(targetType);
     CtTypeReference<?> reference = workspace.createTypeReference(superTypeName);
@@ -144,8 +142,7 @@ final class SpoonGenerationService {
     if (modelMatches.size() == 1) {
       return modelMatches.get(0).replace('$', '.');
     }
-    String packageName =
-        target.getPackage() == null ? "" : target.getPackage().getQualifiedName();
+    String packageName = target.getPackage() == null ? "" : target.getPackage().getQualifiedName();
     return packageName.isEmpty()
         ? reference.getSimpleName()
         : packageName + "." + reference.getSimpleName();
@@ -164,8 +161,7 @@ final class SpoonGenerationService {
     }
   }
 
-  void addEnumConstant(
-      ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
+  void addEnumConstant(ASTTypeDeclaration targetType, String constantName, int expectedIndex) {
     requireName(constantName, "Enum constant name");
     CtType<?> target = resolver.getSpoonType(targetType);
     if (!(target instanceof CtEnum<?> enumType)) {
@@ -314,8 +310,8 @@ final class SpoonGenerationService {
   }
 
   /**
-   * Turns an existing declaration into a legal concrete interface implementation without
-   * replacing a handwritten body. Signature conflicts are rejected before visibility/body repair.
+   * Turns an existing declaration into a legal concrete interface implementation without replacing
+   * a handwritten body. Signature conflicts are rejected before visibility/body repair.
    */
   private void completeExistingInterfaceContract(
       CtMethod<?> existingMethod, String contractReturnType) {
@@ -345,7 +341,9 @@ final class SpoonGenerationService {
     }
   }
 
-  /** Accepts identical returns and Java covariance, but never mixes primitive and reference types. */
+  /**
+   * Accepts identical returns and Java covariance, but never mixes primitive and reference types.
+   */
   private boolean isCompatibleInterfaceReturn(
       CtTypeReference<?> actualReturn, CtTypeReference<?> expectedReturn) {
     if (actualReturn == null || expectedReturn == null) {
@@ -495,11 +493,10 @@ final class SpoonGenerationService {
           || (expression instanceof CtLiteral<?> literal && literal.getValue() == null)
           || "null".equals(expression.toString())
           || "<nulltype>".equals(expression.toString())) {
-        statement
-            .setReturnedExpression(
-                "void".equals(method.getType().getSimpleName())
-                    ? null
-                    : (CtExpression) workspace.defaultExpression(typeName(method.getType())));
+        statement.setReturnedExpression(
+            "void".equals(method.getType().getSimpleName())
+                ? null
+                : (CtExpression) workspace.defaultExpression(typeName(method.getType())));
       }
     }
   }
@@ -575,7 +572,8 @@ final class SpoonGenerationService {
   /** Distinct generic signatures cannot be installed as overloads with the same Java erasure. */
   private void rejectErasedSignatureCollision(
       CtType<?> owner, String name, List<String> parameterTypes) {
-    List<String> expected = parameterTypes.stream().map(type -> erasedIdentity(owner, type)).toList();
+    List<String> expected =
+        parameterTypes.stream().map(type -> erasedIdentity(owner, type)).toList();
     for (CtMethod<?> method : owner.getMethodsByName(name)) {
       List<String> actual =
           method.getParameters().stream()

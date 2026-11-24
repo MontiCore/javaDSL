@@ -17,8 +17,8 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.AdapterAbstractTest;
 import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.CodeAdapter;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.LogStub;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -116,10 +116,7 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
     IncarnationContext context = context("ForEachAttributeRef.cd", "ForEachAttributeConc.cd");
 
     assertEquals(
-        2,
-        context
-            .getIncarnations(StableElementKey.field("Builder", "attribute", "any"))
-            .size());
+        2, context.getIncarnations(StableElementKey.field("Builder", "attribute", "any")).size());
   }
 
   @Test
@@ -135,8 +132,7 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
   @Test
   public void derivesExactMethodForEachMappingsFromAttributeIncarnations() {
-    IncarnationContext context =
-        context("ForEachMethodExactRef.cd", "ForEachMethodExactConc.cd");
+    IncarnationContext context = context("ForEachMethodExactRef.cd", "ForEachMethodExactConc.cd");
 
     assertEquals(
         2,
@@ -174,7 +170,11 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
     CodeAdapter adapter =
         new CodeAdapter(
-            Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE),
+            Set.of(
+                NAME_MATCHING,
+                ANNOTATION_MATCHING,
+                IGNORE_NON_MATCHED_VAR,
+                IGNORE_NON_MATCHED_TYPE),
             confParams);
 
     CodeAdaptationException exception =
@@ -204,7 +204,11 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
 
     CodeAdapter adapter =
         new CodeAdapter(
-            Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE),
+            Set.of(
+                NAME_MATCHING,
+                ANNOTATION_MATCHING,
+                IGNORE_NON_MATCHED_VAR,
+                IGNORE_NON_MATCHED_TYPE),
             confParams);
 
     assertThrows(
@@ -228,8 +232,11 @@ public class AdaptationConflictDetectorTest extends AdapterAbstractTest {
         assertThrows(CodeAdaptationException.class, () -> validate(reference, concrete));
     assertTrue(
         exception.getMessage().contains(expectedMessagePart),
-        () -> "Expected message to contain '" + expectedMessagePart + "' but was: "
-            + exception.getMessage());
+        () ->
+            "Expected message to contain '"
+                + expectedMessagePart
+                + "' but was: "
+                + exception.getMessage());
   }
 
   private void validate(String reference, String concrete) {

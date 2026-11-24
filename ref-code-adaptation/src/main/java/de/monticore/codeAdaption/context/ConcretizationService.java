@@ -69,8 +69,7 @@ public final class ConcretizationService {
         throw throwable;
       } catch (RuntimeException | AssertionError throwable) {
         throw new IllegalStateException(
-            "Unexpected CD concretization failure before code adaptation",
-            throwable);
+            "Unexpected CD concretization failure before code adaptation", throwable);
       } finally {
         // Log.enableFailQuick(true) terminates the process when error findings exist. The errors
         // produced by this guarded dependency call are represented by the exception above, so

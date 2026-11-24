@@ -28,8 +28,7 @@ public class SpoonUpdater implements CodeUpdater {
     workspace = new SpoonWorkspace();
     elementResolver = new SpoonElementResolver(workspace::model);
     executableRepairs = new SpoonExecutableRepairService(workspace, elementResolver);
-    transformations =
-        new SpoonTransformationService(workspace, elementResolver, executableRepairs);
+    transformations = new SpoonTransformationService(workspace, elementResolver, executableRepairs);
     generation = new SpoonGenerationService(workspace, elementResolver);
   }
 
@@ -136,8 +135,7 @@ public class SpoonUpdater implements CodeUpdater {
       ASTMethodDeclaration sourceMethod,
       ASTLocalVariableDeclaration sourceVariable,
       String newName) {
-    transformations.updateLocalVariable(
-        sourceType, sourceMethod, sourceVariable, newName);
+    transformations.updateLocalVariable(sourceType, sourceMethod, sourceVariable, newName);
   }
 
   @Override
@@ -146,8 +144,7 @@ public class SpoonUpdater implements CodeUpdater {
       ASTMethodDeclaration sourceMethod,
       ASTFormalParameter sourceParameter,
       String newName) {
-    transformations.updateMethodParameter(
-        sourceType, sourceMethod, sourceParameter, newName);
+    transformations.updateMethodParameter(sourceType, sourceMethod, sourceParameter, newName);
   }
 
   @Override
@@ -243,5 +240,4 @@ public class SpoonUpdater implements CodeUpdater {
   public void removeMethod(ASTTypeDeclaration targetType, ASTMethodDeclaration method) {
     generation.removeMethod(targetType, method);
   }
-
 }

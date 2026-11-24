@@ -39,8 +39,7 @@ class CodeAdapterSafetyTest {
   void rejectsClassDiagramInsideOutput() {
     Path output = tempDir.resolve("output");
     AdaptationWorkspace workspace =
-        new AdaptationWorkspace(
-            tempDir.resolve("reference"), tempDir.resolve("concrete"), output);
+        new AdaptationWorkspace(tempDir.resolve("reference"), tempDir.resolve("concrete"), output);
 
     assertThrows(
         IllegalArgumentException.class,

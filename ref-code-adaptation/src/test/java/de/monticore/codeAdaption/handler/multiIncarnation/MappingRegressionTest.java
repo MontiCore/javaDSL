@@ -101,8 +101,7 @@ class MappingRegressionTest extends AdapterAbstractTest {
                 + "class B implements G1; "
                 + "class C implements G2; }");
     CDModelIndex concreteIndex = CDModelIndex.of(concrete);
-    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings =
-        new LinkedHashMap<>();
+    Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings = new LinkedHashMap<>();
     mappings.put(
         StableElementKey.type("R1"),
         List.of(mapped(concreteIndex, "A"), mapped(concreteIndex, "B")));
@@ -148,10 +147,7 @@ class MappingRegressionTest extends AdapterAbstractTest {
     assertDoesNotThrow(
         () ->
             new CodeAdapter(
-                    Set.of(
-                        ANNOTATION_MATCHING,
-                        IGNORE_NON_MATCHED_VAR,
-                        IGNORE_NON_MATCHED_TYPE),
+                    Set.of(ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE),
                     Set.of(STEREOTYPE_MAPPING, NAME_MAPPING, INHERITANCE))
                 .adaptWithoutConcreteCode(
                     referenceCd.toFile(),

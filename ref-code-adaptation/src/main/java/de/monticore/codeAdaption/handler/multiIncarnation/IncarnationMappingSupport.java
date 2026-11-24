@@ -65,7 +65,8 @@ final class IncarnationMappingSupport {
   void mergeMappings(
       Map<StableElementKey, List<IncarnationContext.MappedElement>> target,
       Map<StableElementKey, List<IncarnationContext.MappedElement>> additions) {
-    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry : additions.entrySet()) {
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+        additions.entrySet()) {
       if (entry.getValue() == null) {
         continue;
       }
@@ -76,8 +77,7 @@ final class IncarnationMappingSupport {
   }
 
   IncarnationContext assembleContext(
-      String mapping,
-      Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
+      String mapping, Map<StableElementKey, List<IncarnationContext.MappedElement>> mappings) {
     return new IncarnationContext(mapping, mappings, groupingTypes(mappings));
   }
 
@@ -177,12 +177,12 @@ final class IncarnationMappingSupport {
       ASTCDType concreteType) {
     StableElementKey concreteKey = StableElementKey.type(concreteType);
     List<ASTCDType> owners = new ArrayList<>();
-    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry : mappings.entrySet()) {
+    for (Map.Entry<StableElementKey, List<IncarnationContext.MappedElement>> entry :
+        mappings.entrySet()) {
       if (entry.getKey().getKind() != StableElementKey.Kind.TYPE) {
         continue;
       }
-      if (entry.getValue().stream()
-          .anyMatch(element -> element.key().equals(concreteKey))) {
+      if (entry.getValue().stream().anyMatch(element -> element.key().equals(concreteKey))) {
         referenceIndex.type(entry.getKey().getName()).ifPresent(owners::add);
       }
     }
@@ -222,8 +222,8 @@ final class IncarnationMappingSupport {
    * <p>The returned map is keyed by each concrete incarnation and points to the common interface
    * selected for its group. An interface is eligible only when its concrete class implementers
    * exactly equal the incarnations in that group (the interface itself is ignored if it is also an
-   * incarnation). This exact-set rule prevents an unrelated implementer from becoming accepted by
-   * a rewritten field or parameter.
+   * incarnation). This exact-set rule prevents an unrelated implementer from becoming accepted by a
+   * rewritten field or parameter.
    *
    * <p>For example, {@code [CreditCard, Invoice]} may be grouped as {@code PaymentMethod} when
    * those are exactly its concrete implementers, producing {@code CreditCard -> PaymentMethod} and
@@ -256,7 +256,8 @@ final class IncarnationMappingSupport {
         }
         int distance = maximumDistance(targets, iface.getName());
         if (distance < bestDistance
-            || (distance == bestDistance && (best == null || iface.getName().compareTo(best) < 0))) {
+            || (distance == bestDistance
+                && (best == null || iface.getName().compareTo(best) < 0))) {
           best = iface.getName();
           bestDistance = distance;
         }
@@ -401,6 +402,5 @@ final class IncarnationMappingSupport {
       }
       return owners == null || owners.isEmpty() ? index.types() : owners;
     }
-
   }
 }

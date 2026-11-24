@@ -61,8 +61,7 @@ public final class BasicUpdateHandler {
     this.incarnationContext = incarnationContext;
     this.incarnationSelection = Map.copyOf(incarnationSelection);
     this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
-    this.symbolResolver =
-        new ConcreteSymbolResolver(this, refIndex.cd(), conIndex.cd());
+    this.symbolResolver = new ConcreteSymbolResolver(this, refIndex.cd(), conIndex.cd());
     this.memberUpdates =
         new JavaMemberUpdateService(validator, updater, refIndex, conIndex, symbolResolver);
     this.typeUpdates = new JavaTypeUpdateService(this, symbolResolver, memberUpdates);
@@ -141,9 +140,7 @@ public final class BasicUpdateHandler {
     if (incarnationContext == null) {
       return List.of();
     }
-    return referenceKey(reference)
-        .map(incarnationContext::getIncarnations)
-        .orElseGet(List::of);
+    return referenceKey(reference).map(incarnationContext::getIncarnations).orElseGet(List::of);
   }
 
   ISymbol getConTypeSymbol(CDTypeSymbol symbol) {

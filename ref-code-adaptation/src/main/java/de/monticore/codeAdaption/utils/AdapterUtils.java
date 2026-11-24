@@ -1,22 +1,22 @@
 package de.monticore.codeAdaption.utils;
 
-import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
-import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.ast.ASTNode;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
+import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import de.monticore.cdbasis._ast.ASTCDType;
 import de.monticore.codeAdaption.matcher.MatcherHelper;
-import de.se_rwth.commons.logging.Log;
-import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.codeAdaption.utils.visitors.AnnotationRemover;
-import de.monticore.ast.ASTNode;
+import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.*;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTMethodDeclaration;
-import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.monticore.symbols.oosymbols._symboltable.FieldSymbol;
 import de.monticore.symboltable.ISymbol;
+import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import de.se_rwth.commons.SourcePosition;
+import de.se_rwth.commons.logging.Log;
 import java.io.File;
 import java.util.*;
 
@@ -39,28 +39,46 @@ public class AdapterUtils {
     if (reference.owner().isPresent()) {
       String typeName = reference.owner().get();
       String memberName = reference.memberName();
-      Log.debug("AdapterUtils.resolveCDSymbol: qualified ref type='" + typeName + "' member='" + memberName + "'", "AdapterUtils");
+      Log.debug(
+          "AdapterUtils.resolveCDSymbol: qualified ref type='"
+              + typeName
+              + "' member='"
+              + memberName
+              + "'",
+          "AdapterUtils");
 
       if (reference.isMethod()) {
-        return index.method(typeName, reference.methodSignature().orElseThrow())
-                .map(ASTCDMethod::getSymbol)
-                .map(symbol -> (ISymbol) symbol);
+        return index
+            .method(typeName, reference.methodSignature().orElseThrow())
+            .map(ASTCDMethod::getSymbol)
+            .map(symbol -> (ISymbol) symbol);
       }
       Optional<ISymbol> attribute =
-          index.attribute(typeName, memberName)
+          index
+              .attribute(typeName, memberName)
               .map(ASTCDAttribute::getSymbol)
               .map(symbol -> (ISymbol) symbol);
       if (attribute.isPresent()) {
-        Log.debug("AdapterUtils.resolveCDSymbol: resolved to attribute '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
+        Log.debug(
+            "AdapterUtils.resolveCDSymbol: resolved to attribute '"
+                + memberName
+                + "' in type '"
+                + typeName
+                + "'",
+            "AdapterUtils");
         return attribute;
       }
       List<ASTCDMethod> methods = index.methods(typeName, memberName);
       Optional<ISymbol> method =
-          methods.size() == 1
-              ? Optional.of(methods.get(0).getSymbol())
-              : Optional.empty();
+          methods.size() == 1 ? Optional.of(methods.get(0).getSymbol()) : Optional.empty();
       if (method.isPresent()) {
-        Log.debug("AdapterUtils.resolveCDSymbol: resolved to method '" + memberName + "' in type '" + typeName + "'", "AdapterUtils");
+        Log.debug(
+            "AdapterUtils.resolveCDSymbol: resolved to method '"
+                + memberName
+                + "' in type '"
+                + typeName
+                + "'",
+            "AdapterUtils");
         return method;
       }
       if (methods.size() > 1) {
@@ -92,7 +110,9 @@ public class AdapterUtils {
     // try resolve as a field in the enclosing scope
     List<FieldSymbol> fields = refCD.getEnclosingScope().resolveFieldMany(n);
     if (fields.size() == 1) {
-      Log.debug("AdapterUtils.resolveCDSymbol: resolved to field '" + n + "' in enclosing scope", "AdapterUtils");
+      Log.debug(
+          "AdapterUtils.resolveCDSymbol: resolved to field '" + n + "' in enclosing scope",
+          "AdapterUtils");
       return Optional.of(fields.iterator().next());
     }
     if (fields.size() > 1) {
@@ -101,11 +121,15 @@ public class AdapterUtils {
     }
 
     // try resolving a top-level CD type by name
-    Optional<ISymbol> tSym = refCD.getEnclosingScope().resolveCDType(n).map(s -> (ISymbol) s).stream().findAny();
+    Optional<ISymbol> tSym =
+        refCD.getEnclosingScope().resolveCDType(n).map(s -> (ISymbol) s).stream().findAny();
     if (tSym.isPresent()) {
-      Log.debug("AdapterUtils.resolveCDSymbol: resolved to top-level type '" + n + "'", "AdapterUtils");
+      Log.debug(
+          "AdapterUtils.resolveCDSymbol: resolved to top-level type '" + n + "'", "AdapterUtils");
     } else {
-      Log.debug("AdapterUtils.resolveCDSymbol: could not resolve '" + name + "' (normalized='" + n + "')", "AdapterUtils");
+      Log.debug(
+          "AdapterUtils.resolveCDSymbol: could not resolve '" + name + "' (normalized='" + n + "')",
+          "AdapterUtils");
     }
     return tSym;
   }
@@ -288,13 +312,7 @@ public class AdapterUtils {
     }
 
     mergeTypeRelationships(
-        lefType,
-        rightType,
-        leftTypes,
-        rightTypes,
-        leftSource,
-        rightSource,
-        preferLeftOnConflict);
+        lefType, rightType, leftTypes, rightTypes, leftSource, rightSource, preferLeftOnConflict);
 
     // Java overload identity is the method name plus normalized parameter types. A same-name
     // method with different parameters is a valid overload and must be retained.
@@ -317,9 +335,7 @@ public class AdapterUtils {
 
       if (existingMethod == null) {
         if (lefType instanceof ASTClassDeclaration) {
-          ((ASTClassDeclaration) lefType)
-              .getClassBody()
-              .addClassBodyDeclaration(rMeth.deepClone());
+          ((ASTClassDeclaration) lefType).getClassBody().addClassBodyDeclaration(rMeth.deepClone());
         } else if (lefType instanceof ASTInterfaceDeclaration) {
           ((ASTInterfaceDeclaration) lefType)
               .getInterfaceBody()
@@ -385,13 +401,10 @@ public class AdapterUtils {
       String rFieldName = rf.getVariableDeclarator(0).getDeclarator().getName();
       if (!leftFieldsByName.containsKey(rFieldName)) {
         if (lefType instanceof ASTClassDeclaration) {
-          ((ASTClassDeclaration) lefType)
-              .getClassBody()
-              .addClassBodyDeclaration(rf.deepClone());
+          ((ASTClassDeclaration) lefType).getClassBody().addClassBodyDeclaration(rf.deepClone());
         }
       } else if (!preferLeftOnConflict
-          && !equivalentWithoutAdaptationMetadata(
-              leftFieldsByName.get(rFieldName), rf)) {
+          && !equivalentWithoutAdaptationMetadata(leftFieldsByName.get(rFieldName), rf)) {
         throw new IllegalStateException(
             String.format(
                 "Conflicting field '%s' in type '%s': declarations differ between '%s' and '%s'",
@@ -415,7 +428,8 @@ public class AdapterUtils {
       mergeCompletedAbstractModifier(leftClass, rightClass);
       if (leftClass.isPresentSuperClass()
           && rightClass.isPresentSuperClass()
-          && !leftTypes.identity(leftClass.getSuperClass())
+          && !leftTypes
+              .identity(leftClass.getSuperClass())
               .sameTypeAs(rightTypes.identity(rightClass.getSuperClass()))
           && !preferLeftOnConflict) {
         throw new IllegalStateException(
@@ -505,22 +519,23 @@ public class AdapterUtils {
   }
 
   /**
-   * Get a method signature string for comparison.
-   * Format: "methodName(paramType1,paramType2)"
-   * Uses method name + parameter types (not return type) for comparison.
+   * Get a method signature string for comparison. Format: "methodName(paramType1,paramType2)" Uses
+   * method name + parameter types (not return type) for comparison.
    */
   private static MethodIdentity methodIdentity(
       ASTMethodDeclaration method, TypeIdentityScope types) {
     List<TypeIdentity> parameterTypes = new ArrayList<>();
     if (method.getFormalParameters().isPresentFormalParameterListing()) {
-      method.getFormalParameters().getFormalParameterListing().getFormalParameterList()
+      method
+          .getFormalParameters()
+          .getFormalParameterListing()
+          .getFormalParameterList()
           .forEach(parameter -> parameterTypes.add(types.identity(parameter.getMCType())));
     }
     return new MethodIdentity(method.getName(), List.copyOf(parameterTypes));
   }
 
-  private static boolean equivalentWithoutAdaptationMetadata(
-      ASTNode left, ASTNode right) {
+  private static boolean equivalentWithoutAdaptationMetadata(ASTNode left, ASTNode right) {
     ASTNode cleanedLeft = left.deepClone();
     ASTNode cleanedRight = right.deepClone();
     removeAdaptationMetadata(cleanedLeft);
@@ -542,9 +557,7 @@ public class AdapterUtils {
   }
 
   private static ASTMethodDeclaration replaceMethodDeclaration(
-      ASTTypeDeclaration owner,
-      ASTMethodDeclaration existing,
-      ASTMethodDeclaration replacement) {
+      ASTTypeDeclaration owner, ASTMethodDeclaration existing, ASTMethodDeclaration replacement) {
     ASTMethodDeclaration replacementCopy = replacement.deepClone();
     List<? extends ASTNode> declarations;
     if (owner instanceof ASTClassDeclaration classDeclaration) {
@@ -635,7 +648,8 @@ public class AdapterUtils {
           wildcards.add(imported);
         } else {
           explicit
-              .computeIfAbsent(JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
+              .computeIfAbsent(
+                  JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
               .add(imported);
         }
       }
@@ -654,11 +668,10 @@ public class AdapterUtils {
       JavaSourceNames.ErasedType erased =
           JavaSourceNames.erasedType(resolvedSource)
               .orElseThrow(
-                  () -> new IllegalStateException("Cannot parse Java type '" + resolvedSource + "'"));
-      String canonical =
-          erased.name().replace('$', '.') + "[]".repeat(erased.arrayDimensions());
-      boolean resolved =
-          erased.name().contains(".") || isPrimitiveOrVoid(erased.name());
+                  () ->
+                      new IllegalStateException("Cannot parse Java type '" + resolvedSource + "'"));
+      String canonical = erased.name().replace('$', '.') + "[]".repeat(erased.arrayDimensions());
+      boolean resolved = erased.name().contains(".") || isPrimitiveOrVoid(erased.name());
       return new TypeIdentity(
           canonical,
           JavaSourceNames.simpleName(erased.name()) + "[]".repeat(erased.arrayDimensions()),
@@ -708,8 +721,7 @@ public class AdapterUtils {
     }
 
     private static boolean isPrimitiveOrVoid(String name) {
-      return Set.of(
-              "boolean", "byte", "short", "int", "long", "float", "double", "char", "void")
+      return Set.of("boolean", "byte", "short", "int", "long", "float", "double", "char", "void")
           .contains(name);
     }
   }
@@ -723,5 +735,4 @@ public class AdapterUtils {
     traverser.add4MCVarDeclarationStatements(remover);
     node.accept(traverser);
   }
-
 }

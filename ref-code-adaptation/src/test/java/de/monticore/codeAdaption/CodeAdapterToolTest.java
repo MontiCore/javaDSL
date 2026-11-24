@@ -12,8 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class CodeAdapterToolTest extends AdapterAbstractTest {
 
-  private static final Path RESOURCES =
-      Path.of("src/test/resources/de/monticore/codeAdaption");
+  private static final Path RESOURCES = Path.of("src/test/resources/de/monticore/codeAdaption");
 
   @TempDir Path temporaryDirectory;
 

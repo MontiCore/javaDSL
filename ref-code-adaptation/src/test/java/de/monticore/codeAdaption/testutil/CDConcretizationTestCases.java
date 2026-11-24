@@ -19,12 +19,10 @@ public final class CDConcretizationTestCases {
   private static final Map<String, String> REF_OVERRIDES =
       Map.ofEntries(
           Map.entry(
-              "evaluation/getter-setter/DataModelConc.cd",
-              "evaluation/getter-setter/GetterRef.cd"),
+              "evaluation/getter-setter/DataModelConc.cd", "evaluation/getter-setter/GetterRef.cd"),
           Map.entry(
               "evaluation/builder/DataModelConc.cd", "evaluation/builder/BuilderAndMillRef.cd"),
-          Map.entry(
-              "evaluation/mill/LanguageInfrastructureConc.cd", "evaluation/mill/MillRef.cd"),
+          Map.entry("evaluation/mill/LanguageInfrastructureConc.cd", "evaluation/mill/MillRef.cd"),
           Map.entry(
               "methods/forEach/ForEachAttributeSameReturnTypeClassMIConc.cd",
               "methods/forEach/ForEachAttributeSameReturnTypeRef.cd"),
@@ -90,9 +88,7 @@ public final class CDConcretizationTestCases {
               "Upstream cdconcretization does not implement method-target forEach completion");
 
   private static final Map<String, Set<String>> MAPPING_OVERRIDES =
-      Map.of(
-          "evaluation/observer/mutualObservers/MutualObserversConc.cd",
-          Set.of("ref1", "ref2"));
+      Map.of("evaluation/observer/mutualObservers/MutualObserversConc.cd", Set.of("ref1", "ref2"));
 
   private static final Map<String, Boolean> STRICT_PARAMETER_ORDER =
       Map.ofEntries(
@@ -191,13 +187,13 @@ public final class CDConcretizationTestCases {
     if (sharedRef || sharedReferenceFile) {
       adapterPath = resolveDirectory(parent(refRelativePath)).resolve("adapter");
     } else {
-      adapterPath =
-          resolveDirectory(parent(concRelativePath)).resolve("adapter").resolve(caseBase);
+      adapterPath = resolveDirectory(parent(concRelativePath)).resolve("adapter").resolve(caseBase);
     }
 
     Path concretePath;
     if (sharedRef) {
-      concretePath = resolveDirectory(parent(concRelativePath)).resolve("concrete").resolve(caseBase);
+      concretePath =
+          resolveDirectory(parent(concRelativePath)).resolve("concrete").resolve(caseBase);
     } else if (sharedReferenceFile) {
       concretePath =
           resolveDirectory(parent(concRelativePath)).resolve("concrete").resolve(caseBase);
@@ -279,11 +275,10 @@ public final class CDConcretizationTestCases {
 
     String concDir = parent(concRelativePath);
     String caseBase =
-        concRelativePath
-            .substring(concRelativePath.lastIndexOf('/') + 1)
-            .replace("Conc.cd", "");
+        concRelativePath.substring(concRelativePath.lastIndexOf('/') + 1).replace("Conc.cd", "");
 
-    String pairedRef = concDir.isEmpty() ? caseBase + "Ref.cd" : concDir + "/" + caseBase + "Ref.cd";
+    String pairedRef =
+        concDir.isEmpty() ? caseBase + "Ref.cd" : concDir + "/" + caseBase + "Ref.cd";
     if (Files.exists(RESOURCE_ROOT.resolve(pairedRef))) {
       return pairedRef;
     }
@@ -335,7 +330,9 @@ public final class CDConcretizationTestCases {
   }
 
   private static String relativeConcretePath(CDConcretizationTestCase testCase) {
-    return testCase.concCd().toString()
+    return testCase
+        .concCd()
+        .toString()
         .replace('\\', '/')
         .replace(CDConcretizationTestCase.RESOURCE_ROOT, "");
   }

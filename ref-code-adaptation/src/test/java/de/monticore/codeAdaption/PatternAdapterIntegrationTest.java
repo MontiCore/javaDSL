@@ -34,11 +34,7 @@ class PatternAdapterIntegrationTest extends AdapterAbstractTest {
   private static final Set<CDConfParameter> DEFAULT_CONFORMANCE_PARAMETERS =
       Set.of(NAME_MAPPING, INHERITANCE, STEREOTYPE_MAPPING, STRICT_PARAMETER_ORDER);
   private static final Set<AdapterParam> DEFAULT_ADAPTER_PARAMETERS =
-      Set.of(
-          NAME_MATCHING,
-          ANNOTATION_MATCHING,
-          IGNORE_NON_MATCHED_VAR,
-          IGNORE_NON_MATCHED_TYPE);
+      Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE);
 
   @TempDir Path temporaryDirectory;
 
@@ -232,12 +228,9 @@ class PatternAdapterIntegrationTest extends AdapterAbstractTest {
 
   private static Stream<Arguments> controllerWorkerCases() {
     return Stream.of(
+        Arguments.of("controller-to-workers", "testcase_7_controller_worker_observer", true),
         Arguments.of(
-            "controller-to-workers", "testcase_7_controller_worker_observer", true),
-        Arguments.of(
-            "workers-to-controller",
-            "testcase_8_controller_worker_observer_reversed",
-            false));
+            "workers-to-controller", "testcase_8_controller_worker_observer_reversed", false));
   }
 
   private static void assertContainsEither(String content, String first, String second) {

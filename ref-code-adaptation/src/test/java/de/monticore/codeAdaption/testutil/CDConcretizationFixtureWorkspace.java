@@ -49,7 +49,10 @@ public final class CDConcretizationFixtureWorkspace {
         String outputKey = entry.role() + ":" + normalizeRelative(entry.output());
         if (!sharedOutputs.add(outputKey)) {
           throw new IllegalStateException(
-              "Duplicate shared fixture output for " + relativeConcreteCd(testCase) + ": " + outputKey);
+              "Duplicate shared fixture output for "
+                  + relativeConcreteCd(testCase)
+                  + ": "
+                  + outputKey);
         }
         writeSharedFixture(entry, roleTarget);
       }
@@ -78,7 +81,8 @@ public final class CDConcretizationFixtureWorkspace {
       throws IOException {
     Path sharedSource = safeResolve(RESOURCE_ROOT, entry.shared());
     if (!sharedSource.startsWith(SHARED_JAVA_ROOT.normalize())) {
-      throw new IllegalStateException("Shared fixture source is outside _shared/java: " + entry.shared());
+      throw new IllegalStateException(
+          "Shared fixture source is outside _shared/java: " + entry.shared());
     }
     if (!Files.isRegularFile(sharedSource)) {
       throw new IllegalStateException("Missing shared fixture source: " + entry.shared());
@@ -88,7 +92,8 @@ public final class CDConcretizationFixtureWorkspace {
     String source = Files.readString(sharedSource, StandardCharsets.UTF_8);
     Matcher matcher = PACKAGE_LINE_IN_SOURCE.matcher(source);
     if (!matcher.find()) {
-      throw new IllegalStateException("Shared fixture has no package declaration: " + entry.shared());
+      throw new IllegalStateException(
+          "Shared fixture has no package declaration: " + entry.shared());
     }
 
     String rendered = matcher.replaceFirst(Matcher.quoteReplacement(entry.packageLine()));
@@ -134,11 +139,7 @@ public final class CDConcretizationFixtureWorkspace {
         validateEntry(entry, i + 1);
 
         String outputKey =
-            entry.concreteCd()
-                + ":"
-                + entry.role()
-                + ":"
-                + normalizeRelative(entry.output());
+            entry.concreteCd() + ":" + entry.role() + ":" + normalizeRelative(entry.output());
         if (!seenOutputs.add(outputKey)) {
           throw new IllegalStateException("Duplicate shared fixture output in row " + (i + 1));
         }
@@ -160,7 +161,8 @@ public final class CDConcretizationFixtureWorkspace {
       throw new IllegalStateException("Invalid role in shared fixture index row " + row);
     }
     if (!PACKAGE_DECLARATION.matcher(entry.packageLine()).matches()) {
-      throw new IllegalStateException("Invalid package declaration in shared fixture index row " + row);
+      throw new IllegalStateException(
+          "Invalid package declaration in shared fixture index row " + row);
     }
   }
 
@@ -177,7 +179,8 @@ public final class CDConcretizationFixtureWorkspace {
       throw new IllegalStateException("Fixture path must not be blank.");
     }
     Path normalizedRoot = root.normalize();
-    Path resolved = normalizedRoot.resolve(relativePath.replace('/', java.io.File.separatorChar)).normalize();
+    Path resolved =
+        normalizedRoot.resolve(relativePath.replace('/', java.io.File.separatorChar)).normalize();
     if (!resolved.startsWith(normalizedRoot)) {
       throw new IllegalStateException("Fixture path escapes root: " + relativePath);
     }

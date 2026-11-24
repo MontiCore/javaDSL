@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.CDModelIndex;
+import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
@@ -58,7 +58,8 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   @Test
   void mergesValidSameNameOverloads() throws IOException {
     ASTOrdinaryCompilationUnit first =
-        parse("first/Service.java", "package p; public class Service { void run(String value) {} }");
+        parse(
+            "first/Service.java", "package p; public class Service { void run(String value) {} }");
     ASTOrdinaryCompilationUnit second =
         parse("second/Service.java", "package p; public class Service { void run(int value) {} }");
 
@@ -67,10 +68,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
     JavaAstElemCollector collector = collect(merged);
 
     assertEquals(
-        2,
-        collector
-            .getAllMethodDeclarations(merged.getTypeDeclarationList().get(0))
-            .size());
+        2, collector.getAllMethodDeclarations(merged.getTypeDeclarationList().get(0)).size());
   }
 
   @Test
@@ -86,8 +84,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
 
     Set<ASTOrdinaryCompilationUnit> merged =
         merger.mergeAdaptedCode(
-            merger.mergeAdaptedCode(new LinkedHashSet<>(), linkedSet(math)),
-            linkedSet(science));
+            merger.mergeAdaptedCode(new LinkedHashSet<>(), linkedSet(math)), linkedSet(science));
     ASTOrdinaryCompilationUnit teacher = merged.iterator().next();
     JavaAstElemCollector collector = collect(teacher);
 
@@ -120,10 +117,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
     JavaAstElemCollector collector = collect(outer);
     assertEquals(1, collector.getAllTypeDeclarations().size());
     assertEquals(
-        1,
-        collector
-            .getAllMethodDeclarations(outer.getTypeDeclarationList().get(0))
-            .size());
+        1, collector.getAllMethodDeclarations(outer.getTypeDeclarationList().get(0)).size());
   }
 
   @Test
@@ -144,8 +138,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
             .iterator()
             .next();
 
-    assertEquals(
-        "concrete", merged.getPackageDeclaration().getMCQualifiedName().getQName());
+    assertEquals("concrete", merged.getPackageDeclaration().getMCQualifiedName().getQName());
     assertTrue(JavaLoader.print(merged).contains("void send()"));
   }
 
@@ -182,8 +175,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
         parse("adapter/BankAccount.java", "package adapter; class BankAccount {}");
     ASTOrdinaryCompilationUnit concrete =
         parse(
-            "concrete/BankAccount.java",
-            "package concrete; public abstract class BankAccount {}");
+            "concrete/BankAccount.java", "package concrete; public abstract class BankAccount {}");
     Path cd = tempDir.resolve("Concrete.cd");
     Files.writeString(cd, "classdiagram Concrete { class BankAccount; }");
 
@@ -206,9 +198,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
     ASTOrdinaryCompilationUnit adaptedAccount =
         parse("adapter/Account.java", "package adapter; class Account {}");
     ASTOrdinaryCompilationUnit adaptedTransaction =
-        parse(
-            "adapter/Transaction.java",
-            "package adapter; class Transaction { Account source; }");
+        parse("adapter/Transaction.java", "package adapter; class Transaction { Account source; }");
     ASTOrdinaryCompilationUnit concreteAccount =
         parse("concrete/Account.java", "package concrete; class Account {}");
     Path cd = tempDir.resolve("Concrete.cd");
@@ -261,8 +251,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   @MethodSource("memberImportRepairCases")
   void repairsMemberImports(String description, MemberImportRepairCase testCase)
       throws IOException {
-    ASTOrdinaryCompilationUnit consumer =
-        parse("adapter/Consumer.java", testCase.consumerSource());
+    ASTOrdinaryCompilationUnit consumer = parse("adapter/Consumer.java", testCase.consumerSource());
     LinkedHashSet<ASTOrdinaryCompilationUnit> concreteUnits = new LinkedHashSet<>();
     concreteUnits.add(
         parse(
@@ -275,14 +264,11 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
               "package other; class " + testCase.typeName() + " {}"));
     }
     Path cd = tempDir.resolve("Concrete.cd");
-    Files.writeString(
-        cd, "classdiagram Concrete { class " + testCase.typeName() + "; }");
+    Files.writeString(cd, "classdiagram Concrete { class " + testCase.typeName() + "; }");
 
     Set<ASTOrdinaryCompilationUnit> merged =
         merger.mergeAdaptedCodeIntoConcreteBase(
-            concreteUnits,
-            linkedSet(consumer),
-            CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
+            concreteUnits, linkedSet(consumer), CDModelIndex.of(JavaLoader.parseCD(cd.toString())));
 
     String rendered = JavaLoader.print(unitNamed(merged, "Consumer"));
     testCase
@@ -297,12 +283,9 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   void memberImportRepairDoesNotRebindConcreteOnlyReference() throws IOException {
     ASTOrdinaryCompilationUnit concreteConsumer =
         parse(
-            "concrete/Consumer.java",
-            "package adapter; class Consumer { External handwritten; }");
+            "concrete/Consumer.java", "package adapter; class Consumer { External handwritten; }");
     ASTOrdinaryCompilationUnit adaptedConsumer =
-        parse(
-            "adapter/Consumer.java",
-            "package adapter; class Consumer { void generated() {} }");
+        parse("adapter/Consumer.java", "package adapter; class Consumer { void generated() {} }");
     ASTOrdinaryCompilationUnit domainExternal =
         parse("domain/External.java", "package domain; class External {}");
     Path cd = tempDir.resolve("Concrete.cd");
@@ -323,8 +306,7 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   void memberImportRepairDoesNotImportForQualifiedReference() throws IOException {
     ASTOrdinaryCompilationUnit consumer =
         parse(
-            "adapter/Consumer.java",
-            "package adapter; class Consumer { foreign.Date createdAt; }");
+            "adapter/Consumer.java", "package adapter; class Consumer { foreign.Date createdAt; }");
     ASTOrdinaryCompilationUnit domainDate =
         parse("domain/Date.java", "package domain; class Date {}");
     Path cd = tempDir.resolve("Concrete.cd");
@@ -381,13 +363,10 @@ class AdaptedCodeMergerTest extends AdapterAbstractTest {
   @Test
   void keepsStaticAndWildcardImportsInSeparateNamespaces() throws IOException {
     ASTOrdinaryCompilationUnit first =
-        parse(
-            "first/Service.java",
-            "package p; import a.User; import a.*; class Service {}");
+        parse("first/Service.java", "package p; import a.User; import a.*; class Service {}");
     ASTOrdinaryCompilationUnit second =
         parse(
-            "second/Service.java",
-            "package p; import static b.User; import b.*; class Service {}");
+            "second/Service.java", "package p; import static b.User; import b.*; class Service {}");
 
     ASTOrdinaryCompilationUnit merged =
         merger.mergeAdaptedCode(linkedSet(first), linkedSet(second)).iterator().next();

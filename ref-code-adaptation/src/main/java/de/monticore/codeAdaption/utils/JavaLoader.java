@@ -20,7 +20,6 @@ import de.monticore.java.javadsl._symboltable.JavaDSLScopesGenitor;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.prettyprint.IndentPrinter;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,9 +34,8 @@ import org.apache.commons.io.FileUtils;
  * File-system and parser utilities for the JavaDSL and CD4Code models used during adaptation.
  *
  * <p>Loading creates the symbol tables required by the matching and update phases. Semantic
- * validation is deliberately owned by the caller: this utility does not select or execute a
- * CD4Code CoCo set because different adaptation inputs permit different degrees of
- * underspecification.
+ * validation is deliberately owned by the caller: this utility does not select or execute a CD4Code
+ * CoCo set because different adaptation inputs permit different degrees of underspecification.
  */
 public class JavaLoader {
 
@@ -84,7 +82,6 @@ public class JavaLoader {
       if (cd.isPresent()) {
         initializeCDSymbolTable(cd.get());
         return cd.get();
-
       }
       throw new IllegalStateException("Could not parse class diagram " + cdFile);
     } catch (IOException e) {
@@ -95,7 +92,8 @@ public class JavaLoader {
   /** Rebuilds the symbol table for a parsed or cloned class-diagram AST. */
   public static void initializeCDSymbolTable(ASTCDCompilationUnit ast) {
     // Completion may mutate existing type nodes. Their cached Types3 results must not survive
-    // rebuilding the scopes, otherwise an earlier type (e.g. int before a change to long) is reused.
+    // rebuilding the scopes, otherwise an earlier type (e.g. int before a change to long) is
+    // reused.
     CD4CodeTypeCheck3.init();
     BuiltInTypes.addBuiltInTypes(CD4CodeMill.globalScope());
     ICD4CodeArtifactScope as = CD4CodeMill.scopesGenitorDelegator().createFromAST(ast);
@@ -175,13 +173,15 @@ public class JavaLoader {
    *
    * @param directoryPath The root directory to read.
    * @return A set of Java files represented as ASTOrdinaryCompilationUnit.
-  */
+   */
   public static Set<ASTOrdinaryCompilationUnit> readJavaCode(Path directoryPath) {
     // Clear stale artifact scopes before loading a new source batch.
     JavaDSLMill.globalScope().clear();
     Set<File> res = new LinkedHashSet<>();
     readJavaCode(directoryPath, res);
-    return res.stream().map(JavaLoader::loadJava).collect(Collectors.toCollection(LinkedHashSet::new));
+    return res.stream()
+        .map(JavaLoader::loadJava)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   /**
@@ -205,7 +205,8 @@ public class JavaLoader {
       throw new IllegalArgumentException("Java source path is not a directory: " + normalized);
     }
     try (var paths = Files.walk(normalized)) {
-      paths.filter(Files::isRegularFile)
+      paths
+          .filter(Files::isRegularFile)
           .filter(path -> path.getFileName().toString().endsWith(".java"))
           .sorted(Comparator.comparing(Path::toString))
           .map(Path::toFile)
@@ -223,9 +224,7 @@ public class JavaLoader {
     }
   }
 
-  /**
-   * Pretty-prints Java ASTs into {@code codePath}, preserving package directories when present.
-   */
+  /** Pretty-prints Java ASTs into {@code codePath}, preserving package directories when present. */
   public static void printAST(Set<ASTOrdinaryCompilationUnit> asts, Path codePath) {
     for (ASTOrdinaryCompilationUnit ast : asts) {
       Path targetPath = outputPathFor(ast, codePath);
@@ -237,7 +236,8 @@ public class JavaLoader {
   }
 
   private static Path outputPathFor(ASTOrdinaryCompilationUnit ast, Path codePath) {
-    String fileName = primaryTypeFileName(ast).orElseGet(() -> sourceFileName(ast).orElse("Unknown.java"));
+    String fileName =
+        primaryTypeFileName(ast).orElseGet(() -> sourceFileName(ast).orElse("Unknown.java"));
     if (ast.isPresentPackageDeclaration()) {
       Path packagePath =
           Path.of(
@@ -251,9 +251,7 @@ public class JavaLoader {
   }
 
   private static Optional<String> primaryTypeFileName(ASTOrdinaryCompilationUnit ast) {
-    return ast.getTypeDeclarationList().stream()
-        .findFirst()
-        .map(type -> type.getName() + ".java");
+    return ast.getTypeDeclarationList().stream().findFirst().map(type -> type.getName() + ".java");
   }
 
   private static Optional<String> sourceFileName(ASTOrdinaryCompilationUnit ast) {
@@ -269,9 +267,7 @@ public class JavaLoader {
             });
   }
 
-  /**
-   * Deletes an output directory before adaptation writes new generated code.
-   */
+  /** Deletes an output directory before adaptation writes new generated code. */
   public static void removeDirectory(Path path) {
     Path normalized = path.toAbsolutePath().normalize();
     if (normalized.getParent() == null) {

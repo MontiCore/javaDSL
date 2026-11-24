@@ -23,8 +23,13 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     initMills();
     adapterParams =
         Set.of(NAME_MATCHING, ANNOTATION_MATCHING, INFIX_MATCHING, IGNORE_NON_MATCHED_VAR);
-    confParameters = Set.of(INHERITANCE, STEREOTYPE_MAPPING, NAME_MAPPING,
-        SRC_TARGET_ASSOC_MAPPING, ADAPTED_NAME_MAPPING);
+    confParameters =
+        Set.of(
+            INHERITANCE,
+            STEREOTYPE_MAPPING,
+            NAME_MAPPING,
+            SRC_TARGET_ASSOC_MAPPING,
+            ADAPTED_NAME_MAPPING);
   }
 
   @Test
@@ -54,9 +59,7 @@ public class DesignPatternTest extends EvaluationAbstractTest {
 
     adaptWithoutRegularGeneration(Set.of("npg"));
 
-    assertTrue(
-        generatedFileNames(output)
-            .containsAll(Set.of("NPGAdapter.java", "NPGImage.java")));
+    assertTrue(generatedFileNames(output).containsAll(Set.of("NPGAdapter.java", "NPGImage.java")));
     assertFalse(generatedFileNames(output).contains("FlexImage.java"));
     String adapter = readFileContent(output, "NPGAdapter.java");
     assertTrue(adapter.contains("class NPGAdapter implements FlexImage"));
@@ -78,7 +81,16 @@ public class DesignPatternTest extends EvaluationAbstractTest {
     deleteRecursively(output);
     CodeAdapter adapter = new CodeAdapter(adapterParams, confParameters);
     assertDoesNotThrow(
-        () -> adapter.adapt(referenceCD, concreteCD, mappings, refCodePath, conCodePath, output,
-            true, false, true));
+        () ->
+            adapter.adapt(
+                referenceCD,
+                concreteCD,
+                mappings,
+                refCodePath,
+                conCodePath,
+                output,
+                true,
+                false,
+                true));
   }
 }

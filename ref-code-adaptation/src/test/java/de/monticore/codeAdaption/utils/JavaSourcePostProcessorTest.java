@@ -235,5 +235,4 @@ class JavaSourcePostProcessorTest {
     assertTrue(Files.exists(outputDir.resolve("b").resolve("User.java")));
     assertFalse(Files.exists(outputDir.resolve("User.java")));
   }
-
 }

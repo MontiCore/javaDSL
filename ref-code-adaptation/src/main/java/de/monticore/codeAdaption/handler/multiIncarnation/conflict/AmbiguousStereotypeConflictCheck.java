@@ -14,7 +14,8 @@ final class AmbiguousStereotypeConflictCheck implements AdaptationConflictCheck 
     for (String mapping : context.mappings()) {
       for (ASTCDType concreteType : context.concreteTypes().values()) {
         Optional<String> referenceTypeName = context.stereotypeValue(concreteType, mapping);
-        if (referenceTypeName.isEmpty() && context.confParams().contains(CDConfParameter.NAME_MAPPING)) {
+        if (referenceTypeName.isEmpty()
+            && context.confParams().contains(CDConfParameter.NAME_MAPPING)) {
           referenceTypeName = Optional.of(concreteType.getName());
         }
         ASTCDType referenceType =
@@ -34,7 +35,9 @@ final class AmbiguousStereotypeConflictCheck implements AdaptationConflictCheck 
             conflicts.conflict(
                 mapping,
                 "ambiguous overloaded method stereotype",
-                concreteType.getName() + "." + concreteMethod.getName()
+                concreteType.getName()
+                    + "."
+                    + concreteMethod.getName()
                     + " maps to overloaded reference method '"
                     + stereotype.get()
                     + "'");

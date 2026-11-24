@@ -76,11 +76,9 @@ final class JavaMemberUpdateService {
           }
         }
 
-        Set<ASTFormalParameter> updated =
-            Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<ASTFormalParameter> updated = Collections.newSetFromMap(new IdentityHashMap<>());
         for (ASTFormalParameter parameter : collector.getAllParameters(type, method)) {
-          Optional<CodeMatching> matching =
-              validator.getMatchedParameter(type, method, parameter);
+          Optional<CodeMatching> matching = validator.getMatchedParameter(type, method, parameter);
           if (matching.isPresent() && matching.get().mustBePerform()) {
             updater.updateMethodParameter(
                 type, method, parameter, symbols.buildConcreteName(matching.get()));
@@ -119,8 +117,7 @@ final class JavaMemberUpdateService {
     if (concreteMethod.isEmpty()) {
       String concreteOwner = symbols.resolveConcreteTypeName(type.getName());
       String concreteName = symbols.buildConcreteName(matching.get());
-      concreteMethod =
-          symbols.findConcreteMethod(concreteOwner, concreteName, referenceParameters);
+      concreteMethod = symbols.findConcreteMethod(concreteOwner, concreteName, referenceParameters);
     }
     if (concreteMethod.isEmpty()) {
       return;
@@ -323,8 +320,8 @@ final class JavaMemberUpdateService {
   }
 
   /**
-   * Returns whether a referenced method is the target of another reference method's
-   * {@code <<forEach="...">>} stereotype and must therefore be handled by expansion.
+   * Returns whether a referenced method is the target of another reference method's {@code
+   * <<forEach="...">>} stereotype and must therefore be handled by expansion.
    */
   boolean isForEachTargetMethod(ISymbol reference) {
     if (!(reference.getAstNode() instanceof ASTCDMethod targetMethod)) {
@@ -395,10 +392,7 @@ final class JavaMemberUpdateService {
    * method name.
    */
   private boolean referencesMethod(
-      String referenceName,
-      ASTCDType annotatedOwner,
-      ASTCDType targetOwner,
-      ASTCDMethod method) {
+      String referenceName, ASTCDType annotatedOwner, ASTCDType targetOwner, ASTCDMethod method) {
     Optional<AdaptReference> parsed = AdaptReference.parse(referenceName);
     if (parsed.isEmpty()) {
       return false;

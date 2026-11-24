@@ -42,7 +42,8 @@ final class AssociationConflictCheck implements AdaptationConflictCheck {
         conflicts.conflict(
             mapping,
             "ambiguous association direction",
-            context.associationName(concreteAssociation) + " can match "
+            context.associationName(concreteAssociation)
+                + " can match "
                 + context.associationName(referenceAssociation)
                 + " in both directions");
       } else if (same) {
@@ -84,9 +85,21 @@ final class AssociationConflictCheck implements AdaptationConflictCheck {
       ASTCDAssociation referenceAssociation,
       ASTCDAssociation concreteAssociation) {
     validateCardinality(
-        context, conflicts, mapping, referenceLeft, concreteLeft, referenceAssociation, concreteAssociation);
+        context,
+        conflicts,
+        mapping,
+        referenceLeft,
+        concreteLeft,
+        referenceAssociation,
+        concreteAssociation);
     validateCardinality(
-        context, conflicts, mapping, referenceRight, concreteRight, referenceAssociation, concreteAssociation);
+        context,
+        conflicts,
+        mapping,
+        referenceRight,
+        concreteRight,
+        referenceAssociation,
+        concreteAssociation);
   }
 
   private void validateCardinality(
@@ -103,7 +116,8 @@ final class AssociationConflictCheck implements AdaptationConflictCheck {
       conflicts.conflict(
           mapping,
           "association cardinality conflict",
-          context.associationName(concreteAssociation) + " has a cardinality incompatible with "
+          context.associationName(concreteAssociation)
+              + " has a cardinality incompatible with "
               + context.associationName(referenceAssociation));
     }
   }
@@ -118,11 +132,17 @@ final class AssociationConflictCheck implements AdaptationConflictCheck {
     for (ConflictDetectionContext.RoleFieldCandidate referenceRole :
         context.roleFieldCandidates(referenceAssociation)) {
       Set<String> ownerTargets =
-          referenceRole.owner().equals(context.simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
+          referenceRole
+                  .owner()
+                  .equals(
+                      context.simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
               ? leftTargets
               : rightTargets;
       Set<String> targetTargets =
-          referenceRole.owner().equals(context.simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
+          referenceRole
+                  .owner()
+                  .equals(
+                      context.simpleName(referenceAssociation.getLeftQualifiedName().getQName()))
               ? rightTargets
               : leftTargets;
       if (ownerTargets.isEmpty()) {
@@ -142,7 +162,9 @@ final class AssociationConflictCheck implements AdaptationConflictCheck {
             conflicts.conflict(
                 mapping,
                 "association role field conflict",
-                "role '" + referenceRole.role() + "' may create a duplicate Java field on "
+                "role '"
+                    + referenceRole.role()
+                    + "' may create a duplicate Java field on "
                     + concreteRole.owner());
           }
         }

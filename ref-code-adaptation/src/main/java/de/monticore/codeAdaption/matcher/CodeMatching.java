@@ -8,9 +8,9 @@ import java.util.List;
  * Describes how one handwritten Java element is related to elements of the reference CD.
  *
  * <p>The {@linkplain #getReferences() references} are reference-CD symbols, not concrete
- * incarnations. During adaptation, they are resolved to concrete incarnations and inserted, in
- * list order, into {@linkplain #getTemplate() the naming template}. For example, references
- * {@code [Entity, Entity.id]} and template {@code find${}By${cap_first}} can produce {@code
+ * incarnations. During adaptation, they are resolved to concrete incarnations and inserted, in list
+ * order, into {@linkplain #getTemplate() the naming template}. For example, references {@code
+ * [Entity, Entity.id]} and template {@code find${}By${cap_first}} can produce {@code
  * findPersonByNumber} when {@code Entity -> Person} and {@code id -> number}.
  *
  * <p>A matching may instead represent an explicit {@code @Adapt(ignore = true)} instruction. In
@@ -20,6 +20,7 @@ import java.util.List;
 public class CodeMatching {
   /** Whether the matched Java element is intentionally excluded from adaptation. */
   private boolean ignore = false;
+
   private boolean explicitAnnotation;
 
   /** Reference-CD symbols consumed by the naming templates, in placeholder order. */
@@ -27,6 +28,7 @@ public class CodeMatching {
 
   /** Template for adapting an existing handwritten name. */
   private String template;
+
   /** Optional template used when generating a new declaration. */
   private String generateTemplate;
 

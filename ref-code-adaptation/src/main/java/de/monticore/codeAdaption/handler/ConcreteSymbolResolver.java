@@ -99,8 +99,7 @@ final class ConcreteSymbolResolver {
     if (referenceKey.isEmpty()) {
       return Optional.empty();
     }
-    IncarnationContext.MappedElement direct =
-        handler.incarnationSelection.get(referenceKey.get());
+    IncarnationContext.MappedElement direct = handler.incarnationSelection.get(referenceKey.get());
     if (direct != null) {
       return Optional.of(direct);
     }
@@ -182,7 +181,9 @@ final class ConcreteSymbolResolver {
         continue;
       }
       ISymbol concrete =
-          handler.getSymbolFromContext(reference).orElseGet(() -> handler.getConMethodSymbol(reference));
+          handler
+              .getSymbolFromContext(reference)
+              .orElseGet(() -> handler.getConMethodSymbol(reference));
       if (concrete != reference && concrete.getAstNode() instanceof ASTCDMethod) {
         return Optional.of(concrete);
       }
@@ -220,7 +221,9 @@ final class ConcreteSymbolResolver {
     handler.updater.registerConcreteMethodSignature(
         concreteMethod.getName(),
         concreteMethod.getCDParameterList().stream()
-            .map(parameter -> qualifyCdType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
+            .map(
+                parameter ->
+                    qualifyCdType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
             .toList());
   }
 
@@ -237,7 +240,9 @@ final class ConcreteSymbolResolver {
     }
     List<String> expectedTypes =
         referenceParameters.stream()
-            .map(parameter -> concreteType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
+            .map(
+                parameter ->
+                    concreteType(JavaSourceNames.printNormalizedType(parameter.getMCType())))
             .toList();
     List<ASTCDMethod> exact =
         candidates.stream()
@@ -258,7 +263,8 @@ final class ConcreteSymbolResolver {
   }
 
   String resolveConcreteTypeName(String referenceTypeName) {
-    Optional<ASTCDType> referenceType = handler.refIndex.type(JavaSourceNames.simpleName(referenceTypeName));
+    Optional<ASTCDType> referenceType =
+        handler.refIndex.type(JavaSourceNames.simpleName(referenceTypeName));
     if (referenceType.isPresent()) {
       ISymbol resolved =
           handler
@@ -325,7 +331,9 @@ final class ConcreteSymbolResolver {
               "Ambiguous class-diagram imports for used type '"
                   + simpleName
                   + "': "
-                  + candidates.stream().sorted().collect(java.util.stream.Collectors.joining(", ")));
+                  + candidates.stream()
+                      .sorted()
+                      .collect(java.util.stream.Collectors.joining(", ")));
         });
   }
 
@@ -343,8 +351,8 @@ final class ConcreteSymbolResolver {
   }
 
   /**
-   * Binds modeled CD signature types to Java declarations without erasing foreign qualification. The
-   * updater resolves a modeled simple name in its current source tree; the final composer
+   * Binds modeled CD signature types to Java declarations without erasing foreign qualification.
+   * The updater resolves a modeled simple name in its current source tree; the final composer
    * subsequently relocates that declaration and its imports to concrete handwritten packages.
    */
   String resolveProjectedMethodType(String type) {
@@ -423,9 +431,9 @@ final class ConcreteSymbolResolver {
     incarnations.forEach(symbol -> names.add(symbol.getName()));
     for (String possibleGrouping : names) {
       Optional<IncarnationContext.MappedElement> groupingElement =
-              handler.incarnationContext.getGroupingMappings().values().stream()
-                  .filter(element -> element.key().getName().equals(possibleGrouping))
-                  .findFirst();
+          handler.incarnationContext.getGroupingMappings().values().stream()
+              .filter(element -> element.key().getName().equals(possibleGrouping))
+              .findFirst();
       if (groupingElement.isEmpty()) {
         continue;
       }
@@ -468,7 +476,8 @@ final class ConcreteSymbolResolver {
   }
 
   private Optional<String> groupingName(String concreteTypeName) {
-    return handler.incarnationContext
+    return handler
+        .incarnationContext
         .getGroupingFor(StableElementKey.type(concreteTypeName))
         .map(grouping -> grouping.key().getName());
   }
@@ -491,8 +500,7 @@ final class ConcreteSymbolResolver {
       String imported = statement.getMCQualifiedName().getQName();
       if (!statement.isStar()) {
         imports
-            .computeIfAbsent(
-                JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
+            .computeIfAbsent(JavaSourceNames.simpleName(imported), ignored -> new LinkedHashSet<>())
             .add(imported);
       }
     }
@@ -513,7 +521,6 @@ final class ConcreteSymbolResolver {
     return cd.getMCImportStatementList().stream()
         .filter(statement -> statement.isStar())
         .map(statement -> statement.getMCQualifiedName().getQName())
-        .collect(
-            java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
   }
 }

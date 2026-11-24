@@ -185,7 +185,8 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
     // in the grammar) as formal parameters — they should be treated as local variables.
     Set<ASTFormalParameter> signatureParams = new HashSet<>();
     if (node.getFormalParameters().isPresentFormalParameterListing()) {
-      ASTFormalParameterListing paramListing = node.getFormalParameters().getFormalParameterListing();
+      ASTFormalParameterListing paramListing =
+          node.getFormalParameters().getFormalParameterListing();
       formalParams.addAll(paramListing.getFormalParameterList());
       signatureParams.addAll(paramListing.getFormalParameterList());
     }
@@ -222,13 +223,12 @@ class TypeElementCollector implements JavaDSLVisitor2, JavaLightVisitor2 {
   }
 
   /**
-   * Wraps an ASTFormalParameter like from a for-each loop as an ASTLocalVariableDeclaration
-   * so it can be handled by the local variable matching path instead of the formal parameter path.
+   * Wraps an ASTFormalParameter like from a for-each loop as an ASTLocalVariableDeclaration so it
+   * can be handled by the local variable matching path instead of the formal parameter path.
    */
   private ASTLocalVariableDeclaration wrapAsLocalVariable(ASTFormalParameter param) {
-    ASTLocalVariableDeclaration localVar = JavaDSLMill.localVariableDeclarationBuilder()
-        .setMCType(param.getMCType())
-        .build();
+    ASTLocalVariableDeclaration localVar =
+        JavaDSLMill.localVariableDeclarationBuilder().setMCType(param.getMCType()).build();
     localVar.set_SourcePositionStart(param.get_SourcePositionStart());
     localVar.set_SourcePositionEnd(param.get_SourcePositionEnd());
     var variableDeclarator =

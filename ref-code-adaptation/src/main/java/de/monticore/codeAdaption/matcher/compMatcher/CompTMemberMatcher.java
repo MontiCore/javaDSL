@@ -15,8 +15,8 @@ import java.util.Optional;
  * Applies field, method, and supertype matchers in configured precedence order and returns the
  * first result for the requested member.
  *
- * <p>The same enclosing-type matcher is shared with every member strategy so owner-relative
- * lookups resolve against the same reference-CD types.
+ * <p>The same enclosing-type matcher is shared with every member strategy so owner-relative lookups
+ * resolve against the same reference-CD types.
  */
 public class CompTMemberMatcher implements TMemberMatcher {
   protected TypeMatcher typeMatcher;

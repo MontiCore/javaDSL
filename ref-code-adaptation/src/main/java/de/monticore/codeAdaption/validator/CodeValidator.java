@@ -56,8 +56,8 @@ import java.util.function.Supplier;
  *   <li>{@link ValidAnnotation} checks each relevant {@code @Adapt} annotation. Its template must
  *       exist, the number of placeholders and references must be equal, and every reference must
  *       exist in the reference CD.
- *   <li>{@link OneVarInDeclaration} rejects declarations such as {@code String first, second;}.
- *       The updater can only process one declared variable at a time.
+ *   <li>{@link OneVarInDeclaration} rejects declarations such as {@code String first, second;}. The
+ *       updater can only process one declared variable at a time.
  *   <li>Every relevant Java type, field, method, parameter, and local variable is matched to the
  *       reference CD. The {@link AdapterParam} settings decide whether an element without a match
  *       is allowed or reported as an error.
@@ -72,23 +72,27 @@ public class CodeValidator {
     /** Use the {@code IGNORE_NON_MATCHED_*} settings from the supplied {@link AdapterParam}s. */
     CONFIGURED,
     /**
-     * Allow additional Java types, members, and variables that belong to an already selected
-     * helper set in either adaptation mode. The usual annotation and declaration checks still run.
-     * If a declaration does have a CD match, that match is checked normally.
+     * Allow additional Java types, members, and variables that belong to an already selected helper
+     * set in either adaptation mode. The usual annotation and declaration checks still run. If a
+     * declaration does have a CD match, that match is checked normally.
      */
     PRESERVE_SELECTED_HELPERS,
-    /** @deprecated Use {@link #PRESERVE_SELECTED_HELPERS}; helper selection supports both modes. */
+    /**
+     * @deprecated Use {@link #PRESERVE_SELECTED_HELPERS}; helper selection supports both modes.
+     */
     @Deprecated
     PRESERVE_CONCRETIZATION_HELPERS
   }
 
   private final CompTypeMatcher typeMatcher;
   private final CompTMemberMatcher tMemberMatcher;
+
   /**
-   * Checks supertypes with the configured strictness, even when other unmatched helper
-   * declarations are allowed.
+   * Checks supertypes with the configured strictness, even when other unmatched helper declarations
+   * are allowed.
    */
   private final CompTMemberMatcher validationSupertypeMatcher;
+
   private final CompVariableMatcher variableMatcher;
 
   /**
@@ -199,8 +203,7 @@ public class CodeValidator {
    * @param asts pre-parsed Java compilation units to validate
    * @return {@code true} if this validation run produced no new error findings
    */
-  public boolean isValid(
-      ASTCDCompilationUnit refCD, Set<ASTOrdinaryCompilationUnit> asts) {
+  public boolean isValid(ASTCDCompilationUnit refCD, Set<ASTOrdinaryCompilationUnit> asts) {
     Objects.requireNonNull(asts, "asts");
     return validate(refCD, () -> asts, null);
   }
@@ -377,9 +380,13 @@ public class CodeValidator {
     if (selectedTopLevelTypeIdentities == null) {
       return false;
     }
-    String printed = de.monticore.codeAdaption.utils.JavaSourceNames
-        .printQualifiedType(supertype)
-        .replace('$', '.');
+    String printed =
+        de.monticore
+            .codeAdaption
+            .utils
+            .JavaSourceNames
+            .printQualifiedType(supertype)
+            .replace('$', '.');
     return printed.contains(".") && selectedTopLevelTypeIdentities.contains(printed);
   }
 
@@ -387,7 +394,10 @@ public class CodeValidator {
   private boolean isQualifiedSourceSupertype(
       ASTMCType supertype, Set<String> sourceTypeIdentities) {
     String printed =
-        de.monticore.codeAdaption.utils.JavaSourceNames
+        de.monticore
+            .codeAdaption
+            .utils
+            .JavaSourceNames
             .printQualifiedType(supertype)
             .replace('$', '.');
     int typeArguments = printed.indexOf('<');
@@ -401,8 +411,7 @@ public class CodeValidator {
    * type is external to the supplied source batch.
    */
   private Set<ASTTypeDeclaration> visibleSourceTypes(
-      ASTOrdinaryCompilationUnit unit,
-      Map<String, ASTTypeDeclaration> sourceTypesByIdentity) {
+      ASTOrdinaryCompilationUnit unit, Map<String, ASTTypeDeclaration> sourceTypesByIdentity) {
     String packageName =
         unit.isPresentPackageDeclaration()
             ? unit.getPackageDeclaration().getMCQualifiedName().getQName()
@@ -464,8 +473,7 @@ public class CodeValidator {
   }
 
   /** Builds the package-qualified top-level type name used by dependency selection. */
-  private String qualifiedTypeIdentity(
-      ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
+  private String qualifiedTypeIdentity(ASTOrdinaryCompilationUnit unit, ASTTypeDeclaration type) {
     String packageName =
         unit.isPresentPackageDeclaration()
             ? unit.getPackageDeclaration().getMCQualifiedName().getQName()

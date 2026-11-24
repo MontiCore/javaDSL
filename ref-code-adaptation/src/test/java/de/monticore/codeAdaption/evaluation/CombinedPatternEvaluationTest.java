@@ -44,7 +44,11 @@ public class CombinedPatternEvaluationTest extends EvaluationAbstractTest {
   public void adapterFactoryCombinedCaseRuns() {
     runCombinedCase("testcase_14_adapter_factory_combined", Set.of("adapter", "factory"));
     assertEquals(
-        Set.of("CarrierAdapter.java", "LegacyCarrier.java", "ShippingFactory.java", "ShippingPort.java"),
+        Set.of(
+            "CarrierAdapter.java",
+            "LegacyCarrier.java",
+            "ShippingFactory.java",
+            "ShippingPort.java"),
         generatedFileNames(output));
     assertNoAdapterMetadata(output);
     assertGeneratedJavaCompiles(output);
@@ -57,7 +61,8 @@ public class CombinedPatternEvaluationTest extends EvaluationAbstractTest {
     assertTrue(carrierAdapter.contains("public CarrierAdapter(LegacyCarrier carrier)"));
     assertTrue(carrierAdapter.contains("public boolean ship(String label, boolean insured)"));
     assertTrue(carrierAdapter.contains("carrier.dispatch(label, insured)"));
-    assertTrue(shippingFactory.contains("public ShippingPort createCarrier(LegacyCarrier carrier)"));
+    assertTrue(
+        shippingFactory.contains("public ShippingPort createCarrier(LegacyCarrier carrier)"));
     assertTrue(shippingFactory.contains("return new CarrierAdapter(carrier);"));
     assertTrue(shippingPort.contains("boolean ship(String label, boolean insured);"));
     assertFalse(carrierAdapter.contains("specificRequest"));
@@ -94,7 +99,8 @@ public class CombinedPatternEvaluationTest extends EvaluationAbstractTest {
     assertTrue(groupNode.contains("public void attach(Renderable node)"));
     assertTrue(groupNode.contains("public void detach(Renderable node)"));
     assertTrue(groupNode.contains("node.render(depth + 1)"));
-    assertTrue(renderDecorator.contains("public abstract class RenderDecorator implements Renderable"));
+    assertTrue(
+        renderDecorator.contains("public abstract class RenderDecorator implements Renderable"));
     assertTrue(renderDecorator.contains("Renderable wrapped"));
     assertTrue(renderDecorator.contains("return wrapped.render(depth);"));
     assertTrue(borderDecorator.contains("public class BorderDecorator extends RenderDecorator"));

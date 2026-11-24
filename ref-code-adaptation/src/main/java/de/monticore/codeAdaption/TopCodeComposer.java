@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Keeps adapted implementations separate from concrete handwritten code through TOP inheritance. */
+/**
+ * Keeps adapted implementations separate from concrete handwritten code through TOP inheritance.
+ */
 final class TopCodeComposer {
 
   private final AdaptedCodeMerger codeMerger;
@@ -56,8 +58,7 @@ final class TopCodeComposer {
         codeMerger.relocateAdaptedCodeToConcretePackages(
             concreteCopies, cloneUnits(adaptedCode), concreteIndex);
 
-    List<CompositionEntry> plan =
-        analyze(concreteCopies, relocatedAdapted, concreteIndex);
+    List<CompositionEntry> plan = analyze(concreteCopies, relocatedAdapted, concreteIndex);
     plan.forEach(this::apply);
 
     LinkedHashSet<ASTOrdinaryCompilationUnit> result = new LinkedHashSet<>();
@@ -68,8 +69,7 @@ final class TopCodeComposer {
     for (CompositionEntry entry : plan) {
       String targetPackage = packageName(entry.concreteUnit());
       selfTypeBindings.put(
-          qualify(targetPackage, entry.topName()),
-          qualify(targetPackage, entry.concreteName()));
+          qualify(targetPackage, entry.topName()), qualify(targetPackage, entry.concreteName()));
     }
     return new CompositionResult(result, Map.copyOf(selfTypeBindings));
   }
@@ -79,7 +79,8 @@ final class TopCodeComposer {
       Set<ASTOrdinaryCompilationUnit> adaptedCode,
       CDModelIndex concreteIndex) {
     Map<String, TypeLocation> concreteByQualifiedName = indexTypes(concreteCode, "concrete HWC");
-    Map<String, List<TypeLocation>> concreteBySimpleName = indexBySimpleName(concreteByQualifiedName);
+    Map<String, List<TypeLocation>> concreteBySimpleName =
+        indexBySimpleName(concreteByQualifiedName);
     List<CompositionEntry> plan = new ArrayList<>();
     Map<String, String> finalIdentities = new LinkedHashMap<>();
 
@@ -98,7 +99,10 @@ final class TopCodeComposer {
       String adaptedIdentity = qualify(packageName(adaptedUnit), concreteName);
       TypeLocation concrete =
           matchingConcreteType(
-              adaptedIdentity, concreteName, concreteByQualifiedName, concreteBySimpleName,
+              adaptedIdentity,
+              concreteName,
+              concreteByQualifiedName,
+              concreteBySimpleName,
               concreteIndex);
 
       if (concrete == null) {
@@ -115,12 +119,7 @@ final class TopCodeComposer {
       reserve(finalIdentities, topIdentity, "adapted TOP code");
       plan.add(
           new CompositionEntry(
-              adaptedUnit,
-              adaptedType,
-              concrete.unit(),
-              concrete.type(),
-              concreteName,
-              topName));
+              adaptedUnit, adaptedType, concrete.unit(), concrete.type(), concreteName, topName));
     }
     return List.copyOf(plan);
   }
@@ -189,7 +188,7 @@ final class TopCodeComposer {
       ASTOrdinaryCompilationUnit unit,
       ASTMCType type,
       String expectedSimpleName,
-    String expectedIdentity) {
+      String expectedIdentity) {
     String printedType = JavaSourceNames.printQualifiedType(type);
     List<JavaSourceNames.TypeReferenceName> references =
         JavaSourceNames.typeReferences(printedType);
@@ -305,10 +304,13 @@ final class TopCodeComposer {
   private Map<String, List<TypeLocation>> indexBySimpleName(
       Map<String, TypeLocation> byQualifiedName) {
     Map<String, List<TypeLocation>> result = new LinkedHashMap<>();
-    byQualifiedName.values().forEach(
-        location ->
-            result.computeIfAbsent(location.type().getName(), ignored -> new ArrayList<>())
-                .add(location));
+    byQualifiedName
+        .values()
+        .forEach(
+            location ->
+                result
+                    .computeIfAbsent(location.type().getName(), ignored -> new ArrayList<>())
+                    .add(location));
     return result;
   }
 
@@ -332,9 +334,7 @@ final class TopCodeComposer {
 
   private List<ASTOrdinaryCompilationUnit> ordered(Set<ASTOrdinaryCompilationUnit> units) {
     return units.stream()
-        .sorted(
-            Comparator.comparing(this::unitIdentity)
-                .thenComparing(AdapterUtils::getFileName))
+        .sorted(Comparator.comparing(this::unitIdentity).thenComparing(AdapterUtils::getFileName))
         .toList();
   }
 

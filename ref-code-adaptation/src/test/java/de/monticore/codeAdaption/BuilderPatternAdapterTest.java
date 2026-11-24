@@ -8,7 +8,6 @@ import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.updater.CodeUpdaterMill;
 import de.monticore.codeAdaption.updater.spoonUpdater.SpoonUpdater;
 import de.monticore.codeAdaption.utils.AdapterParam;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,7 +39,8 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     outputPath = temporaryDirectory.resolve("builder-pattern");
     deleteRecursively(outputPath);
     confParameters = Set.of(NAME_MAPPING, INHERITANCE, STEREOTYPE_MAPPING, STRICT_PARAMETER_ORDER);
-    adapterParams = Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE);
+    adapterParams =
+        Set.of(NAME_MATCHING, ANNOTATION_MATCHING, IGNORE_NON_MATCHED_VAR, IGNORE_NON_MATCHED_TYPE);
   }
 
   @Test
@@ -51,7 +51,12 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertDoesNotThrow(
         () ->
             adapter.adapt(
-                refCD, concreteCD, Set.of("buildPat"), adapterCodePath, concreteCodePath, outputPath));
+                refCD,
+                concreteCD,
+                Set.of("buildPat"),
+                adapterCodePath,
+                concreteCodePath,
+                outputPath));
 
     assertEquals(
         Set.of("PersonBuilder.java", "TaskBuilder.java", "Person.java", "Task.java"),
@@ -59,8 +64,10 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertNoAdapterMetadata(outputPath);
     assertGeneratedJavaCompiles(outputPath);
 
-    String personBuilderContent = simplifyGeneratedReferences(readFileContent(outputPath, "PersonBuilder.java"));
-    String taskBuilderContent = simplifyGeneratedReferences(readFileContent(outputPath, "TaskBuilder.java"));
+    String personBuilderContent =
+        simplifyGeneratedReferences(readFileContent(outputPath, "PersonBuilder.java"));
+    String taskBuilderContent =
+        simplifyGeneratedReferences(readFileContent(outputPath, "TaskBuilder.java"));
 
     assertTrue(personBuilderContent.contains("public class PersonBuilder"));
     assertTrue(personBuilderContent.contains("public PersonBuilder setName(String name)"));
@@ -74,7 +81,8 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
     assertTrue(taskBuilderContent.contains("public class TaskBuilder"));
     assertTrue(taskBuilderContent.contains("public TaskBuilder setId(int id)"));
     assertTrue(taskBuilderContent.contains("public TaskBuilder setTitle(String title)"));
-    assertTrue(taskBuilderContent.contains("public TaskBuilder setDescription(String description)"));
+    assertTrue(
+        taskBuilderContent.contains("public TaskBuilder setDescription(String description)"));
     assertTrue(taskBuilderContent.contains("public TaskBuilder setStatus(String status)"));
     assertTrue(taskBuilderContent.contains("public TaskBuilder setDueDate(Date dueDate)"));
     assertTrue(taskBuilderContent.contains("public TaskBuilder setAssignee(String assignee)"));
@@ -106,9 +114,8 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
         personBuilderContent.contains(
             "return new Person(this.nameField, this.ageField, this.emailField, this.phoneField, this.tagsField);"));
     assertTrue(
-        taskBuilderContent
-            .contains(
-                "return new Task(this.idField, this.titleField, this.descriptionField, this.statusField, this.dueDateField, this.assigneeField);"));
+        taskBuilderContent.contains(
+            "return new Task(this.idField, this.titleField, this.descriptionField, this.statusField, this.dueDateField, this.assigneeField);"));
     assertFalse(personBuilderContent.contains("class Builder"));
     assertFalse(taskBuilderContent.contains("class Builder"));
 
@@ -147,12 +154,7 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
 
     new CodeAdapter(adapterParams, confParameters)
         .adaptWithTopSeparation(
-            refCD,
-            concreteCD,
-            Set.of("buildPat"),
-            adapterCodePath,
-            concreteWithBuilder,
-            topOutput);
+            refCD, concreteCD, Set.of("buildPat"), adapterCodePath, concreteWithBuilder, topOutput);
 
     String personBuilderTop = readFileContent(topOutput, "PersonBuilderTOP.java");
     assertTrue(personBuilderTop.contains("return ((PersonBuilder) (this));"));
@@ -200,4 +202,3 @@ public class BuilderPatternAdapterTest extends AdapterAbstractTest {
         .replace("java.util.", "");
   }
 }
-

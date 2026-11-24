@@ -25,7 +25,12 @@ final class EnumConflictCheck implements AdaptationConflictCheck {
         for (IncarnationContext.MappedElement target : entry.getValue()) {
           ASTCDType concrete = context.concreteTypes().get(target.key().getName());
           if (concrete instanceof ASTCDEnum concreteEnum) {
-            validateEnumOrder(context, conflicts, incarnationContext.getMappingName(), referenceEnum, concreteEnum);
+            validateEnumOrder(
+                context,
+                conflicts,
+                incarnationContext.getMappingName(),
+                referenceEnum,
+                concreteEnum);
           }
         }
       }
@@ -52,7 +57,8 @@ final class EnumConflictCheck implements AdaptationConflictCheck {
         conflicts.conflict(
             mapping,
             "enum order conflict",
-            concreteEnum.getName() + " orders reference constants differently from "
+            concreteEnum.getName()
+                + " orders reference constants differently from "
                 + referenceEnum.getName());
         return;
       }

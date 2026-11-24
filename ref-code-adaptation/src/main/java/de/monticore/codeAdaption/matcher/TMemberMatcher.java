@@ -66,7 +66,10 @@ public interface TMemberMatcher {
    * paramCount >= 0}.
    */
   default List<ISymbol> resolveMethodReferencesOf(
-      ASTTypeDeclaration type, String name, BiFunction<String, String, Boolean> match, int paramCount) {
+      ASTTypeDeclaration type,
+      String name,
+      BiFunction<String, String, Boolean> match,
+      int paramCount) {
 
     List<ISymbol> references = new ArrayList<>();
     Optional<CodeMatching> matching = getTypeMatcher().getMatchedType(type);

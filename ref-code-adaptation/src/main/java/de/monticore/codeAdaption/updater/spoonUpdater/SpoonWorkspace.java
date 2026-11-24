@@ -94,7 +94,8 @@ final class SpoonWorkspace {
       if (Files.isDirectory(outputPath)) {
         try (var paths = Files.walk(outputPath)) {
           for (Path source :
-              paths.filter(Files::isRegularFile)
+              paths
+                  .filter(Files::isRegularFile)
                   .filter(path -> path.toString().endsWith(".java"))
                   .toList()) {
             Files.delete(source);
@@ -166,8 +167,7 @@ final class SpoonWorkspace {
     Path transactionRoot = null;
     boolean preserveTransaction = false;
     try {
-      transactionRoot =
-          Files.createTempDirectory(parent, sourcePath.getFileName() + "_cleanup_");
+      transactionRoot = Files.createTempDirectory(parent, sourcePath.getFileName() + "_cleanup_");
       Path formattedPath = transactionRoot.resolve("formatted");
       Path stagedPath = transactionRoot.resolve("staged");
       Files.createDirectories(formattedPath);
@@ -176,7 +176,8 @@ final class SpoonWorkspace {
       Launcher cleanupLauncher = cleanupLauncher(sourcePath);
       repairTopSelfReferences(cleanupLauncher, topToPublicSelfTypes);
       List<CtAnnotation<?>> annotations =
-          new ArrayList<>(cleanupLauncher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
+          new ArrayList<>(
+              cleanupLauncher.getModel().getElements(new TypeFilter<>(CtAnnotation.class)));
       cleanAdaptAnnotations(cleanupLauncher, annotations);
       for (CtType<?> type : cleanupLauncher.getModel().getAllTypes()) {
         if (!type.isInterface()) {
@@ -212,9 +213,9 @@ final class SpoonWorkspace {
   }
 
   /**
-   * Preserves the public self type when an adapted implementation is moved from {@code X} to
-   * {@code XTOP}. Explicit {@code this} values become {@code (X) this}; member-access targets such
-   * as {@code this.field} stay untouched so field lookup remains anchored in the TOP class.
+   * Preserves the public self type when an adapted implementation is moved from {@code X} to {@code
+   * XTOP}. Explicit {@code this} values become {@code (X) this}; member-access targets such as
+   * {@code this.field} stay untouched so field lookup remains anchored in the TOP class.
    */
   @SuppressWarnings({"rawtypes", "unchecked"})
   private static void repairTopSelfReferences(
@@ -240,8 +241,7 @@ final class SpoonWorkspace {
                 + "' because one declaration is missing");
       }
       CtTypeReference<?> publicReference = publicType.getReference();
-      for (CtThisAccess<?> thisAccess :
-          topType.getElements(new TypeFilter<>(CtThisAccess.class))) {
+      for (CtThisAccess<?> thisAccess : topType.getElements(new TypeFilter<>(CtThisAccess.class))) {
         if (thisAccess.isImplicit() || thisAccess.getParent(CtType.class) != topType) {
           continue;
         }
@@ -252,7 +252,8 @@ final class SpoonWorkspace {
         }
         boolean alreadyRepaired =
             thisAccess.getTypeCasts().stream()
-                .anyMatch(cast -> cast.getQualifiedName().equals(publicReference.getQualifiedName()));
+                .anyMatch(
+                    cast -> cast.getQualifiedName().equals(publicReference.getQualifiedName()));
         if (!alreadyRepaired) {
           thisAccess.addTypeCast(publicReference.clone());
         }
@@ -309,7 +310,8 @@ final class SpoonWorkspace {
     cleanupLauncher.getEnvironment().setAutoImports(true);
     cleanupLauncher.getEnvironment().setNoClasspath(true);
     try (var paths = Files.walk(codePath)) {
-      paths.filter(Files::isRegularFile)
+      paths
+          .filter(Files::isRegularFile)
           .filter(path -> path.toString().endsWith(".java"))
           .forEach(path -> cleanupLauncher.addInputResource(path.toAbsolutePath().toString()));
     }
@@ -320,7 +322,8 @@ final class SpoonWorkspace {
   private static Map<Path, Path> javaFilesByRelativePath(Path codePath) throws IOException {
     Map<Path, Path> result = new LinkedHashMap<>();
     try (var paths = Files.walk(codePath)) {
-      paths.filter(Files::isRegularFile)
+      paths
+          .filter(Files::isRegularFile)
           .filter(path -> path.toString().endsWith(".java"))
           .forEach(path -> result.put(codePath.relativize(path), path));
     }
@@ -332,13 +335,15 @@ final class SpoonWorkspace {
       throws IOException {
     Set<Path> copiedTargets = new LinkedHashSet<>();
     try (var paths = Files.walk(formattedPath)) {
-      paths.filter(Files::isRegularFile)
+      paths
+          .filter(Files::isRegularFile)
           .filter(path -> path.toString().endsWith(".java"))
           .forEach(
               source -> {
                 try {
                   Path relative = formattedPath.relativize(source);
-                  Path originalTarget = originals.getOrDefault(relative, sourcePath.resolve(relative));
+                  Path originalTarget =
+                      originals.getOrDefault(relative, sourcePath.resolve(relative));
                   Path target = stagedPath.resolve(sourcePath.relativize(originalTarget));
                   Files.createDirectories(target.getParent());
                   copyReplacingWithRetry(source, target);
@@ -347,7 +352,8 @@ final class SpoonWorkspace {
                         "Multiple formatted sources target the same file '" + target + "'");
                   }
                 } catch (IOException e) {
-                  throw new IllegalStateException("Failed to copy formatted file '" + source + "'", e);
+                  throw new IllegalStateException(
+                      "Failed to copy formatted file '" + source + "'", e);
                 }
               });
     }
@@ -355,10 +361,7 @@ final class SpoonWorkspace {
   }
 
   private static void deleteRehomedOriginals(
-      Path sourcePath,
-      Path stagedPath,
-      Collection<Path> originals,
-      Set<Path> copiedTargets)
+      Path sourcePath, Path stagedPath, Collection<Path> originals, Set<Path> copiedTargets)
       throws IOException {
     for (Path original : originals) {
       Path stagedOriginal = stagedPath.resolve(sourcePath.relativize(original));

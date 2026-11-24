@@ -53,8 +53,7 @@ class ConcretizationServiceTest extends AdapterAbstractTest {
   void completedInheritanceIsVisibleInTheRebuiltIndex() {
     ASTCDCompilationUnit completed =
         complete(
-            "inheritance/AttributeInheritanceRef.cd",
-            "inheritance/AttributeInheritanceConc.cd");
+            "inheritance/AttributeInheritanceRef.cd", "inheritance/AttributeInheritanceConc.cd");
     CDModelIndex index = CDModelIndex.of(completed);
 
     assertTrue(index.hasType("Person"));
@@ -98,9 +97,7 @@ class ConcretizationServiceTest extends AdapterAbstractTest {
   @Test
   void upstreamCompletionDoesNotSynthesizeMultiIncarnationAccountAlias() {
     ASTCDCompilationUnit completed =
-        complete(
-            "evaluation/banking/BankingRef.cd",
-            "evaluation/banking/multiInc/BankingConc.cd");
+        complete("evaluation/banking/BankingRef.cd", "evaluation/banking/multiInc/BankingConc.cd");
     CDModelIndex index = CDModelIndex.of(completed);
 
     assertTrue(index.attribute("Transaction", "sourceAccount").isEmpty());

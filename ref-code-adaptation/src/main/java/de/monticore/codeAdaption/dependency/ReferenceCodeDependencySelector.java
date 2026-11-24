@@ -7,8 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Facade for selecting the transitive Java-only helper closure of mapped
- * reference types.
+ * Facade for selecting the transitive Java-only helper closure of mapped reference types.
  *
  * <p>The complete source graph is built once. Call {@link #select(Set)} for each mapping-specific
  * set of mapped Java roots. Parser-specific implementation objects never escape this facade.
@@ -31,8 +30,7 @@ public final class ReferenceCodeDependencySelector {
     Objects.requireNonNull(parsedUnits, "parsedUnits");
     Objects.requireNonNull(referenceCDTypeKeys, "referenceCDTypeKeys");
     analyzer =
-        new SpoonReferenceCodeDependencyAnalyzer(
-            sourceRoot, parsedUnits, referenceCDTypeKeys);
+        new SpoonReferenceCodeDependencyAnalyzer(sourceRoot, parsedUnits, referenceCDTypeKeys);
   }
 
   /**

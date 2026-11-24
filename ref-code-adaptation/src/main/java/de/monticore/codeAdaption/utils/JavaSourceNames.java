@@ -61,9 +61,10 @@ public final class JavaSourceNames {
     if (normalized.isBlank()) {
       return "Object";
     }
-    String rendered = parseTypeKey(normalized)
-        .map(TypeKey::normalized)
-        .orElseGet(() -> fallbackNormalize(normalized));
+    String rendered =
+        parseTypeKey(normalized)
+            .map(TypeKey::normalized)
+            .orElseGet(() -> fallbackNormalize(normalized));
     return rendered;
   }
 
@@ -83,17 +84,15 @@ public final class JavaSourceNames {
   }
 
   /**
-   * Parses and deterministically renders a type without discarding package qualification.
-   * Malformed input is returned trimmed so callers can reject it without guessing.
+   * Parses and deterministically renders a type without discarding package qualification. Malformed
+   * input is returned trimmed so callers can reject it without guessing.
    */
   public static String canonicalType(String type) {
     if (type == null || type.isBlank()) {
       return "Object";
     }
     String trimmed = type.trim();
-    return parseTypeKey(trimmed)
-        .map(key -> key.render(false, false, false))
-        .orElse(trimmed);
+    return parseTypeKey(trimmed).map(key -> key.render(false, false, false)).orElse(trimmed);
   }
 
   /** Renders the normalized type of a CD attribute. */
@@ -222,8 +221,7 @@ public final class JavaSourceNames {
 
   private static Optional<TypeKey> parseTypeKey(String rawType) {
     try {
-      Optional<ASTMCReturnType> returnType =
-          JavaDSLMill.parser().parse_StringMCReturnType(rawType);
+      Optional<ASTMCReturnType> returnType = JavaDSLMill.parser().parse_StringMCReturnType(rawType);
       if (returnType.isPresent()) {
         return Optional.of(TypeKey.from(returnType.get()));
       }
@@ -301,17 +299,13 @@ public final class JavaSourceNames {
                 .map(de.monticore.java.javadsl._ast.ASTAnnotatedName::getName)
                 .reduce((left, right) -> left + "." + right)
                 .orElse(""),
-            basicGenericType.getMCTypeArgumentList().stream()
-                .map(TypeArgumentKey::from)
-                .toList(),
+            basicGenericType.getMCTypeArgumentList().stream().map(TypeArgumentKey::from).toList(),
             0);
       }
       if (type instanceof ASTMCGenericType genericType) {
         return new TypeKey(
             String.join(".", genericType.getNameList()),
-            genericType.getMCTypeArgumentList().stream()
-                .map(TypeArgumentKey::from)
-                .toList(),
+            genericType.getMCTypeArgumentList().stream().map(TypeArgumentKey::from).toList(),
             0);
       }
       if (type instanceof ASTMCQualifiedType qualifiedType) {
@@ -362,8 +356,7 @@ public final class JavaSourceNames {
       boolean changed = false;
       String rewrittenName = name;
       Optional<String> replacement =
-          replacementForType.apply(
-              new TypeReferenceName(name, simpleName(), name.contains(".")));
+          replacementForType.apply(new TypeReferenceName(name, simpleName(), name.contains(".")));
       if (replacement.isPresent()) {
         rewrittenName = replacement.get();
         changed = true;
@@ -390,8 +383,7 @@ public final class JavaSourceNames {
 
     private static boolean isPrimitiveOrVoid(String value) {
       return switch (value) {
-        case "boolean", "byte", "short", "int", "long", "float", "double", "char", "void" ->
-            true;
+        case "boolean", "byte", "short", "int", "long", "float", "double", "char", "void" -> true;
         default -> false;
       };
     }
@@ -424,7 +416,8 @@ public final class JavaSourceNames {
     static TypeArgumentKey from(ASTMCTypeArgument argument) {
       if (argument instanceof ASTMCWildcardTypeArgument wildcard) {
         if (wildcard.isPresentUpperBound()) {
-          return new WildcardTypeArgument(Optional.of(TypeKey.from(wildcard.getUpperBound())), true);
+          return new WildcardTypeArgument(
+              Optional.of(TypeKey.from(wildcard.getUpperBound())), true);
         }
         if (wildcard.isPresentLowerBound()) {
           return new WildcardTypeArgument(
@@ -440,8 +433,7 @@ public final class JavaSourceNames {
 
     String render(boolean normalizeNames, boolean spaced);
 
-    TypeArgumentRewrite rewrite(
-        Function<TypeReferenceName, Optional<String>> replacementForType);
+    TypeArgumentRewrite rewrite(Function<TypeReferenceName, Optional<String>> replacementForType);
 
     void collectReferences(List<TypeReferenceName> references);
   }
@@ -456,7 +448,8 @@ public final class JavaSourceNames {
     public TypeArgumentRewrite rewrite(
         Function<TypeReferenceName, Optional<String>> replacementForType) {
       RewriteResult rewritten = type.rewrite(replacementForType);
-      return new TypeArgumentRewrite(new ConcreteTypeArgument(rewritten.type()), rewritten.changed());
+      return new TypeArgumentRewrite(
+          new ConcreteTypeArgument(rewritten.type()), rewritten.changed());
     }
 
     @Override

@@ -67,15 +67,15 @@ final class MappingAdaptationRunner {
     this.referenceIndex = referenceIndex;
     this.concreteIndex = concreteIndex;
     this.inputConcreteIndex = inputConcreteIndex;
-    this.useCommonParentForMultipleIncarnations =
-        useCommonParentForMultipleIncarnations;
+    this.useCommonParentForMultipleIncarnations = useCommonParentForMultipleIncarnations;
   }
 
   /**
    * Runs every planned pass for one mapping and merges the retained output units.
    *
    * @param mapping stereotype name identifying the isolated incarnation context
-   * @param mappingCode complete filtered source set loaded into every pass for cross-file resolution
+   * @param mappingCode complete filtered source set loaded into every pass for cross-file
+   *     resolution
    * @param passes concrete incarnation selections to execute
    * @param checker usable conformance checker, or {@code null} for manual mapping
    * @param validator matcher/validation state for the same mapping
@@ -129,9 +129,7 @@ final class MappingAdaptationRunner {
         adaptedCode = codeMerger.mergeAdaptedCode(adaptedCode, processedCode);
       } catch (CodeAdaptationException exception) {
         String selection =
-            pass.typeSelection().isEmpty()
-                ? ""
-                : " for type selection " + pass.describeSelection();
+            pass.typeSelection().isEmpty() ? "" : " for type selection " + pass.describeSelection();
         throw new CodeAdaptationException(
             "Failed to process mapping '"
                 + mapping
@@ -142,9 +140,7 @@ final class MappingAdaptationRunner {
             exception);
       } catch (RuntimeException | AssertionError exception) {
         String selection =
-            pass.typeSelection().isEmpty()
-                ? ""
-                : " for type selection " + pass.describeSelection();
+            pass.typeSelection().isEmpty() ? "" : " for type selection " + pass.describeSelection();
         throw new CodeAdaptationException(
             "Failed to process mapping '" + mapping + "'" + selection, exception);
       } finally {
@@ -164,8 +160,7 @@ final class MappingAdaptationRunner {
     return updater;
   }
 
-  private static Set<ASTOrdinaryCompilationUnit> cloneUnits(
-      Set<ASTOrdinaryCompilationUnit> units) {
+  private static Set<ASTOrdinaryCompilationUnit> cloneUnits(Set<ASTOrdinaryCompilationUnit> units) {
     Set<ASTOrdinaryCompilationUnit> clones = new LinkedHashSet<>();
     units.forEach(unit -> clones.add(unit.deepClone()));
     return clones;

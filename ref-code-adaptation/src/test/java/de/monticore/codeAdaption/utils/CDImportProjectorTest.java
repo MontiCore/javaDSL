@@ -153,10 +153,8 @@ class CDImportProjectorTest extends AdapterAbstractTest {
 
   @Test
   void ignoresNonTypeIdentifiersThatMatchImportedTypeNames() throws IOException {
-    ASTCDCompilationUnit reference =
-        cd("ReferenceIdentifierImports", "import alpha.Customer;");
-    ASTCDCompilationUnit concrete =
-        cd("ConcreteIdentifierImports", "import beta.Customer;");
+    ASTCDCompilationUnit reference = cd("ReferenceIdentifierImports", "import alpha.Customer;");
+    ASTCDCompilationUnit concrete = cd("ConcreteIdentifierImports", "import beta.Customer;");
     ASTOrdinaryCompilationUnit unit =
         java(
             "Identifier",

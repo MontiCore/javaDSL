@@ -22,9 +22,9 @@ import java.util.Set;
 /**
  * Immutable lookup structure for class-diagram elements and inheritance relationships.
  *
- * <p>Named lookups are intentionally based on simple CD type names. Supplying {@code
- * shop.Payment} therefore looks up {@code Payment}; this index does not distinguish two types that
- * differ only by package. Member-owner lookups use the owning type's simple name, while {@link
+ * <p>Named lookups are intentionally based on simple CD type names. Supplying {@code shop.Payment}
+ * therefore looks up {@code Payment}; this index does not distinguish two types that differ only by
+ * package. Member-owner lookups use the owning type's simple name, while {@link
  * #ownerOf(ASTCDAttribute)} and {@link #ownerOf(ASTCDMethod)} use AST object identity and therefore
  * require nodes from this indexed CD.
  */
@@ -232,8 +232,8 @@ public final class CDModelIndex {
   }
 
   /**
-   * Returns whether {@code typeName} has {@code parentName} as a direct or transitive parent.
-   * Equal type names are not considered a subtype relationship by this method.
+   * Returns whether {@code typeName} has {@code parentName} as a direct or transitive parent. Equal
+   * type names are not considered a subtype relationship by this method.
    */
   public boolean isSubtypeOf(String typeName, String parentName) {
     String simpleParent = JavaSourceNames.simpleName(parentName);
@@ -253,7 +253,8 @@ public final class CDModelIndex {
    * indirect interface implementation must count.
    */
   public List<ASTCDType> implementersOf(String interfaceName) {
-    return implementersByInterface.getOrDefault(JavaSourceNames.simpleName(interfaceName), List.of());
+    return implementersByInterface.getOrDefault(
+        JavaSourceNames.simpleName(interfaceName), List.of());
   }
 
   /**
@@ -265,8 +266,10 @@ public final class CDModelIndex {
     ASTCDType owner = null;
     for (ASTCDType type : types) {
       boolean matches =
-          attributes(type.getName()).stream().anyMatch(attribute -> attribute.getName().equals(simpleMember))
-              || methods(type.getName()).stream().anyMatch(method -> method.getName().equals(simpleMember));
+          attributes(type.getName()).stream()
+                  .anyMatch(attribute -> attribute.getName().equals(simpleMember))
+              || methods(type.getName()).stream()
+                  .anyMatch(method -> method.getName().equals(simpleMember));
       if (!matches) {
         continue;
       }

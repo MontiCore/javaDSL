@@ -66,9 +66,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
   void divergentFieldDefinitionsFromAdaptationPassesMustNotBeSilentlyDiscarded()
       throws IOException {
     ASTOrdinaryCompilationUnit first =
-        javaUnit(
-            "first/Service.java",
-            "package p; class Service { static final int value = 1; }");
+        javaUnit("first/Service.java", "package p; class Service { static final int value = 1; }");
     ASTOrdinaryCompilationUnit second =
         javaUnit("second/Service.java", "package p; class Service { int value = 2; }");
 
@@ -76,8 +74,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
   }
 
   @Test
-  void divergentSuperclassesFromAdaptationPassesMustNotBeSilentlyDiscarded()
-      throws IOException {
+  void divergentSuperclassesFromAdaptationPassesMustNotBeSilentlyDiscarded() throws IOException {
     ASTOrdinaryCompilationUnit first =
         javaUnit("first/Service.java", "package p; class Service extends FirstBase {}");
     ASTOrdinaryCompilationUnit second =
@@ -87,8 +84,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
   }
 
   @Test
-  void divergentNestedTypesFromAdaptationPassesMustNotBeSilentlyDiscarded()
-      throws IOException {
+  void divergentNestedTypesFromAdaptationPassesMustNotBeSilentlyDiscarded() throws IOException {
     ASTOrdinaryCompilationUnit first =
         javaUnit(
             "first/Service.java",
@@ -139,9 +135,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
             "imported-super/Service.java",
             "package p; import alpha.Base; class Service extends Base {}");
     ASTOrdinaryCompilationUnit qualified =
-        javaUnit(
-            "qualified-super/Service.java",
-            "package p; class Service extends alpha.Base {}");
+        javaUnit("qualified-super/Service.java", "package p; class Service extends alpha.Base {}");
 
     assertDoesNotThrow(() -> AdapterUtils.mergeAsts(imported, qualified));
   }
@@ -170,9 +164,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
     Files.writeString(
         concrete.resolve("Service.java"),
         "package p; class Helper { int handwritten; } public class Service {}");
-    Files.writeString(
-        staging.resolve("p/Helper.java"),
-        "package p; class Helper { int adapted; }");
+    Files.writeString(staging.resolve("p/Helper.java"), "package p; class Helper { int adapted; }");
 
     new OutputCodeService().copyConcreteFiles(concrete, staging);
 
@@ -193,8 +185,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
     Path concreteCD = fixture.resolve("Concrete.cd");
     Files.writeString(referenceCD, "classdiagram Reference { class Service; }");
     Files.writeString(
-        concreteCD,
-        "classdiagram Concrete { <<ref=\"Service\">> class ConcreteService; }");
+        concreteCD, "classdiagram Concrete { <<ref=\"Service\">> class ConcreteService; }");
     Files.writeString(
         referenceCode.resolve("demo/IgnoredFacade.java"),
         """
@@ -207,8 +198,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
         }
         """);
     Files.writeString(
-        referenceCode.resolve("demo/Helper.java"),
-        "package demo; final class Helper {}");
+        referenceCode.resolve("demo/Helper.java"), "package demo; final class Helper {}");
     Files.writeString(
         concreteCode.resolve("demo/ConcreteService.java"),
         "package demo; public class ConcreteService {}");
@@ -266,8 +256,7 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
             .map(variable -> variable.getDeclarator().getName())
             .toList();
     assertEquals(3, fields.size(), "Shared declarations must not be duplicated across mappings");
-    assertEquals(
-        Set.of("renamedField", "pattern1Shared", "pattern2Shared"), Set.copyOf(fields));
+    assertEquals(Set.of("renamedField", "pattern1Shared", "pattern2Shared"), Set.copyOf(fields));
     assertEquals(
         java.util.List.of("renamedMethod"),
         collector.getAllMethodDeclarations(type).stream().map(method -> method.getName()).toList());
@@ -282,5 +271,4 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
     Files.writeString(file, source);
     return JavaLoader.loadJava(file.toFile());
   }
-
 }

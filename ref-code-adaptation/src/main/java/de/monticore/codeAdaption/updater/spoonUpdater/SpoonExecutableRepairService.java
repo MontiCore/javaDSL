@@ -75,8 +75,7 @@ final class SpoonExecutableRepairService {
    * that declaration. Capturing happens before the declaration is renamed so unresolved invocation
    * names can be updated afterward without affecting unrelated overloads.
    */
-  MethodRename planMethodRename(
-      ASTTypeDeclaration sourceType, ASTMethodDeclaration sourceMethod) {
+  MethodRename planMethodRename(ASTTypeDeclaration sourceType, ASTMethodDeclaration sourceMethod) {
     CtMethod<?> target = resolver.getSpoonMethod(sourceType, sourceMethod);
     String oldName = target.getSimpleName();
     CtType<?> owner = target.getDeclaringType();
@@ -111,8 +110,7 @@ final class SpoonExecutableRepairService {
    * identity, executable declaring-type identity, and a lexical owner/superclass fallback for
    * Spoon's no-classpath mode.
    */
-  private boolean invokesMethodOn(
-      CtInvocation<?> invocation, CtMethod<?> target, CtType<?> owner) {
+  private boolean invokesMethodOn(CtInvocation<?> invocation, CtMethod<?> target, CtType<?> owner) {
     try {
       var declaration = invocation.getExecutable().getDeclaration();
       if (declaration != null) {
@@ -153,8 +151,7 @@ final class SpoonExecutableRepairService {
         workspace.model().getElements(new TypeFilter<>(CtInvocation.class))) {
       String methodName =
           invocation.getExecutable() == null ? null : invocation.getExecutable().getSimpleName();
-      StableElementKey target =
-          findConcreteRewriteTarget(invocation, methodName, groupingMappings);
+      StableElementKey target = findConcreteRewriteTarget(invocation, methodName, groupingMappings);
       List<String> parameterTypes =
           target == null
               ? unambiguousLegacyParameters(methodName)
@@ -187,9 +184,7 @@ final class SpoonExecutableRepairService {
       List<CtParameter<?>> exact =
           enclosingMethod.getParameters().stream()
               .filter(parameter -> parameter.getType() != null)
-              .filter(
-                  parameter ->
-                      sameArgumentType(parameter.getType(), expected, parameterType))
+              .filter(parameter -> sameArgumentType(parameter.getType(), expected, parameterType))
               .toList();
       if (exact.size() == 1) {
         return workspace.factory().Code().createVariableRead(exact.get(0).getReference(), false);
@@ -297,9 +292,7 @@ final class SpoonExecutableRepairService {
    * Null-literal argument types act as wildcards because Spoon cannot infer their target type.
    */
   private StableElementKey findConcreteRewriteTarget(
-      CtInvocation<?> invocation,
-      String methodName,
-      Map<String, String> groupingMappings) {
+      CtInvocation<?> invocation, String methodName, Map<String, String> groupingMappings) {
     if (methodName == null || !rewriteRegistry.hasRewrites()) {
       return null;
     }
@@ -357,8 +350,7 @@ final class SpoonExecutableRepairService {
         && !groupedOwner.contains(".")
         && concreteOwner != null
         && concreteOwner.contains(".")) {
-      groupedOwner =
-          concreteOwner.substring(0, concreteOwner.lastIndexOf('.') + 1) + groupedOwner;
+      groupedOwner = concreteOwner.substring(0, concreteOwner.lastIndexOf('.') + 1) + groupedOwner;
     }
     return sameOwnerTypeName(owner, referenceOwner)
         || sameOwnerTypeName(owner, concreteOwner)

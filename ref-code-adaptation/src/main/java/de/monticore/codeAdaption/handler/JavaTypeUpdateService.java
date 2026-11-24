@@ -70,9 +70,7 @@ final class JavaTypeUpdateService {
   }
 
   private void generateTypeFromTemplate(
-      ASTTypeDeclaration templateType,
-      CodeMatching typeMatching,
-      JavaAstElemCollector collector) {
+      ASTTypeDeclaration templateType, CodeMatching typeMatching, JavaAstElemCollector collector) {
     String generatedTypeName = handler.buildConcreteName(typeMatching);
     if (!generatedTypes.add(generatedTypeName)) {
       return;
@@ -141,8 +139,7 @@ final class JavaTypeUpdateService {
     List<GeneratedAttribute> attributes = new ArrayList<>();
     for (ASTCDAttribute attribute : concreteType.get().getCDAttributeList()) {
       String type = JavaSourceNames.printNormalizedType(attribute.getMCType());
-      if (handler.incarnationContext != null
-          && handler.useCommonParentForMultipleIncarnations) {
+      if (handler.incarnationContext != null && handler.useCommonParentForMultipleIncarnations) {
         type = symbols.replaceConcreteWithGroupingType(type);
       }
       attributes.add(
@@ -160,8 +157,7 @@ final class JavaTypeUpdateService {
         handler.updater.removeField(templateType, field);
       } catch (RuntimeException exception) {
         Log.debug(
-            "Could not remove template field: " + exception.getMessage(),
-            "JavaTypeUpdateService");
+            "Could not remove template field: " + exception.getMessage(), "JavaTypeUpdateService");
       }
     }
     for (ASTMethodDeclaration method : templateMethods) {
@@ -169,8 +165,7 @@ final class JavaTypeUpdateService {
         handler.updater.removeMethod(templateType, method);
       } catch (RuntimeException exception) {
         Log.debug(
-            "Could not remove template method: " + exception.getMessage(),
-            "JavaTypeUpdateService");
+            "Could not remove template method: " + exception.getMessage(), "JavaTypeUpdateService");
       }
     }
   }
@@ -251,7 +246,8 @@ final class JavaTypeUpdateService {
     }
 
     String inputSuperclass =
-        inputType.flatMap(CDTypeRelations::firstSuperclassName)
+        inputType
+            .flatMap(CDTypeRelations::firstSuperclassName)
             .map(symbols::resolveConcreteCdType)
             .orElse(null);
     String completedSuperclass =
@@ -267,11 +263,12 @@ final class JavaTypeUpdateService {
             .flatMap(type -> CDTypeRelations.interfaceNames(type).stream())
             .map(symbols::resolveConcreteCdType)
             .collect(java.util.stream.Collectors.toSet());
-    List<String> addedInterfaces = CDTypeRelations.interfaceNames(completedType).stream()
-        .map(symbols::resolveConcreteCdType)
-        .filter(interfaceName -> !inputInterfaces.contains(interfaceName))
-        .distinct()
-        .toList();
+    List<String> addedInterfaces =
+        CDTypeRelations.interfaceNames(completedType).stream()
+            .map(symbols::resolveConcreteCdType)
+            .filter(interfaceName -> !inputInterfaces.contains(interfaceName))
+            .distinct()
+            .toList();
     addedInterfaces.forEach(
         interfaceName -> handler.updater.addSuperType(javaType, interfaceName, true));
     if (completedType instanceof ASTCDClass && !completedAbstract) {
@@ -290,10 +287,7 @@ final class JavaTypeUpdateService {
 
     if (completedType instanceof ASTCDEnum completedEnum) {
       Set<String> inputConstants =
-          inputType
-              .filter(ASTCDEnum.class::isInstance)
-              .map(ASTCDEnum.class::cast)
-              .stream()
+          inputType.filter(ASTCDEnum.class::isInstance).map(ASTCDEnum.class::cast).stream()
               .flatMap(type -> type.getCDEnumConstantList().stream())
               .map(constant -> constant.getName())
               .collect(java.util.stream.Collectors.toSet());
@@ -307,8 +301,8 @@ final class JavaTypeUpdateService {
   }
 
   /**
-   * Returns every interface implemented directly or inherited through interfaces and
-   * superclasses. The visited set in the recursive helper makes malformed inheritance cycles safe.
+   * Returns every interface implemented directly or inherited through interfaces and superclasses.
+   * The visited set in the recursive helper makes malformed inheritance cycles safe.
    */
   static Set<String> effectiveInterfaceNames(CDModelIndex index, String typeName) {
     Set<String> result = new LinkedHashSet<>();
@@ -317,10 +311,7 @@ final class JavaTypeUpdateService {
   }
 
   private static void collectEffectiveInterfaces(
-      CDModelIndex index,
-      String typeName,
-      Set<String> interfaces,
-      Set<String> visitedTypes) {
+      CDModelIndex index, String typeName, Set<String> interfaces, Set<String> visitedTypes) {
     String simpleName = JavaSourceNames.simpleName(typeName);
     if (!visitedTypes.add(simpleName)) {
       return;
@@ -373,9 +364,7 @@ final class JavaTypeUpdateService {
    * covariant returns select the most specific declaration; incompatible returns fail explicitly.
    */
   private void collectInterfaceContracts(
-      String interfaceName,
-      Map<String, ASTCDMethod> contracts,
-      Set<String> visitedInterfaces) {
+      String interfaceName, Map<String, ASTCDMethod> contracts, Set<String> visitedInterfaces) {
     String simpleName = JavaSourceNames.simpleName(interfaceName);
     if (!visitedInterfaces.add(simpleName)) {
       return;
@@ -421,14 +410,12 @@ final class JavaTypeUpdateService {
   }
 
   private boolean isCovariantReturn(String candidate, String parent) {
-    return !JavaSourceNames.normalizeType(candidate)
-            .equals(JavaSourceNames.normalizeType(parent))
+    return !JavaSourceNames.normalizeType(candidate).equals(JavaSourceNames.normalizeType(parent))
         && isCompatibleImplementationReturn(candidate, parent);
   }
 
   /** Tests Java-compatible equality or covariance for an implementation return type. */
-  private boolean isCompatibleImplementationReturn(
-      String actualReturn, String expectedReturn) {
+  private boolean isCompatibleImplementationReturn(String actualReturn, String expectedReturn) {
     if (isCompatibleImplementationReturn(handler.conIndex, actualReturn, expectedReturn)) {
       return true;
     }
@@ -475,16 +462,15 @@ final class JavaTypeUpdateService {
     }
   }
 
-  private static Class<?> classFor(JavaSourceNames.ErasedType type)
-      throws ClassNotFoundException {
+  private static Class<?> classFor(JavaSourceNames.ErasedType type) throws ClassNotFoundException {
     Class<?> component = primitiveClass(type.name());
     if (component == null) {
-      component =
-          Class.forName(type.name(), false, JavaTypeUpdateService.class.getClassLoader());
+      component = Class.forName(type.name(), false, JavaTypeUpdateService.class.getClassLoader());
     }
     return type.arrayDimensions() == 0
         ? component
-        : java.lang.reflect.Array.newInstance(component, new int[type.arrayDimensions()]).getClass();
+        : java.lang.reflect.Array.newInstance(component, new int[type.arrayDimensions()])
+            .getClass();
   }
 
   private static Class<?> primitiveClass(String name) {
@@ -670,13 +656,17 @@ final class JavaTypeUpdateService {
   }
 
   private boolean isOwnedBy(ASTCDAttribute attribute, ASTCDType owner) {
-    return handler.conIndex.ownerOf(attribute)
+    return handler
+        .conIndex
+        .ownerOf(attribute)
         .map(candidate -> candidate == owner || candidate.getName().equals(owner.getName()))
         .orElse(false);
   }
 
   private boolean isOwnedBy(ASTCDMethod method, ASTCDType owner) {
-    return handler.conIndex.ownerOf(method)
+    return handler
+        .conIndex
+        .ownerOf(method)
         .map(candidate -> candidate == owner || candidate.getName().equals(owner.getName()))
         .orElse(false);
   }

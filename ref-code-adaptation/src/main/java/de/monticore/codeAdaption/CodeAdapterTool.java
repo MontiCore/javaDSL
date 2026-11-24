@@ -60,7 +60,8 @@ public class CodeAdapterTool extends CD4CodeTool {
   int execute(String[] args) {
     init();
     Options options = addAdditionalOptions(new Options());
-    if (Arrays.stream(args).anyMatch(argument -> "-h".equals(argument) || "--help".equals(argument))) {
+    if (Arrays.stream(args)
+        .anyMatch(argument -> "-h".equals(argument) || "--help".equals(argument))) {
       printAdapterHelp(options);
       return 0;
     }
@@ -106,7 +107,8 @@ public class CodeAdapterTool extends CD4CodeTool {
   public Options addAdditionalOptions(Options options) {
     options.addOption(requiredPathOption("r", "reference", "reference class diagram"));
     options.addOption(requiredPathOption("c", "concrete", "concrete class diagram"));
-    options.addOption(requiredPathOption("rc", "reference-code", "reference Java source directory"));
+    options.addOption(
+        requiredPathOption("rc", "reference-code", "reference Java source directory"));
     options.addOption(
         Option.builder("cc")
             .longOpt("concrete-code")
@@ -134,7 +136,8 @@ public class CodeAdapterTool extends CD4CodeTool {
     options.addOption(
         Option.builder()
             .longOpt("top-separation")
-            .desc("keep adapted implementations in TOP superclasses instead of merging concrete Java")
+            .desc(
+                "keep adapted implementations in TOP superclasses instead of merging concrete Java")
             .build());
     options.addOption(
         Option.builder()
@@ -166,8 +169,8 @@ public class CodeAdapterTool extends CD4CodeTool {
         .build();
   }
 
-  private static void adapt(
-      CodeAdapter adapter, CommandLine commandLine, Set<String> mappings) throws ParseException {
+  private static void adapt(CodeAdapter adapter, CommandLine commandLine, Set<String> mappings)
+      throws ParseException {
     File reference = requiredFile(commandLine, "reference");
     File concrete = requiredFile(commandLine, "concrete");
     Path referenceCode = requiredPath(commandLine, "reference-code");
@@ -179,21 +182,47 @@ public class CodeAdapterTool extends CD4CodeTool {
       Path concreteCode = requiredPath(commandLine, "concrete-code");
       if (commandLine.hasOption("top-separation")) {
         adapter.adaptWithTopSeparation(
-            reference, concrete, mappings, referenceCode, concreteCode, output,
-            concretize, commonParent, persistCD);
+            reference,
+            concrete,
+            mappings,
+            referenceCode,
+            concreteCode,
+            output,
+            concretize,
+            commonParent,
+            persistCD);
       } else {
         adapter.adapt(
-            reference, concrete, mappings, referenceCode, concreteCode, output,
-            concretize, commonParent, persistCD);
+            reference,
+            concrete,
+            mappings,
+            referenceCode,
+            concreteCode,
+            output,
+            concretize,
+            commonParent,
+            persistCD);
       }
     } else if (commandLine.hasOption("top-separation")) {
       adapter.adaptWithTopSeparation(
-          reference, concrete, mappings, referenceCode, output,
-          concretize, commonParent, persistCD);
+          reference,
+          concrete,
+          mappings,
+          referenceCode,
+          output,
+          concretize,
+          commonParent,
+          persistCD);
     } else {
       adapter.adaptWithoutConcreteCode(
-          reference, concrete, mappings, referenceCode, output,
-          concretize, commonParent, persistCD);
+          reference,
+          concrete,
+          mappings,
+          referenceCode,
+          output,
+          concretize,
+          commonParent,
+          persistCD);
     }
   }
 
@@ -211,9 +240,7 @@ public class CodeAdapterTool extends CD4CodeTool {
 
   private static Set<String> values(CommandLine commandLine, String option) {
     String[] supplied = commandLine.getOptionValues(option);
-    return supplied == null
-        ? new LinkedHashSet<>()
-        : new LinkedHashSet<>(Arrays.asList(supplied));
+    return supplied == null ? new LinkedHashSet<>() : new LinkedHashSet<>(Arrays.asList(supplied));
   }
 
   private static Set<AdapterParam> matchingParameters(CommandLine commandLine)

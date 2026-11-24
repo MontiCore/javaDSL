@@ -71,8 +71,7 @@ public final class GeneratedJavaStructureOracle {
     }
   }
 
-  private static void assertType(
-      ASTCDType original, ASTCDType expected, GeneratedType actual) {
+  private static void assertType(ASTCDType original, ASTCDType expected, GeneratedType actual) {
     String context = expected.getName() + " in " + actual.source();
     assertEquals(kind(expected), actual.kind(), "Wrong type kind for " + context);
 
@@ -85,15 +84,14 @@ public final class GeneratedJavaStructureOracle {
                 expectedFields.put(
                     field.getName(), JavaSourceNames.printNormalizedFieldType(field)));
     expectedFields.forEach(
-        (name, type) ->
-            {
-              if (!type.equals(originalFields.get(name))) {
-                assertEquals(
-                    type,
-                    actual.fields().get(name),
-                    "Missing or mistyped completed field '" + name + "' on " + context);
-              }
-            });
+        (name, type) -> {
+          if (!type.equals(originalFields.get(name))) {
+            assertEquals(
+                type,
+                actual.fields().get(name),
+                "Missing or mistyped completed field '" + name + "' on " + context);
+          }
+        });
 
     Map<String, String> originalMethods = methods(original);
     Map<String, String> expectedMethods = new LinkedHashMap<>();
@@ -105,15 +103,14 @@ public final class GeneratedJavaStructureOracle {
                     JavaSourceNames.methodSignature(method),
                     JavaSourceNames.printNormalizedReturnType(method)));
     expectedMethods.forEach(
-        (signature, returnType) ->
-            {
-              if (!returnType.equals(originalMethods.get(signature))) {
-                assertEquals(
-                    returnType,
-                    actual.methods().get(signature),
-                    "Missing or mistyped completed method '" + signature + "' on " + context);
-              }
-            });
+        (signature, returnType) -> {
+          if (!returnType.equals(originalMethods.get(signature))) {
+            assertEquals(
+                returnType,
+                actual.methods().get(signature),
+                "Missing or mistyped completed method '" + signature + "' on " + context);
+          }
+        });
 
     String originalSuperclass =
         original == null
@@ -129,7 +126,8 @@ public final class GeneratedJavaStructureOracle {
             : null;
     if (expected.getSuperclassList().size() <= 1
         && !java.util.Objects.equals(originalSuperclass, expectedSuperclass)) {
-      assertEquals(expectedSuperclass, actual.superclass(), "Wrong completed superclass for " + context);
+      assertEquals(
+          expectedSuperclass, actual.superclass(), "Wrong completed superclass for " + context);
     }
     Set<String> originalInterfaces = interfaces(original);
     Set<String> expectedInterfaces =
@@ -153,9 +151,12 @@ public final class GeneratedJavaStructureOracle {
                   .toList()
               : List.of();
       List<String> constants =
-          expectedEnum.getCDEnumConstantList().stream().map(constant -> constant.getName()).toList();
+          expectedEnum.getCDEnumConstantList().stream()
+              .map(constant -> constant.getName())
+              .toList();
       if (!constants.equals(originalConstants)) {
-        assertEquals(constants, actual.enumConstants(), "Wrong completed enum constants for " + context);
+        assertEquals(
+            constants, actual.enumConstants(), "Wrong completed enum constants for " + context);
       }
     }
   }
@@ -259,7 +260,8 @@ public final class GeneratedJavaStructureOracle {
       if (type instanceof ASTClassDeclaration classDeclaration) {
         kind = "class";
         if (classDeclaration.isPresentSuperClass()) {
-          superclass = JavaSourceNames.simpleName(JavaLoader.print(classDeclaration.getSuperClass()));
+          superclass =
+              JavaSourceNames.simpleName(JavaLoader.print(classDeclaration.getSuperClass()));
         }
         classDeclaration.getImplementedInterfaceList().stream()
             .map(JavaLoader::print)

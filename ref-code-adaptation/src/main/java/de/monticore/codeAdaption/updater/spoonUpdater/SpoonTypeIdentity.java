@@ -60,7 +60,9 @@ final class SpoonTypeIdentity {
             }));
   }
 
-  /** Binds projected simple names using the source owner before falling back to unique model types. */
+  /**
+   * Binds projected simple names using the source owner before falling back to unique model types.
+   */
   static String canonical(SpoonWorkspace workspace, CtType<?> owner, String source) {
     String bound =
         JavaSourceNames.replaceTypeNames(
@@ -70,7 +72,8 @@ final class SpoonTypeIdentity {
                 return Optional.empty();
               }
               if (owner.getFormalCtTypeParameters().stream()
-                  .anyMatch(parameter -> parameter.getSimpleName().equals(reference.simpleName()))) {
+                  .anyMatch(
+                      parameter -> parameter.getSimpleName().equals(reference.simpleName()))) {
                 return Optional.empty();
               }
               if (owner.getPosition().isValidPosition()) {

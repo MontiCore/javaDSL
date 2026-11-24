@@ -64,8 +64,7 @@ public record AdaptReference(
     if (JavaMethodSignatures.parseNormalized(memberReference + "()").isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(
-        new AdaptReference(optional(owner), memberReference, Optional.empty()));
+    return Optional.of(new AdaptReference(optional(owner), memberReference, Optional.empty()));
   }
 
   /** Returns the normalized member reference, including parameters for methods. */
