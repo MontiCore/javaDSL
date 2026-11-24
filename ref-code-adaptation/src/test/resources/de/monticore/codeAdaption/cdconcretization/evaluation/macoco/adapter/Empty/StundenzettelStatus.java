@@ -1,0 +1,13 @@
+package de.monticore.codeAdaption.cdconcretization.evaluation.macoco.adapter.empty;
+
+public enum StundenzettelStatus {
+  IN_ERFASSUNG,
+  INTERN_INPRUEFUNG,
+  INTERN_ABGESCHLOSSEN,
+  DRITTMITTELABTEILUNG_INPRUEFUNG,
+  DRITTMITTELABTEILUNG_ABGESCHLOSSEN,
+  ENDBERICHT_EINGEREICHT,
+  GEPRUEFT,
+  FOERDERGEBER_ABGESCHLOSSEN,
+  ABGESCHLOSSEN;
+}

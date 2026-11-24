@@ -10,10 +10,12 @@ import de.monticore.javalight._ast.ASTMethodDeclaration;
 import de.monticore.types.mcbasictypes._ast.ASTMCType;
 import java.util.Optional;
 
-/***
- *return an empty-matching with the ignore flag set as true.
- *when the previous strategy didn't find machining for attributes or methods.
- *the adaption will ignore the corresponding element.
+/**
+ * Terminal fallback that accepts unmatched fields, methods, and supertypes unchanged.
+ *
+ * <p>The ignored matching prevents a validation error and tells update phases not to transform the
+ * member. It is installed by {@code IGNORE_NON_MATCHED_TYPE_MEMBER} after all enabled member
+ * matching strategies.
  */
 public class IgnoreTMemberMatcher implements TMemberMatcher {
   protected ASTCDCompilationUnit cd;

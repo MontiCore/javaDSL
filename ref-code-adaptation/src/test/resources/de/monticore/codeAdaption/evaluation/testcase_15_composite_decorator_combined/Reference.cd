@@ -1,0 +1,26 @@
+import java.lang.String;
+import java.util.List;
+
+
+classdiagram Reference {
+  interface Component {
+    String operation();
+  }
+
+  class Leaf implements Component {
+    String operation();
+  }
+
+  class Composite implements Component {
+    List<Component> children;
+    void add(Component component);
+    void remove(Component component);
+    String operation();
+  }
+
+  abstract class Decorator implements Component {
+    Component wrapped;
+    Decorator(Component wrapped);
+    String operation();
+  }
+}

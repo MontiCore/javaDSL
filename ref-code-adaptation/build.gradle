@@ -23,7 +23,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3:$commons_lang3_version"
 
-    implementation "de.monticore.lang:cd4analysis:$mc_version:cddiff"
+    api "de.monticore.lang:cd4analysis:$mc_version:cddiff"
     implementation "de.monticore.lang:cd4analysis:$mc_version:tool"
 
     implementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
@@ -57,6 +57,7 @@ layout.buildDirectory = layout.projectDirectory.dir("target")
 
 
 googleJavaFormat {
+    toolVersion = '1.22.0'
     exclude '**/target/**'
     exclude '**/test/resources/**'
     exclude '***/test/java/model/reference/hwc/Application'

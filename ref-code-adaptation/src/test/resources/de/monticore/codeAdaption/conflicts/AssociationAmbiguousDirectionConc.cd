@@ -1,0 +1,6 @@
+classdiagram AssociationAmbiguousDirectionConc {
+  <<ref="Node">> class LeftNode;
+  <<ref="Node">> class RightNode;
+
+  association LeftNode -- RightNode;
+}

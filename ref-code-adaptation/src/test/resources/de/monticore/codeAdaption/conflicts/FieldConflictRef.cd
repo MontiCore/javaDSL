@@ -1,0 +1,3 @@
+classdiagram FieldConflictRef {
+  class Person;
+}

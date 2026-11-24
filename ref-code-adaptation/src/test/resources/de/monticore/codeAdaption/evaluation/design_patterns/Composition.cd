@@ -1,0 +1,10 @@
+classdiagram Composition {
+
+  interface Component { void execute(); }
+
+  class Leaf implements Component ;
+
+  class Composite implements Component ;
+
+  association Composite -> Component [1..*];
+}

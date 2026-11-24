@@ -1,0 +1,3 @@
+classdiagram TypeKindConc {
+  <<ref="Service">> interface Service;
+}

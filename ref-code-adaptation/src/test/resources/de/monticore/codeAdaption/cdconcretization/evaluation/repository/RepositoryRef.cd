@@ -1,0 +1,16 @@
+import java.util.List;
+import java.util.Optional;
+
+classdiagram RepositoryRef {
+
+  class Entity {
+    any id;
+  }
+
+  <<forEach="Entity">> class EntityRepository {
+    <<forEach="Entity.id">> Optional<Entity> findById(any id);
+    List<Entity> findAll();
+    Entity save(Entity entity);
+    <<forEach="Entity.id">> void removeById(any id);
+  }
+}

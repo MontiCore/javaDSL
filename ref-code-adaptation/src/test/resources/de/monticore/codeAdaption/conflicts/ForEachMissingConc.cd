@@ -1,0 +1,6 @@
+import java.lang.String;
+classdiagram ForEachMissingConc {
+  <<ref="DataClass">> class Employee {
+    <<ref="attribute">> String firstName;
+  }
+}

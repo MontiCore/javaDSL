@@ -1,0 +1,28 @@
+import java.util.List;
+
+
+classdiagram Reference {
+  abstract class AbstractClass {
+    void templateMethod();
+    abstract void primitiveOperation1();
+    abstract void primitiveOperation2();
+    void hook();
+  }
+
+  class Subject {
+    List<Observer> observers;
+    boolean subscribe(Observer o);
+    boolean unsubscribe(Observer o);
+    void notifyAll();
+  }
+
+  interface Observer {
+    void update();
+  }
+
+  class ConcreteClass extends AbstractClass {
+    void primitiveOperation1();
+    void primitiveOperation2();
+    void hook();
+  }
+}

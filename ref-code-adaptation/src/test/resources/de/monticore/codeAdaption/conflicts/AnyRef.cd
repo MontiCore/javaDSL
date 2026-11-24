@@ -1,0 +1,5 @@
+classdiagram AnyRef {
+  class DataClass {
+    any attribute;
+  }
+}

@@ -1,5 +1,5 @@
-package de.monticore.codeAdaption.evaluation.confCheckingCD;
 import java.lang.String;
+import java.util.Date;
 
 classdiagram Reference {
 

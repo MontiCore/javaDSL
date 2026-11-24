@@ -1,0 +1,55 @@
+import java.lang.String;
+import java.util.List;
+
+classdiagram Reference {
+  class Order;
+
+  class Subject {
+    List<Observer> observers;
+    void attach(Observer observer);
+    void detach(Observer observer);
+    void notifyObservers(String event);
+  }
+
+  interface Observer {
+    void update(String event);
+  }
+
+  interface Command {
+    boolean execute();
+  }
+
+  class Invoker {
+    List<Command> commands;
+    void enqueue(Command command);
+    boolean runAll();
+  }
+
+  interface Strategy {
+    String execute(Order order);
+  }
+
+  class Context {
+    Strategy strategy;
+    void setStrategy(Strategy strategy);
+    String execute(Order order);
+  }
+
+  interface Target {
+    String request(Order order, String route);
+  }
+
+  class Adaptee {
+    String specificRequest(Order order, String route);
+  }
+
+  class Adapter implements Target {
+    Adaptee adaptee;
+    Adapter(Adaptee adaptee);
+    String request(Order order, String route);
+  }
+
+  class Creator {
+    Target create(Adaptee adaptee);
+  }
+}

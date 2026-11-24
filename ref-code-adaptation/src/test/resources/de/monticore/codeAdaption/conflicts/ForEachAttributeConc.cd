@@ -1,0 +1,7 @@
+import java.lang.String;
+classdiagram ForEachAttributeConc {
+  <<ref="DataClass">> class Employee {
+    <<ref="attribute">> String firstName;
+    <<ref="attribute">> int age;
+  }
+}

@@ -16,6 +16,14 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        maven {
+            credentials.username mavenUser
+            credentials.password mavenPassword
+            url repo
+        }
+    }
     versionCatalogs {
         create("corpusLibs") {
             from(files("./gradle/corpus.versions.toml"))

@@ -1,0 +1,5 @@
+classdiagram AssociationAmbiguousDirectionRef {
+  class Node;
+
+  association Node -- Node;
+}

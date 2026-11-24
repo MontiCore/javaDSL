@@ -1,0 +1,6 @@
+classdiagram ValidManualConc {
+  <<ref="Account">> class BankAccount {
+    <<ref="balance">> int amount;
+    <<ref="getBalance">> int readAmount();
+  }
+}

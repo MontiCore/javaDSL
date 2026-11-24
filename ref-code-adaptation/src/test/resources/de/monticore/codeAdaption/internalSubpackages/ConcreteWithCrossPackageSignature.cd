@@ -1,0 +1,13 @@
+classdiagram Concrete {
+  package model {
+    <<ref="model.Entity">> class Customer {
+      public int id;
+    }
+  }
+  package service {
+    <<ref="service.Service">> class CustomerService {
+      <<ref="echo">> public model.Customer echo(model.Customer customer);
+      public int value();
+    }
+  }
+}

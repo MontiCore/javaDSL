@@ -1,0 +1,12 @@
+classdiagram TypeMissingConc {
+
+  class Course {
+  }
+
+  enum CourseType {
+    LECTURE,
+    SEMINAR,
+    TUTORIAL;
+
+  }
+}

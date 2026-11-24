@@ -1,0 +1,6 @@
+classdiagram Reference {
+  class Teacher;
+  class Department;
+
+  association Teacher -> (departments) Department [*];
+}

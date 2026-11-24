@@ -1,0 +1,6 @@
+classdiagram ForEachMethodRef {
+  class DataClass {
+    any attribute;
+    <<forEach="attribute">> any getAttribute();
+  }
+}

@@ -1,0 +1,8 @@
+
+classdiagram Reference {
+  class Singleton {
+    static Singleton instance;
+    static Singleton getInstance();
+    any attribute;
+  }
+}

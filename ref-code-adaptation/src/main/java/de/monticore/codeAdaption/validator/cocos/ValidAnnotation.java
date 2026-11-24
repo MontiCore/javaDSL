@@ -1,13 +1,12 @@
 package de.monticore.codeAdaption.validator.cocos;
 
 import static de.monticore.codeAdaption.utils.AdapterUtils.getPosition;
-import static de.monticore.codeAdaption.utils.Constants.*;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
 import de.monticore.codeAdaption.matcher.annotMatcher.AnnotElementCollector;
+import de.monticore.codeAdaption.utils.AdaptAnnotationNames;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.Constants;
-import de.monticore.codeAdaption.utils.JavaLoader;
 import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._visitor.JavaDSLTraverser;
 import de.monticore.javalight._ast.ASTAnnotation;
@@ -37,10 +36,9 @@ public class ValidAnnotation implements JavaLightASTAnnotationCoCo {
   protected String refNotFound =
       "0xRC001  %s Invalid annotation:the  reference [%s] was not found in the class diagram [%s]";
 
-
   @Override
   public void check(ASTAnnotation node) {
-    if (JavaLoader.print(node.getAnnotationName()).endsWith(ANNOT_NAME)) {
+    if (AdaptAnnotationNames.matches(node.getAnnotationName().getQName())) {
       checkAnnotation(node);
     }
   }
@@ -60,14 +58,10 @@ public class ValidAnnotation implements JavaLightASTAnnotationCoCo {
         Log.error(String.format(missingTemplate, pos));
       }
 
-      // template argument == references
-      long arguments =
-          collector.getTemplate() == null
-              ? 0
-              : collector.getTemplate().chars().filter(s -> (char) s == '$').count();
       long references = collector.getReferences().size();
-      if (arguments != collector.getReferences().size()) {
-        Log.error(String.format(templateArguments, pos, references, arguments));
+      validateTemplateArity(collector.getTemplate(), references, pos);
+      if (collector.getGenTemplate() != null && !collector.getGenTemplate().isBlank()) {
+        validateTemplateArity(collector.getGenTemplate(), references, pos);
       }
 
       // reference must exist in the class diagram
@@ -77,6 +71,15 @@ public class ValidAnnotation implements JavaLightASTAnnotationCoCo {
           Log.error(String.format(refNotFound, pos, ref, cd.getCDDefinition().getName()));
         }
       }
+    }
+  }
+
+  private void validateTemplateArity(String template, long references, String pos) {
+    long arguments = template == null ? 0 : extractPlaceHolders(template).size();
+    // A constant template is valid and intentionally ignores its references. As soon as a
+    // placeholder is used, every reference must have a corresponding placeholder.
+    if (arguments > 0 && arguments != references) {
+      Log.error(String.format(templateArguments, pos, references, arguments));
     }
   }
 

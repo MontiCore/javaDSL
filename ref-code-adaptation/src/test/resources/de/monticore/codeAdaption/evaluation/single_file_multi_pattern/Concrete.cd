@@ -1,0 +1,10 @@
+import java.lang.String;
+
+classdiagram Concrete {
+  <<pattern1="MyClass", pattern2="MyClass">> class MyClass {
+      <<pattern1="oldField", pattern2="oldField">> String renamedField;
+      <<pattern1="oldMethod", pattern2="oldMethod">> void renamedMethod();
+      <<pattern1="sharedField">> String pattern1Shared;
+      <<pattern2="sharedField">> String pattern2Shared;
+  }
+}

@@ -1,0 +1,5 @@
+classdiagram AmbiguousOverloadConc {
+  <<ref="Service">> class Service {
+    <<ref="sync">> void syncConcrete();
+  }
+}

@@ -1,0 +1,95 @@
+import java.lang.String;
+import java.util.List;
+
+classdiagram Concrete {
+  <<observer="Observer">> interface ShipmentEventListener {
+    <<observer="update">> void onShipmentEvent(ShipmentRecord shipment);
+  }
+
+  <<observer="Subject">> class ShipmentEventPublisher {
+    <<observer="observers">> List<ShipmentEventListener> listeners;
+    <<observer="attach">> void subscribe(ShipmentEventListener listener);
+    <<observer="detach">> void unsubscribe(ShipmentEventListener listener);
+    <<observer="notifyObservers">> void publishShipment(ShipmentRecord shipment);
+  }
+
+  <<observer="Observer">> class AuditTrailListener implements ShipmentEventListener {
+    <<observer="update">> void onShipmentEvent(ShipmentRecord shipment);
+  }
+
+  <<observer="Observer">> class CustomerNotificationListener implements ShipmentEventListener {
+    <<observer="update">> void onShipmentEvent(ShipmentRecord shipment);
+  }
+
+  <<observer="Observer">> class OperationsDashboardListener implements ShipmentEventListener {
+    <<observer="update">> void onShipmentEvent(ShipmentRecord shipment);
+  }
+
+  <<command="Command">> interface FulfillmentCommand {
+    <<command="execute">> boolean run();
+  }
+
+  <<command="Invoker">> class FulfillmentCommandQueue {
+    List<FulfillmentCommand> commands;
+    <<command="enqueue">> void schedule(FulfillmentCommand command);
+    <<command="runAll">> boolean drain();
+  }
+
+  <<command="Command">> class ReserveInventoryCommand implements FulfillmentCommand {
+    <<command="execute">> boolean run();
+  }
+
+  <<command="Command">> class BookCarrierCommand implements FulfillmentCommand {
+    <<command="execute">> boolean run();
+  }
+
+  <<command="Command">> class RecordShipmentCommand implements FulfillmentCommand {
+    <<command="execute">> boolean run();
+  }
+
+  <<strategy="Strategy">> interface RoutePolicy {
+    <<strategy="execute">> String selectRoute(DeliveryOrder order);
+  }
+
+  <<strategy="Context">> class RoutePlanner {
+    <<strategy="strategy">> RoutePolicy policy;
+    <<strategy="setStrategy">> void usePolicy(RoutePolicy policy);
+    <<strategy="execute">> String planRoute(DeliveryOrder order);
+  }
+
+  <<strategy="Strategy">> class FastestRoutePolicy implements RoutePolicy {
+    <<strategy="execute">> String selectRoute(DeliveryOrder order);
+  }
+
+  <<strategy="Strategy">> class SustainableRoutePolicy implements RoutePolicy {
+    <<strategy="execute">> String selectRoute(DeliveryOrder order);
+  }
+
+  <<adapter="Target">> interface CarrierGateway {
+    <<adapter="request">> String createConsignment(DeliveryOrder order, String route);
+  }
+
+  <<adapter="Adaptee">> class LegacyCarrierApi {
+    <<adapter="specificRequest">> String createLegacyConsignment(DeliveryOrder order, String route);
+  }
+
+  <<adapter="Adapter">> class LegacyCarrierGatewayAdapter implements CarrierGateway {
+    <<adapter="adaptee">> LegacyCarrierApi legacyCarrier;
+    LegacyCarrierGatewayAdapter(LegacyCarrierApi legacyCarrier);
+    <<adapter="request">> String createConsignment(DeliveryOrder order, String route);
+  }
+
+  <<adapter="Creator">> class CarrierGatewayFactory {
+    <<adapter="create">> CarrierGateway createGateway(LegacyCarrierApi legacyCarrier);
+  }
+
+  <<strategy="Order", adapter="Order">> class DeliveryOrder;
+  class DeliveryItem;
+  class InventoryLedger;
+  class ShipmentRecord;
+  class ShipmentRepository;
+  class AuditLog;
+  class CustomerNotifier;
+  class FulfillmentCoordinator;
+  class FulfillmentScenario;
+}

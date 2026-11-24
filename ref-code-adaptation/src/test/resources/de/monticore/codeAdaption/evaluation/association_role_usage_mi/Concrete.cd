@@ -1,0 +1,8 @@
+classdiagram Concrete {
+  <<ref="Teacher">> class Teacher;
+  <<ref="Department">> class MathDept;
+  <<ref="Department">> class ScienceDept;
+
+  association Teacher -> (mathDepts) MathDept [*];
+  association Teacher -> (scienceDepts) ScienceDept [*];
+}

@@ -1,0 +1,8 @@
+classdiagram Concrete {
+  package model {
+    <<ref="model.Entity">> class Customer;
+  }
+  package service {
+    <<ref="service.Service">> class CustomerService;
+  }
+}

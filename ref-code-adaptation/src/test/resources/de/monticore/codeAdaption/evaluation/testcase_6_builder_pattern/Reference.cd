@@ -1,0 +1,8 @@
+
+classdiagram Reference {
+  class Builder {
+    any attribute;
+    void setAttribute(any attribute);
+  }
+}
+

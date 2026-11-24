@@ -1,0 +1,6 @@
+classdiagram EnumOrderConc {
+  <<ref="Status">> enum Status {
+    DONE,
+    NEW;
+  }
+}

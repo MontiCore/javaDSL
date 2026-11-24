@@ -3,8 +3,8 @@ package de.monticore.codeAdaption.validator.cocos;
 import static de.monticore.codeAdaption.utils.AdapterUtils.getPosition;
 
 import de.monticore.java.javadsl._ast.ASTFieldDeclaration;
-import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.javadsl._ast.ASTLocalVariableDeclaration;
+import de.monticore.java.javadsl._cocos.JavaDSLASTFieldDeclarationCoCo;
 import de.monticore.java.javadsl._cocos.JavaDSLASTLocalVariableDeclarationCoCo;
 import de.se_rwth.commons.logging.Log;
 

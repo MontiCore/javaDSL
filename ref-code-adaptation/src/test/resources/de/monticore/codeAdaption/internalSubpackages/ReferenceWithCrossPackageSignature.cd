@@ -1,0 +1,13 @@
+classdiagram Reference {
+  package model {
+    class Entity {
+      public int id;
+    }
+  }
+  package service {
+    class Service {
+      public model.Entity echo(model.Entity entity);
+      public int value();
+    }
+  }
+}

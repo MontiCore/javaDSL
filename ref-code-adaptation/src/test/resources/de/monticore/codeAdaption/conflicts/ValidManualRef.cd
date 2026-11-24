@@ -1,0 +1,6 @@
+classdiagram ValidManualRef {
+  class Account {
+    int balance;
+    int getBalance();
+  }
+}

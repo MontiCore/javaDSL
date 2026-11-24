@@ -1,3 +1,4 @@
+import java.lang.String;
 classdiagram Validator{
 public class Entity {
   String id ;

@@ -1,0 +1,12 @@
+classdiagram Reference {
+  package model {
+    class Entity {
+      public int id;
+    }
+  }
+  package service {
+    class Service {
+      public int value();
+    }
+  }
+}
