@@ -12,9 +12,9 @@ public enum AdapterParam {
   /**
    * Accepts an otherwise unmatched Java type instead of reporting a validation error.
    *
-   * <p>The type has no reference-CD incarnation to adapt and is therefore excluded from
-   * mapping-specific adapted output. Use an explicit {@code @Adapt(ignore = true)} annotation when
-   * an intentionally unchanged reference type must remain in that output.
+   * <p>Both modes retain required source-local helpers independently of this parameter. Other
+   * unmatched types are excluded from mapping-specific adapted output. Use an explicit
+   * {@code @Adapt(ignore = true)} annotation to retain an intentionally unchanged reference root.
    */
   IGNORE_NON_MATCHED_TYPE,
 

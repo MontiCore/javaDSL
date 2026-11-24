@@ -11,12 +11,15 @@ import static de.monticore.cdconformance.CDConfParameter.STEREOTYPE_MAPPING;
 import static de.monticore.codeAdaption.utils.AdapterParam.ANNOTATION_MATCHING;
 import static de.monticore.codeAdaption.utils.AdapterParam.NAME_MATCHING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.cdconformance.CDConfParameter;
 import de.monticore.codeAdaption.utils.AdapterUtils;
 import de.monticore.codeAdaption.utils.JavaLoader;
+import de.monticore.codeAdaption.utils.visitors.JavaAstElemCollector;
+import de.monticore.java.javadsl.JavaDSLMill;
 import de.monticore.java.javadsl._ast.ASTOrdinaryCompilationUnit;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +28,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Regression coverage for merge and output behavior across the complete adaptation pipeline. */
 class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
@@ -174,8 +179,10 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
     assertGeneratedJavaCompiles(generatedJavaFilesRecursively(staging));
   }
 
-  @Test
-  void helperReachableOnlyFromRetainedIgnoredRootMustBeIncluded() throws IOException {
+  @ParameterizedTest(name = "completion = {0}")
+  @ValueSource(booleans = {false, true})
+  void helperReachableOnlyFromRetainedIgnoredRootMustBeIncluded(boolean useConcretization)
+      throws IOException {
     Path fixture = temporaryDirectory.resolve("ignored-root-helper");
     Path referenceCode = fixture.resolve("reference-code");
     Path concreteCode = fixture.resolve("concrete-code");
@@ -214,12 +221,57 @@ class CodeAdapterPipelineRegressionTest extends AdapterAbstractTest {
             referenceCode,
             concreteCode,
             output,
-            true,
+            useConcretization,
             true);
 
     assertTrue(
         Files.isRegularFile(output.resolve("demo/Helper.java")),
         "The dependency closure must start at explicitly retained ignored roots");
+    assertGeneratedJavaCompiles(generatedJavaFilesRecursively(output));
+  }
+
+  @ParameterizedTest(name = "completion = {0}")
+  @ValueSource(booleans = {false, true})
+  void mergesIndependentMappingsOfTheSameReferenceClass(boolean useConcretization) {
+    Path fixture =
+        Path.of(
+            "src/test/resources/de/monticore/codeAdaption/evaluation/single_file_multi_pattern");
+    Path output = temporaryDirectory.resolve("same-reference-multiple-mappings");
+
+    new CodeAdapter(Set.of(NAME_MATCHING), CONCRETIZATION_PARAMETERS)
+        .adaptWithoutConcreteCode(
+            fixture.resolve("Reference.cd").toFile(),
+            fixture.resolve("Concrete.cd").toFile(),
+            Set.of("pattern1", "pattern2"),
+            fixture.resolve("reference"),
+            output,
+            useConcretization,
+            false,
+            false);
+
+    var units = JavaLoader.readJavaCode(output);
+    assertEquals(1, units.size());
+    var unit = units.iterator().next();
+    assertEquals(1, unit.getTypeDeclarationList().size());
+    var type = unit.getTypeDeclarationList().get(0);
+    assertEquals("MyClass", type.getName());
+
+    JavaAstElemCollector collector = new JavaAstElemCollector();
+    var traverser = JavaDSLMill.traverser();
+    traverser.add4JavaDSL(collector);
+    unit.accept(traverser);
+    var fields =
+        collector.getAllFieldDeclarations(type).stream()
+            .flatMap(field -> field.getVariableDeclaratorList().stream())
+            .map(variable -> variable.getDeclarator().getName())
+            .toList();
+    assertEquals(3, fields.size(), "Shared declarations must not be duplicated across mappings");
+    assertEquals(
+        Set.of("renamedField", "pattern1Shared", "pattern2Shared"), Set.copyOf(fields));
+    assertEquals(
+        java.util.List.of("renamedMethod"),
+        collector.getAllMethodDeclarations(type).stream().map(method -> method.getName()).toList());
+    assertNoAdapterMetadata(output);
     assertGeneratedJavaCompiles(generatedJavaFilesRecursively(output));
   }
 

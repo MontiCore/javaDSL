@@ -3,6 +3,7 @@ package de.monticore.codeAdaption.handler.multiIncarnation;
 import de.monticore.cd4codebasis._ast.ASTCDMethod;
 import de.monticore.cdbasis._ast.ASTCDAttribute;
 import de.monticore.cdbasis._ast.ASTCDType;
+import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.utils.AdaptReference;
 import de.monticore.codeAdaption.utils.CDModelIndex;
 import de.monticore.codeAdaption.utils.JavaSourceNames;
@@ -269,7 +270,7 @@ final class IncarnationMappingSupport {
           StableElementKey targetKey = StableElementKey.type(target);
           IncarnationContext.MappedElement previous = result.putIfAbsent(targetKey, grouping);
           if (previous != null && !previous.key().equals(grouping.key())) {
-            throw new IllegalStateException(
+            throw new CodeAdaptationException(
                 "Ambiguous grouping for concrete type '"
                     + target
                     + "': '"

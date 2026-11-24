@@ -73,9 +73,12 @@ public class CodeValidator {
     CONFIGURED,
     /**
      * Allow additional Java types, members, and variables that belong to an already selected
-     * concretization helper set. The usual annotation and declaration checks still run. If a
-     * declaration does have a CD match, that match is checked normally.
+     * helper set in either adaptation mode. The usual annotation and declaration checks still run.
+     * If a declaration does have a CD match, that match is checked normally.
      */
+    PRESERVE_SELECTED_HELPERS,
+    /** @deprecated Use {@link #PRESERVE_SELECTED_HELPERS}; helper selection supports both modes. */
+    @Deprecated
     PRESERVE_CONCRETIZATION_HELPERS
   }
 
@@ -102,8 +105,8 @@ public class CodeValidator {
    * Creates the matchers and specifies how Java declarations without a CD match are handled.
    *
    * <p>The supplied parameter set is not changed. {@link
-   * ValidationPolicy#PRESERVE_CONCRETIZATION_HELPERS} may only be used after the required helper
-   * files have already been selected. Manual adaptation must use {@link
+   * ValidationPolicy#PRESERVE_SELECTED_HELPERS} is intended for validation with a selected helper
+   * set in either adaptation mode. Standalone validation defaults to {@link
    * ValidationPolicy#CONFIGURED}.
    *
    * @param cd reference class diagram used to resolve Java elements
@@ -145,7 +148,8 @@ public class CodeValidator {
     }
 
     boolean preserveHelpers =
-        validationPolicy == ValidationPolicy.PRESERVE_CONCRETIZATION_HELPERS;
+        validationPolicy == ValidationPolicy.PRESERVE_SELECTED_HELPERS
+            || validationPolicy == ValidationPolicy.PRESERVE_CONCRETIZATION_HELPERS;
     if (preserveHelpers || params.contains(IGNORE_NON_MATCHED_TYPE)) {
       typeMatchers.add(new IgnoreTypeMatcher());
     } else {
@@ -212,7 +216,7 @@ public class CodeValidator {
    * @param refCD reference CD used by annotation validation
    * @param asts pre-parsed Java compilation units to validate
    * @param selectedTopLevelTypeIdentities package-qualified top-level identities selected for one
-   *     concretization mapping
+   *     adaptation mapping
    * @return {@code true} if this validation run produced no new error findings
    */
   public boolean isValid(

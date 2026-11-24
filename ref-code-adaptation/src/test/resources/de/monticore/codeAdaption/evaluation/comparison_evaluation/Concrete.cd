@@ -1,0 +1,5 @@
+classdiagram Concrete {
+  <<ref="Service">> class Account {
+    <<ref="amount">> public int balance();
+  }
+}

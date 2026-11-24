@@ -16,6 +16,7 @@ for each adapted type:
 | No matching concrete HWC | Adapted implementation keeps its public name, e.g. `Student` |
 | Matching concrete `Student` has no TOP parent | Concrete `Student` gains `extends StudentTOP`; adapted implementation becomes `StudentTOP` |
 | Concrete `Student` already extends `StudentTOP` | Existing inheritance is retained and adapted implementation supplies `StudentTOP` |
+| Matching concrete interface `Port` exists | Concrete `Port` gains `extends PortTOP` alongside its existing parent interfaces; the adapted interface becomes `PortTOP` |
 | Reference implementation already uses TOP and concrete HWC also exists | Three layers: `Student extends StudentTOP extends StudentTOPTOP` |
 
 The last row represents these separate files:
@@ -37,8 +38,30 @@ simply becomes `Student extends StudentTOP`; the consuming project must also
 supply that `StudentTOP` base. The adapter does not generate missing model
 structure from the CD alone.
 
-Existing concrete files that collide with a newly emitted `StudentTOP` are
-rejected. TOP composition does not merge or compare members across the layers:
+For matching interfaces, an existing `PortTOP` parent is retained without
+duplication. If the adapted interface already extends its corresponding TOP
+interface, that parent is shifted to `PortTOPTOP`, just as for the class case.
+
+## Rejected TOP compositions
+
+When matching concrete HWC requires a TOP companion, composition rejects:
+
+- an enum on either side, or different adapted/concrete declaration kinds
+- a `final` adapted class, which cannot become an inherited implementation
+- a concrete class with an unrelated existing superclass
+- a collision with the newly emitted TOP type
+- ambiguous concrete HWC candidates in different packages when no exact
+  package-qualified match determines the target
+
+Without matching concrete HWC, an adapted type is emitted directly; these
+restrictions on creating a TOP companion do not turn direct emission into TOP
+composition.
+
+The internal composer requires one top-level type per adapted compilation unit.
+The public adaptation pipeline splits multi-type units before invoking it, so
+this is an internal precondition, not a ban on source files with multiple types.
+
+TOP composition does not merge or compare members across the layers:
 normal Java inheritance, visibility, and override rules apply. Ordinary type
 references remain references to public `Student`. An explicit self-value in the
 moved implementation becomes `(Student) this` where needed for public return

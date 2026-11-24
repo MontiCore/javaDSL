@@ -9,7 +9,8 @@ gradle :ref-code-adaptation:test
 ```
 
 On Windows, use `gradle.bat` instead. Tests need a JDK, including the Java compiler.
-The build uses Java 21 and an installed Gradle (8.8 is used for this project).
+The build uses Java 21 and an installed Gradle; CI selects Gradle 8.14.4.
+Use that version to match CI. This checkout does not include a Gradle wrapper.
 
 The numbered evaluation scenarios and their covering tests are listed in [Evaluation cases](Evaluation.md).
 
@@ -52,11 +53,13 @@ updated, and an unrelated helper is excluded. Both merge and TOP composition
 are compiled against only the emitted sources and the JDK, then executed to
 check the returned value. The input models and helper source are preserved.
 
-A separate executable regression records a current completion limitation:
-adding the qualified cross-package method signature
-`model.Entity echo(model.Entity entity)` makes completion produce
-`model.Customer echo(model.Customer customer)`, but its conformance check
-rejects the return-type incarnation. The expected failure is asserted.
+A separate regression,
+`currentCompleterRejectsAQualifiedCrossPackageMethodSignature`, adds the
+qualified signature `model.Entity echo(model.Entity entity)`. It asserts an
+`CodeAdaptationException` whose cause reports `Completion result is not conform`,
+and verifies that the supplied concrete AST is unchanged. It does not assert
+the intermediate completed signature or isolate the exact reason for the
+conformance rejection.
 
 The same qualified signature is supported in manual mode with a complete
 concrete CD. Four regression cases cover merge and TOP composition, each with
@@ -72,9 +75,6 @@ These tests use unique simple
 type names and do not establish support for same-named types in different CD
 packages or every Java import form.
 
-For inherited-member cleanup and its separate Java boundary, see
-[Inheritance cleanup](InheritanceCleanup.md).
-
 ## Verification
 
 The cdconcretization-derived tests use the adapter's generated output as their
@@ -88,6 +88,11 @@ oracle input. A correct case means:
   explicitly registered model boundaries described below
 
 Exact Java source text is not the main oracle, but generated Java should still be readable and consistently spaced.
+
+Updater behavior also has direct unit coverage in
+`updater/spoonUpdater/SpoonServicesTest` and `updater/CodeUpdaterMillTest`.
+The former checks the Spoon services; the latter checks updater-provider
+configuration and lifecycle isolation. These complement end-to-end tests.
 
 ## Current Limitations
 

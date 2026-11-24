@@ -3,8 +3,18 @@
 [Back to the overview](../README.md)
 
 The main class is `de.monticore.codeAdaption.CodeAdapter`. In this Gradle
-multi-project build, a consuming module can depend on
-`implementation project(":ref-code-adaptation")`.
+multi-project build, a consuming module declares the adapter dependency:
+
+```groovy
+dependencies {
+    implementation project(":ref-code-adaptation")
+}
+```
+
+`CDConfParameter` is part of the public constructor and comes from the `cddiff`
+artifact. The adapter exports that dependency through Gradle `api`, making it
+available on the consumer's compile and runtime classpaths. A separate `cddiff`
+declaration is not needed for the configuration example below.
 
 ## Configure an adapter
 
@@ -84,15 +94,24 @@ adapter.adaptWithTopSeparation(
 
 The shortest overloads use `false, true, true`. Overloads accepting only the
 first two booleans also default persistence to `true`. Persistence is ignored
-when completion is disabled. When enabled, it includes failure diagnostics and
-successful output; the original concrete-CD file is not overwritten.
+when completion is disabled. When enabled, the working CD is saved in `output`
+under the input concrete-CD filename, immediately after successful completion
+and before Java validation/staging. Failed completion attempts to save a partial
+CD there. Successful publication also includes the completed CD in staging.
+These early writes are independent of Java publication; the input CD file is
+not overwritten.
 
 Common-parent grouping permits an interface whose concrete implementers exactly
 match a reference element's incarnation group. An interface with additional,
 unrelated implementers is not selected. See [mappings and modes](Mappings.md).
 
-Modeled adaptation conflicts are reported as `CodeAdaptationException`.
-Input validation and model completion can also throw unchecked exceptions such
-as `IllegalArgumentException` or `IllegalStateException`. Input paths and output
-paths should refer to separate trees. Compile the output with the external Java
-dependencies required by your application.
+Modeled adaptation conflicts, expected completion rejections and ambiguous
+grouping are reported as `CodeAdaptationException`. Invalid input arguments can
+throw `IllegalArgumentException`. Unexpected completion runtime failures remain
+`IllegalStateException`, preserving their original cause.
+
+The output tree must not overlap either Java input tree or either input CD
+file, and a filesystem root is rejected as output. Overlap is rejected with
+`IllegalArgumentException`; it is not merely discouraged. Successful publication
+replaces the entire output directory, so dedicate that directory to adapter
+results. Compile the output with your application's external Java dependencies.

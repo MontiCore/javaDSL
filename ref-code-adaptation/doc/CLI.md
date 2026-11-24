@@ -25,7 +25,7 @@ used on its own.
 | `-o`, `--output <path>` | Yes | Directory for adapted output |
 | `-cc`, `--concrete-code <path>` | No | Concrete handwritten source directory; absent by default |
 | `--top-separation` | No | Keep matching concrete HWC and adapted implementations in separate TOP classes |
-| `--concretize` | No | Complete the concrete CD, then obtain mappings through conformance checking; default is manual mapping without completion |
+| `--concretize` | No | Complete the concrete CD, then prefer usable conformance mappings; otherwise use conflict-checked manual derivation per mapping. Default is manual mode without completion. |
 | `--matching <name...>` | No | Java matching strategies: `name`, `infix`, `annotation`; default is all three |
 | `--no-common-parent` | No | Disable exact common-interface grouping for multiple incarnations |
 | `--no-persist-concretized-cd` | No | Suppress completed-CD output and partial-CD diagnostics; relevant only with `--concretize` |
@@ -67,18 +67,33 @@ regular Java generator. See [TOP and generated bases](TopSeparation.md).
 
 ## Output and failures
 
-With `--concretize`, the working CD is saved under the input concrete CD's
-filename. A failed completion or later adaptation may also save this CD as a
-diagnostic. Use `--no-persist-concretized-cd` to suppress both forms.
+With `--concretize`, the working CD is saved in `--output` under the input
+concrete CD's filename. Successful completion writes it there before Java
+validation and staging; a failed completion attempts to save its partial model
+there as a diagnostic. A successful run also includes the completed CD in the
+published output. Use `--no-persist-concretized-cd` to suppress all these writes.
 
-Java output is staged and published only after successful adaptation. Validation
-failures leave existing Java output intact. The CLI does not invoke `javac`:
-compile the result with your application's dependencies and any generated bases.
+Java output is staged and published only after successful adaptation. Publication
+replaces the entire existing output directory, including old files absent from
+the new result. Use a dedicated output directory. Validation failures do not
+publish new Java, but the early CD write described above can still change that
+directory. Input and output paths must not overlap, and a filesystem root cannot
+be the output directory.
 
-Exit code `0` means success or help, `2` means invalid arguments or a reported
-adaptation failure, and `1` means an unexpected runtime failure.
+The CLI does not invoke `javac`: compile the result with your application's
+dependencies and any generated bases.
+
+| Exit code | Current behavior |
+| --- | --- |
+| `0` | Successful adaptation or help |
+| `2` | Invalid arguments or a reported adaptation failure (`ParseException`, `IllegalArgumentException` or `CodeAdaptationException`), including model completion rejection and ambiguous grouping |
+| `1` | An unexpected runtime failure; completion runtime bugs remain distinct from model rejection |
+
+Completion failure stops adaptation. Only a later conformance check without a
+usable incarnation mapping can trigger manual mapping fallback.
 
 `--ignore-unmatched` is not a universal “copy everything” switch. It allows
-unmatched members and variables to remain unchanged. Unmatched types are
-excluded from mapping-specific adapted output. To retain a deliberately
+unmatched members and variables to remain unchanged. Both modes automatically
+retain required source-local helpers, independently of this flag. Other unmatched
+types are excluded from mapping-specific adapted output. To retain a deliberately
 unchanged reference type, use `@Adapt(ignore = true)`; see [Java matching](Mappings.md).

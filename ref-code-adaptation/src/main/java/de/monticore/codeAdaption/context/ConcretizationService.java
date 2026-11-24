@@ -1,8 +1,10 @@
 package de.monticore.codeAdaption.context;
 
 import de.monticore.cdbasis._ast.ASTCDCompilationUnit;
+import de.monticore.cdconcretization.CompletionException;
 import de.monticore.cdconcretization.ConcretizationCompleter;
 import de.monticore.cdconformance.CDConfParameter;
+import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.utils.JavaLoader;
 import de.se_rwth.commons.logging.Log;
 import java.util.ArrayList;
@@ -25,6 +27,9 @@ public final class ConcretizationService {
   /**
    * Completes a caller-owned working copy in place so its partial state remains available when
    * cdconcretization reports an error.
+   *
+   * @throws CodeAdaptationException if completion rejects the model or reports errors
+   * @throws IllegalStateException if an unexpected runtime failure occurs during completion
    */
   public ASTCDCompilationUnit completeConcreteCDInPlace(
       ASTCDCompilationUnit completedCD, ASTCDCompilationUnit refCD, Set<String> mappings) {
@@ -50,15 +55,21 @@ public final class ConcretizationService {
                   .distinct()
                   .reduce((left, right) -> left + "; " + right)
                   .orElse("unknown concretization error");
-          throw new IllegalStateException(
+          throw new CodeAdaptationException(
               "CD concretization reported errors; adaptation cannot continue safely: "
                   + diagnostics);
         }
         Log.info("Concretized concrete CD before code adaptation", "CodeAdapter");
         return completedCD;
-      } catch (Exception | AssertionError throwable) {
+      } catch (CompletionException throwable) {
+        throw new CodeAdaptationException(
+            "CD concretization failed before code adaptation: " + throwable.getMessage(),
+            throwable);
+      } catch (CodeAdaptationException throwable) {
+        throw throwable;
+      } catch (RuntimeException | AssertionError throwable) {
         throw new IllegalStateException(
-            "CD concretization failed before code adaptation; the input concrete CD was not modified",
+            "Unexpected CD concretization failure before code adaptation",
             throwable);
       } finally {
         // Log.enableFailQuick(true) terminates the process when error findings exist. The errors

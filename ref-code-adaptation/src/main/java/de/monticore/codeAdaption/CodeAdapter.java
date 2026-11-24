@@ -418,31 +418,20 @@ public class CodeAdapter {
     Map<String, CodeValidator> validators = new LinkedHashMap<>();
     Set<ASTOrdinaryCompilationUnit> refCode = JavaLoader.readJavaCode(normalizedRefHwcPath);
     ReferenceCodeDependencySelector dependencySelector =
-        useConcretization
-            ? new ReferenceCodeDependencySelector(
-                normalizedRefHwcPath, refCode, referenceIndex.typeNames())
-            : null;
+        new ReferenceCodeDependencySelector(
+            normalizedRefHwcPath, refCode, referenceIndex.typeNames());
     Map<String, ReferenceCodeSelection> codeSelections = new LinkedHashMap<>();
     for (String mapping : validatedMappingsInOrder) {
       AdaptationContextResult result = contextResults.get(mapping);
       incarnationContextsByMapping.put(mapping, result.context());
       checkers.put(mapping, result.checker());
       CodeValidator validator =
-          useConcretization
-              ? new CodeValidator(
-                  refCD,
-                  adapterParams,
-                  CodeValidator.ValidationPolicy.PRESERVE_CONCRETIZATION_HELPERS)
-              : new CodeValidator(refCD, adapterParams);
+          new CodeValidator(
+              refCD, adapterParams, CodeValidator.ValidationPolicy.PRESERVE_SELECTED_HELPERS);
       validators.put(mapping, validator);
-      if (useConcretization) {
-        Set<String> mappedRoots =
-            mappedRootTypeIdentities(
-                refCode, validator, result.context(), referenceIndex);
-        codeSelections.put(mapping, dependencySelector.select(mappedRoots));
-      } else {
-        codeSelections.put(mapping, emptyCodeSelection());
-      }
+      Set<String> mappedRoots =
+          mappedRootTypeIdentities(refCode, validator, result.context(), referenceIndex);
+      codeSelections.put(mapping, dependencySelector.select(mappedRoots));
     }
 
     SortedSet<String> fallbackMappings =
@@ -471,12 +460,8 @@ public class CodeAdapter {
       CodeValidator validator = validators.get(mapping);
       boolean valid =
           validator != null
-              && (useConcretization
-                  ? validator.isValid(
-                      refCD,
-                      refCode,
-                      codeSelections.get(mapping).selectedTypeIdentities())
-                  : validator.isValid(refCD, refCode));
+              && validator.isValid(
+                  refCD, refCode, codeSelections.get(mapping).selectedTypeIdentities());
       if (!valid) {
         throw new CodeAdaptationException(
             "Reference code is not valid for the reference CD (mapping '" + mapping + "')");
@@ -664,10 +649,6 @@ public class CodeAdapter {
       }
     }
     return Set.copyOf(roots);
-  }
-
-  private static ReferenceCodeSelection emptyCodeSelection() {
-    return new ReferenceCodeSelection(Set.of(), Set.of(), Map.of(), Map.of(), List.of());
   }
 
   private static Set<ASTOrdinaryCompilationUnit> cloneUnits(

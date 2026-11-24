@@ -241,7 +241,7 @@ public class CDConcretizationAdapterTest extends AdapterAbstractTest {
     Files.writeString(marker, "preserve", StandardCharsets.UTF_8);
 
     assertThrows(
-        IllegalStateException.class,
+        CodeAdaptationException.class,
         () ->
             adapter.adapt(
                 materializedTestCase.refCd().toFile(),

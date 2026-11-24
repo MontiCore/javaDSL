@@ -73,7 +73,7 @@ class InternalSubpackageAdaptationTest extends AdapterAbstractTest {
 
     var failure =
         assertThrows(
-            IllegalStateException.class,
+            CodeAdaptationException.class,
             () ->
                 new ConcretizationService(PARAMETERS)
                     .completeConcreteCD(concrete, reference, Set.of("ref")));

@@ -7,26 +7,45 @@ For the full module structure, layer boundaries, and design rules, see [Architec
 
 ## Adaptation pipeline
 
-1. `JavaLoader` loads both CDs and their symbol tables.
-2. `AdaptationContextFactory` constructs one incarnation context per mapping.
-   [Manual and completion modes](Mappings.md) differ at this stage.
-3. Java validation and conflict detection reject unresolved or ambiguous
-   mappings before a staging workspace is created.
-4. `MappingAdaptationRunner` selects the reference sources for each mapping and
-   runs isolated passes over types, fields, methods, parameters, constructor
-   calls, and pattern-derived members.
-5. The selected API merges with concrete code, emits adapted code directly, or
-   invokes `TopCodeComposer` for inheritance-based separation.
-6. Remaining concrete files are copied. Spoon removes adaptation annotations
-   and formats whole Java files; JavaDSL import cleanup edits import declaration
-   ranges without reformatting method bodies.
-7. `AdaptationWorkspace` publishes the completed staging directory
-   transactionally and restores previous output if publication fails.
+1. Paths are validated, then `JavaLoader` loads both CDs and their symbol tables.
+   `CDModelIndex` indexes the reference and original concrete models.
+2. In completion mode, `ConcretizationService.completeConcreteCDInPlace` completes
+   a working copy and rebuilds its symbols. Completion failure stops adaptation;
+   the working CD may already be persisted as described below.
+3. `AdaptationContextFactory` constructs one context per mapping. Completion mode
+   prefers usable conformance mappings and otherwise derives a manual context
+   for that mapping. Manual mode does not create a conformance checker.
+4. `CodeAdapter` reads reference Java, creates validators and selects each
+   mapping's transitive Java-only helper closure in both modes.
+5. `AdaptationConflictDetector` checks all manual-mode mappings, or only the
+   fallback mappings in completion mode. Java validation follows. These checks
+   finish before a Java staging workspace is created.
+6. `CDImportProjector.project` adds required CD imports to reference Java ASTs.
+   `AdaptationWorkspace` then creates staging.
+7. For each mapping, `CodeAdapter` clones and splits compilation units, filters
+   relevant sources, and plans passes for concrete incarnation type selections.
+8. `MappingAdaptationRunner` executes each isolated pass. One
+   `BasicUpdateHandler.handleUpdate` call handles variables, members, roles,
+   types and member projection; these are phases within a pass, not separate
+   passes for each element kind.
+9. Pass results are split, filtered and merged. Concrete Java is also split
+   before composition. The selected API merges members, emits adapted code
+   directly, or invokes `TopCodeComposer` for inheritance-based separation.
+10. Remaining concrete files are copied. If staging contains Java, Spoon removes
+    adapter metadata and formats files; JavaDSL cleanup edits invalid import
+    declaration ranges without reformatting method bodies.
+11. When enabled, the completed CD is included in staging.
+    `AdaptationWorkspace` publishes the staged directory, replacing the whole
+    previous output tree and attempting restoration on publication failure.
 
 Compilation is a separate verification step in tests and consuming builds.
 External regular-generator artifacts must be supplied when the reference Java
-depends on them. In completion mode, the working CD may also be saved as a
-failure diagnostic, independently of Java publication.
+depends on them. In completion mode, `persistConcretizedCD` writes the working
+CD into the output directory under the input concrete CD's filename immediately
+after successful completion, before Java validation/staging. A failed completion
+attempts a partial-CD diagnostic there. Successful publication includes the CD
+again in staging. These early writes are independent of Java publication;
+disabling persistence suppresses working-CD output on success and failure.
 
 ## Important Implementation Points
 
@@ -37,23 +56,27 @@ failure diagnostic, independently of Java publication.
   cleanup, and error wrapping.
 - `ReferenceCodeDependencySelector` builds a package-qualified dependency graph
   once from the reference source snapshot and selects mapping-specific helper
-  closures in concretization mode. Ambiguous source-local type resolution is
+  closures in both modes. Ambiguous source-local type resolution is
   rejected deterministically.
 - `TopCodeComposer` analyzes all per-type TOP decisions before modifying cloned
   ASTs. It adds or deduplicates HWC inheritance, renames only adapted
   declarations and their constructors, and leaves ordinary references pointing
   to the public concrete type.
 - `CDTypeRelations` centralizes direct generated-AST access for interfaces,
-  superclasses, modifiers, and type-reference printing. Runtime Java reflection
-  is not used by the adapter.
+  superclasses, modifiers, and type-reference printing. Other helpers use
+  limited runtime class inspection for available library types, public
+  top-level types and return-type assignability. Source rewriting still works
+  on parsed Java; there is no blanket prohibition on `Class.forName`.
 - `ManualIncarnationContextBuilder` is the non-mutating context builder for `useConcretization=false`.
 - `IncarnationContext` owns one immutable stable-key mapping. MontiCore symbols
   are retained only as mapped-element payload for AST operations; symbol object
   identity is not used for incarnation lookup.
-- `AdaptationConflictDetector` validates manual mappings before Java output is written.
-- `JavaTypeUpdateService` fills Java-expressible gaps only after
-  cdconcretization, such as missing fields, methods, types, enum constants,
-  inheritance, and interfaces.
+- `AdaptationConflictDetector` validates manual and completion-fallback mappings
+  before Java staging.
+- `JavaTypeUpdateService` projects concrete field/method incarnations in both
+  modes. With completion enabled, it also compares the completed and original
+  concrete models to project added or changed fields, methods, enum constants,
+  inheritance, abstractness and interface contracts.
 - `JavaSourcePostProcessor` is the final source cleanup step. It parses JavaDSL
   compilation units for import declarations and removes only known invalid or
   malformed generated imports. It does not infer missing JDK imports from

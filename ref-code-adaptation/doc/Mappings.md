@@ -79,19 +79,28 @@ deterministic completion:
    mapping.
 3. `JavaTypeUpdateService` projects Java-expressible completion changes such as
    fields, methods, enum constants, types, and inheritance into the adaptation.
-4. `ReferenceCodeDependencySelector` retains source-local helpers needed
-   transitively by mapped reference types and excludes unrelated source units.
 
-Required Java-only helper members and classes do not need ignore annotations
-in completion mode. Manual mode retains its stricter validation policy.
+If the completion step itself fails, adaptation stops. Manual fallback applies
+only after completion has succeeded and a requested mapping has no usable
+conformance result.
+
+Both modes use `ReferenceCodeDependencySelector` before Java validation to retain
+source-local helpers needed transitively by mapped reference types or explicitly
+ignored roots. Unrelated source units are excluded. Required Java-only helper
+members and classes do not need ignore annotations. Annotation and declaration
+checks still run; see the [pipeline](Internals.md).
 
 Completion and the choice to supply concrete Java are independent: either mode
 can run without a concrete Java directory. Neither mode invokes a general
 model-to-Java generator or produces association fields by itself.
 
-By default, completion saves the working CD under the input concrete CD's
-filename, including a partial model on failure. Disable this with
-`persistConcretizedCD=false` or `--no-persist-concretized-cd`.
+By default, the working CD is saved in the output directory under the input
+concrete CD's filename. It is written immediately after successful completion,
+before Java validation or staging, or attempted as a partial-model diagnostic
+when completion fails. Successful publication includes the completed CD again
+in the staged result. This early write is independent of Java publication.
+Disable all working-CD writes with `persistConcretizedCD=false` or
+`--no-persist-concretized-cd`.
 
 ## Associations
 

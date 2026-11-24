@@ -1,0 +1,5 @@
+classdiagram Reference {
+  class Service {
+    public int amount();
+  }
+}

@@ -4,7 +4,9 @@
 
 This walkthrough adapts an `Entity` Java class to a `Student` class. Run commands
 from the repository root, the directory containing `settings.gradle` and
-`ref-code-adaptation`. You need Java 21 and an installed Gradle 8.8. This repository does not include a Gradle wrapper.
+`ref-code-adaptation`. You need Java 21 and an installed Gradle. CI uses Gradle
+8.14.4; use that version to match CI. This checkout does not include a Gradle
+wrapper.
 
 ## Step 1: Build the CLI
 
@@ -52,8 +54,9 @@ public class Student {
 }
 ```
 
-The inputs are preserved. A successful run publishes a new output directory,
-so use an output location dedicated to generated results.
+The inputs are preserved. A successful run replaces the entire output directory,
+including any old files not produced by this run. Use a directory dedicated to
+adapted results.
 
 There is no reference implementation of `Application` or `Service` in this
 source directory. The example therefore does not generate their concrete

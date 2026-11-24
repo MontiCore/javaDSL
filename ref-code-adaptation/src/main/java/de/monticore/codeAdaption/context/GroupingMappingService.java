@@ -1,5 +1,6 @@
 package de.monticore.codeAdaption.context;
 
+import de.monticore.codeAdaption.CodeAdaptationException;
 import de.monticore.codeAdaption.handler.multiIncarnation.IncarnationContext;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,7 +36,7 @@ public final class GroupingMappingService {
    *
    * @param context the mapping-local incarnation and grouping context
    * @return insertion-ordered incarnation-simple-name to grouping-type-simple-name replacements
-   * @throws IllegalStateException if one incarnation simple name resolves to different grouping
+   * @throws CodeAdaptationException if one incarnation simple name resolves to different grouping
    *     types
    */
   public Map<String, String> compute(IncarnationContext context) {
@@ -57,7 +58,7 @@ public final class GroupingMappingService {
   private static void putUnambiguous(Map<String, String> result, String concrete, String grouping) {
     String previous = result.putIfAbsent(concrete, grouping);
     if (previous != null && !previous.equals(grouping)) {
-      throw new IllegalStateException(
+      throw new CodeAdaptationException(
           "Ambiguous grouping for concrete type '" + concrete + "': '" + previous + "' and '" + grouping + "'");
     }
   }

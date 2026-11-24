@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Tracks the canonical adapted form of every concretization helper during one adaptation.
+ * Tracks the canonical adapted form of every selected Java helper during one adaptation.
  *
  * <p>The owning {@link MappingAdaptationRunner} is created once per adaptation, so entries are
  * shared by all incarnation passes and mapping names without leaking into later adaptations.

@@ -22,8 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
 
@@ -37,8 +38,9 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
     initMills();
   }
 
-  @Test
-  void retainsAndAdaptsTransitiveJavaOnlyHelpers() {
+  @ParameterizedTest(name = "completion = {0}")
+  @ValueSource(booleans = {false, true})
+  void retainsAndAdaptsTransitiveJavaOnlyHelpers(boolean useConcretization) {
     File referenceCD = FIXTURE.resolve("Reference.cd").toFile();
     File concreteCD = FIXTURE.resolve("Concrete.cd").toFile();
     Path referenceCode = FIXTURE.resolve("adapter");
@@ -64,15 +66,17 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
         referenceCode,
         concreteCode,
         output,
-        true,
+        useConcretization,
         true);
 
     assertTrue(Files.isRegularFile(output.resolve("Concrete/ConcreteService.java")));
     assertTrue(Files.isRegularFile(output.resolve("Concrete/ConcreteServiceTOP.java")));
     assertTrue(Files.isRegularFile(output.resolve("Concrete/ServiceSupport.java")));
     assertTrue(Files.isRegularFile(output.resolve("Concrete/SupportValue.java")));
-    assertTrue(Files.isRegularFile(output.resolve("Concrete.cd")));
-    assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    assertEquals(useConcretization, Files.isRegularFile(output.resolve("Concrete.cd")));
+    if (useConcretization) {
+      assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    }
     assertFalse(Files.exists(output.resolve("Concrete/UnrelatedHelper.java")));
 
     String service = readFileContent(output, "ConcreteService.java");
@@ -89,8 +93,9 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
     assertGeneratedJavaCompiles(output);
   }
 
-  @Test
-  void retainsHelpersWhenAdaptedImplementationBecomesTop() throws Exception {
+  @ParameterizedTest(name = "completion = {0}")
+  @ValueSource(booleans = {false, true})
+  void retainsHelpersWhenAdaptedImplementationBecomesTop(boolean useConcretization) throws Exception {
     Path concreteCode = Files.createDirectories(temporaryDirectory.resolve("top-concrete"));
     Files.copy(FIXTURE.resolve("concrete/ConcreteService.java"), concreteCode.resolve("ConcreteService.java"));
     Path output = temporaryDirectory.resolve("top-output");
@@ -114,7 +119,7 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
         FIXTURE.resolve("adapter"),
         concreteCode,
         output,
-        true,
+        useConcretization,
         true);
 
     String handwritten = readFileContent(output, "ConcreteService.java");
@@ -124,14 +129,18 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
     assertTrue(top.contains("support.decorate(((ConcreteService) (this)))"));
     assertTrue(Files.isRegularFile(output.resolve("Concrete/ServiceSupport.java")));
     assertTrue(Files.isRegularFile(output.resolve("Concrete/SupportValue.java")));
-    assertTrue(Files.isRegularFile(output.resolve("Concrete.cd")));
-    assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    assertEquals(useConcretization, Files.isRegularFile(output.resolve("Concrete.cd")));
+    if (useConcretization) {
+      assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    }
     assertFalse(Files.exists(output.resolve("Concrete/UnrelatedHelper.java")));
     assertGeneratedJavaCompiles(output);
   }
 
-  @Test
-  void divergentHelperVariantsFailWithoutPublishingPartialOutput() throws Exception {
+  @ParameterizedTest(name = "completion = {0}")
+  @ValueSource(booleans = {false, true})
+  void divergentHelperVariantsFailWithoutPublishingPartialOutput(boolean useConcretization)
+      throws Exception {
     Path divergentFixture = FIXTURE.resolve("divergent");
     Path output = temporaryDirectory.resolve("existing-output");
     Files.createDirectories(output);
@@ -164,14 +173,16 @@ class ConcretizationHelperDependencyTest extends AdapterAbstractTest {
                     divergentFixture.resolve("adapter"),
                     divergentFixture.resolve("concrete"),
                     output,
-                    true,
+                    useConcretization,
                     true));
 
     assertTrue(exception.getMessage().contains("Concrete.ServiceSupport"));
     assertTrue(exception.getMessage().contains("divergent outputs"));
     assertEquals("previous successful output", Files.readString(marker));
-    assertTrue(Files.isRegularFile(output.resolve("Concrete.cd")));
-    assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    assertEquals(useConcretization, Files.isRegularFile(output.resolve("Concrete.cd")));
+    if (useConcretization) {
+      assertDoesNotThrow(() -> JavaLoader.parseCD(output.resolve("Concrete.cd").toString()));
+    }
     assertFalse(Files.exists(output.resolve("Concrete/PrimaryService.java")));
     assertFalse(Files.exists(output.resolve("Concrete/BackupService.java")));
     assertEquals(referenceBefore, Files.readString(referenceService));

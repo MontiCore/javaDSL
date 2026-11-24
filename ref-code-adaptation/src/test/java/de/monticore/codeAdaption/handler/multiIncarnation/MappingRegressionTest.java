@@ -114,7 +114,7 @@ class MappingRegressionTest extends AdapterAbstractTest {
         new IncarnationMappingSupport(CDModelIndex.of(reference), concreteIndex);
 
     assertThrows(
-        IllegalStateException.class,
+        CodeAdaptationException.class,
         () -> support.assembleContext("mapping", mappings),
         "A shared incarnation in incompatible exact groups must be diagnosed, not overwritten");
   }

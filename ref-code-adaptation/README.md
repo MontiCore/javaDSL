@@ -58,7 +58,9 @@ classes or keep the implementations separate using inheritance.
 
 ### Building the tool
 
-Use Java 21 and an installed Gradle 8.8 from the repository root:
+Use Java 21 and an installed Gradle from the repository root. CI uses Gradle
+8.14.4; use that version to match the CI environment. This checkout does not
+include a Gradle wrapper.
 
 ```shell
 gradle :ref-code-adaptation:shadowJar
